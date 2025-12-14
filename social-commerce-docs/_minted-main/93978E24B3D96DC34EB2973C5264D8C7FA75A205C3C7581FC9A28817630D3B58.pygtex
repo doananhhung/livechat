@@ -1,0 +1,7 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{c+c1}{// Logic này xuất hiện ở nhiều nơi}
+\PYG{k+kd}{const}\PYG{+w}{ }\PYG{n+nx}{resource}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{k}{await}\PYG{+w}{ }\PYG{k}{this}\PYG{p}{.}\PYG{n+nx}{repository}\PYG{p}{.}\PYG{n+nx}{findOne}\PYG{p}{(...);}
+\PYG{k}{if}\PYG{+w}{ }\PYG{p}{(}\PYG{o}{!}\PYG{n+nx}{resource}\PYG{+w}{ }\PYG{o}{||}\PYG{+w}{ }\PYG{n+nx}{resource}\PYG{p}{.}\PYG{n+nx}{userId}\PYG{+w}{ }\PYG{o}{!==}\PYG{+w}{ }\PYG{n+nx}{user}\PYG{p}{.}\PYG{n+nx}{id}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{  }\PYG{k}{throw}\PYG{+w}{ }\PYG{o+ow}{new}\PYG{+w}{ }\PYG{n+nx}{ForbiddenException}\PYG{p}{(...);}
+\PYG{p}{\PYGZcb{}}
+\end{Verbatim}

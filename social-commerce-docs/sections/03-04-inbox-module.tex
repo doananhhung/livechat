@@ -1,0 +1,119 @@
+\subsection{InboxModule}
+\label{subsec:inbox-module}
+
+\subsubsection{Mục đích}
+
+\texttt{InboxModule} là trung tâm nghiệp vụ của toàn bộ ứng dụng. Nó chịu trách nhiệm quản lý toàn bộ luồng giao tiếp giữa khách truy cập (visitors) và nhân viên hỗ trợ (agents). Module này chứa đựng các thực thể, logic nghiệp vụ và các API endpoint cần thiết để tạo ra một trải nghiệm hộp thư hợp nhất (unified inbox), nơi agents có thể xem và trả lời tất cả các cuộc hội thoại từ các dự án mà họ quản lý.
+
+Do tính phức tạp, chúng ta sẽ phân tích module này thành ba phần: Entities, Services, và Controller.
+
+\subsubsection{Phân tích Entities}
+\label{subsubsec:inbox-entities}
+
+Các entities trong module này định hình nên cấu trúc dữ liệu cốt lõi của một hệ thống chat. Mối quan hệ giữa \texttt{Visitor}, \texttt{Conversation}, và \texttt{Message} là nền tảng cho toàn bộ nghiệp vụ.
+
+\paragraph{\texttt{Visitor.entity.ts}}
+\begin{itemize}
+    \item \textbf{Mục đích:} Đại diện cho một khách truy cập duy nhất trên website của một dự án. Entity này giúp hệ thống nhận diện và duy trì lịch sử tương tác với một người dùng cuối, ngay cả khi họ là ẩn danh.
+    \item \textbf{Các cột quan trọng:}
+    \begin{itemize}
+        \item \texttt{visitorUid}: Một cột \texttt{UUID} duy nhất, không phải là khóa chính. Đây là định danh công khai được tạo ra và lưu trữ trên trình duyệt của khách truy cập. Toàn bộ hệ thống sẽ sử dụng \texttt{visitorUid} để nhận diện một visitor đang hoạt động.
+        \item \texttt{projectId}: Khóa ngoại, liên kết một visitor với một dự án (\texttt{Project}) cụ thể. Điều này đảm bảo dữ liệu visitor được phân tách rõ ràng theo từng website của khách hàng.
+        \item \texttt{displayName}: Một tên định danh thân thiện do hệ thống tự tạo (ví dụ: "Visitor \#abc123") để nhân viên hỗ trợ có thể dễ dàng phân biệt.
+        \item \texttt{metadata}: Một trường \texttt{jsonb} linh hoạt, được thiết kế để lưu trữ các thông tin ngữ cảnh bổ sung về visitor như trình duyệt, hệ điều hành, lịch sử các trang đã xem, v.v.
+        \item \texttt{conversations}: Mối quan hệ một-nhiều (\texttt{OneToMany}) với entity \texttt{Conversation}, cho phép truy vấn tất cả các cuộc hội thoại của visitor này.
+    \end{itemize}
+\end{itemize}
+\paragraph{\texttt{Conversation.entity.ts}}
+\begin{itemize}
+    \item \textbf{Mục đích:} Đại diện cho một luồng hội thoại (thread) hoàn chỉnh giữa một \texttt{Visitor} và các nhân viên hỗ trợ của một \texttt{Project}. Nó đóng vai trò là một container, nhóm tất cả các tin nhắn liên quan lại với nhau.
+    \item \textbf{Các cột quan trọng:}    
+    \begin{itemize}
+        \item \texttt{project} và \texttt{visitor}: Hai mối quan hệ nhiều-một (\texttt{ManyToOne}) để xác định cuộc hội thoại này thuộc về dự án nào và của visitor nào.
+        \item \texttt{status}: Một trường \texttt{enum} (\texttt{OPEN}, \texttt{CLOSED}, \texttt{PENDING}) để quản lý trạng thái của cuộc hội thoại, giúp agents có thể tổ chức và lọc công việc của họ.
+        \item \texttt{lastMessageSnippet} \& \texttt{lastMessageTimestamp}: Đây là các trường dữ liệu được phi chuẩn hóa (denormalized). Chúng lưu một đoạn trích và thời gian của tin nhắn cuối cùng. Việc này giúp tối ưu hiệu năng đáng kể khi hiển thị danh sách các cuộc hội thoại mà không cần phải thực hiện một phép JOIN (\texttt{JOIN}) tốn kém đến bảng \texttt{messages}.
+        \item \texttt{unreadCount}: Một bộ đếm số lượng tin nhắn chưa đọc, rất quan trọng để hiển thị thông báo cho agent.
+        \item \texttt{messages}: Mối quan hệ một-nhiều (\texttt{OneToMany}) với entity \texttt{Message}, là nơi chứa toàn bộ nội dung của cuộc hội thoại.
+    \end{itemize}
+\end{itemize}
+
+\paragraph{\texttt{Message.entity.ts}}
+\begin{itemize}
+    \item \textbf{Mục đích:} Đại diện cho một tin nhắn ("bong bóng chat") duy nhất trong một cuộc hội thoại. Đây là đơn vị thông tin nhỏ nhất trong luồng giao tiếp.
+    \item \textbf{Các cột quan trọng:}    
+    \begin{itemize}
+        \item \texttt{conversation}: Mối quan hệ nhiều-một (\texttt{ManyToOne}) để liên kết tin nhắn này với cuộc hội thoại mẹ của nó.
+        \item \texttt{content}: Chứa nội dung văn bản của tin nhắn.
+        \item \texttt{senderId} và \texttt{recipientId}: Lưu trữ định danh của người gửi và người nhận. Đây có thể là \texttt{visitorUid} hoặc \texttt{userId} của agent.
+        \item \texttt{fromCustomer}: Một cờ \texttt{boolean} cực kỳ quan trọng. Nó cho biết tin nhắn này đến từ khách truy cập hay từ nhân viên hỗ trợ, giúp giao diện người dùng có thể dễ dàng quyết định vị trí hiển thị của bong bóng chat (trái hoặc phải).
+        \item \texttt{status}: Một trường \texttt{enum} (\texttt{SENDING}, \texttt{SENT}, \texttt{DELIVERED}, \texttt{FAILED}) để theo dõi trạng thái gửi của tin nhắn, rất cần thiết để cung cấp phản hồi cho người dùng trên giao diện.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Phân tích Services}
+\label{subsubsec:inbox-services}
+
+Các service trong module này được phân tách rõ ràng theo từng thực thể, mỗi service chịu trách nhiệm cho một domain nghiệp vụ cụ thể, giúp cho codebase có tính module hóa cao và dễ dàng bảo trì.
+
+\paragraph{\texttt{visitor.service.ts}}
+\begin{itemize}
+    \item \textbf{Mục đích:} Service này là cổng giao tiếp duy nhất cho tất cả các thao tác liên quan đến thực thể \texttt{Visitor}.
+    \item \textbf{Các phương thức quan trọng:}    
+    \begin{itemize}
+        \item \texttt{findOrCreateByUid(projectId, visitorUid, manager)}: Đây là một phương thức giao tác (transactional) quan trọng, được thiết kế để sử dụng bởi \texttt{EventConsumerService}. Nó có nhiệm vụ tìm một visitor dựa trên \texttt{visitorUid}, nếu không tồn tại thì sẽ tạo mới. Việc yêu cầu một \texttt{EntityManager} làm tham số đảm bảo rằng thao tác này có thể được tích hợp một cách an toàn vào một transaction lớn hơn của \texttt{EventConsumerService}.
+        \item \texttt{findByUid(visitorUid)}: Một phương thức truy vấn đơn giản, không giao tác, được thiết kế riêng cho \texttt{EventsGateway}. Nó cho phép Gateway nhanh chóng kiểm tra sự tồn tại của một visitor trong quá trình \texttt{identify} mà không cần khởi tạo một transaction.
+    \end{itemize}
+\end{itemize}
+
+\paragraph{\texttt{conversation.service.ts}}
+\begin{itemize}
+    \item \textbf{Mục đích:} Quản lý vòng đời và dữ liệu của các luồng hội thoại. Service này chứa các logic nghiệp vụ phức tạp liên quan đến việc tạo, tìm kiếm và cập nhật các cuộc hội thoại.
+    \item \textbf{Các phương thức quan trọng:}    
+    \begin{itemize}
+        \item \texttt{findOrCreateByVisitorId(projectId, visitorId, manager)}: Tương tự như trong \texttt{VisitorService}, đây là một phương thức giao tác để tìm hoặc tạo một cuộc hội thoại mới cho một visitor trong một dự án, được sử dụng bởi \texttt{EventConsumerService}.
+        \item \texttt{updateLastMessage(...)}: Một phương thức giao tác khác dành cho \texttt{EventConsumerService}. Nó thực hiện việc phi chuẩn hóa dữ liệu bằng cách cập nhật \texttt{lastMessageSnippet}, \texttt{lastMessageTimestamp}, và tăng \texttt{unreadCount} của một cuộc hội thoại. Việc này giúp tối ưu hóa hiệu năng cho API lấy danh sách hội thoại.
+        \item \texttt{listByProject(user, projectId, query)}: Cung cấp chức năng chính cho Agent Dashboard. Nó lấy ra một danh sách các cuộc hội thoại có phân trang cho một dự án cụ thể, đồng thời thực hiện một bước kiểm tra quyền sở hữu quan trọng để đảm bảo agent chỉ thấy các hội thoại thuộc dự án của họ.
+        \item \texttt{getHistoryByVisitorId(visitorId)}: Một phương thức chuyên dụng cho \texttt{EventsGateway}. Nó tìm một cuộc hội thoại đang mở của visitor và tải kèm toàn bộ lịch sử tin nhắn (\texttt{relations: ['messages']}) để gửi lại cho widget khi visitor kết nối lại, tạo ra một trải nghiệm liền mạch.
+        \item \texttt{handleAgentTyping(user, conversationId, isTyping)}: Hiện thực hóa tính năng "agent đang gõ". Nó kiểm tra quyền sở hữu, sau đó sử dụng \texttt{RealtimeSessionService} để tra cứu \texttt{socket.id} của visitor và yêu cầu \texttt{EventsGateway} gửi sự kiện real-time đi.
+    \end{itemize}
+\end{itemize}
+
+\paragraph{\texttt{message.service.ts}}
+\begin{itemize}
+    \item \textbf{Mục đích:} Chịu trách nhiệm cho tất cả các thao tác liên quan đến các tin nhắn riêng lẻ.
+    \item \textbf{Các phương thức quan trọng:}    
+    \begin{itemize}
+        \item \texttt{createMessage(data, manager)}: Một phương thức giao tác, được \texttt{EventConsumerService} gọi để lưu một tin nhắn mới từ visitor vào cơ sở dữ liệu.
+        \item \texttt{sendAgentReply(user, conversationId, replyText)}: Đây là phương thức cốt lõi cho luồng trả lời của agent. Nó thực hiện một chuỗi các hành động phức tạp và an toàn:
+        \begin{enumerate}
+            \item Thực hiện kiểm tra quyền sở hữu để đảm bảo agent có quyền trả lời cuộc hội thoại này.
+            \item Tìm ra \texttt{visitorUid} từ \texttt{conversationId}.
+            \item Tạo và lưu tin nhắn của agent vào CSDL với trạng thái ban đầu là \texttt{SENDING}.
+            \item Sử dụng \texttt{RealtimeSessionService} để tra cứu \texttt{socket.id} đang hoạt động của visitor từ Redis.
+            \item Nếu visitor đang online (tìm thấy \texttt{socket.id}), nó sẽ gọi \texttt{EventsGateway} để gửi tin nhắn đi và cập nhật trạng thái thành \texttt{SENT}. Ngược lại, nó cập nhật trạng thái thành \texttt{DELIVERED} (đã đến server, chờ visitor online để nhận).
+        \end{enumerate}
+        \item \texttt{listByConversation(user, conversationId, query)}: Lấy danh sách tin nhắn có phân trang (sử dụng kỹ thuật cursor-based pagination) cho một cuộc hội thoại cụ thể, cũng bao gồm bước kiểm tra quyền sở hữu.
+    \end{itemize}
+\end{itemize}
+
+
+\subsubsection{Phân tích Controller}
+\label{subsubsec:inbox-controller}
+
+\paragraph{\texttt{inbox.controller.ts}}
+\begin{itemize}
+    \item \textbf{Mục đích:} Controller này đóng vai trò là cổng giao tiếp (API Gateway) cho toàn bộ các chức năng của Hộp thư phía Agent Dashboard. Nó tiếp nhận các request HTTP từ người dùng đã được xác thực, phân tích và điều phối các yêu cầu đó đến các service nghiệp vụ phù hợp (\texttt{ConversationService} và \texttt{MessageService}). Toàn bộ controller được bảo vệ ở cấp độ class bởi \texttt{JwtAuthGuard}, đảm bảo chỉ những người dùng hợp lệ mới có thể truy cập.
+    
+    \item \textbf{Các phương thức quan trọng:}    
+    \begin{itemize}
+        \item \texttt{GET /conversations}: Endpoint để lấy danh sách các cuộc hội thoại cho một dự án cụ thể. Nó nhận \texttt{projectId} từ query parameter và sử dụng decorator \texttt{@GetCurrentUser} để xác định người dùng đang yêu cầu. Sau đó, nó gọi đến \texttt{conversationService.listByProject} để thực hiện truy vấn với đầy đủ logic phân trang và kiểm tra quyền sở hữu.
+        
+        \item \texttt{POST /conversations/:id/messages}: Endpoint để một nhân viên hỗ trợ gửi tin nhắn trả lời vào một cuộc hội thoại. Nó nhận \texttt{conversationId} từ URL parameter và nội dung tin nhắn từ body của request. Sau đó, nó gọi đến \texttt{messageService.sendAgentReply} để xử lý toàn bộ nghiệp vụ phức tạp phía sau, bao gồm việc lưu tin nhắn và phát sự kiện real-time.
+        
+        \item \texttt{PATCH /conversations/:id}: Một endpoint linh hoạt để cập nhật trạng thái của một cuộc hội thoại. Dựa vào nội dung body của request, nó có thể gọi đến \texttt{conversationService.updateStatus} (để thay đổi trạng thái thành `open` hoặc `closed`) hoặc \texttt{conversationService.markAsRead} (để reset bộ đếm tin nhắn chưa đọc).
+        
+        \item \texttt{GET /conversations/:id/messages}: Endpoint để lấy lịch sử tin nhắn của một cuộc hội thoại cụ thể. Nó sử dụng \texttt{conversationId} từ URL và các tham số phân trang từ query để gọi đến \texttt{messageService.listByConversation}, trả về một danh sách tin nhắn cho Agent Dashboard hiển thị.
+
+        \item \texttt{POST /conversations/:id/typing}: Endpoint phục vụ cho tính năng UX "agent đang gõ". Khi agent bắt đầu hoặc ngừng gõ trên dashboard, frontend sẽ gọi API này. Controller sẽ gọi đến \texttt{conversationService.handleAgentTyping} để phát sự kiện real-time tương ứng xuống cho visitor.
+    \end{itemize}
+\end{itemize}

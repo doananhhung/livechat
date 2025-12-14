@@ -1,0 +1,58 @@
+\subsection{GatewayModule}
+\label{subsec:gateway-module}
+
+\subsubsection{Mục đích}
+
+\texttt{GatewayModule} là trung tâm điều phối cho toàn bộ giao tiếp hai chiều, thời gian thực (real-time) của hệ thống. Nó sử dụng WebSocket (thông qua thư viện Socket.IO) để tạo ra một kênh kết nối bền bỉ giữa server và các client (bao gồm cả Chat Widget của visitor và Agent Dashboard).
+
+Trách nhiệm chính của module này bao gồm:
+\begin{itemize}
+    \item Quản lý vòng đời của các kết nối WebSocket: xử lý khi client kết nối, định danh, và ngắt kết nối.
+    \item Lắng nghe và tiếp nhận các sự kiện được gửi từ client.
+    \item Điều phối các sự kiện này đến các thành phần xử lý nghiệp vụ phù hợp (ví dụ: đẩy vào hàng đợi SQS hoặc gọi trực tiếp các service khác).
+    \item Cung cấp một giao diện (API) để các service khác trong backend có thể gửi các sự kiện real-time đến một hoặc nhiều client cụ thể.
+\end{itemize}
+Kiến trúc của module này được củng cố bởi \texttt{RedisIoAdapter}, cho phép nó có khả năng mở rộng theo chiều ngang trên nhiều server instance.
+
+\subsubsection{Các Thành phần Chính (Files)}
+
+\begin{description}
+    \item[\texttt{events.gateway.ts}] Đây là file logic cốt lõi, chứa class \texttt{EventsGateway}. Class này được trang trí bởi decorator \texttt{@WebSocketGateway}, biến nó thành một máy chủ WebSocket. Nó định nghĩa các trình xử lý (handler) cho từng loại sự kiện cụ thể mà client có thể gửi lên, cũng như các phương thức để server chủ động gửi sự kiện xuống client.
+    
+    \item[\texttt{gateway.module.ts}] Đóng gói \texttt{EventsGateway} và các thành phần phụ thuộc của nó. Một điểm kiến trúc quan trọng là nó sử dụng \texttt{forwardRef} khi import \texttt{InboxModule}, một kỹ thuật cần thiết để giải quyết vấn đề phụ thuộc vòng tròn (circular dependency) giữa hai module này. Nó cũng export \texttt{EventsGateway} để các service trong \texttt{InboxModule} có thể inject và sử dụng.
+    
+    \item[\texttt{redis-io.adapter.ts}] (Đã phân tích) Mặc dù không thuộc module này, nó là thành phần hạ tầng được \texttt{main.ts} sử dụng để "trao quyền" mở rộng cho \texttt{GatewayModule}, biến nó từ một gateway đơn lẻ thành một hệ thống gateway có thể chạy trên một cụm máy chủ.
+\end{description}
+
+\subsubsection{Phân tích các Phương thức Quan trọng}
+
+Toàn bộ logic nghiệp vụ real-time đều tập trung tại \texttt{events.gateway.ts}.
+
+\paragraph{Quản lý Vòng đời Kết nối}
+\begin{itemize}
+    \item \texttt{handleConnection(client)}: Được kích hoạt mỗi khi có một client mới kết nối thành công. Hiện tại, nó chỉ ghi log về sự kiện này.
+    
+    \item \texttt{handleDisconnect(client)}: Được kích hoạt khi một client ngắt kết nối. Phương thức này thực hiện một nhiệm vụ dọn dẹp cực kỳ quan trọng: nó kiểm tra xem client đó có \texttt{visitorUid} hay không (nghĩa là đó là một visitor đã định danh) và nếu có, nó sẽ gọi \texttt{realtimeSessionService.deleteVisitorSession} để xóa session của visitor đó khỏi Redis, đảm bảo hệ thống không cố gắng gửi tin nhắn đến một kết nối không còn tồn tại.
+\end{itemize}
+
+\paragraph{Xử lý Sự kiện từ Client (Widget)}
+\begin{itemize}
+    \item \texttt{@SubscribeMessage('identify')}: Đây là trình xử lý cho sự kiện đầu tiên mà mỗi widget phải gửi. Nó thực hiện chuỗi hành động:
+    \begin{enumerate}
+        \item Gọi \texttt{realtimeSessionService} để lưu trữ mối liên kết giữa \texttt{visitorUid} và \texttt{client.id} vào Redis.
+        \item Gọi \texttt{visitorService} và \texttt{conversationService} để tìm và lấy lịch sử hội thoại.
+        \item Gửi sự kiện \texttt{conversationHistory} ngược lại cho chính client đó nếu có lịch sử.
+        \item Lưu các thông tin định danh vào đối tượng \texttt{client.data} để sử dụng trong các sự kiện sau.
+    \end{enumerate}
+    
+    \item \texttt{@SubscribeMessage('sendMessage')}: Khi nhận được tin nhắn từ visitor, phương thức này không xử lý logic mà ngay lập tức đóng gói payload (bao gồm cả \texttt{socketId} của client) và chuyển tiếp cho \texttt{SqsService} để đưa vào hàng đợi. Đây là một quyết định kiến trúc quan trọng giúp Gateway luôn có hiệu năng cao và không bị block.
+    
+    \item \texttt{@SubscribeMessage('visitorTyping')} và \texttt{@SubscribeMessage('updateContext')}: Các trình xử lý này nhận trạng thái từ widget và phát (broadcast) các sự kiện tương ứng đến một "room" có tên là \texttt{project:\{projectId\}}. Điều này cho phép tất cả các agent dashboard đang theo dõi dự án đó có thể nhận được cập nhật theo thời gian thực.
+\end{itemize}
+
+\paragraph{API Gửi Sự kiện từ Server}
+\begin{itemize}
+    \item \texttt{sendReplyToVisitor(socketId, message)}: Một phương thức public được các service khác (như \texttt{MessageService}) gọi. Nó sử dụng \texttt{this.server.to(socketId).emit(...)} để gửi một sự kiện đến một client cụ thể. Việc sử dụng \texttt{.to()} là rất quan trọng vì nó hoạt động được trong môi trường đa server nhờ có \texttt{RedisIoAdapter}.
+    
+    \item \texttt{sendAgentTypingToVisitor(...)}: Tương tự như trên, cung cấp một giao diện để các service khác có thể gửi sự kiện "agent đang gõ" đến đúng visitor.
+\end{itemize}

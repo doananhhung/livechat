@@ -1,0 +1,28 @@
+\documentclass[12pt, a4paper]{article}
+
+\input{preamble.tex}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% --- Nạp nội dung từ các file con ---
+\input{sections/01-overview.tex}
+\input{sections/02-architecture.tex}
+
+\section{Phân tích Chi tiết từng Module (Module Deep Dive)}
+\label{sec:module-deep-dive}
+
+\input{sections/03-01-user-module}
+\input{sections/03-02-auth-module}
+\input{sections/03-03-project-module}
+\input{sections/03-04-inbox-module}
+\input{sections/03-05-realtime-session-module}
+\input{sections/03-06-eventproducer-module}
+\input{sections/03-07-gateway-module}
+\input{sections/03-08-eventconsumer-module}
+\input{sections/04-assessment.tex}
+
+\end{document}

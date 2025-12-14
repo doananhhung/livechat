@@ -1,0 +1,72 @@
+\section{Đánh giá Kiến trúc Tổng thể}
+\label{sec:kien-truc-tong-the}
+
+Phần này cung cấp một cái nhìn tổng hợp và chuyên môn về chất lượng của kiến trúc backend hiện tại. Việc đánh giá này dựa trên các nguyên tắc về thiết kế phần mềm, khả năng bảo trì, độ tin cậy và khả năng mở rộng, nhằm xác định các quyết định kiến trúc đã thành công và các cơ hội để cải tiến trong tương lai.
+
+\subsection{Các Điểm mạnh về Kỹ thuật và Logic}
+\label{subsec:diem-manh}
+
+Hệ thống hiện tại được xây dựng trên một nền tảng kiến trúc rất vững chắc, thể hiện qua nhiều quyết định thiết kế xuất sắc.
+
+\begin{itemize}
+    \item \textbf{Kiến trúc Bất đồng bộ, Tách biệt (Decoupled Architecture):}
+    Quyết định sử dụng kiến trúc Producer-Consumer với \textbf{AWS SQS} là điểm mạnh lớn nhất của hệ thống. Bằng cách tách biệt việc tiếp nhận sự kiện (\texttt{EventsGateway}) khỏi việc xử lý nghiệp vụ (\texttt{EventConsumerModule}), hệ thống đạt được:
+    \begin{itemize}
+        \item \textbf{Độ tin cậy cao:} Không có tin nhắn nào từ visitor bị mất, ngay cả khi worker xử lý tạm thời bị lỗi.
+        \item \textbf{Hiệu năng Gateway:} Giữ cho lớp giao tiếp real-time luôn nhẹ và phản hồi nhanh.
+        \item \textbf{Khả năng mở rộng:} Cho phép scale số lượng worker một cách độc lập để đáp ứng lưu lượng xử lý.
+    \end{itemize}
+
+    \item \textbf{Lớp Real-time có Khả năng Mở rộng:}
+    Việc tích hợp \textbf{RedisIoAdapter} vào WebSocket Gateway là một quyết định chiến lược đúng đắn. Nó cho phép hệ thống có thể mở rộng theo chiều ngang (chạy nhiều server instance) mà không làm gián đoạn việc giao tiếp real-time, đảm bảo khả năng phục vụ số lượng lớn kết nối đồng thời.
+
+    \item \textbf{Tính Toàn vẹn Dữ liệu Cao:}
+    Logic xử lý nghiệp vụ chính trong \texttt{EventConsumerService} được bọc trong một \textbf{database transaction}. Điều này đảm bảo tính nguyên tử (atomicity) cho các thao tác ghi dữ liệu phức tạp, là một cơ chế bảo vệ cực kỳ quan trọng giúp dữ liệu luôn ở trạng thái nhất quán.
+
+    \item \textbf{Quản lý Session Tập trung và Hiệu quả:}
+    Việc xây dựng một module chuyên dụng (\texttt{RealtimeSessionModule}) để quản lý session của visitor trên \textbf{Redis} là một giải pháp sạch sẽ và hiệu quả. Nó cung cấp một cơ chế tra cứu nhanh chóng để gửi tin nhắn đến đúng client mục tiêu.
+
+    \item \textbf{Cấu trúc Module hóa Rõ ràng:}
+    Hệ thống tuân thủ tốt mô hình \textbf{Modular Monolith}. Việc phân chia các domain nghiệp vụ thành các module riêng biệt (User, Auth, Project, Inbox) giúp cho codebase có tổ chức, dễ hiểu và dễ bảo trì.
+\end{itemize}
+
+\subsection{Các Điểm yếu, Rủi ro và Nợ Kỹ thuật (Technical Debt)}
+\label{subsec:diem-yeu}
+
+Bên cạnh những điểm mạnh, hệ thống vẫn có một vài khu vực có thể được cải thiện để trở nên hoàn hảo hơn.
+
+\begin{itemize}
+    \item \textbf{Logic Phân quyền Bị lặp lại:}
+    Đây là điểm yếu rõ ràng nhất. Logic kiểm tra quyền sở hữu của người dùng đối với một tài nguyên (ví dụ: một project hoặc một conversation) đang được triển khai lặp lại bên trong các phương thức của nhiều service khác nhau (\texttt{ProjectService}, \texttt{ConversationService}, \texttt{MessageService}). Ví dụ:
+    \begin{minted}{typescript}
+// Logic này xuất hiện ở nhiều nơi
+const resource = await this.repository.findOne(...);
+if (!resource || resource.userId !== user.id) {
+  throw new ForbiddenException(...);
+}
+    \end{minted}
+    Việc này không chỉ vi phạm nguyên tắc DRY (Don't Repeat Yourself) mà còn tiềm ẩn rủi ro bảo mật nếu một developer trong tương lai quên không thêm bước kiểm tra này.
+
+    \item \textbf{Khả năng Tối ưu Truy vấn CSDL:}
+    Trong một số phương thức như \texttt{sendAgentReply}, service cần phải thực hiện nhiều truy vấn liên tiếp để lấy đầy đủ thông tin (ví dụ: tìm conversation, rồi từ đó lấy visitor). Có thể tối ưu bằng cách sử dụng các phép JOIN phức tạp hơn hoặc các tính năng của QueryBuilder để giảm số lượng round-trip đến CSDL.
+\end{itemize}
+
+\subsection{Đề xuất Cải tiến cho Tương lai}
+\label{subsec:de-xuat-cai-tien}
+
+Dựa trên các điểm yếu đã xác định, dưới đây là các đề xuất kiến trúc cụ thể để nâng cao chất lượng hệ thống trong các phiên bản tiếp theo.
+
+\begin{itemize}
+    \item \textbf{Xây dựng một \texttt{OwnershipGuard} tái sử dụng:}
+    \begin{itemize}
+        \item \textbf{Mô tả:} Tạo một NestJS Guard tùy chỉnh, có thể được áp dụng ở cấp độ controller hoặc phương thức. Guard này sẽ nhận vào các tham số như tên của entity (ví dụ: 'conversation') và tên của route parameter (ví dụ: 'id').
+        \item \textbf{Nhiệm vụ:} Guard sẽ tự động lấy \texttt{id} từ request, truy vấn CSDL để tìm tài nguyên tương ứng, và thực hiện logic kiểm tra quyền sở hữu \texttt{resource.userId === user.id}. Nếu không hợp lệ, nó sẽ tự động ném ra lỗi \texttt{ForbiddenException}.
+        \item \textbf{Lợi ích:} Trừu tượng hóa và tập trung hóa toàn bộ logic phân quyền vào một nơi duy nhất, giúp các service và controller trở nên sạch sẽ và an toàn hơn rất nhiều.
+    \end{itemize}
+    
+    \item \textbf{Tái cấu trúc và Tối ưu các Truy vấn Service:}
+    \begin{itemize}
+        \item \textbf{Mô tả:} Dành thời gian rà soát lại các phương thức trong các service nghiệp vụ (đặc biệt là \texttt{InboxModule}) để xác định các cơ hội tối ưu hóa truy vấn CSDL.
+        \item \textbf{Hành động cụ thể:} Sử dụng TypeORM QueryBuilder để xây dựng các truy vấn phức tạp hơn, kết hợp nhiều phép JOIN để lấy tất cả dữ liệu cần thiết chỉ trong một lần gọi, thay vì nhiều lần gọi tuần tự.
+    \end{itemize}
+\end{itemize}

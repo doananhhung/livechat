@@ -1,0 +1,43 @@
+\subsection{EventConsumerModule}
+\label{subsec:eventconsumer-module}
+
+\subsubsection{Mục đích}
+
+\texttt{EventConsumerModule} là một ứng dụng NestJS độc lập, chạy dưới dạng một tiến trình nền (background worker). Nó không có máy chủ HTTP và không tiếp nhận request trực tiếp từ người dùng. Vai trò duy nhất của nó là làm "người tiêu thụ" (Consumer) trong kiến trúc Producer-Consumer.
+
+Module này liên tục lắng nghe hàng đợi AWS SQS. Khi có một sự kiện mới (do \texttt{EventProducerModule} đẩy vào), nó sẽ nhận lấy, phân tích và thực thi các logic nghiệp vụ nặng (heavy business logic) tương ứng, chẳng hạn như việc tạo mới các bản ghi trong cơ sở dữ liệu.
+
+Kiến trúc này là một quyết định chiến lược quan trọng, giúp tách biệt hoàn toàn việc tiếp nhận sự kiện (diễn ra ở Gateway) khỏi việc xử lý sự kiện, đảm bảo \texttt{GatewayModule} luôn có hiệu năng cao và phản hồi nhanh.
+
+\subsubsection{Các Thành phần Chính (Files)}
+
+\begin{description}
+    \item[\texttt{event-consumer.service.ts}] Là trái tim của worker, chứa toàn bộ logic xử lý. Nó định nghĩa các phương thức xử lý (handler) cho từng loại sự kiện có thể có trong hàng đợi SQS. Service này inject các service nghiệp vụ từ \texttt{InboxModule} để thực thi các tác vụ.
+    
+    \item[\texttt{event-consumer.module.ts}] Là module gốc của ứng dụng worker. Nó có trách nhiệm đặc biệt là cấu hình và khởi tạo các kết nối cần thiết cho worker hoạt động, bao gồm:
+    \begin{itemize}
+        \item Cấu hình SQS Consumer (sử dụng thư viện \texttt{@ssut/nestjs-sqs}) để đăng ký lắng nghe một hàng đợi cụ thể.
+        \item Cấu hình kết nối TypeORM riêng để worker có thể tương tác với cơ sở dữ liệu.
+        \item Import \texttt{InboxModule} để có thể inject và sử dụng các service nghiệp vụ đã được định nghĩa ở đó.
+    \end{itemize}
+    
+    \item[\texttt{worker.ts}] (Đã phân tích) Là điểm khởi động (entry point) của tiến trình worker. Nó sử dụng \texttt{NestFactory.createApplicationContext} để khởi tạo ứng dụng NestJS mà không cần một máy chủ HTTP, chỉ để chạy các service nền.
+\end{description}
+
+\subsubsection{Phân tích các Phương thức Quan trọng}
+
+Toàn bộ logic của module này nằm trong file \texttt{event-consumer.service.ts}.
+
+\begin{itemize}
+    \item \texttt{handleMessage(message)}: Đây là trình xử lý (handler) chính của worker. Decorator \texttt{@SqsMessageHandler} từ thư viện \texttt{@ssut/nestjs-sqs} sẽ tự động gọi phương thức này mỗi khi có một tin nhắn mới trong hàng đợi \texttt{LIVE\_CHAT\_EVENTS\_QUEUE}.
+    \begin{itemize}
+        \item \textbf{Vai trò:} Phương thức này hoạt động như một bộ điều phối (dispatcher). Nó nhận tin nhắn thô từ SQS, parse nội dung JSON, sau đó dựa vào thuộc tính \texttt{type} của sự kiện để gọi đến phương thức xử lý nghiệp vụ nội bộ phù hợp (ví dụ: \texttt{handleNewMessageFromVisitor}).
+        \item \textbf{Error Handling:} Nó bọc toàn bộ logic xử lý trong một khối \texttt{try...catch}. Nếu có bất kỳ lỗi nào xảy ra trong quá trình xử lý, nó sẽ ghi log chi tiết và ném ra một lỗi. Việc này rất quan trọng, vì nó sẽ khiến SQS hiểu rằng tin nhắn chưa được xử lý thành công và sẽ thử lại sau một khoảng thời gian, đảm bảo tính bền bỉ của hệ thống.
+    \end{itemize}
+    
+    \item \texttt{handleNewMessageFromVisitor(payload)}: Một phương thức private chứa logic nghiệp vụ cốt lõi khi có một tin nhắn mới từ visitor.
+    \begin{itemize}
+        \item \textbf{Kiến trúc Giao tác (Transactional):} Đây là một điểm mạnh kiến trúc nổi bật. Toàn bộ chuỗi các thao tác ghi vào cơ sở dữ liệu đều được bọc trong một \textbf{database transaction} (\texttt{this.entityManager.transaction}). Điều này đảm bảo tính nguyên tử (atomicity): tất cả các bước -- tìm/tạo visitor, tìm/tạo conversation, tạo message, và cập nhật conversation -- hoặc sẽ cùng thành công, hoặc sẽ cùng thất bại và được rollback. Nó ngăn chặn hoàn toàn khả năng dữ liệu bị rơi vào trạng thái không nhất quán.
+        \item \textbf{Tính Idempotent:} Bằng cách sử dụng các phương thức \texttt{findOrCreate...}, logic này có tính idempotent (lũy đẳng). Nghĩa là, nếu SQS vô tình gửi lại cùng một tin nhắn hai lần, hệ thống sẽ không tạo ra các bản ghi trùng lặp, mà chỉ tìm thấy các bản ghi đã có và tiếp tục xử lý, giúp hệ thống trở nên cực kỳ an toàn.
+    \end{itemize}
+\end{itemize}

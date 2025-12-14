@@ -1,0 +1,34 @@
+\subsection{EventProducerModule}
+\label{subsec:eventproducer-module}
+
+\subsubsection{Mục đích}
+
+\texttt{EventProducerModule} là một module hạ tầng kỹ thuật, đóng vai trò là "nhà sản xuất" (Producer) trong kiến trúc Producer-Consumer của hệ thống. Trách nhiệm duy nhất và được xác định rõ ràng của nó là cung cấp một service trừu tượng hóa (\texttt{SqsService}) để các thành phần khác trong ứng dụng (chủ yếu là \texttt{GatewayModule}) có thể gửi các sự kiện (messages) vào hàng đợi AWS SQS một cách dễ dàng và đáng tin cậy.
+
+Bằng cách đóng gói toàn bộ logic tương tác với AWS SDK, module này giúp tách biệt mối quan tâm về việc "gửi sự kiện" khỏi logic nghiệp vụ của các module khác.
+
+\subsubsection{Các Thành phần Chính (Files)}
+
+\begin{description}
+    \item[\texttt{sqs.service.ts}] Đây là trái tim của module. Service này chứa toàn bộ logic cần thiết để thiết lập kết nối đến AWS SQS, lấy thông tin về hàng đợi, và gửi các tin nhắn đến đó. Nó sử dụng \texttt{@aws-sdk/client-sqs} để tương tác với dịch vụ SQS.
+    
+    \item[\texttt{event-producer.module.ts}] Đóng gói \texttt{SqsService} và export nó ra ngoài, cho phép các module khác trong ứng dụng có thể inject và sử dụng service này để gửi sự kiện.
+\end{description}
+
+\subsubsection{Phân tích các Phương thức Quan trọng}
+
+Toàn bộ logic của module này nằm trong file \texttt{sqs.service.ts}.
+
+\begin{itemize}
+    \item \texttt{constructor}: Phương thức khởi tạo chịu trách nhiệm thiết lập SQS client. Nó đọc các thông tin cấu hình cần thiết như Region, Access Key, Secret Key, và tên hàng đợi từ \texttt{ConfigService} (biến môi trường). Một điểm quan trọng là nó kiểm tra sự tồn tại của biến \texttt{AWS\_SQS\_QUEUE\_NAME}, đảm bảo ứng dụng sẽ báo lỗi ngay khi khởi động nếu cấu hình bị thiếu.
+    
+    \item \texttt{onModuleInit()}: Đây là một phương thức vòng đời (lifecycle hook) của NestJS, một quyết định kiến trúc thông minh. Thay vì phải lấy URL của hàng đợi mỗi lần gửi tin nhắn, phương thức này sẽ được thực thi chỉ một lần khi ứng dụng khởi động. Nó gửi một request đến AWS để lấy và cache lại \texttt{queueUrl}. Việc này giúp tăng hiệu năng cho các lần gửi tin nhắn sau này và đảm bảo ứng dụng sẽ thất bại nhanh (fail-fast) nếu không thể kết nối hoặc không tìm thấy hàng đợi đã được cấu hình.
+    
+    \item \texttt{sendMessage(payload)}: Đây là phương thức công khai (public) duy nhất và là giao diện chính của service. Nó nhận một đối tượng \texttt{payload} bất kỳ, sau đó:
+    \begin{enumerate}
+        \item Chuyển đổi \texttt{payload} thành một chuỗi JSON.
+        \item Tạo một đối tượng \texttt{SendMessageCommand}, một cấu trúc lệnh của AWS SDK v3.
+        \item Thiết lập các tham số quan trọng cho hàng đợi SQS FIFO như \texttt{MessageGroupId} (để nhóm các tin nhắn từ cùng một dự án) và \texttt{MessageDeduplicationId} (để ngăn chặn việc gửi trùng lặp tin nhắn trong một khoảng thời gian nhất định).
+        \item Gửi lệnh này đến SQS.
+    \end{enumerate}
+\end{itemize}

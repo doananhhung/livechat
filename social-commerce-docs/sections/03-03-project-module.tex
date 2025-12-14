@@ -1,0 +1,42 @@
+\subsection{ProjectModule}
+\label{subsec:project-module}
+
+\subsubsection{Mục đích}
+
+\texttt{ProjectModule} là module nghiệp vụ cốt lõi, chịu trách nhiệm quản lý thực thể \texttt{Project}. Trong bối cảnh của ứng dụng, một "Dự án" đại diện cho một website cụ thể mà người dùng (agent) muốn tích hợp widget Live Chat. Module này cung cấp toàn bộ các thao tác CRUD (Tạo, Đọc, Cập nhật, Xóa) cho các dự án, đồng thời xử lý logic quan trọng liên quan đến cấu hình và bảo mật của widget. Nó là nền tảng cho tính năng đa dự án (multi-tenant) của hệ thống, cho phép mỗi người dùng quản lý nhiều website khác nhau một cách độc lập.
+
+\subsubsection{Các Thành phần Chính (Files)}
+
+\begin{description}
+    \item[\texttt{project.entity.ts}] Định nghĩa cấu trúc dữ liệu cho thực thể \texttt{Project} bằng TypeORM. Entity này chứa các thông tin quan trọng như \texttt{name}, \texttt{userId} (để xác định chủ sở hữu), \texttt{widgetSettings} (một trường JSONB linh hoạt để lưu các tùy chỉnh về giao diện như màu sắc, câu chào), và đặc biệt là \texttt{whitelistedDomains} (một mảng văn bản để lưu các domain được phép hiển thị widget).
+    
+    \item[\texttt{project.service.ts}] Chứa toàn bộ logic nghiệp vụ để thao tác với các dự án. Service này thực hiện các truy vấn CSDL, và quan trọng nhất là áp dụng các quy tắc về bảo mật và phân quyền, chẳng hạn như kiểm tra quyền sở hữu của người dùng đối với một dự án trước khi cho phép họ cập nhật hoặc xóa.
+    
+    \item[\texttt{project.controller.ts}] Cung cấp các API endpoint được bảo vệ (\texttt{JwtAuthGuard}) cho phép người dùng đã đăng nhập thực hiện các thao tác CRUD trên các dự án của chính họ. Controller này đóng vai trò là lớp giao tiếp, nhận request từ Agent Dashboard và gọi đến các phương thức tương ứng trong \texttt{ProjectService}.
+    
+    \item[\texttt{public-project.controller.ts}] Một controller đặc biệt, không yêu cầu xác thực, được thiết kế để phục vụ một mục đích duy nhất: cung cấp các cài đặt công khai của widget cho script widget khi nó được tải trên website của khách hàng.
+    
+    \item[\texttt{project.module.ts}] Đóng gói tất cả các thành phần trên, đăng ký \texttt{Project} entity với TypeORM và import \texttt{AuthModule} để có thể sử dụng các Guard bảo vệ.
+\end{description}
+
+\subsubsection{Phân tích các Phương thức Quan trọng}
+
+\paragraph{\texttt{project.service.ts}}
+\begin{itemize}
+    \item \texttt{create(dto, userId)}: Tạo một dự án mới và gán nó cho \texttt{userId} của người dùng đang thực hiện yêu cầu.
+    
+    \item \texttt{findAllForUser(userId)}: Lấy danh sách tất cả các dự án thuộc về một người dùng cụ thể.
+    
+    \item \texttt{findOne(id, userId)}: Tìm một dự án theo \texttt{id}. Phương thức này chứa một logic \textbf{kiểm tra quyền sở hữu} cực kỳ quan trọng: sau khi tìm thấy dự án, nó sẽ so sánh \texttt{project.userId} với \texttt{userId} của người dùng đang yêu cầu. Nếu không khớp, nó sẽ ném ra một lỗi \texttt{ForbiddenException}, ngăn chặn người dùng xem hoặc chỉnh sửa dự án của người khác.
+    
+    \item \texttt{update(id, dto, userId)}: Cập nhật thông tin một dự án. Nó tái sử dụng phương thức \texttt{findOne} để thực hiện việc kiểm tra quyền sở hữu trước khi tiến hành lưu các thay đổi.
+    
+    \item \texttt{getWidgetSettings(id, origin)}: Đây là phương thức phục vụ cho endpoint công khai. Nó tìm một dự án theo \texttt{id} và thực hiện logic \textbf{bảo mật Domain Whitelisting}. Nó so sánh \texttt{origin} của request (domain của website đang tải widget) với danh sách \texttt{whitelistedDomains} đã được lưu. Nếu domain không hợp lệ, phương thức sẽ trả về \texttt{null}, báo hiệu cho controller từ chối yêu cầu. Nếu hợp lệ, nó sẽ trả về các cài đặt widget, có kèm theo các giá trị mặc định để đảm bảo widget luôn hiển thị đúng.
+\end{itemize}
+
+\paragraph{\texttt{project.controller.ts} \& \texttt{public-project.controller.ts}}
+\begin{itemize}
+    \item \textbf{ProjectController:} Toàn bộ các endpoint (\texttt{POST /}, \texttt{GET /}, \texttt{PATCH /:id}) trong controller này đều được bảo vệ bởi \texttt{JwtAuthGuard} và sử dụng decorator \texttt{@GetCurrentUser} để đảm bảo mọi thao tác đều được thực hiện trong phạm vi tài khoản của người dùng đã đăng nhập.
+    
+    \item \textbf{PublicProjectController:} Controller này chỉ có một endpoint duy nhất là \texttt{GET /:id/widget-settings}. Nó không có Guard và có nhiệm vụ nhận request từ script widget, lấy header \texttt{origin}, và gọi đến service \texttt{getWidgetSettings}. Nó cũng chịu trách nhiệm chuyển đổi kết quả \texttt{null} từ service thành một response \texttt{403 Forbidden} cho client, thông báo rõ ràng về việc truy cập bị từ chối.
+\end{itemize}

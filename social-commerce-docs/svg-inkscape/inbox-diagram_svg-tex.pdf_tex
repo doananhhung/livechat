@@ -1,0 +1,136 @@
+%% Creator: Inkscape 1.2.2 (b0a8486541, 2022-12-01), www.inkscape.org
+%% PDF/EPS/PS + LaTeX output extension by Johan Engelen, 2010
+%% Accompanies image file 'inbox-diagram_svg-tex.pdf' (pdf, eps, ps)
+%%
+%% To include the image in your LaTeX document, write
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics{<filename>.pdf}
+%% To scale the image, write
+%%   \def\svgwidth{<desired width>}
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics[width=<desired width>]{<filename>.pdf}
+%%
+%% Images with a different path to the parent latex file can
+%% be accessed with the `import' package (which may need to be
+%% installed) using
+%%   \usepackage{import}
+%% in the preamble, and then including the image with
+%%   \import{<path to file>}{<filename>.pdf_tex}
+%% Alternatively, one can specify
+%%   \graphicspath{{<path to file>/}}
+%% 
+%% For more information, please see info/svg-inkscape on CTAN:
+%%   http://tug.ctan.org/tex-archive/info/svg-inkscape
+%%
+\begingroup%
+  \makeatletter%
+  \providecommand\color[2][]{%
+    \errmessage{(Inkscape) Color is used for the text in Inkscape, but the package 'color.sty' is not loaded}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\transparent[1]{%
+    \errmessage{(Inkscape) Transparency is used (non-zero) for the text in Inkscape, but the package 'transparent.sty' is not loaded}%
+    \renewcommand\transparent[1]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \newcommand*\fsize{\dimexpr\f@size pt\relax}%
+  \newcommand*\lineheight[1]{\fontsize{\fsize}{#1\fsize}\selectfont}%
+  \ifx\svgwidth\undefined%
+    \setlength{\unitlength}{1626bp}%
+    \ifx\svgscale\undefined%
+      \relax%
+    \else%
+      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
+    \fi%
+  \else%
+    \setlength{\unitlength}{\svgwidth}%
+  \fi%
+  \global\let\svgwidth\undefined%
+  \global\let\svgscale\undefined%
+  \makeatother%
+  \begin{picture}(1,0.51379059)%
+    \lineheight{1}%
+    \setlength\tabcolsep{0pt}%
+    \put(0,0){\includegraphics[width=\unitlength,page=1]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.96517528,0.02001753){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Agent Dashboard\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=2]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.77698339,0.02001753){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Redis\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=3]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.66028598,0.02001753){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Backend API\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=4]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.56803506,0.02001753){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Database\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=5]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.42873616,0.02001753){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Consumer Worker\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=6]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.33648524,0.02001753){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}AWS SQS\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=7]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.22440037,0.02001753){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}WebSocket Gateway\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=8]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.11369926,0.02001753){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Widget\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=9]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.96517528,0.49649354){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Agent Dashboard\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=10]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.77698339,0.49649354){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Redis\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=11]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.66028598,0.49649354){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Backend API\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=12]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.56803506,0.49649354){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Database\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=13]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.42873616,0.49649354){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Consumer Worker\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=14]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.33648524,0.49649354){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}AWS SQS\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=15]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.22440037,0.49649354){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}WebSocket Gateway\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=16]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.11369926,0.49649354){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Widget\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=17]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.48869926,0.47458395){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Luồng 1: Visitor gửi tin nhắn\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=18]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.48869926,0.2545655){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Luồng 2: Agent trả lời\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=19]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.01176199,0.48034963){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Visitor\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=20]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.86923432,0.48034963){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Agent\end{tabular}}}}%
+    \put(0.06111624,0.45198247){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Gõ và gửi tin nhắn\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=21]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.16858856,0.42891974){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Gửi sự kiện 'sendMessage'\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=22]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.27975092,0.40770203){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Đẩy message vào hàng đợi\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=23]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.38214945,0.3846393){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Nhận message\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=24]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.49792435,0.36342159){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Lưu message, cập nhật conversation\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=25]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.49930812,0.34220388){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Lưu thành công\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=26]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.32726015,0.32098616){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}(qua Redis Pub/Sub) Thông báo có tin nhắn mới\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=27]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.59432657,0.29792343){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Gửi sự kiện 'newMessage'\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=28]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.9172048,0.27670572){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Hiển thị tin nhắn mới\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=29]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.91582103,0.23196402){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Gõ và gửi trả lời\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=30]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.81342251,0.21074631){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}POST /.../messages\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=31]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.61508303,0.1895286){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Lưu tin nhắn trả lời\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=32]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.61369926,0.16738838){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Lưu thành công\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=33]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.7179428,0.14617067){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Tra cứu socket.id của visitor\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=34]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.71932657,0.12587546){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Trả về socket.id\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=35]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.44303506,0.10373524){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Yêu cầu gửi 'agentReply' đến socket.id\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=36]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.16997232,0.08067251){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Gửi sự kiện 'agentReply'\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=37]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.0625,0.0594548){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Hiển thị tin nhắn trả lời\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=38]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.01176199,0.00387362){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Visitor\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=39]{inbox-diagram_svg-tex.pdf}}%
+    \put(0.86923432,0.00387362){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Agent\end{tabular}}}}%
+  \end{picture}%
+\endgroup%

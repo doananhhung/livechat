@@ -1,0 +1,30 @@
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}
+\usepackage[vietnamese]{babel}
+\usepackage[a4paper, top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm, marginparwidth=1.75cm]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage[inkscapelatex=false]{svg}
+\usepackage{minted}
+\usepackage{xurl}
+
+\let\oldtexttt\texttt
+\renewcommand{\texttt}[1]{\url{#1}}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+}
+
+% Tùy chỉnh định dạng cho các tiêu đề (section, subsection)
+\usepackage{titlesec}
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+% --- Thông tin tiêu đề ---
+\title{\textbf{Đặc tả Kỹ thuật Toàn diện \\ Hệ thống Backend - Nền tảng Live Chat}}
+\author{Kiến trúc sư Giải pháp}
+\date{\today}

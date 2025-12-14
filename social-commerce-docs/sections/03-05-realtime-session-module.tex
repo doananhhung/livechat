@@ -1,0 +1,30 @@
+\subsection{RealtimeSessionModule}
+\label{subsec:realtimesession-module}
+
+\subsubsection{Mục đích}
+
+\texttt{RealtimeSessionModule} là một module hạ tầng kỹ thuật chuyên dụng, đóng vai trò là "bộ nhớ" trạng thái cho lớp giao tiếp real-time. Nhiệm vụ duy nhất và quan trọng nhất của nó là quản lý mối liên kết (mapping) giữa một định danh bền vững của khách truy cập (\texttt{visitorUid}) và định danh tạm thời của kết nối WebSocket hiện tại (\texttt{socket.id}).
+
+Bằng cách sử dụng Redis làm nơi lưu trữ, module này cung cấp một cơ chế tra cứu cực kỳ nhanh chóng, cho phép bất kỳ thành phần nào trong backend (ví dụ: \texttt{MessageService}) có thể tìm ra được kết nối socket đang hoạt động của một visitor cụ thể để gửi tin nhắn trả lời. Đây là viên gạch nền tảng cho phép hệ thống gửi các sự kiện real-time đến đúng một client cụ thể trong môi trường có hàng ngàn kết nối đồng thời.
+
+\subsubsection{Các Thành phần Chính (Files)}
+
+\begin{description}
+    \item[\texttt{realtime-session.service.ts}] Chứa toàn bộ logic để tương tác với Redis. Service này trừu tượng hóa các câu lệnh Redis phức tạp thành các phương thức có mục đích nghiệp vụ rõ ràng, như \texttt{setVisitorSession}, \texttt{getVisitorSession}, và \texttt{deleteVisitorSession}.
+    
+    \item[\texttt{realtime-session.module.ts}] Đóng gói service và quản lý các phụ thuộc. Nó import \texttt{RedisModule} để đảm bảo \texttt{RealtimeSessionService} có thể inject được Redis client. Quan trọng nhất, nó export \texttt{RealtimeSessionService} để các module khác như \texttt{GatewayModule} và \texttt{InboxModule} có thể sử dụng.
+\end{description}
+
+\subsubsection{Phân tích các Phương thức Quan trọng}
+
+Toàn bộ logic của module này nằm trong file \texttt{realtime-session.service.ts}.
+
+\begin{itemize}
+    \item \texttt{getKey(visitorUid)}: Một phương thức private tiện ích, có nhiệm vụ tạo ra một khóa (key) Redis nhất quán và có namespace rõ ràng (ví dụ: \texttt{session:visitor:<uuid>}). Việc này giúp tránh xung đột key và làm cho việc debug trên Redis trở nên dễ dàng hơn.
+    
+    \item \texttt{setVisitorSession(visitorUid, socketId)}: Được gọi bởi \texttt{GatewayModule} khi một visitor kết nối và định danh thành công. Phương thức này sử dụng lệnh \texttt{SET} của Redis với tùy chọn \texttt{EX} (expiration) để lưu trữ \texttt{socket.id} của visitor. Việc cài đặt thời gian hết hạn (ví dụ: 12 giờ) là một cơ chế phòng vệ quan trọng, giúp tự động dọn dẹp các session "mồ côi" trong trường hợp visitor ngắt kết nối một cách không mong muốn.
+    
+    \item \texttt{getVisitorSession(visitorUid)}: Được gọi bởi \texttt{MessageService} (hoặc bất kỳ service nào khác cần gửi tin nhắn cho visitor). Nó sử dụng lệnh \texttt{GET} của Redis để tra cứu \texttt{socket.id} đang hoạt động của một visitor. Nếu visitor đang không online, phương thức sẽ trả về \texttt{null}.
+    
+    \item \texttt{deleteVisitorSession(visitorUid)}: Được gọi bởi \texttt{GatewayModule} khi một visitor ngắt kết nối. Nó sử dụng lệnh \texttt{DEL} của Redis để xóa ngay lập tức session của visitor khỏi bộ nhớ, đảm bảo hệ thống không gửi nhầm tin nhắn đến các kết nối đã cũ.
+\end{itemize}

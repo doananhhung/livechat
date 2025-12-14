@@ -1,0 +1,60 @@
+%%{init: {
+    'sequence': {
+        'actorFontSize': 16,
+        'actorFontFamily': 'Arial, sans-serif',
+        'noteFontSize': 14,
+        'noteFontFamily': 'Arial, sans-serif',
+        'messageFontSize': 14,
+        'messageFontFamily': 'Arial, sans-serif',
+        'actorMargin': 80,
+        'boxMargin': 20,
+        'boxTextMargin': 10,
+        'noteMargin': 20,
+        'messageMargin': 50,
+        'mirrorActors': false,
+        'bottomMarginAdj': 10,
+        'useMaxWidth': true,
+        'rightAngles': false,
+        'showSequenceNumbers': false,
+        'width': 150,
+        'height': 65,
+        'wrap': true,
+        'wrapPadding': 10
+    }
+}}%%
+
+sequenceDiagram
+    actor Visitor
+    participant Widget
+    participant Gateway as WebSocket Gateway
+    participant SQS as AWS SQS
+    participant Worker as Consumer Worker
+    participant DB as Database
+    participant API as Backend API
+    participant Redis
+    actor Agent
+    participant Dashboard as Agent Dashboard
+
+    %% Luồng 1: Visitor to Agent
+    Note over Visitor, Dashboard: Luồng 1: Visitor gửi tin nhắn
+    Visitor->>+Widget: Gõ và gửi tin nhắn
+    Widget->>+Gateway: Gửi sự kiện 'sendMessage'
+    Gateway->>+SQS: Đẩy message vào hàng đợi
+    SQS-->>+Worker: Nhận message
+    Worker->>+DB: Lưu message, cập nhật conversation
+    DB-->>-Worker: Lưu thành công
+    Worker->>Gateway: (qua Redis Pub/Sub) Thông báo có tin nhắn mới
+    Gateway->>+Dashboard: Gửi sự kiện 'newMessage'
+    Dashboard->>Agent: Hiển thị tin nhắn mới
+    
+    %% Luồng 2: Agent to Visitor
+    Note over Visitor, Dashboard: Luồng 2: Agent trả lời
+    Agent->>+Dashboard: Gõ và gửi trả lời
+    Dashboard->>+API: POST /.../messages
+    API->>+DB: Lưu tin nhắn trả lời
+    DB-->>-API: Lưu thành công
+    API->>+Redis: Tra cứu socket.id của visitor
+    Redis-->>-API: Trả về socket.id
+    API->>+Gateway: Yêu cầu gửi 'agentReply' đến socket.id
+    Gateway->>+Widget: Gửi sự kiện 'agentReply'
+    Widget->>Visitor: Hiển thị tin nhắn trả lời
