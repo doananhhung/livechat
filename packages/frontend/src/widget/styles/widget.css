@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* src/widget/styles/widget.css */
+:host {
+  /* Main color palette */
+  --widget-primary-color: #3b82f6;
+  /* blue-500 */
+  --widget-text-on-primary: #ffffff;
+
+  /* Background color palette */
+  --widget-background-color: #ffffff;
+  --widget-header-background: var(--widget-primary-color);
+  --widget-composer-background: #f3f4f6;
+  /* gray-100 */
+
+  /* Text color palette */
+  --widget-text-primary: #1f2937;
+  /* gray-800 */
+  --widget-text-secondary: #6b7280;
+  /* gray-500 */
+  --widget-text-header: var(--widget-text-on-primary);
+
+  /* Message color palette */
+  --widget-bubble-visitor-background: #e5e7eb;
+  /* gray-200 */
+  --widget-bubble-visitor-text: var(--widget-text-primary);
+  --widget-bubble-agent-background: var(--widget-primary-color);
+  --widget-bubble-agent-text: var(--widget-text-on-primary);
+
+  /* Other colors */
+  --widget-border-color: #e5e7eb;
+  /* gray-200 */
+}
+
+.fade-in-up {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.3s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  padding: 5px;
+}
+
+.typing-indicator span {
+  height: 8px;
+  width: 8px;
+  background-color: #1f2937; /* gray-800 */
+  border-radius: 50%;
+  display: inline-block;
+  margin: 0 1px;
+  animation: blink 1.4s infinite both;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes blink {
+  0% {
+    opacity: 0.2;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.2;
+  }
+}
+
+/* ADDITION: Animation for spinner */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}

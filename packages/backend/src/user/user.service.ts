@@ -1,0 +1,372 @@
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CreateUserDto,
+  RefreshToken,
+  TwoFactorRecoveryCode,
+  UpdateUserDto,
+  User,
+  UserStatus,
+} from '@social-commerce/shared';
+import { InjectRepository } from '@nestjs/typeorm';
+import { EntityManager, Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+import { EncryptionService } from '../common/services/encryption.service';
+import * as crypto from 'crypto';
+
+interface SetRefreshTokenOptions {
+  refreshToken: string;
+  userId: string;
+  expiresAt: Date;
+  expiredRefreshToken?: string;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(RefreshToken)
+    private readonly refreshTokenRepository: Repository<RefreshToken>,
+    private readonly entityManager: EntityManager,
+    private readonly encryptionService: EncryptionService
+  ) {}
+
+  /**
+   * Create a new user and save it to the database.
+   *
+   * @param createUserDto user data to create a new user, including email and password_hash
+   * @returns Promise<User> newly created user entity
+   */
+  async create(createUserDto: CreateUserDto): Promise<User> {
+    return this.entityManager.transaction(async (entityManager) => {
+      const newUser = this.userRepository.create(createUserDto);
+      return await entityManager.save(newUser);
+    });
+  }
+
+  /**
+   * Find a user by their ID.
+   *
+   * @param id the unique identifier of the user
+   * @returns Promise<User> the user entity if found, otherwise throws an error
+   */
+  async findOneById(id: string): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new Error(`User with ID ${id} not found`);
+    }
+    return user;
+  }
+
+  /**
+   * Find a user by their email.
+   *
+   * @param email the email address of the user
+   * @returns Promise<User> the user entity if found, otherwise return null
+   */
+  async findOneByEmail(email: string): Promise<User | null> {
+    return await this.userRepository.findOne({ where: { email } });
+  }
+
+  async requestEmailChange(
+    userId: string,
+    newEmail: string,
+    currentPassword: string
+  ): Promise<void> {
+    const user = await this.findOneById(userId);
+
+    const isPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.passwordHash as string
+    );
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Mật khẩu hiện tại không đúng.');
+    }
+
+    const IsEmailTaken = await this.userRepository.findOne({
+      where: { email: newEmail },
+    });
+    if (IsEmailTaken) {
+      throw new UnauthorizedException('Email này đã được sử dụng.');
+    }
+
+    // Here you would typically generate a verification token and send an email to the new address.
+    // For simplicity, we'll just update the email directly.
+
+    user.email = newEmail;
+    await this.entityManager.transaction(async (entityManager) => {
+      await entityManager.save(User, user);
+    });
+  }
+  /**
+   * Update a user's profile with the provided data.
+   *
+   * @param id the unique identifier of the user
+   * @param updateUserDto data to update the user's profile, including fullName, avatarUrl, and timezone
+   * @returns Promise<User> the updated user entity
+   */
+  async updateProfile(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+    return this.entityManager.transaction(async (entityManager) => {
+      const user = await this.userRepository.preload({
+        id,
+        ...updateUserDto,
+      });
+      if (!user) {
+        throw new Error(`User with ID ${id} not found`);
+      }
+      return entityManager.save(user);
+    });
+  }
+
+  /**     * Update the last login timestamp for a user.
+   *
+   * @param id the unique identifier of the user
+   * @returns Promise<void> resolves when the update is complete
+   */
+  async updateLastLogin(id: string): Promise<void> {
+    await this.userRepository.update(id, { lastLoginAt: new Date() });
+  }
+
+  /**
+   * Activate a user by setting their status to ACTIVE.
+   *
+   * @param id the unique identifier of the user
+   * @returns Promise<User> the updated user entity with status set to ACTIVE
+   */
+  async activate(id: string): Promise<User> {
+    const user = await this.findOneById(id);
+    user.status = UserStatus.ACTIVE;
+    return this.userRepository.save(user);
+  }
+
+  async markEmailAsVerified(userId: string): Promise<User> {
+    const user = await this.findOneById(userId);
+    user.isEmailVerified = true;
+    return this.userRepository.save(user);
+  }
+
+  async deactivate(id: string): Promise<User> {
+    const user = await this.findOneById(id);
+    user.status = UserStatus.INACTIVE;
+    return this.userRepository.save(user);
+  }
+
+  /**
+   * Set the current refresh token for a user.
+   * add new refresh token to the database and remove the old one if provided.
+  @param options - The options for setting the refresh token.
+  @param options.refreshToken - The refresh token to set.
+  @param options.userId - The unique identifier of the user.
+  @param options.expiresAt - The expiration date of the refresh token.
+  @param [options.expiredRefreshToken] - The previous refresh token to remove (optional).
+  @param [options.ipAddress] - The IP address of the user (optional).
+  @param [options.userAgent - The user agent of the user (optional).
+  @returns Promise<void> resolves when the refresh token is set
+  */
+  async setCurrentRefreshToken(options: SetRefreshTokenOptions): Promise<void> {
+    const {
+      refreshToken,
+      userId,
+      expiresAt,
+      expiredRefreshToken,
+      ipAddress,
+      userAgent,
+    } = options;
+
+    return this.entityManager.transaction(async (entityManager) => {
+      const hashedToken = await bcrypt.hash(refreshToken, 12);
+      let finalIpAddress = ipAddress;
+      let finalUserAgent = userAgent;
+
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        throw new Error(`User with ID ${userId} not found`);
+      }
+
+      if (expiredRefreshToken) {
+        const oldToken = await this.findRefreshTokenByValue(
+          userId,
+          expiredRefreshToken,
+          entityManager
+        );
+
+        if (oldToken) {
+          finalIpAddress = ipAddress || oldToken.ipAddress;
+          finalUserAgent = userAgent || oldToken.userAgent;
+          await entityManager.remove(oldToken);
+        }
+      }
+
+      if (finalIpAddress && finalUserAgent) {
+        await entityManager.delete(RefreshToken, {
+          userId,
+          ipAddress: finalIpAddress,
+          userAgent: finalUserAgent,
+        });
+      }
+
+      const newRefreshToken = entityManager.create(RefreshToken, {
+        hashedToken,
+        userId,
+        expiresAt,
+        ipAddress: finalIpAddress,
+        userAgent: finalUserAgent,
+      });
+
+      await entityManager.save(newRefreshToken);
+    });
+  }
+
+  private async findRefreshTokenByValue(
+    userId: string,
+    refreshToken: string,
+    entityManager: EntityManager
+  ): Promise<RefreshToken | null> {
+    const userTokens = await entityManager.find(RefreshToken, {
+      where: { userId },
+    });
+
+    for (const token of userTokens) {
+      const isMatch = await bcrypt.compare(refreshToken, token.hashedToken);
+      if (isMatch) {
+        return token;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Remove the refresh token for a user.
+   *
+   * @param userId the unique identifier of the user
+   * @returns Promise<void> resolves when the update is complete
+   */
+  async removeAllRefreshTokensForUser(userId: string): Promise<void> {
+    this.entityManager.transaction(async (entityManager) => {
+      await entityManager.delete(RefreshToken, { userId });
+    });
+  }
+
+  async invalidateAllTokens(userId: string): Promise<void> {
+    this.entityManager.transaction(async (entityManager) => {
+      await entityManager.update(User, userId, { tokensValidFrom: new Date() });
+    });
+  }
+
+  /**
+   * Verify if a refresh token is valid for a user.
+   *
+   * @param refreshToken the refresh token to verify
+   * @param userId the unique identifier of the user
+   * @returns Promise<boolean> true if the token is valid, false otherwise
+   */
+  async verifyRefreshToken(
+    refreshToken: string,
+    userId: string
+  ): Promise<boolean> {
+    const storedTokens = await this.refreshTokenRepository.find({
+      where: { userId },
+    });
+
+    // If no tokens exist for the user, it's clearly invalid.
+    if (!storedTokens || storedTokens.length === 0) {
+      return false;
+    }
+
+    let matchingToken: RefreshToken | undefined;
+
+    // Find a matching token first
+    for (const storedToken of storedTokens) {
+      const isMatch = await bcrypt.compare(
+        refreshToken,
+        storedToken.hashedToken
+      );
+      if (isMatch) {
+        matchingToken = storedToken;
+        break;
+      }
+    }
+
+    // If a match was found, check its expiration
+    if (matchingToken) {
+      if (matchingToken.expiresAt < new Date()) {
+        // Token is expired, remove it from DB and throw a specific error
+        await this.refreshTokenRepository.delete(matchingToken.id);
+        throw new UnauthorizedException('Refresh token has expired');
+      }
+      // Token is valid and not expired, return true
+      return true;
+    }
+
+    return false;
+  }
+
+  async turnOnTwoFactorAuthentication(
+    userId: string,
+    secret: string
+  ): Promise<{ user: User; recoveryCodes: string[] }> {
+    return this.entityManager.transaction(async (manager) => {
+      // 1. Encrypt the secret for storage
+      const encryptedSecret = this.encryptionService.encrypt(secret);
+
+      // 2. Update the user record
+      await manager.update(User, userId, {
+        isTwoFactorAuthenticationEnabled: true,
+        twoFactorAuthenticationSecret: encryptedSecret,
+      });
+
+      // 3. Generate and hash recovery codes
+      const plaintextRecoveryCodes = Array.from({ length: 10 }, () =>
+        crypto.randomBytes(8).toString('hex')
+      );
+
+      const hashedCodes = await Promise.all(
+        plaintextRecoveryCodes.map(async (code) => ({
+          userId,
+          hashedCode: await bcrypt.hash(code, 12),
+          isUsed: false,
+        }))
+      );
+
+      // 4. Clear old codes and save new ones
+      await manager.delete(TwoFactorRecoveryCode, { userId });
+      await manager.save(TwoFactorRecoveryCode, hashedCodes);
+
+      const updatedUser = await manager.findOneBy(User, { id: userId });
+      if (!updatedUser) {
+        throw new Error(`User with ID ${userId} not found`);
+      }
+
+      return { user: updatedUser, recoveryCodes: plaintextRecoveryCodes };
+    });
+  }
+
+  /**
+   * Disables 2FA for a user and removes all associated data.
+   * @param userId The ID of the user.
+   * @returns The updated user.
+   */
+  async turnOffTwoFactorAuthentication(userId: string): Promise<User> {
+    return this.entityManager.transaction(async (manager) => {
+      // 1. Clear 2FA data from the user record
+      await manager.update(User, userId, {
+        isTwoFactorAuthenticationEnabled: false,
+        twoFactorAuthenticationSecret: null,
+      });
+
+      // 2. Delete all recovery codes for the user
+      await manager.delete(TwoFactorRecoveryCode, { userId });
+
+      const user = await manager.findOneBy(User, { id: userId });
+      if (!user) {
+        throw new Error(`User with ID ${userId} not found`);
+      }
+
+      return user;
+    });
+  }
+}
