@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
   Inject,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
@@ -26,6 +27,8 @@ import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
@@ -36,6 +39,18 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto): Promise<{ message: string }> {
+    this.logger.log(
+      `🔵 [Register] Starting registration for email: ${registerDto.email}`
+    );
+    this.logger.log(
+      `🔵 [Register] Has invitation token: ${!!registerDto.invitationToken}`
+    );
+    if (registerDto.invitationToken) {
+      this.logger.log(
+        `🔵 [Register] Invitation token: ${registerDto.invitationToken}`
+      );
+    }
+
     return await this.entityManager.transaction(async (entityManager) => {
       const existingUser = await this.userService.findOneByEmail(
         registerDto.email
@@ -53,11 +68,41 @@ export class AuthService {
         isEmailVerified: false, // Explicitly set to false
       });
 
+      this.logger.log(`✅ [Register] User created with ID: ${newUser.id}`);
+
       const verificationToken = crypto.randomBytes(32).toString('hex');
       const tokenKey = `verification-token:${verificationToken}`;
       await this.cacheManager.set(tokenKey, newUser.id, 900000); // 15 minutes
 
+      this.logger.log(`✅ [Register] Verification token stored in Redis`);
+
       await this.mailService.sendUserConfirmation(newUser, verificationToken);
+
+      // Handle invitation token if provided
+      if (registerDto.invitationToken) {
+        try {
+          // Store invitation token for later acceptance (after email verification)
+          const invitationKey = `pending-invitation:${newUser.id}`;
+          await this.cacheManager.set(
+            invitationKey,
+            registerDto.invitationToken,
+            604800000 // 7 days in milliseconds
+          );
+          this.logger.log(
+            `✅ [Register] Stored invitation token for user ${newUser.id}: ${registerDto.invitationToken}`
+          );
+        } catch (error) {
+          this.logger.error(
+            `❌ [Register] Failed to store invitation token for user ${newUser.id}`,
+            error
+          );
+          // Don't fail registration if invitation storage fails
+        }
+      } else {
+        this.logger.log(
+          `ℹ️ [Register] No invitation token provided for user ${newUser.id}`
+        );
+      }
 
       return {
         message:
@@ -66,19 +111,50 @@ export class AuthService {
     });
   }
 
-  async verifyEmail(token: string): Promise<{ message: string }> {
+  async verifyEmail(
+    token: string
+  ): Promise<{ message: string; invitationToken?: string }> {
+    this.logger.log(
+      `🔵 [VerifyEmail] Starting email verification with token: ${token}`
+    );
+
     const tokenKey = `verification-token:${token}`;
     const userId = await this.cacheManager.get<string>(tokenKey);
 
     if (!userId) {
+      this.logger.error(
+        `❌ [VerifyEmail] Token not found or expired: ${token}`
+      );
       throw new NotFoundException(
         'Token xác thực không hợp lệ hoặc đã hết hạn.'
       );
     }
 
+    this.logger.log(`✅ [VerifyEmail] Found userId from token: ${userId}`);
+
     await this.userService.markEmailAsVerified(userId);
     await this.cacheManager.del(tokenKey);
 
+    this.logger.log(`✅ [VerifyEmail] Email verified for user: ${userId}`);
+
+    // Check if there's a pending invitation for this user
+    const invitationKey = `pending-invitation:${userId}`;
+    const invitationToken = await this.cacheManager.get<string>(invitationKey);
+
+    if (invitationToken) {
+      this.logger.log(
+        `🎉 [VerifyEmail] User ${userId} has a pending invitation token: ${invitationToken}. Returning it in response.`
+      );
+      // Return the invitation token so the frontend can redirect the user
+      return {
+        message: 'Xác thực email thành công.',
+        invitationToken,
+      };
+    }
+
+    this.logger.log(
+      `ℹ️ [VerifyEmail] No pending invitation found for user: ${userId}`
+    );
     return { message: 'Xác thực email thành công.' };
   }
 

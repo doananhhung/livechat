@@ -3,12 +3,25 @@ RUN apt-get update && apt-get install -y procps
 
 WORKDIR /usr/src/app
 
+# Copy root package files for workspace support
 COPY package*.json ./
+COPY tsconfig.base.json ./
 
-RUN npm install
+# Copy and build shared package first
+COPY packages/shared ./packages/shared
+RUN cd packages/shared && npm install && npm run build
 
-COPY . .
-# Ensure files are owned by non-root user to prevent permission issues on host
+# Copy backend package files
+COPY packages/backend/package*.json ./packages/backend/
+RUN cd packages/backend && npm install
+
+# Copy backend source code
+COPY packages/backend ./packages/backend
+
+# Set working directory to backend
+WORKDIR /usr/src/app/packages/backend
+
+# Ensure files are owned by non-root user
 RUN chown -R node:node /usr/src/app
 USER node
 

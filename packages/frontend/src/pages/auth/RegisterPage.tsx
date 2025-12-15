@@ -1,33 +1,100 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useRegisterMutation } from "../../services/authApi";
 import { useAuthStore } from "../../stores/authStore";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import AuthLayout from "../../components/layout/AuthLayout";
 import { useToast } from "../../components/ui/use-toast";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import {
+  getInvitationDetails,
+  acceptInvitation,
+  type InvitationWithProject,
+} from "../../services/projectApi";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const loginAction = useAuthStore((state) => state.login);
   const { toast } = useToast();
 
+  // Invitation-related state
+  const [invitationToken, setInvitationToken] = useState<string | null>(null);
+  const [invitation, setInvitation] = useState<InvitationWithProject | null>(
+    null
+  );
+  const [loadingInvitation, setLoadingInvitation] = useState(false);
+
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/dashboard", { replace: true });
+    const token = searchParams.get("invitation_token");
+
+    // CRITICAL: If user is already authenticated and has an invitation token,
+    // redirect to accept invitation page IMMEDIATELY
+    if (isAuthenticated && token) {
+      console.log(
+        "[RegisterPage] User already authenticated with invitation token, redirecting to accept-invitation"
+      );
+      navigate(`/accept-invitation?token=${token}`, { replace: true });
+      return;
     }
-  }, [isAuthenticated, navigate]);
+
+    // Otherwise, redirect authenticated users without invitation to inbox
+    if (isAuthenticated && !token) {
+      console.log(
+        "[RegisterPage] User already authenticated without invitation, redirecting to inbox"
+      );
+      navigate("/inbox", { replace: true });
+    }
+  }, [isAuthenticated, navigate, searchParams]);
+
+  // Load invitation details if token is present
+  useEffect(() => {
+    const token = searchParams.get("invitation_token");
+    if (token) {
+      setInvitationToken(token);
+      setLoadingInvitation(true);
+
+      getInvitationDetails(token)
+        .then((invitationData) => {
+          setInvitation(invitationData);
+          setEmail(invitationData.email); // Pre-fill email
+        })
+        .catch((error) => {
+          console.error("Error loading invitation:", error);
+          toast({
+            title: "Lỗi",
+            description:
+              "Không thể tải thông tin lời mời. Link có thể đã hết hạn.",
+            variant: "destructive",
+          });
+        })
+        .finally(() => {
+          setLoadingInvitation(false);
+        });
+    }
+  }, [searchParams, toast]);
 
   const { mutate: register, isPending } = useRegisterMutation({
-    onSuccess: (data) => {
-      toast({
-        title: "Thành công",
-        description: "Tạo tài khoản thành công!",
+    onSuccess: async (data) => {
+      // For invitation registration, show special message
+      if (invitationToken) {
+        toast({
+          title: "Đăng ký thành công!",
+          description:
+            "Vui lòng kiểm tra email để xác thực tài khoản. Sau khi xác thực, bạn có thể đăng nhập và tự động tham gia dự án.",
+        });
+      }
+
+      // Redirect to login page with pre-filled email
+      navigate("/login", {
+        state: {
+          message: data.message,
+          email: email.trim(),
+          invitationToken: invitationToken, // Pass token to login page
+        },
       });
-      loginAction(data.user, data.accessToken);
-      navigate("/dashboard"); // Redirect directly to dashboard
     },
     onError: (error: any) => {
       console.error("Registration error:", error);
@@ -89,11 +156,41 @@ const RegisterPage = () => {
       return;
     }
 
-    register({ fullName: fullName.trim(), email: email.trim(), password });
+    console.log("🔵 [RegisterPage] Submitting registration with:");
+    console.log("  - Email:", email.trim());
+    console.log("  - Has invitationToken:", !!invitationToken);
+    console.log("  - InvitationToken value:", invitationToken);
+
+    register({
+      fullName: fullName.trim(),
+      email: email.trim(),
+      password,
+      invitationToken: invitationToken || undefined, // Pass invitation token if present
+    });
   };
 
   return (
     <AuthLayout title="Đăng ký tài khoản mới">
+      {/* Show invitation info if present */}
+      {loadingInvitation && (
+        <div className="mb-4 flex items-center justify-center gap-2 rounded-md bg-blue-50 p-3 text-blue-700">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="text-sm">Đang tải thông tin lời mời...</span>
+        </div>
+      )}
+
+      {invitation && (
+        <div className="mb-4 rounded-md bg-blue-50 p-4 text-blue-700">
+          <p className="text-sm font-medium">
+            🎉 Bạn đang đăng ký để tham gia dự án:{" "}
+            <span className="font-bold">{invitation.project?.name}</span>
+          </p>
+          <p className="mt-1 text-xs text-blue-600">
+            Vai trò: {invitation.role === "AGENT" ? "Agent" : invitation.role}
+          </p>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           type="text"
@@ -109,7 +206,9 @@ const RegisterPage = () => {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Địa chỉ email"
           required
-          disabled={isPending}
+          disabled={isPending || !!invitation} // Disable if invitation present
+          readOnly={!!invitation} // Make read-only if invitation present
+          className={invitation ? "bg-gray-100 text-gray-900" : ""}
         />
 
         {/* [5] Wrap password Input in a div to place icon */}

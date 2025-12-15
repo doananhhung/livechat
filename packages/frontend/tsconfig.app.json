@@ -8,7 +8,13 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "paths": {
+      "@social-commerce/shared": ["../shared/src"],
+      "@social-commerce/shared/*": ["../shared/src/*"]
+    }
   },
   "include": ["src"]
 }

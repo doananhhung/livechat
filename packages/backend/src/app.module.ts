@@ -31,6 +31,18 @@ import { RedisClientType } from 'redis';
 import { MailModule } from './mail/mail.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import {
+  Conversation,
+  Invitation,
+  Message,
+  Project,
+  ProjectMember,
+  RefreshToken,
+  TwoFactorRecoveryCode,
+  User,
+  UserIdentity,
+  Visitor,
+} from '@social-commerce/shared';
 
 @Module({
   imports: [
@@ -65,7 +77,18 @@ import { APP_GUARD } from '@nestjs/core';
         username: configService.get<string>('PSQL_USER') || 'hoang',
         password: configService.get<string>('PSQL_PASSWORD') || '',
         database: configService.get<string>('PSQL_DATABASE') || 'your_database',
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        entities: [
+          Conversation,
+          Invitation,
+          Message,
+          Project,
+          ProjectMember,
+          RefreshToken,
+          TwoFactorRecoveryCode,
+          User,
+          UserIdentity,
+          Visitor,
+        ],
         namingStrategy: new SnakeNamingStrategy(),
         synchronize: false,
       }),

@@ -1,7 +1,9 @@
 name: backend
 services:
   core:
-    build: .
+    build:
+      context: ../..
+      dockerfile: packages/backend/Dockerfile
     user: '${UID:-1000}:${GID:-1000}'
     ports:
       - '3000:3000'
@@ -11,8 +13,8 @@ services:
       - redis
       - localstack
     volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
+      - ../..:/usr/src/app
+      - /usr/src/app/packages/shared/node_modules
     environment:
       PSQL_HOST: db
       PSQL_PORT: 5432
@@ -56,7 +58,9 @@ services:
       MAIL_USER: ${MAIL_USER}
 
   worker:
-    build: .
+    build:
+      context: ../..
+      dockerfile: packages/backend/Dockerfile
     user: '${UID:-1000}:${GID:-1000}'
     command: ['npm', 'run', 'dev:worker']
     environment:
@@ -76,8 +80,8 @@ services:
       AWS_SQS_QUEUE_NAME: ${AWS_SQS_QUEUE_NAME}
 
     volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
+      - ../..:/usr/src/app
+      - /usr/src/app/packages/shared/node_modules
     depends_on:
       - db
       - localstack

@@ -45,7 +45,7 @@ export class AuthController {
     );
   }
 
-  @Throttle({ default: { limit: 1, ttl: 60000 } }) // 1 request per 60 seconds
+  // @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 request per 60 seconds - DISABLED FOR TESTING
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() registerDto: RegisterDto) {
@@ -58,11 +58,11 @@ export class AuthController {
     return this.authService.verifyEmail(token);
   }
 
-  @Throttle({ default: { limit: 1, ttl: 300000 } }) // 1 request per 5 minutes
+  // @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 requests per 5 minutes - DISABLED FOR TESTING
   @Post('resend-verification')
   @HttpCode(HttpStatus.OK)
   async resendVerificationEmail(
-    @Body() resendVerificationDto: ResendVerificationDto,
+    @Body() resendVerificationDto: ResendVerificationDto
   ) {
     return this.authService.resendVerificationEmail(resendVerificationDto);
   }

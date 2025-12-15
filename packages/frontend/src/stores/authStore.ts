@@ -4,7 +4,7 @@ import { persist } from "zustand/middleware";
 import api from "../lib/api";
 import { AxiosError } from "axios";
 import { queryClient } from "../main";
-import { User } from "@social-commerce/shared";
+import type { User } from "@social-commerce/shared";
 
 interface AuthState {
   user: User | null;

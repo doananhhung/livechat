@@ -28,7 +28,7 @@ export class Visitor {
   @Column({ type: "uuid", unique: true })
   visitorUid: string;
 
-  @Column({ nullable: true })
+  @Column({ type: "varchar", nullable: true })
   displayName?: string;
 
   @Column({ type: "jsonb", nullable: true })

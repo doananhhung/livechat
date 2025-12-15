@@ -9,6 +9,18 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { SQSClient } from '@aws-sdk/client-sqs';
 import { GatewayModule } from '../gateway/gateway.module';
+import {
+  Conversation,
+  Invitation,
+  Message,
+  Project,
+  ProjectMember,
+  RefreshToken,
+  TwoFactorRecoveryCode,
+  User,
+  UserIdentity,
+  Visitor,
+} from '@social-commerce/shared';
 
 export const LIVE_CHAT_EVENTS_QUEUE = 'live-chat-events-queue';
 
@@ -29,7 +41,18 @@ export const LIVE_CHAT_EVENTS_QUEUE = 'live-chat-events-queue';
         username: configService.get<string>('PSQL_USER'),
         password: configService.get<string>('PSQL_PASSWORD'),
         database: configService.get<string>('PSQL_DATABASE'),
-        entities: [],
+        entities: [
+          Conversation,
+          Invitation,
+          Message,
+          Project,
+          ProjectMember,
+          RefreshToken,
+          TwoFactorRecoveryCode,
+          User,
+          UserIdentity,
+          Visitor,
+        ],
         namingStrategy: new SnakeNamingStrategy(),
         synchronize: false,
       }),

@@ -1,6 +1,11 @@
 // src/pages/auth/LoginPage.tsx
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import {
+  Link,
+  useNavigate,
+  useLocation,
+  useSearchParams,
+} from "react-router-dom";
 import { useLoginMutation } from "../../services/authApi";
 import { useAuthStore } from "../../stores/authStore";
 import { Button } from "../../components/ui/Button";
@@ -12,17 +17,91 @@ import { useToast } from "../../components/ui/use-toast";
 const LoginPage = () => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const loginAction = useAuthStore((state) => state.login);
   const { toast } = useToast();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // [3] State to hide/show password
+  const [showPassword, setShowPassword] = useState(false);
+  const hasShownMessage = useRef(false);
+
+  // Show message from registration if present
+  useEffect(() => {
+    // Prevent double execution in React Strict Mode
+    if (hasShownMessage.current) {
+      return;
+    }
+
+    const state = location.state as {
+      message?: string;
+      email?: string;
+      invitationToken?: string;
+    };
+    if (state?.message) {
+      hasShownMessage.current = true;
+      toast({
+        title: state.invitationToken
+          ? "Thông báo - Lời mời đang chờ"
+          : "Thông báo",
+        description: state.message,
+      });
+      if (state.email) {
+        setEmail(state.email);
+      }
+      // Keep the state if there's an invitation token (don't clear it)
+      // so onSuccess can use it to redirect
+      if (!state.invitationToken) {
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location, toast]);
 
   const { mutate: login, isPending } = useLoginMutation({
     onSuccess: (data) => {
+      console.log("🔵 [LoginPage] Login successful, user data:", data.user);
       loginAction(data.user, data.accessToken);
-      navigate("/dashboard");
+
+      // Check if there's an invitation token in the state (from registration or email verification)
+      const state = location.state as { invitationToken?: string };
+      console.log(
+        "🔵 [LoginPage] Checking for invitation token in state:",
+        state
+      );
+
+      if (state?.invitationToken) {
+        const redirectUrl = `/accept-invitation?token=${state.invitationToken}`;
+        console.log(
+          "🎉 [LoginPage] User has pending invitation, redirecting to accept-invitation page with token:",
+          state.invitationToken
+        );
+        console.log("🔵 [LoginPage] Full redirect URL:", redirectUrl);
+        console.log("🔵 [LoginPage] Calling navigate() now...");
+
+        // Try using setTimeout to ensure state is updated first
+        setTimeout(() => {
+          console.log("🔵 [LoginPage] Executing navigate inside setTimeout...");
+          navigate(redirectUrl, {
+            replace: true,
+          });
+          console.log("🔵 [LoginPage] navigate() called successfully");
+        }, 100);
+
+        return;
+      }
+
+      console.log("ℹ️ [LoginPage] No invitation token found in state");
+
+      // Check if there's a redirect parameter (e.g., for invitation flow)
+      const redirectPath = searchParams.get("redirect");
+      if (redirectPath) {
+        console.log("🔵 [LoginPage] Redirecting to:", redirectPath);
+        navigate(redirectPath, { replace: true });
+      } else {
+        console.log("🔵 [LoginPage] Redirecting to default /inbox");
+        navigate("/inbox");
+      }
     },
     onError: (error: any) => {
       if (
@@ -134,6 +213,15 @@ const LoginPage = () => {
             className="font-medium text-primary hover:text-primary/90"
           >
             Đăng ký ngay
+          </Link>
+        </p>
+        <p className="mt-2 text-center text-sm text-muted-foreground">
+          Chưa nhận được email xác thực?{" "}
+          <Link
+            to="/resend-verification"
+            className="font-medium text-primary hover:text-primary/90"
+          >
+            Gửi lại email
           </Link>
         </p>
       </div>

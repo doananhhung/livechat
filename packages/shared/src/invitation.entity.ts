@@ -5,12 +5,12 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-} from 'typeorm';
+} from "typeorm";
 
 export enum InvitationStatus {
-  PENDING = 'pending',
-  ACCEPTED = 'accepted',
-  EXPIRED = 'expired',
+  PENDING = "pending",
+  ACCEPTED = "accepted",
+  EXPIRED = "expired",
 }
 
 /**
@@ -18,33 +18,44 @@ export enum InvitationStatus {
  * This entity stores pending invitations for users to join a project.
  * It contains a unique token that will be sent via email.
  */
-@Entity('invitations')
+@Entity("invitations")
 export class Invitation {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @Column()
+  @Column({ type: "varchar" })
   email: string;
 
   /**
    * @description
    * A secure, unique, and non-guessable token for the invitation link.
    */
-  @Column({ unique: true })
+  @Column({ type: "varchar", unique: true })
   token: string;
 
-  @Column()
+  @Column({ type: "int" })
   projectId: number;
 
   /**
    * @description
    * The ID of the manager who sent the invitation.
    */
-  @Column('uuid')
+  @Column("uuid")
   inviterId: string;
 
+  /**
+   * @description
+   * The role that the invited user will have in the project.
+   * Typically AGENT for agent invitations.
+   */
   @Column({
-    type: 'enum',
+    type: "enum",
+    enum: ["admin", "manager", "agent"],
+  })
+  role: string;
+
+  @Column({
+    type: "enum",
     enum: InvitationStatus,
     default: InvitationStatus.PENDING,
   })
@@ -54,9 +65,9 @@ export class Invitation {
    * @description
    * The timestamp when this invitation will expire and become invalid.
    */
-  @Column({ type: 'timestamptz' })
+  @Column({ type: "timestamptz" })
   expiresAt: Date;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: "timestamptz" })
   createdAt: Date;
 }

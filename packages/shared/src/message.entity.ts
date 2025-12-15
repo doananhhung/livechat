@@ -37,13 +37,13 @@ export class Message {
   @Column({ type: "jsonb", nullable: true })
   attachments: any | null;
 
-  @Column({ name: "sender_id" })
+  @Column({ type: "varchar", name: "sender_id" })
   senderId: string;
 
-  @Column({ name: "recipient_id" })
+  @Column({ type: "varchar", name: "recipient_id" })
   recipientId: string;
 
-  @Column({ name: "from_customer" })
+  @Column({ type: "boolean", name: "from_customer" })
   fromCustomer: boolean;
 
   @Index()

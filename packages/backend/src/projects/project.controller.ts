@@ -7,6 +7,8 @@ import {
   Param,
   UseGuards,
   ParseIntPipe,
+  Delete,
+  Query,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import {
@@ -15,18 +17,26 @@ import {
   UpdateProjectDto,
   User,
   WidgetSettingsDto,
+  CreateInvitationDto,
+  AcceptInvitationDto,
 } from '@social-commerce/shared';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetCurrentUser } from '../common/decorators/get-current-user.decorator';
 import { RolesGuard } from '../rbac/roles.guard';
 import { Roles } from '../rbac/roles.decorator';
+import { InvitationService } from './invitation.service';
+import { Throttle } from '@nestjs/throttler';
+import { Public } from '../common/decorators/public.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.MANAGER)
 @Controller('projects')
 export class ProjectController {
-  constructor(private readonly projectService: ProjectService) {}
+  constructor(
+    private readonly projectService: ProjectService,
+    private readonly invitationService: InvitationService
+  ) {}
 
+  @Roles(Role.MANAGER)
   @Post()
   create(
     @Body() createProjectDto: CreateProjectDto,
@@ -40,6 +50,7 @@ export class ProjectController {
     return this.projectService.findAllForUser(user.id);
   }
 
+  @Roles(Role.MANAGER)
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -49,6 +60,7 @@ export class ProjectController {
     return this.projectService.update(id, updateProjectDto, user.id);
   }
 
+  @Roles(Role.MANAGER)
   @Patch(':id/widget-settings')
   updateWidgetSettings(
     @Param('id', ParseIntPipe) id: number,
@@ -60,5 +72,52 @@ export class ProjectController {
       user.id,
       widgetSettingsDto
     );
+  }
+
+  // Invitation endpoints
+  @Roles(Role.MANAGER)
+  // @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 invitations per minute - DISABLED FOR TESTING
+  @Post('invitations')
+  createInvitation(
+    @Body() createInvitationDto: CreateInvitationDto,
+    @GetCurrentUser() user: User
+  ) {
+    return this.invitationService.createInvitation(
+      createInvitationDto,
+      user.id
+    );
+  }
+
+  @Roles(Role.MANAGER)
+  @Get(':id/invitations')
+  getProjectInvitations(
+    @Param('id', ParseIntPipe) id: number,
+    @GetCurrentUser() user: User
+  ) {
+    return this.invitationService.getProjectInvitations(id, user.id);
+  }
+
+  @Roles(Role.MANAGER)
+  @Delete('invitations/:invitationId')
+  cancelInvitation(
+    @Param('invitationId') invitationId: string,
+    @GetCurrentUser() user: User
+  ) {
+    return this.invitationService.cancelInvitation(invitationId, user.id);
+  }
+
+  @Post('invitations/accept')
+  acceptInvitation(
+    @Query('token') token: string,
+    @GetCurrentUser() user: User
+  ) {
+    return this.invitationService.acceptInvitation(token, user.id);
+  }
+
+  // Public endpoint to get invitation details (for registration page)
+  @Public()
+  @Get('invitations/details')
+  getInvitationDetails(@Query('token') token: string) {
+    return this.invitationService.getInvitationByToken(token);
   }
 }

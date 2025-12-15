@@ -24,6 +24,6 @@ export class TwoFactorRecoveryCode {
   @Column({ type: "varchar" })
   hashedCode: string;
 
-  @Column({ default: false })
+  @Column({ type: "boolean", default: false })
   isUsed: boolean;
 }

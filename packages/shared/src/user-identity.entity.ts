@@ -5,25 +5,25 @@ import {
   ManyToOne,
   JoinColumn,
   Unique,
-} from 'typeorm';
-import { User } from './user.entity';
+} from "typeorm";
+import { User } from "./user.entity";
 
-@Entity('user_identities')
-@Unique(['provider', 'providerId'])
+@Entity("user_identities")
+@Unique(["provider", "providerId"])
 export class UserIdentity {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @Column()
+  @Column({ type: "varchar" })
   provider: string; // 'google', 'local', etc.
 
-  @Column({ name: 'provider_id' })
+  @Column({ type: "varchar", name: "provider_id" })
   providerId: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: "uuid" })
   userId: string;
 
-  @ManyToOne(() => User, (user) => user.identities, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
+  @ManyToOne(() => User, (user) => user.identities, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "user_id" })
   user: User;
 }

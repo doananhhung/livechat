@@ -6,36 +6,36 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
-} from 'typeorm';
-import { Conversation } from './conversation.entity';
-import { WidgetSettingsDto } from './widget-settings.dto';
-import { ProjectMember } from './project-member.entity';
+} from "typeorm";
+import { Conversation } from "./conversation.entity";
+import { WidgetSettingsDto } from "./widget-settings.dto";
+import { ProjectMember } from "./project-member.entity";
 
-@Entity('projects')
+@Entity("projects")
 export class Project {
-  @PrimaryGeneratedColumn('increment')
+  @PrimaryGeneratedColumn("increment")
   id: number;
 
   @OneToMany(() => Conversation, (conversation) => conversation.project)
   conversations: Conversation[];
 
-  @Column()
+  @Column({ type: "varchar" })
   name: string;
 
-  @Column({ type: 'jsonb', default: {} })
+  @Column({ type: "jsonb", default: {} })
   widgetSettings: WidgetSettingsDto;
 
   @Column({
-    type: 'text',
+    type: "text",
     array: true,
     nullable: true,
-    name: 'whitelisted_domains',
+    name: "whitelisted_domains",
   })
   whitelistedDomains: string[];
 
   @OneToMany(() => ProjectMember, (member) => member.project)
   members: ProjectMember[];
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: "timestamptz" })
   createdAt: Date;
 }

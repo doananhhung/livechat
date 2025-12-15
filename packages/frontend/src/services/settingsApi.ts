@@ -1,7 +1,7 @@
 // src/services/settingsApi.ts
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../lib/api";
-import {
+import type {
   ChangePasswordDto,
   EmailChangeDto,
   UpdateUserDto,
@@ -62,9 +62,7 @@ export const fetchUserProfile = async (): Promise<User> => {
   return response.data;
 };
 
-export const updateProfile = async (
-  payload: UpdateUserDto
-): Promise<User> => {
+export const updateProfile = async (payload: UpdateUserDto): Promise<User> => {
   const response = await api.patch("/user/me", payload);
   return response.data;
 };

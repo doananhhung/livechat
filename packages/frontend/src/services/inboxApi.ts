@@ -8,15 +8,15 @@ import {
 } from "@tanstack/react-query";
 import api from "../lib/api";
 import { v4 as uuidv4 } from "uuid";
-import {
+import type {
   Conversation,
   ListConversationsDto,
   Message,
-  MessageStatus,
   PaginationDto,
   UpdateConversationDto,
   Visitor,
 } from "@social-commerce/shared";
+import { MessageStatus } from "@social-commerce/shared";
 
 // --- Type Definitions ---
 // All type definitions are now imported from @social-commerce/shared

@@ -6,11 +6,8 @@ import {
   useGetVisitor,
   useUpdateConversationStatus,
 } from "../../../services/inboxApi";
-import {
-  type Conversation,
-  type Message,
-  ConversationStatus,
-} from "@social-commerce/shared";
+import type { Conversation, Message } from "@social-commerce/shared";
+import { ConversationStatus } from "@social-commerce/shared";
 import MessageComposer from "./MessageComposer";
 import { Spinner } from "../../../components/ui/Spinner";
 import { Avatar } from "../../../components/ui/Avatar";

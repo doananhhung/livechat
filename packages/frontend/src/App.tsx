@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import type { JSX } from "react";
 import { useEffect, useState } from "react";
 
@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import ProtectedRoute from "./components/ProtectedRoute";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
+import VerifyEmailPage from "./pages/auth/VerifyEmailPage";
+import ResendVerificationPage from "./pages/auth/ResendVerificationPage";
 import Verify2faPage from "./pages/auth/Verify2faPage";
 import { Toaster } from "./components/ui/Toaster";
 import { SettingsLayout } from "./pages/settings/SettingsLayout";
@@ -21,13 +23,34 @@ import { MainLayout } from "./components/layout/MainLayout";
 import { MessagePane } from "./components/features/inbox/MessagePane";
 import { AuthCallbackPage } from "./pages/auth/AuthCallbackPage";
 
+// --- Invitation Pages ---
+import AcceptInvitationPage from "./pages/invitations/AcceptInvitationPage";
+import InviteMembersPage from "./pages/invitations/InviteMembersPage";
+
 /**
  * PublicRoute HOC for better auth flow.
  * Automatically redirects authenticated users from public pages.
+ * EXCEPTION: If accessing /register with invitation_token, allow through
+ * so RegisterPage can redirect to /accept-invitation
  */
 const PublicRoute = ({ children }: { children: JSX.Element }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  // UPDATED: Redirect to /inbox, not /dashboard
+  const location = useLocation();
+
+  // Allow authenticated users to access /register if they have an invitation token
+  // The RegisterPage will handle redirecting them to /accept-invitation
+  if (
+    isAuthenticated &&
+    location.pathname === "/register" &&
+    location.search.includes("invitation_token=")
+  ) {
+    console.log(
+      "[PublicRoute] Allowing authenticated user to access register page with invitation token"
+    );
+    return children;
+  }
+
+  // Otherwise, redirect authenticated users to inbox
   return isAuthenticated ? <Navigate to="/inbox" replace /> : children;
 };
 
@@ -80,9 +103,17 @@ function App() {
             </PublicRoute>
           }
         />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route
+          path="/resend-verification"
+          element={<ResendVerificationPage />}
+        />
         <Route path="/verify-2fa" element={<Verify2faPage />} />
 
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
+
+        {/* Accept invitation can be accessed by both authenticated and unauthenticated users */}
+        <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
 
         {/* === Protected Routes === */}
 
@@ -111,6 +142,12 @@ function App() {
             <Route path="security" element={<SecurityPage />} />
             <Route path="projects" element={<ProjectSettingsPage />} />
           </Route>
+
+          {/* Invitation management (protected) */}
+          <Route
+            path="/projects/:projectId/invite"
+            element={<InviteMembersPage />}
+          />
         </Route>
         {/* Fallback Route */}
         <Route path="*" element={<Navigate to="/inbox" replace />} />
