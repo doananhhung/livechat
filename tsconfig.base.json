@@ -11,8 +11,9 @@
     "experimentalDecorators": true,
     "baseUrl": ".",
     "paths": {
-      "@social-commerce/shared": ["packages/shared/src"],
-      "@social-commerce/shared/*": ["packages/shared/src/*"]
+      // Use built output of shared to avoid cross-rootDir compilation
+      "@social-commerce/shared": ["packages/shared/dist"],
+      "@social-commerce/shared/*": ["packages/shared/dist/*"]
     }
   },
   "exclude": ["node_modules", "dist"]

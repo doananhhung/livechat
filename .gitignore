@@ -1,8 +1,15 @@
-# compiled output
-/dist
-/node_modules
-/build
+# Compiled output
+dist
+dist-ssr
+node_modules
+**/node_modules
+build
+*.tsbuildinfo
+*.js.map
+.next
+out
 
+# AWS
 aws
 
 # Logs
@@ -18,17 +25,22 @@ lerna-debug.log*
 .DS_Store
 
 # Tests
-/coverage
-/.nyc_output
+coverage
+.nyc_output
 
 # IDEs and editors
-/.idea
+.idea
 .project
 .classpath
 .c9/
 *.launch
 .settings/
 *.sublime-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # IDE - VSCode
 .vscode/*
@@ -37,16 +49,19 @@ lerna-debug.log*
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# dotenv environment variable files
+# Environment variables
 .env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
+.env.*
+!.env.example
+!.env.template
+*.local
 
-# temp directory
+# Temp directory
 .temp
 .tmp
+*.tmp
+*.cache
+.cache
 
 # Runtime data
 pids
@@ -54,7 +69,56 @@ pids
 *.seed
 *.pid.lock
 
-# Diagnostic reports (https://nodejs.org/api/report.html)
+# Diagnostic reports
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
+# Project-specific
 GEMINI.md
+test.html
+cloudflare.txt
+
+# Documentation build artifacts
+social-commerce-docs/*.pdf
+social-commerce-docs/*.synctex.gz
+social-commerce-docs/*.aux
+social-commerce-docs/*.fdb_latexmk
+social-commerce-docs/*.fls
+social-commerce-docs/*.log
+social-commerce-docs/*.zip
+social-commerce-docs/svg-inkscape/*.pdf
+social-commerce-docs/_minted-*
+
+# Docker
+docker-compose.override.yml
+.dockerignore
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# OS specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Package manager locks (optional - uncomment if needed)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Editor backups
+*~
+*.swp
+*.swo
+*.swn
+.*.sw?
