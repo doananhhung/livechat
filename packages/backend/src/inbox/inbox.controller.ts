@@ -18,7 +18,7 @@ import {
   AgentTypingDto,
   ListConversationsDto,
   ListMessagesDto,
-  Role,
+  ProjectRole,
   SendReplyDto,
   UpdateConversationDto,
   User,
@@ -29,7 +29,7 @@ import { Roles } from '../rbac/roles.decorator';
 
 @Controller('inbox')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.AGENT)
+@Roles(ProjectRole.AGENT) // All users with AGENT or MANAGER project role can access
 export class InboxController {
   constructor(
     private readonly conversationService: ConversationService,

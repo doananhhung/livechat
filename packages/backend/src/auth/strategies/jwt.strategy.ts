@@ -3,7 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../../user/user.service';
-import { Role } from '@social-commerce/shared';
+import { GlobalRole } from '@social-commerce/shared';
 
 interface JwtPayload {
   sub: string;
@@ -31,7 +31,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(
     payload: JwtPayload
-  ): Promise<{ id: string; email: string; roles: Role[] }> {
+  ): Promise<{ id: string; email: string; role: GlobalRole }> {
     if (!payload || !payload.sub || !payload.iat) {
       throw new UnauthorizedException('Invalid token payload.');
     }
@@ -49,6 +49,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Token has been revoked.');
     }
 
-    return { id: user.id, email: user.email, roles: user.roles };
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    };
   }
 }

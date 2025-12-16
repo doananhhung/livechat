@@ -13,7 +13,7 @@ import {
   InvitationStatus,
   CreateInvitationDto,
   ProjectMember,
-  Role,
+  ProjectRole,
   Project,
   User,
 } from '@social-commerce/shared';
@@ -37,14 +37,14 @@ export class InvitationService {
     createInvitationDto: CreateInvitationDto,
     inviterId: string
   ): Promise<Invitation> {
-    const { email, projectId, role = Role.AGENT } = createInvitationDto;
+    const { email, projectId, role = ProjectRole.AGENT } = createInvitationDto;
 
     // 1. Verify that the inviter is a MANAGER of the project
     const inviterMembership = await this.entityManager.findOne(ProjectMember, {
       where: { projectId, userId: inviterId },
     });
 
-    if (!inviterMembership || inviterMembership.role !== Role.MANAGER) {
+    if (!inviterMembership || inviterMembership.role !== ProjectRole.MANAGER) {
       throw new ForbiddenException(
         'Only managers can invite members to this project.'
       );
@@ -158,10 +158,10 @@ export class InvitationService {
       );
     }
 
-    const subject = `Lời mời tham gia dự án "${project.name}" với vai trò ${invitation.role === Role.AGENT ? 'Agent' : invitation.role}`;
+    const subject = `Lời mời tham gia dự án "${project.name}" với vai trò ${invitation.role === ProjectRole.AGENT ? 'Agent' : invitation.role}`;
     const html = `
       <p>Xin chào,</p>
-      <p>Bạn đã được mời tham gia dự án <strong>${project.name}</strong> với vai trò <strong>${invitation.role === Role.AGENT ? 'Agent' : invitation.role}</strong>.</p>
+      <p>Bạn đã được mời tham gia dự án <strong>${project.name}</strong> với vai trò <strong>${invitation.role === ProjectRole.AGENT ? 'Agent' : invitation.role}</strong>.</p>
       <p>${instructionText}</p>
       <a href="${invitationUrl}" style="display: inline-block; padding: 10px 20px; background-color: #1a73e8; color: white; text-decoration: none; border-radius: 5px;">${actionText}</a>
       <p>Hoặc sao chép và dán liên kết sau vào trình duyệt:</p>
@@ -271,7 +271,7 @@ export class InvitationService {
       const membership = transactionalEntityManager.create(ProjectMember, {
         projectId: invitation.projectId,
         userId,
-        role: invitation.role as Role,
+        role: invitation.role as ProjectRole,
       });
 
       this.logger.log(`🔵 [AcceptInvitation] Creating membership:`, {
@@ -339,7 +339,7 @@ export class InvitationService {
       where: { projectId, userId },
     });
 
-    if (!membership || membership.role !== Role.MANAGER) {
+    if (!membership || membership.role !== ProjectRole.MANAGER) {
       throw new ForbiddenException(
         'Only managers can view project invitations.'
       );
@@ -368,7 +368,7 @@ export class InvitationService {
       where: { projectId: invitation.projectId, userId },
     });
 
-    if (!membership || membership.role !== Role.MANAGER) {
+    if (!membership || membership.role !== ProjectRole.MANAGER) {
       throw new ForbiddenException('Only managers can cancel invitations.');
     }
 

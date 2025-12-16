@@ -11,7 +11,8 @@ import {
 } from "typeorm";
 import { User } from "./user.entity";
 import { Project } from "./project.entity";
-import { Role } from "./roles.enum";
+import { Role } from "./roles.enum"; // Legacy - for backward compatibility
+import { ProjectRole } from "./project-roles.enum";
 
 @Entity("project_members")
 @Unique(["userId", "projectId"]) // Ensures a user can only be a member of a project once.
@@ -25,13 +26,13 @@ export class ProjectMember {
   @Column("uuid") // Make sure the type matches the User's id type
   userId: string;
 
+  // Project-specific role (manager or agent)
   @Column({
     type: "enum",
-    enum: Role,
-    // The role of the user within this specific project.
+    enum: ProjectRole,
     comment: "The role of the user within this specific project.",
   })
-  role: Role;
+  role: ProjectRole;
 
   @ManyToOne(() => Project, (project) => project.members, {
     onDelete: "CASCADE",

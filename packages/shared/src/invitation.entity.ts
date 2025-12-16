@@ -6,6 +6,7 @@ import {
   Column,
   CreateDateColumn,
 } from "typeorm";
+import { ProjectRole } from "./project-roles.enum";
 
 export enum InvitationStatus {
   PENDING = "pending",
@@ -46,13 +47,13 @@ export class Invitation {
   /**
    * @description
    * The role that the invited user will have in the project.
-   * Typically AGENT for agent invitations.
+   * Can be either MANAGER or AGENT.
    */
   @Column({
     type: "enum",
-    enum: ["admin", "manager", "agent"],
+    enum: ProjectRole,
   })
-  role: string;
+  role: ProjectRole;
 
   @Column({
     type: "enum",

@@ -13,7 +13,7 @@ import {
 import { ProjectService } from './project.service';
 import {
   CreateProjectDto,
-  Role,
+  ProjectRole,
   UpdateProjectDto,
   User,
   WidgetSettingsDto,
@@ -36,7 +36,7 @@ export class ProjectController {
     private readonly invitationService: InvitationService
   ) {}
 
-  @Roles(Role.MANAGER)
+  @Roles(ProjectRole.MANAGER)
   @Post()
   create(
     @Body() createProjectDto: CreateProjectDto,
@@ -50,7 +50,7 @@ export class ProjectController {
     return this.projectService.findAllForUser(user.id);
   }
 
-  @Roles(Role.MANAGER)
+  @Roles(ProjectRole.MANAGER)
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -60,7 +60,7 @@ export class ProjectController {
     return this.projectService.update(id, updateProjectDto, user.id);
   }
 
-  @Roles(Role.MANAGER)
+  @Roles(ProjectRole.MANAGER)
   @Patch(':id/widget-settings')
   updateWidgetSettings(
     @Param('id', ParseIntPipe) id: number,
@@ -75,7 +75,7 @@ export class ProjectController {
   }
 
   // Invitation endpoints
-  @Roles(Role.MANAGER)
+  @Roles(ProjectRole.MANAGER)
   // @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 invitations per minute - DISABLED FOR TESTING
   @Post('invitations')
   createInvitation(
@@ -88,7 +88,7 @@ export class ProjectController {
     );
   }
 
-  @Roles(Role.MANAGER)
+  @Roles(ProjectRole.MANAGER)
   @Get(':id/invitations')
   getProjectInvitations(
     @Param('id', ParseIntPipe) id: number,
@@ -97,7 +97,7 @@ export class ProjectController {
     return this.invitationService.getProjectInvitations(id, user.id);
   }
 
-  @Roles(Role.MANAGER)
+  @Roles(ProjectRole.MANAGER)
   @Delete('invitations/:invitationId')
   cancelInvitation(
     @Param('invitationId') invitationId: string,

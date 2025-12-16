@@ -9,7 +9,8 @@ import {
 } from "typeorm";
 import { TwoFactorRecoveryCode } from "./two-factor-recovery-code.entity";
 import { UserIdentity } from "./user-identity.entity";
-import { Role } from "./roles.enum";
+import { Role } from "./roles.enum"; // Legacy - for backward compatibility
+import { GlobalRole } from "./global-roles.enum";
 import { ProjectMember } from "./project-member.entity";
 
 export enum UserStatus {
@@ -54,12 +55,13 @@ export class User {
   })
   status: UserStatus;
 
+  // Global application-level role (for system features like admin dashboard)
   @Column({
-    type: "simple-array",
-    enum: Role,
-    default: Role.MANAGER,
+    type: "enum",
+    enum: GlobalRole,
+    default: GlobalRole.USER,
   })
-  roles: Role[];
+  role: GlobalRole;
 
   @Column({ type: "timestamptz", nullable: true })
   lastLoginAt: Date;

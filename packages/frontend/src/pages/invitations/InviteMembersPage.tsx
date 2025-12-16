@@ -21,7 +21,7 @@ import {
 import type {
   CreateInvitationDto,
   Invitation,
-  Role,
+  ProjectRole,
 } from "@social-commerce/shared";
 
 const InviteMembersPage = () => {
@@ -96,7 +96,7 @@ const InviteMembersPage = () => {
     sendInvitation({
       email: email.trim(),
       projectId: Number(projectId),
-      role: role as Role,
+      role: role as ProjectRole,
     });
   };
 

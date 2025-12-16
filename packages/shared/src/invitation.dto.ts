@@ -2,7 +2,8 @@
 
 import { IsEmail, IsInt, IsEnum, IsOptional, IsString } from "class-validator";
 import { InvitationStatus } from "./invitation.entity";
-import { Role } from "./roles.enum";
+import { Role } from "./roles.enum"; // Legacy - for backward compatibility
+import { ProjectRole } from "./project-roles.enum";
 
 export class CreateInvitationDto {
   @IsEmail()
@@ -11,9 +12,9 @@ export class CreateInvitationDto {
   @IsInt()
   projectId: number;
 
-  @IsEnum(Role)
+  @IsEnum(ProjectRole)
   @IsOptional()
-  role?: Role; // Defaults to AGENT if not specified
+  role?: ProjectRole; // Defaults to AGENT if not specified
 }
 
 export class AcceptInvitationDto {
@@ -27,7 +28,7 @@ export class InvitationResponseDto {
   projectId: number;
   inviterId: string;
   status: InvitationStatus;
-  role: Role; // Include role in response
+  role: ProjectRole; // Include role in response
   expiresAt: Date;
   createdAt: Date;
   projectName?: string; // Optional: include project name for better UX

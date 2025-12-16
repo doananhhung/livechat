@@ -4,7 +4,7 @@ import {
   CreateProjectDto,
   Project,
   ProjectMember,
-  Role,
+  ProjectRole,
   UpdateProjectDto,
   WidgetSettingsDto,
 } from '@social-commerce/shared';
@@ -53,7 +53,7 @@ export class ProjectService {
         const membership = transactionalEntityManager.create(ProjectMember, {
           projectId: savedProject.id,
           userId: userId,
-          role: Role.MANAGER,
+          role: ProjectRole.MANAGER,
         });
         await transactionalEntityManager.save(membership);
 
@@ -116,7 +116,10 @@ export class ProjectService {
       return null;
     }
 
-    if (!project.whitelistedDomains || project.whitelistedDomains.length === 0) {
+    if (
+      !project.whitelistedDomains ||
+      project.whitelistedDomains.length === 0
+    ) {
       this.logger.warn(
         `Project ${id} has no whitelisted domains configured. Access denied for origin ${origin}.`
       );

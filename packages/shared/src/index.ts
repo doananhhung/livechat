@@ -17,7 +17,9 @@ export * from "./refresh-token.entity";
 export * from "./register.dto";
 export * from "./reply-to-comment.dto";
 export * from "./resend-verification.dto";
-export * from "./roles.enum";
+export * from "./roles.enum"; // Legacy - will be deprecated
+export * from "./global-roles.enum";
+export * from "./project-roles.enum";
 export * from "./send-reply.dto";
 export * from "./turn-on-2fa.dto";
 export * from "./two-factor-recovery-code.entity";
