@@ -12,6 +12,7 @@ import {
   acceptInvitation,
   type InvitationWithProject,
 } from "../../services/projectApi";
+import { ProjectRole } from "@social-commerce/shared";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -186,7 +187,10 @@ const RegisterPage = () => {
             <span className="font-bold">{invitation.project?.name}</span>
           </p>
           <p className="mt-1 text-xs text-blue-600">
-            Vai trò: {invitation.role === "AGENT" ? "Agent" : invitation.role}
+            Vai trò:{" "}
+            {invitation.role === ProjectRole.AGENT
+              ? "Nhân viên"
+              : "Quản lý viên"}
           </p>
         </div>
       )}

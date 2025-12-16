@@ -13,6 +13,7 @@ export * from "./message.entity";
 export * from "./pagination.dto";
 export * from "./project-member.entity";
 export * from "./project.entity";
+export * from "./project-with-role.dto";
 export * from "./refresh-token.entity";
 export * from "./register.dto";
 export * from "./reply-to-comment.dto";

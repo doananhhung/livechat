@@ -7,6 +7,8 @@ import { Input } from "../../components/ui/Input";
 import { Spinner } from "../../components/ui/Spinner";
 import { useToast } from "../../components/ui/use-toast";
 import { UserPlus } from "lucide-react";
+import { PermissionGate } from "../../components/PermissionGate";
+import { ProjectRole } from "@social-commerce/shared";
 
 export const ProjectSettingsPage = () => {
   const { toast } = useToast();
@@ -171,14 +173,19 @@ export const ProjectSettingsPage = () => {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">{project.name}</h3>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => navigate(`/projects/${project.id}/invite`)}
+                <PermissionGate
+                  projectId={project.id}
+                  requiredRole={ProjectRole.MANAGER}
                 >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Mời thành viên
-                </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => navigate(`/projects/${project.id}/invite`)}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Mời thành viên
+                  </Button>
+                </PermissionGate>
               </div>
 
               <div className="mb-4">

@@ -2,6 +2,7 @@ import api from "../lib/api";
 import type {
   CreateProjectDto,
   Project,
+  ProjectWithRole,
   WidgetSettingsDto,
   CreateInvitationDto,
   Invitation,
@@ -19,8 +20,9 @@ export interface InvitationWithProject extends Invitation {
 
 /**
  * Fetches all projects for the current user.
+ * Returns projects with the user's role (myRole) in each project.
  */
-export const getProjects = async (): Promise<Project[]> => {
+export const getProjects = async (): Promise<ProjectWithRole[]> => {
   const response = await api.get("/projects");
   return response.data;
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -23,6 +23,8 @@ import type {
   Invitation,
   ProjectRole,
 } from "@social-commerce/shared";
+import { useIsProjectManager } from "../../hooks/useProjectRole";
+import { Spinner } from "../../components/ui/Spinner";
 
 const InviteMembersPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -33,13 +35,28 @@ const InviteMembersPage = () => {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<string>("agent");
 
+  // Check if user is a manager in this project
+  const isManager = useIsProjectManager(Number(projectId));
+
   // Fetch project details
-  const { data: projects } = useQuery({
+  const { data: projects, isLoading: isLoadingProjects } = useQuery({
     queryKey: ["projects"],
     queryFn: getProjects,
   });
 
   const currentProject = projects?.find((p) => p.id === Number(projectId));
+
+  // Redirect if user is not a manager
+  useEffect(() => {
+    if (!isLoadingProjects && projects && !isManager) {
+      toast({
+        title: "Không có quyền truy cập",
+        description: "Chỉ quản lý viên mới có thể mời thành viên vào dự án.",
+        variant: "destructive",
+      });
+      navigate("/settings");
+    }
+  }, [isManager, isLoadingProjects, projects, navigate, toast]);
 
   // Fetch invitations for this project
   const { data: invitations, isLoading } = useQuery({
@@ -135,6 +152,15 @@ const InviteMembersPage = () => {
       minute: "2-digit",
     });
   };
+
+  // Show loading while checking permissions
+  if (isLoadingProjects) {
+    return (
+      <div className="flex w-full h-full items-center justify-center">
+        <Spinner />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto max-w-4xl p-6">

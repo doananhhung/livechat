@@ -5,6 +5,7 @@ import {
   Project,
   ProjectMember,
   ProjectRole,
+  ProjectWithRole,
   UpdateProjectDto,
   WidgetSettingsDto,
 } from '@social-commerce/shared';
@@ -62,12 +63,17 @@ export class ProjectService {
     );
   }
 
-  async findAllForUser(userId: string): Promise<Project[]> {
+  async findAllForUser(userId: string): Promise<ProjectWithRole[]> {
     const memberships = await this.entityManager.find(ProjectMember, {
       where: { userId },
       relations: ['project'],
     });
-    return memberships.map((membership) => membership.project);
+
+    // Map to include the user's role in each project
+    return memberships.map((membership) => ({
+      ...membership.project,
+      myRole: membership.role, // Add user's role in this project
+    }));
   }
 
   async findByProjectId(projectId: number): Promise<Project | null> {
