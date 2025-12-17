@@ -15,6 +15,8 @@ import { useTypingStore } from "../../../stores/typingStore";
 import { TypingIndicator } from "./TypingIndicator";
 import { useEffect } from "react";
 import { Button } from "../../ui/Button";
+import { formatMessageTime } from "../../../lib/dateUtils";
+import { cn } from "../../../lib/utils";
 
 /**
  * Component displaying detailed visitor information.
@@ -59,41 +61,88 @@ const VisitorContextPanel = ({ visitorId }: { visitorId: number }) => {
 const MessageList = ({
   messages,
   conversationId,
+  visitorName,
 }: {
   messages: Message[];
   conversationId: number;
+  visitorName?: string;
 }) => {
   const { typingStatus } = useTypingStore();
   const isTyping = typingStatus[conversationId];
 
+  // Group messages by sender to show avatar only for first message in group
+  const groupedMessages = messages.reduce((groups: Message[][], msg, index) => {
+    if (index === 0 || messages[index - 1].fromCustomer !== msg.fromCustomer) {
+      groups.push([msg]);
+    } else {
+      groups[groups.length - 1].push(msg);
+    }
+    return groups;
+  }, []);
+
   return (
     <div className="flex-1 p-4 overflow-y-auto flex flex-col-reverse">
       {isTyping && (
-        <div className="flex my-2 items-end gap-2 justify-start">
+        <div className="flex my-2 items-end gap-2 justify-start animate-fade-in">
+          <Avatar name={visitorName} size="sm" />
           <div className="bg-muted rounded-lg p-2 px-3">
             <TypingIndicator />
           </div>
         </div>
       )}
-      <div>
-        {messages?.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex my-2 items-end gap-2 ${
-              !msg.fromCustomer ? "justify-end" : "justify-start"
-            }`}
-          >
-            {!msg.fromCustomer && <div className="flex-grow"></div>}
-            <div
-              className={`inline-block p-2 px-3 max-w-[80%] break-words ${
-                !msg.fromCustomer
-                  ? "bg-primary text-primary-foreground rounded-ag" // Agent's message
-                  : "bg-muted text-muted-foreground rounded-vs" // Visitor's message
-              }`}
-            >
-              {msg.content}
-            </div>
-            {msg.fromCustomer && <div className="flex-grow"></div>}
+      <div className="space-y-4">
+        {groupedMessages.map((group, groupIndex) => (
+          <div key={groupIndex} className="space-y-1">
+            {group.map((msg, msgIndex) => {
+              const isFirstInGroup = msgIndex === 0;
+              const isLastInGroup = msgIndex === group.length - 1;
+
+              return (
+                <div
+                  key={msg.id}
+                  className={cn(
+                    "flex gap-2 animate-slide-in",
+                    msg.fromCustomer ? "justify-start" : "justify-end"
+                  )}
+                >
+                  {/* Visitor messages - left side with avatar */}
+                  {msg.fromCustomer && (
+                    <>
+                      {isFirstInGroup ? (
+                        <Avatar name={visitorName} size="sm" className="mt-1" />
+                      ) : (
+                        <div className="w-8 flex-shrink-0" /> // Spacer for grouped messages
+                      )}
+                    </>
+                  )}
+
+                  {/* Message bubble and timestamp */}
+                  <div
+                    className={cn(
+                      "flex flex-col max-w-[70%]",
+                      msg.fromCustomer ? "items-start" : "items-end"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "p-2 px-3 break-words rounded-lg",
+                        msg.fromCustomer
+                          ? "bg-muted text-muted-foreground rounded-tl-none"
+                          : "bg-primary text-primary-foreground rounded-tr-none"
+                      )}
+                    >
+                      {msg.content}
+                    </div>
+                    {/* Show timestamp only for last message in group */}
+                    {isLastInGroup && (
+                      <span className="text-xs text-muted-foreground mt-0.5 px-1">
+                        {msg.createdAt && formatMessageTime(msg.createdAt)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ))}
       </div>
@@ -152,9 +201,12 @@ export const MessagePane = () => {
     <div className="flex flex-1 w-full">
       <div className="flex-1 flex flex-col bg-background">
         <header className="p-4 border-b flex justify-between items-center">
-          <h2 className="font-semibold text-foreground">
-            Trò chuyện với {conversation?.visitor?.displayName || "Visitor"}
-          </h2>
+          <div className="flex items-center gap-3">
+            <Avatar name={conversation?.visitor?.displayName} size="md" />
+            <h2 className="font-semibold text-foreground">
+              {conversation?.visitor?.displayName || "Visitor"}
+            </h2>
+          </div>
           {conversation && (
             <div className="flex items-center gap-2">
               {conversation.status === "open" && (
@@ -191,7 +243,11 @@ export const MessagePane = () => {
           )}
         </header>
 
-        <MessageList messages={messages || []} conversationId={convoId} />
+        <MessageList
+          messages={messages || []}
+          conversationId={convoId}
+          visitorName={conversation?.visitor?.displayName}
+        />
 
         <MessageComposer conversationId={convoId} />
       </div>

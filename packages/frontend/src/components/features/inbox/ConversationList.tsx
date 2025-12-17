@@ -10,6 +10,8 @@ import { cn } from "../../../lib/utils";
 import { useTypingStore } from "../../../stores/typingStore";
 import { useProjectStore } from "../../../stores/projectStore";
 import { Button } from "../../ui/Button";
+import { Avatar } from "../../ui/Avatar";
+import { formatConversationTime } from "../../../lib/dateUtils";
 
 export const ConversationList = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -32,21 +34,22 @@ export const ConversationList = () => {
   const numericProjectId = projectId ? parseInt(projectId, 10) : undefined;
   const { typingStatus } = useTypingStore();
 
-  const {
-    data,
-    isLoading,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useGetConversations({
-    projectId: numericProjectId,
-    status,
-  });
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useGetConversations({
+      projectId: numericProjectId,
+      status,
+    });
   const { mutate: updateConversation } = useUpdateConversationStatus();
 
   const conversations = data?.pages.flatMap((page) => page.data) || [];
 
-  const FilterButton = ({ value, label }: { value: typeof status, label: string }) => (
+  const FilterButton = ({
+    value,
+    label,
+  }: {
+    value: typeof status;
+    label: string;
+  }) => (
     <Button
       variant={status === value ? "outline" : "ghost"}
       size="sm"
@@ -91,7 +94,7 @@ export const ConversationList = () => {
                 to={`/inbox/projects/${projectId}/conversations/${convo.id}`}
                 className={({ isActive }) =>
                   cn(
-                    "block p-4 border-b",
+                    "block p-4 border-b transition-all duration-200",
                     "hover:bg-accent hover:text-accent-foreground",
                     "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1",
                     isActive
@@ -108,23 +111,50 @@ export const ConversationList = () => {
                   }
                 }}
               >
-                <div className="flex justify-between items-center">
-                  <p className="font-semibold truncate">
-                    {convo.visitor.displayName}
-                  </p>
-                  {convo.unreadCount > 0 && (
-                    <span className="bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                      {convo.unreadCount}
-                    </span>
-                  )}
+                <div className="flex items-start gap-3">
+                  <Avatar
+                    name={convo.visitor.displayName}
+                    size="md"
+                    className="flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-baseline mb-1">
+                      <p
+                        className={cn(
+                          "font-semibold truncate",
+                          convo.unreadCount > 0 && "text-foreground"
+                        )}
+                      >
+                        {convo.visitor.displayName}
+                      </p>
+                      <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
+                        {convo.updatedAt &&
+                          formatConversationTime(convo.updatedAt)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <p
+                        className={cn(
+                          "text-sm truncate",
+                          convo.unreadCount > 0
+                            ? "text-foreground font-medium"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        {isTyping ? (
+                          <i className="text-primary">Đang nhập...</i>
+                        ) : (
+                          convo.lastMessageSnippet || "Chưa có tin nhắn."
+                        )}
+                      </p>
+                      {convo.unreadCount > 0 && (
+                        <span className="bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 min-w-[20px] px-1.5 flex items-center justify-center flex-shrink-0 animate-bounce-subtle">
+                          {convo.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground truncate mt-1">
-                  {isTyping ? (
-                    <i className="text-primary">Đang nhập...</i>
-                  ) : (
-                    convo.lastMessageSnippet || "Chưa có tin nhắn."
-                  )}
-                </p>
               </NavLink>
             );
           })}
