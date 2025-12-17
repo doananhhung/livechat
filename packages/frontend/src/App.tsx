@@ -1,31 +1,66 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import type { JSX } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 
-// --- Core Components & Pages ---
+// --- Core Components & Pages (Always loaded) ---
 import ProtectedRoute from "./components/ProtectedRoute";
-import LoginPage from "./pages/auth/LoginPage";
-import RegisterPage from "./pages/auth/RegisterPage";
-import VerifyEmailPage from "./pages/auth/VerifyEmailPage";
-import ResendVerificationPage from "./pages/auth/ResendVerificationPage";
-import Verify2faPage from "./pages/auth/Verify2faPage";
 import { Toaster } from "./components/ui/Toaster";
-import { SettingsLayout } from "./pages/settings/SettingsLayout";
-import { ProfilePage } from "./pages/settings/ProfilePage";
-import { SecurityPage } from "./pages/settings/SecurityPage";
-import { ProjectSettingsPage } from "./pages/settings/ProjectSettingsPage";
 import { useAuthStore } from "./stores/authStore";
 import { Spinner } from "./components/ui/Spinner";
-
-// --- The New Inbox Structure ---
-import { InboxLayout } from "./pages/inbox/InboxLayout";
 import { MainLayout } from "./components/layout/MainLayout";
-import { MessagePane } from "./components/features/inbox/MessagePane";
-import { AuthCallbackPage } from "./pages/auth/AuthCallbackPage";
 
-// --- Invitation Pages ---
-import AcceptInvitationPage from "./pages/invitations/AcceptInvitationPage";
-import InviteMembersPage from "./pages/invitations/InviteMembersPage";
+// --- Lazy loaded pages ---
+const LoginPage = lazy(() => import("./pages/auth/LoginPage"));
+const RegisterPage = lazy(() => import("./pages/auth/RegisterPage"));
+const VerifyEmailPage = lazy(() => import("./pages/auth/VerifyEmailPage"));
+const ResendVerificationPage = lazy(
+  () => import("./pages/auth/ResendVerificationPage")
+);
+const Verify2faPage = lazy(() => import("./pages/auth/Verify2faPage"));
+const AuthCallbackPage = lazy(() =>
+  import("./pages/auth/AuthCallbackPage").then((m) => ({
+    default: m.AuthCallbackPage,
+  }))
+);
+const AcceptInvitationPage = lazy(
+  () => import("./pages/invitations/AcceptInvitationPage")
+);
+const InviteMembersPage = lazy(
+  () => import("./pages/invitations/InviteMembersPage")
+);
+const InboxLayout = lazy(() =>
+  import("./pages/inbox/InboxLayout").then((m) => ({ default: m.InboxLayout }))
+);
+const MessagePane = lazy(() =>
+  import("./components/features/inbox/MessagePane").then((m) => ({
+    default: m.MessagePane,
+  }))
+);
+const SettingsLayout = lazy(() =>
+  import("./pages/settings/SettingsLayout").then((m) => ({
+    default: m.SettingsLayout,
+  }))
+);
+const ProfilePage = lazy(() =>
+  import("./pages/settings/ProfilePage").then((m) => ({
+    default: m.ProfilePage,
+  }))
+);
+const SecurityPage = lazy(() =>
+  import("./pages/settings/SecurityPage").then((m) => ({
+    default: m.SecurityPage,
+  }))
+);
+const ProjectSettingsPage = lazy(() =>
+  import("./pages/settings/ProjectSettingsPage").then((m) => ({
+    default: m.ProjectSettingsPage,
+  }))
+);
+const ProjectsListPage = lazy(() =>
+  import("./pages/settings/ProjectsListPage").then((m) => ({
+    default: m.ProjectsListPage,
+  }))
+);
 
 /**
  * PublicRoute HOC for better auth flow.
@@ -85,73 +120,87 @@ function App() {
 
   return (
     <>
-      <Routes>
-        {/* === Public Routes with Guard === */}
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <LoginPage />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <PublicRoute>
-              <RegisterPage />
-            </PublicRoute>
-          }
-        />
-        <Route path="/verify-email" element={<VerifyEmailPage />} />
-        <Route
-          path="/resend-verification"
-          element={<ResendVerificationPage />}
-        />
-        <Route path="/verify-2fa" element={<Verify2faPage />} />
-
-        <Route path="/auth/callback" element={<AuthCallbackPage />} />
-
-        {/* Accept invitation can be accessed by both authenticated and unauthenticated users */}
-        <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
-
-        {/* === Protected Routes === */}
-
-        <Route
-          element={
-            <ProtectedRoute>
-              <MainLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="/inbox">
-            <Route index element={<InboxLayout />} />
-
-            <Route path="projects/:projectId" element={<InboxLayout />}>
-              <Route
-                path="conversations/:conversationId"
-                element={<MessagePane />}
-              />
-            </Route>
-          </Route>
-
-          {/* Settings Area is now a child of MainLayout */}
-          <Route path="/settings" element={<SettingsLayout />}>
-            <Route index element={<Navigate to="profile" replace />} />
-            <Route path="profile" element={<ProfilePage />} />
-            <Route path="security" element={<SecurityPage />} />
-            <Route path="projects" element={<ProjectSettingsPage />} />
-          </Route>
-
-          {/* Invitation management (protected) */}
+      <Suspense
+        fallback={
+          <div className="flex h-screen w-screen items-center justify-center">
+            <Spinner />
+          </div>
+        }
+      >
+        <Routes>
+          {/* === Public Routes with Guard === */}
           <Route
-            path="/projects/:projectId/invite"
-            element={<InviteMembersPage />}
+            path="/login"
+            element={
+              <PublicRoute>
+                <LoginPage />
+              </PublicRoute>
+            }
           />
-        </Route>
-        {/* Fallback Route */}
-        <Route path="*" element={<Navigate to="/inbox" replace />} />
-      </Routes>
+          <Route
+            path="/register"
+            element={
+              <PublicRoute>
+                <RegisterPage />
+              </PublicRoute>
+            }
+          />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route
+            path="/resend-verification"
+            element={<ResendVerificationPage />}
+          />
+          <Route path="/verify-2fa" element={<Verify2faPage />} />
+
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
+
+          {/* Accept invitation can be accessed by both authenticated and unauthenticated users */}
+          <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
+
+          {/* === Protected Routes === */}
+
+          <Route
+            element={
+              <ProtectedRoute>
+                <MainLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/inbox">
+              <Route index element={<InboxLayout />} />
+
+              <Route path="projects/:projectId" element={<InboxLayout />}>
+                <Route
+                  path="conversations/:conversationId"
+                  element={<MessagePane />}
+                />
+              </Route>
+            </Route>
+
+            {/* Settings Area is now a child of MainLayout */}
+            <Route path="/settings" element={<SettingsLayout />}>
+              <Route index element={<Navigate to="profile" replace />} />
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="security" element={<SecurityPage />} />
+              <Route path="projects" element={<ProjectsListPage />} />
+            </Route>
+
+            {/* Project-specific settings page */}
+            <Route
+              path="/projects/:projectId/settings"
+              element={<ProjectSettingsPage />}
+            />
+
+            {/* Invitation management (protected) */}
+            <Route
+              path="/projects/:projectId/invite"
+              element={<InviteMembersPage />}
+            />
+          </Route>
+          {/* Fallback Route */}
+          <Route path="*" element={<Navigate to="/inbox" replace />} />
+        </Routes>
+      </Suspense>
 
       <Toaster />
     </>

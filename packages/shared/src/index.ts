@@ -12,6 +12,7 @@ export * from "./login.dto";
 export * from "./message.entity";
 export * from "./pagination.dto";
 export * from "./project-member.entity";
+export * from "./project-member.dto";
 export * from "./project.entity";
 export * from "./project-with-role.dto";
 export * from "./refresh-token.entity";

@@ -169,6 +169,92 @@ export class ProjectService {
       ...settingsDto,
     };
 
-    return this.entityManager.save(project);
+    return this.entityManager.save(Project, project);
+  }
+
+  /**
+   * Get all members of a project with their user information
+   */
+  async getProjectMembers(projectId: number, userId: string) {
+    // Validate that the user is a manager of this project
+    await this.validateProjectMembership(projectId, userId);
+
+    const members = await this.entityManager.find(ProjectMember, {
+      where: { projectId },
+      relations: ['user'],
+    });
+
+    return members.map((member) => ({
+      userId: member.userId,
+      role: member.role,
+      joinedAt: member.createdAt,
+      user: {
+        id: member.user.id,
+        fullName: member.user.fullName,
+        email: member.user.email,
+      },
+    }));
+  }
+
+  /**
+   * Update a member's role in a project
+   */
+  async updateMemberRole(
+    projectId: number,
+    targetUserId: string,
+    newRole: ProjectRole,
+    currentUserId: string
+  ) {
+    // Validate that current user is a manager
+    await this.validateProjectMembership(projectId, currentUserId);
+
+    // Cannot change own role
+    if (targetUserId === currentUserId) {
+      throw new ForbiddenException('You cannot change your own role');
+    }
+
+    const member = await this.entityManager.findOne(ProjectMember, {
+      where: { projectId, userId: targetUserId },
+    });
+
+    if (!member) {
+      throw new ForbiddenException('User is not a member of this project');
+    }
+
+    member.role = newRole;
+    await this.entityManager.save(ProjectMember, member);
+
+    return { success: true, message: 'Member role updated successfully' };
+  }
+
+  /**
+   * Remove a member from a project
+   */
+  async removeMember(
+    projectId: number,
+    targetUserId: string,
+    currentUserId: string
+  ) {
+    // Validate that current user is a manager
+    await this.validateProjectMembership(projectId, currentUserId);
+
+    // Cannot remove self
+    if (targetUserId === currentUserId) {
+      throw new ForbiddenException(
+        'You cannot remove yourself from the project'
+      );
+    }
+
+    const member = await this.entityManager.findOne(ProjectMember, {
+      where: { projectId, userId: targetUserId },
+    });
+
+    if (!member) {
+      throw new ForbiddenException('User is not a member of this project');
+    }
+
+    await this.entityManager.remove(ProjectMember, member);
+
+    return { success: true, message: 'Member removed successfully' };
   }
 }

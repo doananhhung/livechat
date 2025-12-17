@@ -120,4 +120,40 @@ export class ProjectController {
   getInvitationDetails(@Query('token') token: string) {
     return this.invitationService.getInvitationByToken(token);
   }
+
+  // Project Members Management
+  @Roles(ProjectRole.MANAGER)
+  @Get(':id/members')
+  getProjectMembers(
+    @Param('id', ParseIntPipe) id: number,
+    @GetCurrentUser() user: User
+  ) {
+    return this.projectService.getProjectMembers(id, user.id);
+  }
+
+  @Roles(ProjectRole.MANAGER)
+  @Patch(':projectId/members/:userId/role')
+  updateMemberRole(
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('userId') userId: string,
+    @Body('role') role: ProjectRole,
+    @GetCurrentUser() currentUser: User
+  ) {
+    return this.projectService.updateMemberRole(
+      projectId,
+      userId,
+      role,
+      currentUser.id
+    );
+  }
+
+  @Roles(ProjectRole.MANAGER)
+  @Delete(':projectId/members/:userId')
+  removeMember(
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('userId') userId: string,
+    @GetCurrentUser() currentUser: User
+  ) {
+    return this.projectService.removeMember(projectId, userId, currentUser.id);
+  }
 }

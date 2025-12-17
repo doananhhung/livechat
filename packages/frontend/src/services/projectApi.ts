@@ -6,6 +6,9 @@ import type {
   WidgetSettingsDto,
   CreateInvitationDto,
   Invitation,
+  ProjectMemberDto,
+  ProjectRole,
+  UpdateProjectDto,
 } from "@social-commerce/shared";
 
 // --- Type Definitions ---
@@ -35,6 +38,19 @@ export const createProject = async (
   data: CreateProjectDto
 ): Promise<Project> => {
   const response = await api.post("/projects", data);
+  return response.data;
+};
+
+/**
+ * Updates basic project information (name, whitelisted domains).
+ * @param projectId - The ID of the project to update.
+ * @param data - The data to update.
+ */
+export const updateProject = async (
+  projectId: number,
+  data: UpdateProjectDto
+): Promise<Project> => {
+  const response = await api.patch(`/projects/${projectId}`, data);
   return response.data;
 };
 
@@ -103,5 +119,49 @@ export const getInvitationDetails = async (
   const response = await api.get(
     `/projects/invitations/details?token=${token}`
   );
+  return response.data;
+};
+
+// --- Project Members API Functions ---
+
+/**
+ * Fetches all members of a specific project.
+ * @param projectId - The ID of the project
+ */
+export const getProjectMembers = async (
+  projectId: number
+): Promise<ProjectMemberDto[]> => {
+  const response = await api.get(`/projects/${projectId}/members`);
+  return response.data;
+};
+
+/**
+ * Updates a member's role in a project.
+ * @param projectId - The ID of the project
+ * @param userId - The ID of the user whose role to update
+ * @param role - The new role for the member
+ */
+export const updateMemberRole = async (
+  projectId: number,
+  userId: string,
+  role: ProjectRole
+): Promise<{ success: boolean; message: string }> => {
+  const response = await api.patch(
+    `/projects/${projectId}/members/${userId}/role`,
+    { role }
+  );
+  return response.data;
+};
+
+/**
+ * Removes a member from a project.
+ * @param projectId - The ID of the project
+ * @param userId - The ID of the user to remove
+ */
+export const removeMember = async (
+  projectId: number,
+  userId: string
+): Promise<{ success: boolean; message: string }> => {
+  const response = await api.delete(`/projects/${projectId}/members/${userId}`);
   return response.data;
 };

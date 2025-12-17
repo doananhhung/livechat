@@ -29,7 +29,7 @@ import {
 } from './redis/redis.module';
 import { RedisClientType } from 'redis';
 import { MailModule } from './mail/mail.module';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+// import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import {
   Conversation,
@@ -61,12 +61,12 @@ import {
       },
       inject: [REDIS_PUBLISHER_CLIENT],
     }),
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000, // 60 seconds
-        limit: 20, // 20 requests
-      },
-    ]),
+    // ThrottlerModule.forRoot([
+    //   {
+    //     ttl: 60000, // 60 seconds
+    //     limit: 20, // 20 requests
+    //   },
+    // ]),
     EventEmitterModule.forRoot(),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
@@ -112,10 +112,10 @@ import {
   controllers: [AppController],
   providers: [
     AppService,
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
-    },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: ThrottlerGuard,
+    // },
   ],
 })
 export class AppModule implements NestModule {

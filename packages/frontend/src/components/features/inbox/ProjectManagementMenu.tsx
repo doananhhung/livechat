@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings, UserPlus, Info, BarChart } from "lucide-react";
+import { Settings, UserPlus, Info, Users, Sliders } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +11,10 @@ import {
 } from "../../ui/DropdownMenu";
 import { Button } from "../../ui/Button";
 import { ProjectInfoDialog } from "./ProjectInfoDialog";
+import { ProjectMembersDialog } from "./ProjectMembersDialog";
+import { ProjectWidgetSettingsDialog } from "./ProjectWidgetSettingsDialog";
 import type { ProjectWithRole } from "@social-commerce/shared";
+import { useAuthStore } from "../../../stores/authStore";
 
 interface ProjectManagementMenuProps {
   project: ProjectWithRole;
@@ -21,7 +24,10 @@ export const ProjectManagementMenu = ({
   project,
 }: ProjectManagementMenuProps) => {
   const navigate = useNavigate();
+  const currentUser = useAuthStore((state) => state.user);
   const [showProjectInfo, setShowProjectInfo] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
+  const [showWidgetSettings, setShowWidgetSettings] = useState(false);
 
   return (
     <>
@@ -43,9 +49,23 @@ export const ProjectManagementMenu = ({
             Mời thành viên
           </DropdownMenuItem>
 
-          <DropdownMenuItem onClick={() => navigate("/settings")}>
+          <DropdownMenuItem onClick={() => setShowMembers(true)}>
+            <Users className="h-4 w-4 mr-2" />
+            Quản lý thành viên
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem onClick={() => setShowWidgetSettings(true)}>
             <Settings className="h-4 w-4 mr-2" />
-            Cài đặt dự án
+            Cài đặt nhanh Widget
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={() => navigate(`/projects/${project.id}/settings`)}
+          >
+            <Sliders className="h-4 w-4 mr-2" />
+            Cài đặt chi tiết
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
@@ -54,16 +74,6 @@ export const ProjectManagementMenu = ({
             <Info className="h-4 w-4 mr-2" />
             Thông tin dự án
           </DropdownMenuItem>
-
-          <DropdownMenuItem
-            onClick={() => {
-              // TODO: Implement analytics
-              console.log("Show analytics");
-            }}
-          >
-            <BarChart className="h-4 w-4 mr-2" />
-            Thống kê
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -71,6 +81,20 @@ export const ProjectManagementMenu = ({
         project={project}
         open={showProjectInfo}
         onOpenChange={setShowProjectInfo}
+      />
+
+      <ProjectMembersDialog
+        projectId={project.id}
+        projectName={project.name}
+        currentUserId={currentUser?.id || ""}
+        open={showMembers}
+        onOpenChange={setShowMembers}
+      />
+
+      <ProjectWidgetSettingsDialog
+        project={project}
+        open={showWidgetSettings}
+        onOpenChange={setShowWidgetSettings}
       />
     </>
   );
