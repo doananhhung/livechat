@@ -1,5 +1,5 @@
 // src/widget/components/Composer.tsx
-import { useState, useRef } from "preact/hooks";
+import { useState, useRef, useEffect } from "preact/hooks";
 import type { FormEvent, KeyboardEvent } from "react";
 import { type ConnectionStatus } from "../types";
 
@@ -8,6 +8,12 @@ interface ComposerProps {
   onTypingChange: (isTyping: boolean) => void;
   connectionStatus: ConnectionStatus;
 }
+
+// Constants
+const MAX_MESSAGE_LENGTH = 5000;
+const TYPING_TIMEOUT = 1500; // ms
+const RATE_LIMIT_COUNT = 10; // Max messages
+const RATE_LIMIT_WINDOW = 60000; // Per 60 seconds
 
 // Styles are written directly to avoid dependency on parent page's classes
 const styles = {
@@ -70,11 +76,42 @@ export const Composer = ({
   connectionStatus,
 }: ComposerProps) => {
   const [content, setContent] = useState("");
+  const [error, setError] = useState("");
   const typingTimeoutRef = useRef<number | null>(null);
+  const messageTimes = useRef<number[]>([]); // Track message timestamps for rate limiting
   const isDisabled = connectionStatus !== "connected";
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  // Check rate limit
+  const isRateLimited = (): boolean => {
+    const now = Date.now();
+    // Remove timestamps older than the window
+    messageTimes.current = messageTimes.current.filter(
+      (time) => now - time < RATE_LIMIT_WINDOW
+    );
+    return messageTimes.current.length >= RATE_LIMIT_COUNT;
+  };
+
   const handleTyping = (e: FormEvent<HTMLTextAreaElement>) => {
-    setContent(e.currentTarget.value);
+    const value = e.currentTarget.value;
+
+    // Enforce max length
+    if (value.length > MAX_MESSAGE_LENGTH) {
+      setError(`Message too long (max ${MAX_MESSAGE_LENGTH} characters)`);
+      return;
+    }
+
+    setContent(value);
+    setError("");
 
     if (!typingTimeoutRef.current) {
       onTypingChange(true);
@@ -85,35 +122,47 @@ export const Composer = ({
     typingTimeoutRef.current = window.setTimeout(() => {
       onTypingChange(false);
       typingTimeoutRef.current = null;
-    }, 1500);
+    }, TYPING_TIMEOUT);
+  };
+
+  const sendMessage = () => {
+    const trimmedContent = content.trim();
+
+    if (!trimmedContent || isDisabled) {
+      return;
+    }
+
+    // Rate limiting check
+    if (isRateLimited()) {
+      setError("Sending too fast. Please wait a moment.");
+      return;
+    }
+
+    // Record timestamp
+    messageTimes.current.push(Date.now());
+
+    onSendMessage(trimmedContent);
+    setContent("");
+    setError("");
+
+    // Clear typing indicator
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+    onTypingChange(false);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (content.trim() && !isDisabled) {
-        onSendMessage(content.trim());
-        setContent("");
-        if (typingTimeoutRef.current) {
-          clearTimeout(typingTimeoutRef.current);
-          typingTimeoutRef.current = null;
-        }
-        onTypingChange(false);
-      }
+      sendMessage();
     }
   };
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (content.trim()) {
-      onSendMessage(content.trim());
-      setContent("");
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-        typingTimeoutRef.current = null;
-      }
-      onTypingChange(false);
-    }
+    sendMessage();
   };
 
   const buttonStyle = {
@@ -123,6 +172,18 @@ export const Composer = ({
 
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
+      {error && (
+        <div
+          style={{
+            color: "#dc2626",
+            fontSize: "12px",
+            marginBottom: "4px",
+            padding: "4px 8px",
+          }}
+        >
+          {error}
+        </div>
+      )}
       <div style={styles.container}>
         <textarea
           value={content}
@@ -132,14 +193,27 @@ export const Composer = ({
           placeholder={isDisabled ? "Đang kết nối..." : "Nhập tin nhắn..."}
           style={styles.textarea}
           rows={1}
+          maxLength={MAX_MESSAGE_LENGTH}
+          aria-label="Message input"
         />
         <button
           type="submit"
           disabled={!content.trim() || isDisabled}
           style={buttonStyle}
+          aria-label="Send message"
         >
           <SendIcon />
         </button>
+      </div>
+      <div
+        style={{
+          fontSize: "11px",
+          color: "#9ca3af",
+          textAlign: "right",
+          marginTop: "4px",
+        }}
+      >
+        {content.length}/{MAX_MESSAGE_LENGTH}
       </div>
     </form>
   );

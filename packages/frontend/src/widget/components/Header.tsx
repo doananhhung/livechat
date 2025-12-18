@@ -57,11 +57,14 @@ export const Header = ({ onClose, primaryColor }: HeaderProps) => {
         )} 100%)`,
       }}
       className="p-4 text-white flex justify-between items-center rounded-t-xl shadow-sm"
+      role="banner"
     >
       <h3 className="font-semibold text-lg">Chat with us</h3>
       <button
         onClick={onClose}
         className="p-1 rounded-full transition-colors hover:bg-white/20"
+        aria-label="Close chat window"
+        title="Close chat"
       >
         <CloseIcon />
       </button>

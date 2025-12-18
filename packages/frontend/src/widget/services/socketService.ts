@@ -8,14 +8,18 @@ const SOCKET_URL = import.meta.env.VITE_API_BASE_URL?.replace("/api/v1", "");
 
 class SocketService {
   private socket: Socket | null = null;
+  private isConnecting = false; // Prevent race conditions
 
   // Method to connect and listen for events
   public connect(projectId: string, visitorUid: string): void {
     const socketUrlWithParams = `${SOCKET_URL}?projectId=${projectId}`;
 
-    if (this.socket?.connected) {
+    // Prevent multiple simultaneous connection attempts
+    if (this.socket?.connected || this.isConnecting) {
       return;
     }
+
+    this.isConnecting = true;
 
     const {
       setConnectionStatus,
@@ -32,29 +36,39 @@ class SocketService {
       reconnectionDelay: 5000,
     });
 
+    // --- Remove all existing listeners before adding new ones ---
+    this.removeAllListeners();
+
     // --- Listen for events from the Server ---
 
     this.socket.on("connect", () => {
+      this.isConnecting = false;
       setConnectionStatus("connected");
       // Send identification event immediately after connecting
       this.socket?.emit("identify", { projectId, visitorUid });
     });
 
     this.socket.on("disconnect", () => {
+      this.isConnecting = false;
       setConnectionStatus("disconnected");
     });
 
     this.socket.on("connect_error", () => {
+      this.isConnecting = false;
       setConnectionStatus("disconnected");
     });
 
     this.socket.on("reconnect_failed", () => {
+      this.isConnecting = false;
       setConnectionStatus("disconnected");
     });
 
-    this.socket.onAny((eventName, ...args) => {
-      console.log(`[Socket Event]: ${eventName}`, args);
-    });
+    // Only log in development
+    if (import.meta.env.DEV) {
+      this.socket.onAny((eventName, ...args) => {
+        console.log(`[Socket Event]: ${eventName}`, args);
+      });
+    }
 
     this.socket.on("conversationHistory", (data: { messages: Message[] }) => {
       loadConversationHistory(data.messages);
@@ -100,6 +114,21 @@ class SocketService {
     );
   }
 
+  // --- Helper to remove all listeners (prevent duplicates) ---
+  private removeAllListeners(): void {
+    if (!this.socket) return;
+
+    this.socket.off("connect");
+    this.socket.off("disconnect");
+    this.socket.off("connect_error");
+    this.socket.off("reconnect_failed");
+    this.socket.off("conversationHistory");
+    this.socket.off("messageSent");
+    this.socket.off("agentReplied");
+    this.socket.off("agentIsTyping");
+    this.socket.offAny();
+  }
+
   // --- Methods to send events to the Server ---
 
   public emitSendMessage(content: string, tempId: string): void {
@@ -117,8 +146,10 @@ class SocketService {
   }
 
   public disconnect(): void {
+    this.removeAllListeners();
     this.socket?.disconnect();
     this.socket = null;
+    this.isConnecting = false;
   }
 }
 

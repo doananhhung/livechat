@@ -3,9 +3,9 @@
 
 \subsubsection{Mục đích}
 
-\texttt{EventProducerModule} là một module hạ tầng kỹ thuật, đóng vai trò là "nhà sản xuất" (Producer) trong kiến trúc Producer-Consumer của hệ thống. Trách nhiệm duy nhất và được xác định rõ ràng của nó là cung cấp một service trừu tượng hóa (\texttt{SqsService}) để các thành phần khác trong ứng dụng (chủ yếu là \texttt{GatewayModule}) có thể gửi các sự kiện (messages) vào hàng đợi AWS SQS một cách dễ dàng và đáng tin cậy.
+\texttt{EventProducerModule} là một module hạ tầng kỹ thuật, đóng vai trò là "nhà sản xuất" (Producer) trong một kiến trúc bất đồng bộ. Trách nhiệm duy nhất và được xác định rõ ràng của nó là cung cấp một service trừu tượng hóa (\texttt{SqsService}) để bất kỳ thành phần nào trong ứng dụng cần thực hiện một tác vụ nền (background task) có thể gửi các sự kiện (messages) vào hàng đợi AWS SQS một cách dễ dàng và đáng tin cậy.
 
-Bằng cách đóng gói toàn bộ logic tương tác với AWS SDK, module này giúp tách biệt mối quan tâm về việc "gửi sự kiện" khỏi logic nghiệp vụ của các module khác.
+Bằng cách đóng gói toàn bộ logic tương tác với AWS SDK, module này giúp tách biệt mối quan tâm về việc "gửi sự kiện" khỏi logic nghiệp vụ của các module khác. Nó cho phép một module (ví dụ: một HTTP controller) có thể nhanh chóng gửi đi một yêu cầu xử lý và trả về response cho người dùng ngay lập tức, trong khi một module khác (consumer) sẽ xử lý yêu cầu đó một cách bất đồng bộ.
 
 \subsubsection{Các Thành phần Chính (Files)}
 

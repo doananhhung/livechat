@@ -2,89 +2,57 @@
 \label{subsec:auth-module}
 
 \subsubsection{Mục đích}
-\texttt{AuthModule} là trung tâm an ninh của toàn bộ hệ thống. Nó chịu trách nhiệm xác thực danh tính người dùng, tạo và quản lý các token truy cập, đồng thời cung cấp các cơ chế bảo mật nâng cao như Xác thực hai yếu tố (2FA). Module này phối hợp chặt chẽ với \texttt{UserModule} để xác minh thông tin đăng nhập và quản lý các thông tin bí mật liên quan đến xác thực.
+\texttt{AuthModule} là trung tâm an ninh của toàn bộ hệ thống. Nó chịu trách nhiệm xác thực danh tính người dùng, tạo và quản lý các token truy cập, đồng thời cung cấp các cơ chế bảo mật nâng cao như Xác thực hai yếu tố (2FA) và đăng nhập qua mạng xã hội (Google). Module này phối hợp chặt chẽ với \texttt{UserModule} và \texttt{MailModule} để xác minh thông tin đăng nhập và quản lý các thông tin bí mật liên quan đến xác thực.
 
-\subsubsection{Các Thành phần Chính (Files)}
-Phần này sẽ được chia nhỏ để phân tích các luồng nghiệp vụ khác nhau trong module. Trước tiên, chúng ta sẽ đi sâu vào luồng Xác thực hai yếu tố (2FA).
+\subsubsection{Luồng Nghiệp vụ và Thành phần}
 
-% --- Bắt đầu phân tích 2FA ---
-
-\paragraph{Thành phần 2FA}
-Luồng 2FA được thiết kế để cung cấp một lớp bảo mật bổ sung cho tài khoản người dùng, yêu cầu họ phải cung cấp một mã xác thực một lần (OTP) từ ứng dụng xác thực trên điện thoại sau khi đã đăng nhập bằng mật khẩu.
-
+\paragraph{1. Đăng ký và Xác thực Email}
+Luồng này xử lý việc tạo tài khoản mới và đảm bảo người dùng sở hữu địa chỉ email đã đăng ký.
 \begin{description}
-    \item[\texttt{2fa/two-factor-authentication.service.ts}] Service này chứa các logic tiện ích cốt lõi để tạo và xác minh mã 2FA. Nó sử dụng thư viện \texttt{otplib} để thực hiện các thao tác mã hóa theo tiêu chuẩn TOTP (Time-based One-Time Password).
-    
-    \item[\texttt{2fa/two-factor-authentication.controller.ts}] Controller này cung cấp các API endpoint cho toàn bộ vòng đời của việc quản lý 2FA, từ việc tạo mã QR để thiết lập, bật/tắt tính năng, cho đến việc xác thực mã 2FA trong quá trình đăng nhập.
+    \item[\texttt{POST /auth/register}] Endpoint công khai cho phép người dùng mới đăng ký. Nó không tự động đăng nhập mà thay vào đó:
+    \begin{itemize}
+        \item Kiểm tra email tồn tại.
+        \item Băm mật khẩu và tạo \texttt{User} mới với trạng thái \texttt{isEmailVerified = false}.
+        \item Tạo một token xác thực duy nhất, lưu vào Redis với thời gian sống 15 phút.
+        \item Gửi email chào mừng chứa link xác thực (với token) cho người dùng qua \texttt{MailModule}.
+    \end{itemize}
+    \item[\texttt{GET /auth/verify-email}] Endpoint được truy cập từ link trong email. Nó đọc token từ query params, tìm \texttt{userId} tương ứng trong Redis, sau đó cập nhật trạng thái \texttt{isEmailVerified = true} cho user và xóa token khỏi Redis.
+    \item[\texttt{POST /auth/resend-verification}] Cho phép người dùng yêu cầu gửi lại email xác thực nếu họ không nhận được hoặc token hết hạn.
 \end{description}
 
-\subsubsection{Phân tích các Phương thức Quan trọng (2FA)}
-
-\paragraph{\texttt{2fa/two-factor-authentication.service.ts}}
-\begin{itemize}
-    \item \texttt{generateSecret(user)}: Tạo ra một secret key (khóa bí mật) mới theo chuẩn OTP. Nó cũng tạo ra một \texttt{otpAuthUrl}, là một chuỗi URI đặc biệt chứa thông tin về secret key, email người dùng và tên ứng dụng, để các ứng dụng xác thực (như Google Authenticator) có thể quét và tự động thiết lập tài khoản.
-    
-    \item \texttt{generateQrCodeDataURL(otpAuthUrl)}: Chuyển đổi chuỗi \texttt{otpAuthUrl} thành một định dạng Data URL chứa hình ảnh mã QR. Data URL này có thể được hiển thị trực tiếp trên trình duyệt dưới dạng một thẻ \texttt{<img>} để người dùng quét.
-    
-    \item \texttt{isCodeValid(code, secret)}: Đây là phương thức xác thực cốt lõi. Nó nhận mã OTP do người dùng nhập và secret key tương ứng, sau đó sử dụng \texttt{otplib} để kiểm tra xem mã có hợp lệ hay không.
-\end{itemize}
-
-\paragraph{\texttt{2fa/two-factor-authentication.controller.ts}}
-Controller này điều phối một luồng nghiệp vụ phức tạp, sử dụng cookie để truyền các secret tạm thời một cách an toàn giữa các bước.
-
-\begin{itemize}
-    \item \texttt{POST /generate}: Endpoint khởi đầu cho việc thiết lập 2FA. Nó gọi service để tạo secret và mã QR. Một điểm kiến trúc quan trọng là nó **không lưu secret vào CSDL ngay lập tức**. Thay vào đó, nó mã hóa secret và lưu tạm thời vào một HttpOnly cookie tên là \texttt{2fa\_secret}, chỉ có hiệu lực trong 5 phút. Điều này đảm bảo secret chỉ được lưu trữ vĩnh viễn khi người dùng xác nhận thành công ở bước tiếp theo.
-    
-    \item \texttt{POST /turn-on}: Endpoint để hoàn tất việc bật 2FA. Nó đọc secret tạm thời từ cookie \texttt{2fa\_secret}, giải mã, sau đó dùng nó để xác thực mã OTP mà người dùng gửi lên. Nếu mã hợp lệ, nó sẽ gọi đến \texttt{userService.turnOnTwoFactorAuthentication} để lưu vĩnh viễn secret vào CSDL và tạo ra các mã khôi phục.
-    
-    \item \texttt{POST /authenticate}: Đây là endpoint quan trọng nhất trong luồng đăng nhập 2FA.
-    \begin{itemize}
-        \item Nó được bảo vệ bởi một Guard đặc biệt (\texttt{AuthGuard('2fa-partial')}) chỉ cho phép các request chứa một "partial token" (token tạm thời được cấp sau khi xác thực mật khẩu thành công).
-        \item Nó lấy secret đã được lưu vĩnh viễn của người dùng, giải mã và xác thực mã OTP.
-        \item Nếu thành công, nó sẽ gọi đến \texttt{authService.loginAndReturnTokens} để cấp phát bộ token đầy đủ (Access Token và Refresh Token), hoàn tất quá trình đăng nhập.
-    \end{itemize}
-    
-    \item \texttt{POST /turn-off}: Endpoint để vô hiệu hóa 2FA. Nó yêu cầu người dùng cung cấp một mã OTP hợp lệ cuối cùng để xác nhận hành động, sau đó gọi đến \texttt{userService.turnOffTwoFactorAuthentication} để xóa toàn bộ dữ liệu 2FA khỏi CSDL.
-\end{itemize}
-
-% --- Dán đoạn mã này vào cuối file 03-02-auth-module.tex ---
-
-\paragraph{Thành phần Xác thực Chính}
-Đây là các thành phần xử lý luồng nghiệp vụ chính của việc xác thực, bao gồm đăng ký, đăng nhập bằng mật khẩu, và quản lý vòng đời của token.
+\paragraph{2. Đăng nhập và Quản lý Session}
+Luồng này xử lý việc đăng nhập bằng email/mật khẩu và vòng đời của token.
 \begin{description}
-    \item[\texttt{auth.service.ts}] Service này là "bộ não" của module, chứa toàn bộ logic nghiệp vụ phức tạp. Nó chịu trách nhiệm xác thực thông tin người dùng, tạo ra các loại token khác nhau (Access, Refresh, Partial 2FA), quản lý cơ chế Refresh Token Rotation, và xử lý các nghiệp vụ đăng xuất.
-    
-    \item[\texttt{auth.controller.ts}] Controller này cung cấp các API endpoint công khai và được bảo vệ cho các hành động xác thực. Nó điều phối luồng dữ liệu, nhận request từ client, gọi đến \texttt{AuthService} để xử lý, và quản lý việc cài đặt/xóa các token trong HttpOnly cookie, đảm bảo an toàn cho phía client.
+    \item[\texttt{POST /auth/login}] Endpoint đăng nhập chính, được bảo vệ bởi \texttt{LocalAuthGuard}. Đây là nơi chứa logic rẽ nhánh quan trọng:
+    \begin{itemize}
+        \item Nếu người dùng \textbf{không} bật 2FA, nó sẽ cấp phát bộ token đầy đủ (Access Token, Refresh Token) và cài đặt \texttt{refresh\_token} vào HttpOnly cookie.
+        \item Nếu người dùng \textbf{có} bật 2FA, nó sẽ không cấp token đầy đủ. Thay vào đó, nó tạo một \texttt{partial token} tạm thời, cài đặt vào cookie \texttt{2fa\_partial\_token}, và trả về lỗi \texttt{401 Unauthorized} với mã lỗi đặc biệt là \texttt{2FA\_REQUIRED}. Frontend sẽ dựa vào mã lỗi này để hiển thị màn hình nhập mã OTP.
+    \end{itemize}
+    \item[\texttt{GET /auth/refresh}] Endpoint để làm mới access token, được bảo vệ bởi \texttt{RefreshTokenGuard}. Nó thực hiện cơ chế \textit{Refresh Token Rotation}: xác thực refresh token cũ, nếu hợp lệ, tạo ra một cặp token mới và thay thế token cũ trong CSDL.
+    \item[\texttt{POST /auth/logout}] Đăng xuất khỏi phiên hiện tại bằng cách xóa refresh token tương ứng khỏi CSDL và xóa cookie trên trình duyệt.
+    \item[\texttt{POST /auth/logout-all}] Đăng xuất khỏi tất cả các thiết bị. Nó xóa tất cả refresh token của người dùng và cập nhật trường \texttt{tokensValidFrom} trên entity \texttt{User} để vô hiệu hóa tất cả access token đã cấp trước đó.
+    \item[\texttt{POST /auth/change-password}] Cho phép người dùng đã xác thực thay đổi mật khẩu. Sau khi đổi thành công, nó sẽ tự động gọi \texttt{logoutAll} để tăng cường bảo mật.
 \end{description}
 
-\subsubsection{Phân tích các Phương thức Quan trọng (Xác thực chính)}
-
-\paragraph{\texttt{auth.service.ts}}
-\begin{itemize}
-    \item \texttt{register(dto)}: Xử lý việc đăng ký người dùng mới. Nó kiểm tra xem email đã tồn tại hay chưa để tránh trùng lặp, sau đó băm mật khẩu và tạo người dùng mới trong một transaction.
-    
-    \item \texttt{validateUser(email, pass)}: Đây là logic cốt lõi cho \texttt{LocalStrategy} của Passport.js. Nó tìm người dùng bằng email, so sánh mật khẩu được cung cấp với mật khẩu đã băm trong CSDL, và kiểm tra trạng thái tài khoản (ví dụ: có bị đình chỉ hay không).
-    
-    \item \texttt{loginAndReturnTokens(user, ...)}: Sau khi một người dùng được xác thực thành công, phương thức này sẽ được gọi. Nó tạo ra một cặp Access Token và Refresh Token mới, sau đó gọi đến \texttt{userService.setCurrentRefreshToken} để lưu trữ refresh token mới vào CSDL, hoàn tất cơ chế "xoay vòng token" (token rotation).
-    
-    \item \texttt{generate2FAPartialToken(userId)}: Một phương thức mang tính kiến trúc quan trọng. Khi người dùng có bật 2FA đăng nhập thành công bằng mật khẩu, service này sẽ tạo ra một "partial token" – một JWT đặc biệt, có thời gian sống ngắn, chỉ có tác dụng duy nhất là cho phép người dùng truy cập endpoint \texttt{/2fa/authenticate} để nhập mã OTP.
-    
-    \item \texttt{refreshTokens(id, token)}: Xử lý logic làm mới Access Token. Nó sử dụng \texttt{userService} để xác thực refresh token cũ. Nếu hợp lệ, nó sẽ tạo ra một cặp token mới và thay thế token cũ trong CSDL, đảm bảo mỗi refresh token chỉ được sử dụng một lần.
-    
-    \item \texttt{logout(id, token)} và \texttt{logoutAll(id)}: Cung cấp hai cấp độ đăng xuất. \texttt{logout} chỉ xóa refresh token của phiên hiện tại, trong khi \texttt{logoutAll} xóa tất cả refresh token và vô hiệu hóa tất cả access token đã cấp trước đó bằng cách cập nhật trường \texttt{tokensValidFrom} trên entity \texttt{User}.
-\end{itemize}
-
-\paragraph{\texttt{auth.controller.ts}}
-\begin{itemize}
-    \item \texttt{POST /register}: Endpoint công khai cho phép người dùng mới đăng ký. Sau khi đăng ký thành công, nó tự động đăng nhập người dùng và trả về bộ token đầu tiên.
-    
-    \item \texttt{POST /login}: Endpoint đăng nhập chính, được bảo vệ bởi \texttt{LocalAuthGuard}. Đây là nơi chứa logic rẽ nhánh quan trọng nhất của luồng xác thực:
+\paragraph{3. Đăng nhập qua Google (OAuth2)}
+Luồng này cho phép người dùng đăng nhập hoặc đăng ký nhanh chóng bằng tài khoản Google.
+\begin{description}
+    \item[\texttt{GET /auth/google}] Endpoint khởi đầu, chuyển hướng người dùng đến trang đăng nhập của Google để xác thực.
+    \item[\texttt{GET /auth/google/callback}] Endpoint mà Google sẽ gọi lại sau khi người dùng xác thực thành công. Logic bên trong sẽ:
     \begin{itemize}
-        \item Nếu người dùng \textbf{không} bật 2FA, nó sẽ cấp phát bộ token đầy đủ và cài đặt \texttt{refresh\_token} vào cookie.
-        \item Nếu người dùng \textbf{có} bật 2FA, nó sẽ không cấp token đầy đủ. Thay vào đó, nó tạo một "partial token", cài đặt vào cookie \texttt{2fa\_partial\_token}, và trả về lỗi \texttt{401 Unauthorized} với một mã lỗi đặc biệt là \texttt{2FA\_REQUIRED}. Phía frontend sẽ dựa vào mã lỗi này để hiển thị màn hình nhập mã OTP.
+        \item Nhận thông tin profile từ Google.
+        \item Gọi \texttt{authService.validateOAuthUser} để tìm hoặc tạo user tương ứng.
+        \item Nếu user có bật 2FA, tạo \texttt{partial token} và chuyển hướng đến trang nhập mã 2FA của frontend.
+        \item Nếu không, tạo một \textbf{mã sử dụng một lần (one-time code)}, lưu vào Redis, và chuyển hướng người dùng về trang callback của frontend kèm theo mã này.
     \end{itemize}
-    
-    \item \texttt{GET /refresh}: Endpoint để làm mới access token, được bảo vệ bởi \texttt{RefreshTokenGuard} để đảm bảo chỉ các request có refresh token hợp lệ mới được xử lý.
-    
-    \item \texttt{POST /logout} và \texttt{POST /logout-all}: Cung cấp hai endpoint cho việc đăng xuất khỏi phiên hiện tại hoặc tất cả các phiên. Cả hai đều thực hiện việc xóa cookie \texttt{refresh\_token} khỏi trình duyệt của người dùng.
-\end{itemize}
+    \item[\texttt{POST /auth/exchange-code}] Frontend sau khi nhận được one-time code sẽ gọi đến endpoint này. Backend sẽ xác thực mã trong Redis, nếu hợp lệ thì xóa mã và cấp phát bộ token đầy đủ cho người dùng, hoàn tất quá trình đăng nhập.
+\end{description}
+
+\paragraph{4. Xác thực hai yếu tố (2FA)}
+Luồng 2FA cung cấp một lớp bảo mật bổ sung, yêu cầu mã OTP từ ứng dụng xác thực.
+\begin{description}
+    \item[\texttt{POST /2fa/generate}] Endpoint cho người dùng đã đăng nhập để bắt đầu quá trình cài đặt 2FA. Nó tạo ra một secret key và mã QR. Secret này được mã hóa và lưu tạm thời vào một HttpOnly cookie (\texttt{2fa\_secret}) có hiệu lực 5 phút, thay vì lưu ngay vào CSDL.
+    \item[\texttt{POST /2fa/turn-on}] Hoàn tất việc bật 2FA. Nó đọc secret từ cookie, xác thực mã OTP người dùng nhập. Nếu đúng, nó sẽ lưu vĩnh viễn secret vào CSDL và tạo các mã khôi phục (recovery codes).
+    \item[\texttt{POST /2fa/authenticate}] Endpoint được sử dụng sau khi đăng nhập bằng mật khẩu (hoặc Google) nếu tài khoản có bật 2FA. Nó được bảo vệ bởi một Guard đặc biệt (\texttt{AuthGuard('2fa-partial')}) chỉ cho phép các request chứa \texttt{partial token}. Nếu mã OTP hợp lệ, nó sẽ cấp phát bộ token đầy đủ.
+    \item[\texttt{POST /2fa/turn-off}] Vô hiệu hóa 2FA, yêu cầu một mã OTP cuối cùng để xác nhận hành động.
+\end{description}

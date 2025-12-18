@@ -6,7 +6,14 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Spinner } from "../../components/ui/Spinner";
 import { useToast } from "../../components/ui/use-toast";
-import { UserPlus, ChevronDown, ChevronRight, ArrowLeft } from "lucide-react";
+import {
+  ChevronRight,
+  ChevronDown,
+  ArrowLeft,
+  Info,
+  Palette,
+  Code,
+} from "lucide-react";
 import { PermissionGate } from "../../components/PermissionGate";
 import { ProjectRole, WidgetPosition } from "@social-commerce/shared";
 import { ProjectBasicSettingsForm } from "../../components/projects/ProjectBasicSettingsForm";
@@ -149,19 +156,27 @@ export const ProjectSettingsPage = () => {
         <div className="bg-card border rounded-lg overflow-hidden">
           <button
             onClick={() => toggleSection("basic")}
-            className="w-full px-6 py-4 flex items-center justify-between hover:bg-accent transition-colors"
+            className="group w-full px-6 py-4 flex items-center justify-between hover:bg-accent transition-colors"
           >
-            <h2 className="text-lg font-semibold text-foreground">
-              Thông tin cơ bản
-            </h2>
-            {expandedSections.basic ? (
-              <ChevronDown className="h-5 w-5 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            )}
+            <div className="flex items-center gap-3">
+              <Info className="h-5 w-5 text-muted-foreground" />
+              <div className="text-left">
+                <h2 className="text-lg font-semibold text-foreground">
+                  Thông tin cơ bản
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Tên dự án và cài đặt chung
+                </p>
+              </div>
+            </div>
+            <ChevronRight
+              className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
+                expandedSections.basic ? "rotate-90" : ""
+              }`}
+            />
           </button>
           {expandedSections.basic && (
-            <div className="px-6 pb-6 border-t">
+            <div className="px-6 pb-6 border-t animate-slide-in">
               <PermissionGate
                 projectId={currentProject.id}
                 requiredRole={ProjectRole.MANAGER}
@@ -183,19 +198,27 @@ export const ProjectSettingsPage = () => {
         <div className="bg-card border rounded-lg overflow-hidden">
           <button
             onClick={() => toggleSection("widget")}
-            className="w-full px-6 py-4 flex items-center justify-between hover:bg-accent transition-colors"
+            className="group w-full px-6 py-4 flex items-center justify-between hover:bg-accent transition-colors"
           >
-            <h2 className="text-lg font-semibold text-foreground">
-              Cài đặt Widget
-            </h2>
-            {expandedSections.widget ? (
-              <ChevronDown className="h-5 w-5 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            )}
+            <div className="flex items-center gap-3">
+              <Palette className="h-5 w-5 text-muted-foreground" />
+              <div className="text-left">
+                <h2 className="text-lg font-semibold text-foreground">
+                  Cài đặt Widget
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Màu sắc, vị trí và nội dung
+                </p>
+              </div>
+            </div>
+            <ChevronRight
+              className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
+                expandedSections.widget ? "rotate-90" : ""
+              }`}
+            />
           </button>
           {expandedSections.widget && (
-            <div className="px-6 pb-6 border-t">
+            <div className="px-6 pb-6 border-t animate-slide-in">
               <PermissionGate
                 projectId={currentProject.id}
                 requiredRole={ProjectRole.MANAGER}
@@ -322,19 +345,27 @@ export const ProjectSettingsPage = () => {
         <div className="bg-card border rounded-lg overflow-hidden">
           <button
             onClick={() => toggleSection("snippet")}
-            className="w-full px-6 py-4 flex items-center justify-between hover:bg-accent transition-colors"
+            className="group w-full px-6 py-4 flex items-center justify-between hover:bg-accent transition-colors"
           >
-            <h2 className="text-lg font-semibold text-foreground">
-              Mã nhúng Widget
-            </h2>
-            {expandedSections.snippet ? (
-              <ChevronDown className="h-5 w-5 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            )}
+            <div className="flex items-center gap-3">
+              <Code className="h-5 w-5 text-muted-foreground" />
+              <div className="text-left">
+                <h2 className="text-lg font-semibold text-foreground">
+                  Mã nhúng Widget
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Copy code để tích hợp vào website
+                </p>
+              </div>
+            </div>
+            <ChevronRight
+              className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
+                expandedSections.snippet ? "rotate-90" : ""
+              }`}
+            />
           </button>
           {expandedSections.snippet && (
-            <div className="px-6 pb-6 border-t pt-6">
+            <div className="px-6 pb-6 border-t animate-slide-in pt-6">
               <p className="text-sm text-muted-foreground mb-4">
                 Copy đoạn mã sau và dán vào thẻ{" "}
                 <code className="bg-muted px-1 py-0.5 rounded">

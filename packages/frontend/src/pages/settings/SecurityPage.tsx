@@ -15,12 +15,101 @@ import {
 import { useToast } from "../../components/ui/use-toast";
 import { PinInput } from "../../components/ui/PinInput";
 import {
+  Eye,
+  EyeOff,
+  Check,
+  X,
+  Download,
+  Copy,
+  Shield,
+  Lock,
+  Mail,
+} from "lucide-react";
+import {
   useGenerate2faMutation,
   useTurnOn2faMutation,
   useDisable2faMutation,
   useChangePasswordMutation,
   useRequestEmailChangeMutation,
 } from "../../services/settingsApi";
+
+// ========================================================================
+// PASSWORD STRENGTH INDICATOR
+// ========================================================================
+const getPasswordStrength = (password: string) => {
+  let strength = 0;
+  if (password.length >= 8) strength++;
+  if (password.length >= 12) strength++;
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+  if (/\d/.test(password)) strength++;
+  if (/[^a-zA-Z\d]/.test(password)) strength++;
+  return strength;
+};
+
+const PasswordStrengthIndicator = ({ password }: { password: string }) => {
+  const strength = getPasswordStrength(password);
+
+  const requirements = [
+    { label: "Ít nhất 8 ký tự", met: password.length >= 8 },
+    {
+      label: "Chữ hoa và chữ thường",
+      met: /[a-z]/.test(password) && /[A-Z]/.test(password),
+    },
+    { label: "Ít nhất 1 số", met: /\d/.test(password) },
+    { label: "Ít nhất 1 ký tự đặc biệt", met: /[^a-zA-Z\d]/.test(password) },
+  ];
+
+  const strengthColors = [
+    "bg-destructive",
+    "bg-warning",
+    "bg-warning",
+    "bg-success",
+    "bg-success",
+  ];
+  const strengthLabels = ["Rất yếu", "Yếu", "Trung bình", "Mạnh", "Rất mạnh"];
+
+  if (!password) return null;
+
+  return (
+    <div className="space-y-3 mt-2">
+      {/* Strength bar */}
+      <div className="flex gap-1">
+        {[...Array(5)].map((_, i) => (
+          <div
+            key={i}
+            className={`h-1 flex-1 rounded-full transition-colors ${
+              i < strength ? strengthColors[strength - 1] : "bg-muted"
+            }`}
+          />
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-foreground">
+          {strengthLabels[strength]}
+        </span>
+      </div>
+
+      {/* Requirements checklist */}
+      <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
+        {requirements.map((req, i) => (
+          <div key={i} className="flex items-center gap-2 text-xs">
+            {req.met ? (
+              <Check className="h-3 w-3 text-success" />
+            ) : (
+              <X className="h-3 w-3 text-muted-foreground" />
+            )}
+            <span
+              className={req.met ? "text-foreground" : "text-muted-foreground"}
+            >
+              {req.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 // ========================================================================
 // SECTION 1: TWO-FACTOR AUTHENTICATION
@@ -117,20 +206,37 @@ const TwoFactorAuthSection = () => {
     }
   };
 
+  const handleDownloadRecoveryCodes = () => {
+    const text = recoveryCodes.join("\n");
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `recovery-codes-${new Date().toISOString()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium">Xác thực hai yếu tố</h3>
-        <p className="text-sm text-muted-foreground">
-          Thêm một lớp bảo mật bổ sung cho tài khoản của bạn.
-        </p>
+      <div className="flex items-start gap-3">
+        <div className="mt-1 p-2 rounded-lg bg-primary/10">
+          <Shield className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <h3 className="text-lg font-medium">Xác thực hai yếu tố</h3>
+          <p className="text-sm text-muted-foreground">
+            Thêm một lớp bảo mật bổ sung cho tài khoản của bạn.
+          </p>
+        </div>
       </div>
-      <div className="p-4 border rounded-lg max-w-md">
+      <div className="p-4 border rounded-lg max-w-md bg-card">
         {user?.isTwoFactorAuthenticationEnabled ? (
           <div className="flex items-center justify-between">
-            <p>Xác thực hai yếu tố đã được bật</p>
+            <p className="text-sm">Xác thực hai yếu tố đã được bật</p>
             <Button
               variant="destructive"
+              size="sm"
               onClick={() => setDisableDialogOpen(true)}
             >
               Tắt 2FA
@@ -138,9 +244,10 @@ const TwoFactorAuthSection = () => {
           </div>
         ) : (
           <div className="flex items-center justify-between">
-            <p>Xác thực hai yếu tố chưa được kích hoạt</p>
+            <p className="text-sm">Xác thực hai yếu tố chưa được kích hoạt</p>
             <Button
               variant="default"
+              size="sm"
               onClick={handleGenerate2FA}
               disabled={generate2FAMutation.isPending}
             >
@@ -198,7 +305,7 @@ const TwoFactorAuthSection = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="my-4 p-4 bg-muted rounded-md">
-            <ul className="grid grid-cols-2 gap-2 font-mono">
+            <ul className="grid grid-cols-2 gap-2 font-mono text-sm">
               {recoveryCodes.map((code) => (
                 <li key={code}>{code}</li>
               ))}
@@ -210,17 +317,41 @@ const TwoFactorAuthSection = () => {
               id="confirm-saved"
               checked={confirmSavedCodes}
               onChange={(e) => setConfirmSavedCodes(e.target.checked)}
+              className="h-4 w-4 rounded border-input"
             />
             <label htmlFor="confirm-saved" className="text-sm">
               Tôi đã lưu các mã khôi phục này.
             </label>
           </div>
-          <DialogFooter className="mt-4">
+          <DialogFooter className="mt-4 flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadRecoveryCodes}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Tải xuống
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                navigator.clipboard.writeText(recoveryCodes.join("\n"));
+                toast({
+                  title: "Đã copy",
+                  description: "Mã khôi phục đã được copy vào clipboard",
+                });
+              }}
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              Copy
+            </Button>
             <Button
               onClick={() => setRecoveryCodesDialogOpen(false)}
               disabled={!confirmSavedCodes}
+              size="sm"
             >
-              Đóng
+              Đã lưu, đóng
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -274,6 +405,12 @@ const ChangePasswordForm = () => {
   const setAccessToken = useAuthStore((state) => state.setAccessToken);
   const changePasswordMutation = useChangePasswordMutation();
 
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const newPassword = watch("newPassword", "");
+
   const onSubmit = (data: any) => {
     changePasswordMutation.mutate(
       { currentPassword: data.currentPassword, newPassword: data.newPassword },
@@ -303,28 +440,48 @@ const ChangePasswordForm = () => {
 
   return (
     <div className="pt-6">
-      <h3 className="text-lg font-medium">Thay đổi mật khẩu</h3>
-      <p className="text-sm text-muted-foreground">
-        Chọn một mật khẩu mạnh mà bạn không sử dụng ở bất kỳ nơi nào khác.
-      </p>
+      <div className="flex items-start gap-3 mb-4">
+        <div className="mt-1 p-2 rounded-lg bg-primary/10">
+          <Lock className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <h3 className="text-lg font-medium">Thay đổi mật khẩu</h3>
+          <p className="text-sm text-muted-foreground">
+            Chọn một mật khẩu mạnh mà bạn không sử dụng ở bất kỳ nơi nào khác.
+          </p>
+        </div>
+      </div>
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="space-y-4 max-w-md mt-4 p-4 border rounded-lg"
+        className="space-y-4 max-w-md mt-4 p-6 border rounded-lg bg-card"
       >
         <div>
           <label
-            className="block text-sm font-medium text-foreground"
+            className="block text-sm font-medium text-foreground mb-2"
             htmlFor="currentPassword"
           >
             Mật khẩu hiện tại
           </label>
-          <Input
-            id="currentPassword"
-            type="password"
-            {...register("currentPassword", {
-              required: "Mật khẩu hiện tại là bắt buộc.",
-            })}
-          />
+          <div className="relative">
+            <Input
+              id="currentPassword"
+              type={showCurrentPassword ? "text" : "password"}
+              {...register("currentPassword", {
+                required: "Mật khẩu hiện tại là bắt buộc.",
+              })}
+            />
+            <button
+              type="button"
+              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              {showCurrentPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
           {errors.currentPassword && (
             <p className="text-xs text-destructive mt-1">
               {errors.currentPassword.message as string}
@@ -333,22 +490,36 @@ const ChangePasswordForm = () => {
         </div>
         <div>
           <label
-            className="block text-sm font-medium text-foreground"
+            className="block text-sm font-medium text-foreground mb-2"
             htmlFor="newPassword"
           >
             Mật khẩu mới
           </label>
-          <Input
-            id="newPassword"
-            type="password"
-            {...register("newPassword", {
-              required: "Mật khẩu mới là bắt buộc.",
-              minLength: {
-                value: 8,
-                message: "Mật khẩu phải có ít nhất 8 ký tự.",
-              },
-            })}
-          />
+          <div className="relative">
+            <Input
+              id="newPassword"
+              type={showNewPassword ? "text" : "password"}
+              {...register("newPassword", {
+                required: "Mật khẩu mới là bắt buộc.",
+                minLength: {
+                  value: 8,
+                  message: "Mật khẩu phải có ít nhất 8 ký tự.",
+                },
+              })}
+            />
+            <button
+              type="button"
+              onClick={() => setShowNewPassword(!showNewPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              {showNewPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+          <PasswordStrengthIndicator password={newPassword} />
           {errors.newPassword && (
             <p className="text-xs text-destructive mt-1">
               {errors.newPassword.message as string}
@@ -357,31 +528,46 @@ const ChangePasswordForm = () => {
         </div>
         <div>
           <label
-            className="block text-sm font-medium text-foreground"
+            className="block text-sm font-medium text-foreground mb-2"
             htmlFor="confirmPassword"
           >
             Xác nhận mật khẩu mới
           </label>
-          <Input
-            id="confirmPassword"
-            type="password"
-            {...register("confirmPassword", {
-              required: "Vui lòng xác nhận mật khẩu mới của bạn.",
-              validate: (value) =>
-                value === watch("newPassword") || "Mật khẩu không khớp.",
-            })}
-          />
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              {...register("confirmPassword", {
+                required: "Vui lòng xác nhận mật khẩu mới của bạn.",
+                validate: (value) =>
+                  value === watch("newPassword") || "Mật khẩu không khớp.",
+              })}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              {showConfirmPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
           {errors.confirmPassword && (
             <p className="text-xs text-destructive mt-1">
               {errors.confirmPassword.message as string}
             </p>
           )}
         </div>
-        <Button type="submit" disabled={changePasswordMutation.isPending}>
-          {changePasswordMutation.isPending
-            ? "Đang cập nhật..."
-            : "Cập nhật mật khẩu"}
-        </Button>
+        <div className="pt-4 border-t">
+          <Button type="submit" disabled={changePasswordMutation.isPending}>
+            {changePasswordMutation.isPending
+              ? "Đang cập nhật..."
+              : "Cập nhật mật khẩu"}
+          </Button>
+        </div>
       </form>
     </div>
   );
@@ -428,13 +614,20 @@ const ChangeEmailForm = () => {
 
   return (
     <div className="pt-6">
-      <h3 className="text-lg font-medium">Thay đổi địa chỉ Email</h3>
-      <p className="text-sm text-muted-foreground">
-        Địa chỉ email hiện tại của bạn là <strong>{user?.email}</strong>.
-      </p>
+      <div className="flex items-start gap-3 mb-4">
+        <div className="mt-1 p-2 rounded-lg bg-primary/10">
+          <Mail className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <h3 className="text-lg font-medium">Thay đổi địa chỉ Email</h3>
+          <p className="text-sm text-muted-foreground">
+            Địa chỉ email hiện tại của bạn là <strong>{user?.email}</strong>.
+          </p>
+        </div>
+      </div>
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="space-y-4 max-w-md mt-4 p-4 border rounded-lg"
+        className="space-y-4 max-w-md mt-4 p-6 border rounded-lg bg-card"
       >
         <div>
           <label

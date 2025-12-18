@@ -12,6 +12,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { Message } from "@social-commerce/shared";
 import { useTypingStore } from "../stores/typingStore";
 import { useProjectStore } from "../stores/projectStore";
+import { useLocation } from "react-router-dom";
+import { updateConversationStatus } from "../services/inboxApi";
 
 const SOCKET_URL = import.meta.env.VITE_API_BASE_URL?.replace("/api/v1", "");
 
@@ -20,13 +22,14 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
   const queryClient = useQueryClient();
   const setTypingStatus = useTypingStore((state) => state.setTypingStatus);
   const currentProjectId = useProjectStore((state) => state.currentProjectId);
+  const location = useLocation();
 
   useEffect(() => {
     if (!socket) {
       return;
     }
 
-    const handleNewMessage = (newMessage: Message) => {
+    const handleNewMessage = async (newMessage: Message) => {
       const conversationId = parseInt(String(newMessage.conversationId), 10);
 
       if (isNaN(conversationId)) return;
@@ -41,6 +44,24 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
           return oldData || [newMessage];
         }
       );
+
+      // Check if the conversation is currently open
+      const pathMatch = location.pathname.match(/\/conversations\/(\d+)/);
+      const activeConversationId = pathMatch
+        ? parseInt(pathMatch[1], 10)
+        : null;
+
+      // If the message is from the currently open conversation, mark it as read immediately
+      if (activeConversationId === conversationId && newMessage.fromCustomer) {
+        try {
+          await updateConversationStatus({
+            conversationId,
+            payload: { read: true },
+          });
+        } catch (error) {
+          console.error("Failed to mark conversation as read:", error);
+        }
+      }
 
       // Also invalidate conversations to update snippets/unread counts
       if (currentProjectId) {
@@ -66,7 +87,13 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       socket.off("agentReplied", handleNewMessage);
       socket.off("visitorIsTyping", handleVisitorTyping);
     };
-  }, [socket, queryClient, setTypingStatus, currentProjectId]);
+  }, [
+    socket,
+    queryClient,
+    setTypingStatus,
+    currentProjectId,
+    location.pathname,
+  ]);
 };
 
 // --- Context, Provider, and useSocket Hook ---

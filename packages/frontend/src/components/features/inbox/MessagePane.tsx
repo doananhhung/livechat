@@ -17,6 +17,7 @@ import { useEffect } from "react";
 import { Button } from "../../ui/Button";
 import { formatMessageTime } from "../../../lib/dateUtils";
 import { cn } from "../../../lib/utils";
+import { useToast } from "../../ui/use-toast";
 
 /**
  * Component displaying detailed visitor information.
@@ -159,6 +160,7 @@ export const MessagePane = () => {
     conversationId: string;
   }>();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const convoId = conversationId ? parseInt(conversationId, 10) : undefined;
 
@@ -172,9 +174,27 @@ export const MessagePane = () => {
       queryKey: ["conversations"],
     })
     .flatMap(([, cacheData]) => cacheData?.pages.flatMap((page) => page.data))
-    .find((c) => c?.id === convoId);
+    .find((c) => {
+      // Handle both string and number comparison (TypeORM bigint returns string)
+      return c && Number(c.id) === Number(convoId);
+    });
 
-  console.log("Retrieved conversation object:", conversation);
+  console.log("🔍 Debug MessagePane:");
+  console.log("  - conversationId from params:", conversationId);
+  console.log("  - convoId (parsed):", convoId, "type:", typeof convoId);
+  console.log("  - conversation object:", conversation);
+  console.log(
+    "  - conversation.id:",
+    conversation?.id,
+    "type:",
+    typeof conversation?.id
+  );
+  console.log("  - conversation.status:", conversation?.status);
+  console.log("  - conversation exists?", !!conversation);
+  console.log(
+    "  - ID match?",
+    conversation && Number(conversation.id) === Number(convoId)
+  );
 
   useEffect(() => {
     if (convoId && conversation && conversation.unreadCount > 0) {
@@ -184,6 +204,35 @@ export const MessagePane = () => {
       });
     }
   }, [convoId, conversation, updateConversation]);
+
+  const handleStatusUpdate = (status: ConversationStatus) => {
+    if (!conversation) return;
+
+    updateConversation(
+      {
+        conversationId: conversation.id,
+        payload: { status },
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Thành công",
+            description:
+              status === ConversationStatus.CLOSED
+                ? "Đã đóng cuộc trò chuyện"
+                : "Đã mở lại cuộc trò chuyện",
+          });
+        },
+        onError: (error: Error) => {
+          toast({
+            title: "Lỗi",
+            description: error.message || "Không thể cập nhật trạng thái",
+            variant: "destructive",
+          });
+        },
+      }
+    );
+  };
 
   if (!convoId) {
     return null;
@@ -203,44 +252,53 @@ export const MessagePane = () => {
         <header className="p-4 border-b flex justify-between items-center">
           <div className="flex items-center gap-3">
             <Avatar name={conversation?.visitor?.displayName} size="md" />
-            <h2 className="font-semibold text-foreground">
-              {conversation?.visitor?.displayName || "Visitor"}
-            </h2>
-          </div>
-          {conversation && (
-            <div className="flex items-center gap-2">
-              {conversation.status === "open" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    updateConversation({
-                      conversationId: conversation.id,
-                      payload: { status: ConversationStatus.CLOSED },
-                    })
-                  }
-                  disabled={isUpdatingStatus}
-                >
-                  Đóng cuộc trò chuyện
-                </Button>
-              )}
-              {conversation.status === "closed" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    updateConversation({
-                      conversationId: conversation.id,
-                      payload: { status: ConversationStatus.OPEN },
-                    })
-                  }
-                  disabled={isUpdatingStatus}
-                >
-                  Mở lại cuộc trò chuyện
-                </Button>
+            <div>
+              <h2 className="font-semibold text-foreground">
+                {conversation?.visitor?.displayName || "Visitor"}
+              </h2>
+              {/* Debug: Show status */}
+              {conversation && (
+                <p className="text-xs text-muted-foreground">
+                  Status: {conversation.status || "unknown"}
+                </p>
               )}
             </div>
-          )}
+          </div>
+
+          {/* Debug: Always show this section */}
+          <div className="flex items-center gap-2">
+            {!conversation && (
+              <span className="text-sm text-muted-foreground">
+                Loading conversation...
+              </span>
+            )}
+
+            {conversation && !conversation.status && (
+              <span className="text-sm text-yellow-500">⚠️ No status</span>
+            )}
+
+            {conversation && conversation.status === "open" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleStatusUpdate(ConversationStatus.CLOSED)}
+                disabled={isUpdatingStatus}
+              >
+                Đóng cuộc trò chuyện
+              </Button>
+            )}
+
+            {conversation && conversation.status === "closed" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleStatusUpdate(ConversationStatus.OPEN)}
+                disabled={isUpdatingStatus}
+              >
+                Mở lại cuộc trò chuyện
+              </Button>
+            )}
+          </div>
         </header>
 
         <MessageList

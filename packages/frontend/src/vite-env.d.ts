@@ -4,6 +4,7 @@ interface LiveChatWidgetApi {
     projectId: string;
     visitor?: { name?: string; email?: string };
   }) => void;
+  destroy: () => void;
 }
 
 interface Window {

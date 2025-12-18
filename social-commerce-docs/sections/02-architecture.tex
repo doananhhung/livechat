@@ -26,19 +26,19 @@ Dưới đây là bản tóm tắt về vai trò và trách nhiệm của từng
 
     \item \textbf{UserModule:} Quản lý tất cả các nghiệp vụ liên quan đến người dùng của hệ thống (ở đây là các nhân viên hỗ trợ - agent). Nó bao gồm các thao tác CRUD (Tạo, Đọc, Cập nhật, Xóa) thông tin người dùng và định nghĩa entity \texttt{User}.
     
-    \item \textbf{AuthModule:} Chịu trách nhiệm cho toàn bộ quá trình xác thực và phân quyền. Nó xử lý logic đăng nhập, tạo và xác minh JSON Web Tokens (JWT), triển khai các cơ chế bảo vệ (Guards) cho các API endpoint. Module này phụ thuộc chặt chẽ vào \texttt{UserModule} để truy vấn thông tin người dùng trong quá trình xác thực.
+    \item \textbf{AuthModule:} Chịu trách nhiệm cho toàn bộ quá trình xác thực và phân quyền. Nó xử lý logic đăng ký, đăng nhập, đổi mật khẩu, đăng nhập qua Google, và quản lý vòng đời của JSON Web Tokens (JWT).
 
-    \item \textbf{ProjectModule:} Quản lý các "Dự án" của người dùng. Mỗi dự án tương ứng với một website được tích hợp widget. Module này xử lý các thao tác CRUD cho dự án và quản lý các cài đặt liên quan đến widget như domain được phép, màu sắc, câu chào.
+    \item \textbf{ProjectModule:} Quản lý các "Dự án" theo kiến trúc multi-tenant. Module này xử lý các thao tác CRUD cho dự án, quản lý thành viên và vai trò của họ (Manager, Agent), và chứa toàn bộ logic cho hệ thống mời thành viên qua email.
     
     \item \textbf{InboxModule:} Là module nghiệp vụ lớn nhất, chứa toàn bộ logic cốt lõi liên quan đến Hộp thư. Nó quản lý các thực thể và nghiệp vụ của các cuộc hội thoại (\texttt{Conversation}), tin nhắn (\texttt{Message}), và khách truy cập (\texttt{Visitor}).
     
-    \item \textbf{GatewayModule:} Chịu trách nhiệm cho toàn bộ giao tiếp real-time của hệ thống thông qua WebSocket (Socket.IO). Nó quản lý các kết nối từ widget và agent dashboard, xử lý các sự kiện đến và phát đi các sự kiện cập nhật cho các client liên quan.
+    \item \textbf{GatewayModule:} Là lớp giao tiếp real-time (WebSocket) tinh gọn. Nó không xử lý nghiệp vụ trực tiếp mà sử dụng \texttt{EventEmitter2} để chuyển đổi các sự kiện từ client thành các sự kiện nội bộ, giúp hệ thống luôn phản hồi nhanh và không bị block. Nó cũng lắng nghe Redis Pub/Sub để giao tiếp liên-server.
 
-    \item \textbf{EventProducerModule:} Một module nhỏ nhưng quan trọng trong kiến trúc bất đồng bộ. Trách nhiệm duy nhất của nó là cung cấp một service (\texttt{SqsService}) để nhận các sự kiện (ví dụ: tin nhắn mới từ visitor) và đẩy chúng vào hàng đợi SQS một cách đáng tin cậy.
+    \item \textbf{EventProducerModule:} Một module hạ tầng kỹ thuật. Nó cung cấp một service (\texttt{SqsService}) với phương thức \texttt{sendMessage}, cho phép các phần khác của ứng dụng có thể đẩy một tác vụ vào hàng đợi SQS để xử lý bất đồng bộ.
     
-    \item \textbf{EventConsumerModule:} Là một ứng dụng NestJS độc lập (worker), không có máy chủ HTTP. Nó lắng nghe hàng đợi SQS, nhận các sự kiện do \texttt{EventProducerModule} gửi đến và điều phối chúng đến các service nghiệp vụ tương ứng trong \texttt{InboxModule} để xử lý.
+    \item \textbf{EventConsumerModule:} Một service chạy nền bên trong ứng dụng chính. Nó không phải là một worker độc lập. Service này khởi động một vòng lặp polling vô hạn để liên tục lấy các tác vụ từ hàng đợi SQS, xử lý chúng (thường là các thao tác ghi CSDL), và sau đó publish kết quả vào một kênh Redis để Gateway có thể nhận và thông báo cho client.
 
-    \item \textbf{RealtimeSessionModule:} Quản lý trạng thái kết nối real-time của các visitor. Nó sử dụng Redis để lưu trữ và tra cứu mối liên kết giữa định danh của visitor (\texttt{visitorUid}) và ID kết nối socket (\texttt{socket.id}) của họ, cho phép gửi tin nhắn đến đúng người nhận.
+    \item \textbf{RealtimeSessionModule:} Quản lý trạng thái kết nối real-time của các visitor. Nó sử dụng Redis để lưu trữ và tra cứu mối liên kết giữa định danh của visitor (\texttt{visitorUid}) và ID kết nối socket (\texttt{socket.id}) của họ.
 
     \item \textbf{RedisModule \& DatabaseModule:} Là các module hạ tầng. Chúng cung cấp các kết nối đã được cấu hình sẵn đến Redis và cơ sở dữ liệu PostgreSQL (thông qua TypeORM) cho toàn bộ ứng dụng.
 \end{itemize}

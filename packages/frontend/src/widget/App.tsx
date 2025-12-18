@@ -21,46 +21,42 @@ const App = () => {
   } = useChatStore();
 
   const lastUrl = useRef(window.location.href);
+  const urlCheckIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Send context for the first time (keep as is)
+    // Send context for the first time
     const initialContextTimeout = setTimeout(() => {
       socketService.emitUpdateContext(window.location.href);
     }, 1000);
 
-    // --- Instant URL tracking logic ---
+    // --- Improved URL tracking with polling instead of monkey-patching ---
+    // This is more reliable and doesn't interfere with other libraries
+    urlCheckIntervalRef.current = window.setInterval(() => {
+      const currentUrl = window.location.href;
+      if (currentUrl !== lastUrl.current) {
+        lastUrl.current = currentUrl;
+        socketService.emitUpdateContext(currentUrl);
+      }
+    }, 1000); // Check every second
 
-    // General handler when URL changes
-    const handleUrlChange = () => {
-      // Use requestAnimationFrame to ensure URL is fully updated
-      requestAnimationFrame(() => {
-        const currentUrl = window.location.href;
-        if (currentUrl !== lastUrl.current) {
-          lastUrl.current = currentUrl;
-          socketService.emitUpdateContext(currentUrl);
-        }
-      });
+    // Listen for popstate (back/forward navigation)
+    const handlePopState = () => {
+      const currentUrl = window.location.href;
+      if (currentUrl !== lastUrl.current) {
+        lastUrl.current = currentUrl;
+        socketService.emitUpdateContext(currentUrl);
+      }
     };
 
-    // Override (monkey-patch) history.pushState to create a custom event
-    const originalPushState = history.pushState;
-    history.pushState = function (...args) {
-      originalPushState.apply(this, args);
-      // Emit 'pushstate' event so we can listen
-      window.dispatchEvent(new Event("pushstate"));
-    };
-
-    // Listen for navigation events
-    window.addEventListener("popstate", handleUrlChange); // Back/forward button
-    window.addEventListener("pushstate", handleUrlChange); // SPA navigation
+    window.addEventListener("popstate", handlePopState);
 
     // Clean up when component unmounts
     return () => {
       clearTimeout(initialContextTimeout);
-      window.removeEventListener("popstate", handleUrlChange);
-      window.removeEventListener("pushstate", handleUrlChange);
-      // Restore original pushState function
-      history.pushState = originalPushState;
+      if (urlCheckIntervalRef.current) {
+        clearInterval(urlCheckIntervalRef.current);
+      }
+      window.removeEventListener("popstate", handlePopState);
     };
   }, []);
 

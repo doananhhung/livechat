@@ -14,8 +14,10 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ConversationService } from './services/conversation.service';
 import { MessageService } from './services/message.service';
+import { VisitorService } from './services/visitor.service';
 import {
   AgentTypingDto,
+  ConversationListResponseDto,
   ListConversationsDto,
   ListMessagesDto,
   ProjectRole,
@@ -33,15 +35,27 @@ import { Roles } from '../rbac/roles.decorator';
 export class InboxController {
   constructor(
     private readonly conversationService: ConversationService,
-    private readonly messageService: MessageService
+    private readonly messageService: MessageService,
+    private readonly visitorService: VisitorService
   ) {}
 
   @Get('conversations')
-  listConversations(
+  async listConversations(
     @GetCurrentUser() user: User,
     @Query() query: ListConversationsDto
-  ) {
-    return this.conversationService.listByProject(user, query);
+  ): Promise<ConversationListResponseDto> {
+    const result = await this.conversationService.listByProject(user, query);
+    console.log('🔍 Controller response sample:', {
+      totalConversations: result.data.length,
+      firstConversation: result.data[0]
+        ? {
+            id: result.data[0].id,
+            status: result.data[0].status,
+            hasVisitor: !!result.data[0].visitor,
+          }
+        : null,
+    });
+    return result;
   }
 
   @Post('conversations/:id/messages')
@@ -54,22 +68,24 @@ export class InboxController {
   }
 
   @Patch('conversations/:id')
-  updateConversation(
+  async updateConversation(
     @GetCurrentUser() user: User,
     @Param('id', ParseIntPipe) conversationId: number,
     @Body() body: UpdateConversationDto
   ) {
     const userId = user.id;
     if (body.status) {
-      return this.conversationService.updateStatus(
+      return await this.conversationService.updateStatus(
         userId,
         conversationId,
         body.status
       );
     }
     if (body.read === true) {
-      return this.conversationService.markAsRead(userId, conversationId);
+      return await this.conversationService.markAsRead(userId, conversationId);
     }
+    // If neither status nor read is provided, return the conversation as is
+    throw new Error('Either status or read must be provided');
   }
 
   @Get('conversations/:id/messages')
@@ -92,5 +108,13 @@ export class InboxController {
       conversationId,
       body.isTyping
     );
+  }
+
+  @Get('visitors/:id')
+  async getVisitor(
+    @GetCurrentUser() user: User,
+    @Param('id', ParseIntPipe) visitorId: number
+  ) {
+    return this.visitorService.getVisitorById(visitorId);
   }
 }

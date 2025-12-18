@@ -1,58 +1,51 @@
 \subsection{GatewayModule}
 \label{subsec:gateway-module}
 
-\subsubsection{Mục đích}
+\subsubsection{Mục đích và Kiến trúc}
 
-\texttt{GatewayModule} là trung tâm điều phối cho toàn bộ giao tiếp hai chiều, thời gian thực (real-time) của hệ thống. Nó sử dụng WebSocket (thông qua thư viện Socket.IO) để tạo ra một kênh kết nối bền bỉ giữa server và các client (bao gồm cả Chat Widget của visitor và Agent Dashboard).
+\texttt{GatewayModule} là trung tâm điều phối cho toàn bộ giao tiếp hai chiều, thời gian thực (real-time) của hệ thống. Tuy nhiên, nó không trực tiếp xử lý logic nghiệp vụ. Thay vào đó, nó được thiết kế theo một kiến trúc bất đồng bộ, hiệu năng cao, đóng vai trò là một lớp giao tiếp (communication layer) tinh gọn.
 
-Trách nhiệm chính của module này bao gồm:
+Trách nhiệm chính của module này là:
 \begin{itemize}
-    \item Quản lý vòng đời của các kết nối WebSocket: xử lý khi client kết nối, định danh, và ngắt kết nối.
-    \item Lắng nghe và tiếp nhận các sự kiện được gửi từ client.
-    \item Điều phối các sự kiện này đến các thành phần xử lý nghiệp vụ phù hợp (ví dụ: đẩy vào hàng đợi SQS hoặc gọi trực tiếp các service khác).
-    \item Cung cấp một giao diện (API) để các service khác trong backend có thể gửi các sự kiện real-time đến một hoặc nhiều client cụ thể.
-\end{itemize}
-Kiến trúc của module này được củng cố bởi \texttt{RedisIoAdapter}, cho phép nó có khả năng mở rộng theo chiều ngang trên nhiều server instance.
-
-\subsubsection{Các Thành phần Chính (Files)}
-
-\begin{description}
-    \item[\texttt{events.gateway.ts}] Đây là file logic cốt lõi, chứa class \texttt{EventsGateway}. Class này được trang trí bởi decorator \texttt{@WebSocketGateway}, biến nó thành một máy chủ WebSocket. Nó định nghĩa các trình xử lý (handler) cho từng loại sự kiện cụ thể mà client có thể gửi lên, cũng như các phương thức để server chủ động gửi sự kiện xuống client.
-    
-    \item[\texttt{gateway.module.ts}] Đóng gói \texttt{EventsGateway} và các thành phần phụ thuộc của nó. Một điểm kiến trúc quan trọng là nó sử dụng \texttt{forwardRef} khi import \texttt{InboxModule}, một kỹ thuật cần thiết để giải quyết vấn đề phụ thuộc vòng tròn (circular dependency) giữa hai module này. Nó cũng export \texttt{EventsGateway} để các service trong \texttt{InboxModule} có thể inject và sử dụng.
-    
-    \item[\texttt{redis-io.adapter.ts}] (Đã phân tích) Mặc dù không thuộc module này, nó là thành phần hạ tầng được \texttt{main.ts} sử dụng để "trao quyền" mở rộng cho \texttt{GatewayModule}, biến nó từ một gateway đơn lẻ thành một hệ thống gateway có thể chạy trên một cụm máy chủ.
-\end{description}
-
-\subsubsection{Phân tích các Phương thức Quan trọng}
-
-Toàn bộ logic nghiệp vụ real-time đều tập trung tại \texttt{events.gateway.ts}.
-
-\paragraph{Quản lý Vòng đời Kết nối}
-\begin{itemize}
-    \item \texttt{handleConnection(client)}: Được kích hoạt mỗi khi có một client mới kết nối thành công. Hiện tại, nó chỉ ghi log về sự kiện này.
-    
-    \item \texttt{handleDisconnect(client)}: Được kích hoạt khi một client ngắt kết nối. Phương thức này thực hiện một nhiệm vụ dọn dẹp cực kỳ quan trọng: nó kiểm tra xem client đó có \texttt{visitorUid} hay không (nghĩa là đó là một visitor đã định danh) và nếu có, nó sẽ gọi \texttt{realtimeSessionService.deleteVisitorSession} để xóa session của visitor đó khỏi Redis, đảm bảo hệ thống không cố gắng gửi tin nhắn đến một kết nối không còn tồn tại.
+    \item Quản lý vòng đời của các kết nối WebSocket (kết nối, ngắt kết nối).
+    \item Tiếp nhận các sự kiện từ client và \textbf{ngay lập tức chuyển đổi chúng thành các sự kiện nội bộ} bằng cách sử dụng \texttt{EventEmitter2}. Điều này giúp gateway không bao giờ bị block bởi các tác vụ tốn thời gian như truy vấn CSDL.
+    \item Cung cấp một API để các service khác trong backend có thể gửi các sự kiện real-time đến các client cụ thể.
+    \item Lắng nghe các kênh Redis Pub/Sub để nhận thông điệp từ các server instance khác, cho phép hệ thống mở rộng theo chiều ngang.
 \end{itemize}
 
-\paragraph{Xử lý Sự kiện từ Client (Widget)}
+\subsubsection{Bảo mật: WsJwtAuthGuard}
+Toàn bộ gateway được bảo vệ bởi một Guard tùy chỉnh là \texttt{WsJwtAuthGuard}. Guard này có một logic đặc biệt, cho phép hai loại kết nối:
 \begin{itemize}
-    \item \texttt{@SubscribeMessage('identify')}: Đây là trình xử lý cho sự kiện đầu tiên mà mỗi widget phải gửi. Nó thực hiện chuỗi hành động:
-    \begin{enumerate}
-        \item Gọi \texttt{realtimeSessionService} để lưu trữ mối liên kết giữa \texttt{visitorUid} và \texttt{client.id} vào Redis.
-        \item Gọi \texttt{visitorService} và \texttt{conversationService} để tìm và lấy lịch sử hội thoại.
-        \item Gửi sự kiện \texttt{conversationHistory} ngược lại cho chính client đó nếu có lịch sử.
-        \item Lưu các thông tin định danh vào đối tượng \texttt{client.data} để sử dụng trong các sự kiện sau.
-    \end{enumerate}
-    
-    \item \texttt{@SubscribeMessage('sendMessage')}: Khi nhận được tin nhắn từ visitor, phương thức này không xử lý logic mà ngay lập tức đóng gói payload (bao gồm cả \texttt{socketId} của client) và chuyển tiếp cho \texttt{SqsService} để đưa vào hàng đợi. Đây là một quyết định kiến trúc quan trọng giúp Gateway luôn có hiệu năng cao và không bị block.
-    
-    \item \texttt{@SubscribeMessage('visitorTyping')} và \texttt{@SubscribeMessage('updateContext')}: Các trình xử lý này nhận trạng thái từ widget và phát (broadcast) các sự kiện tương ứng đến một "room" có tên là \texttt{project:\{projectId\}}. Điều này cho phép tất cả các agent dashboard đang theo dõi dự án đó có thể nhận được cập nhật theo thời gian thực.
+    \item \textbf{Kết nối đã xác thực (Authenticated):} Nếu client (Agent Dashboard) gửi lên một JWT hợp lệ trong phần \texttt{handshake.auth.token}, Guard sẽ xác thực token, lấy thông tin người dùng và gắn vào \texttt{client.data.user}. Các trình xử lý sự kiện sau đó có thể sử dụng thông tin này.
+    \item \textbf{Kết nối chưa xác thực (Unauthenticated):} Nếu client (Widget của visitor) không gửi token, Guard sẽ \textbf{vẫn cho phép kết nối}. Điều này cho phép các visitor ẩn danh có thể kết nối và gửi tin nhắn.
 \end{itemize}
 
-\paragraph{API Gửi Sự kiện từ Server}
+\subsubsection{Phân tích các Luồng và Phương thức Quan trọng}
+
+\paragraph{Vòng đời và Giao tiếp liên-server}
 \begin{itemize}
-    \item \texttt{sendReplyToVisitor(socketId, message)}: Một phương thức public được các service khác (như \texttt{MessageService}) gọi. Nó sử dụng \texttt{this.server.to(socketId).emit(...)} để gửi một sự kiện đến một client cụ thể. Việc sử dụng \texttt{.to()} là rất quan trọng vì nó hoạt động được trong môi trường đa server nhờ có \texttt{RedisIoAdapter}.
+    \item \texttt{handleConnection(client)}: Ghi log khi có client mới kết nối.
+    \item \texttt{handleDisconnect(client)}: Khi một client ngắt kết nối, nó sẽ gọi \texttt{realtimeSessionService.deleteVisitorSession} để dọn dẹp session của visitor đó khỏi Redis.
+    \item \texttt{afterInit()}: Một lifecycle hook cực kỳ quan trọng. Khi gateway khởi động, nó sẽ đăng ký lắng nghe một kênh Redis Pub/Sub (\texttt{new\_message\_channel}). Khi một server khác trong cụm xử lý một sự kiện và cần thông báo cho gateway này, nó sẽ publish một message vào kênh Redis đó. Phương thức này đảm bảo gateway có thể nhận và xử lý các thông điệp liên-server.
+\end{itemize}
+
+\paragraph{Xử lý Sự kiện từ Client (Client -> Server)}
+\begin{itemize}
+    \item \texttt{@SubscribeMessage('identify')} và \texttt{@SubscribeMessage('sendMessage')}: Đây là hai trình xử lý sự kiện quan trọng nhất từ widget. Chúng \textbf{không} thực hiện bất kỳ logic nghiệp vụ nào. Thay vào đó, chúng chỉ đóng gói payload nhận được từ client và phát ra một sự kiện nội bộ tương ứng (\texttt{visitor.identified} hoặc \texttt{visitor.message.received}) bằng \texttt{EventEmitter2}. Các module khác (như \texttt{EventConsumerModule}) sẽ lắng nghe và xử lý các sự kiện này một cách bất đồng bộ.
     
-    \item \texttt{sendAgentTypingToVisitor(...)}: Tương tự như trên, cung cấp một giao diện để các service khác có thể gửi sự kiện "agent đang gõ" đến đúng visitor.
+    \item \texttt{@SubscribeMessage('joinProjectRoom')} và \texttt{@SubscribeMessage('leaveProjectRoom')}: Các trình xử lý này cho phép Agent Dashboard tham gia hoặc rời khỏi một "room" Socket.IO tương ứng với một dự án (ví dụ: \texttt{project:123}). Điều này cho phép việc gửi sự kiện đến tất cả các agent đang xem một dự án trở nên dễ dàng.
+    
+    \item \texttt{@SubscribeMessage('visitorIsTyping')} và \texttt{@SubscribeMessage('updateContext')}: Các trình xử lý này nhận trạng thái từ widget và phát (broadcast) các sự kiện tương ứng đến room của dự án, cho phép các agent dashboard nhận được cập nhật theo thời gian thực.
+\end{itemize}
+
+\paragraph{API Gửi Sự kiện từ Server (Server -> Client)}
+Đây là các phương thức public mà các service khác trong backend sử dụng để giao tiếp với client.
+\begin{itemize}
+    \item \texttt{prepareSocketForVisitor(...)}: Một phương thức quan trọng được gọi bởi \texttt{EventConsumerModule} sau khi một visitor được định danh thành công. Nó thực hiện các việc: gắn \texttt{projectId}, \texttt{visitorUid} vào đối tượng socket; và quan trọng nhất là gửi sự kiện \texttt{conversationHistory} chứa các tin nhắn cũ xuống cho widget.
+    
+    \item \texttt{sendReplyToVisitor(socketId, message)}: Gửi tin nhắn trả lời của agent đến một visitor cụ thể thông qua \texttt{socketId} đã được tra cứu từ Redis.
+    
+    \item \texttt{sendAgentTypingToVisitor(...)}: Gửi sự kiện "agent đang gõ" đến một visitor cụ thể.
+    
+    \item \texttt{visitorMessageSent(socketId, data)}: Gửi một sự kiện xác nhận ngược lại cho visitor rằng tin nhắn của họ đã được server nhận và xử lý thành công.
 \end{itemize}

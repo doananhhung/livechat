@@ -109,6 +109,7 @@ export class ConversationService {
 
     const qb = this.entityManager
       // SQL: SELECT ... FROM conversation
+      // Don't use .select() to let TypeORM select all fields automatically
       .createQueryBuilder(Conversation, 'conversation')
 
       // SQL: LEFT JOIN project ...
@@ -141,6 +142,23 @@ export class ConversationService {
 
     // This executes the query built above.
     const [data, total] = await qb.getManyAndCount();
+
+    console.log('📊 Backend listByProject - Total:', total);
+    if (data.length > 0) {
+      console.log('📊 Sample conversation:', {
+        id: data[0].id,
+        status: data[0].status,
+        lastMessageSnippet: data[0].lastMessageSnippet,
+        unreadCount: data[0].unreadCount,
+        visitor: data[0].visitor
+          ? {
+              id: data[0].visitor.id,
+              displayName: data[0].visitor.displayName,
+            }
+          : null,
+      });
+    }
+
     return { data, total, page, limit };
   }
   /**

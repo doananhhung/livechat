@@ -1,72 +1,75 @@
-\section{Đánh giá Kiến trúc Tổng thể}
-\label{sec:kien-truc-tong-the}
+\section{Đánh giá và Lộ trình Tương lai}
+\label{sec:assessment}
 
-Phần này cung cấp một cái nhìn tổng hợp và chuyên môn về chất lượng của kiến trúc backend hiện tại. Việc đánh giá này dựa trên các nguyên tắc về thiết kế phần mềm, khả năng bảo trì, độ tin cậy và khả năng mở rộng, nhằm xác định các quyết định kiến trúc đã thành công và các cơ hội để cải tiến trong tương lai.
+Phần này cung cấp một cái nhìn tổng hợp và chuyên môn về chất lượng của hệ thống hiện tại, đồng thời vạch ra một lộ trình rõ ràng cho các cải tiến trong tương lai, dựa trên cả phân tích mã nguồn backend và các ghi chép về quá trình phát triển, sửa lỗi, và phân tích UI/UX.
 
-\subsection{Các Điểm mạnh về Kỹ thuật và Logic}
-\label{subsec:diem-manh}
+\subsection{Đánh giá Kiến trúc Backend}
+\label{subsec:backend-assessment}
 
-Hệ thống hiện tại được xây dựng trên một nền tảng kiến trúc rất vững chắc, thể hiện qua nhiều quyết định thiết kế xuất sắc.
+Kiến trúc backend hiện tại thể hiện một sự trưởng thành và độ tin cậy cao, dựa trên các quyết định thiết kế chiến lược.
 
 \begin{itemize}
-    \item \textbf{Kiến trúc Bất đồng bộ, Tách biệt (Decoupled Architecture):}
-    Quyết định sử dụng kiến trúc Producer-Consumer với \textbf{AWS SQS} là điểm mạnh lớn nhất của hệ thống. Bằng cách tách biệt việc tiếp nhận sự kiện (\texttt{EventsGateway}) khỏi việc xử lý nghiệp vụ (\texttt{EventConsumerModule}), hệ thống đạt được:
-    \begin{itemize}
-        \item \textbf{Độ tin cậy cao:} Không có tin nhắn nào từ visitor bị mất, ngay cả khi worker xử lý tạm thời bị lỗi.
-        \item \textbf{Hiệu năng Gateway:} Giữ cho lớp giao tiếp real-time luôn nhẹ và phản hồi nhanh.
-        \item \textbf{Khả năng mở rộng:} Cho phép scale số lượng worker một cách độc lập để đáp ứng lưu lượng xử lý.
-    \end{itemize}
+    \item \textbf{Kiến trúc Bất đồng bộ Toàn diện:}
+    Hệ thống đã triển khai thành công một luồng xử lý sự kiện bất đồng bộ phức tạp và hiệu quả. Thay vì một kết nối trực tiếp, luồng hoạt động thực tế là: \texttt{Gateway -> EventEmitter -> EventListener -> SQS Producer -> SQS Queue -> EventConsumer -> Redis Pub/Sub -> Gateway}. Luồng đi này cho thấy một sự tách biệt (decoupling) triệt để, giúp cho lớp giao tiếp real-time (Gateway) luôn có hiệu năng cao, đồng thời đảm bảo không có tin nhắn nào bị mất và hệ thống có khả năng mở rộng tốt.
 
-    \item \textbf{Lớp Real-time có Khả năng Mở rộng:}
-    Việc tích hợp \textbf{RedisIoAdapter} vào WebSocket Gateway là một quyết định chiến lược đúng đắn. Nó cho phép hệ thống có thể mở rộng theo chiều ngang (chạy nhiều server instance) mà không làm gián đoạn việc giao tiếp real-time, đảm bảo khả năng phục vụ số lượng lớn kết nối đồng thời.
+    \item \textbf{Phân quyền theo Vai trò (RBAC) Mạnh mẽ:}
+    Hệ thống đã vượt qua được điểm yếu của mô hình sở hữu đơn lẻ. Bằng cách sử dụng một bảng trung gian \texttt{ProjectMember} và một \texttt{RolesGuard} tùy chỉnh, logic phân quyền giờ đây được tập trung, rõ ràng và an toàn. Việc phân định rạch ròi vai trò \texttt{MANAGER} và \texttt{AGENT} là nền tảng vững chắc cho các tính năng cộng tác.
 
     \item \textbf{Tính Toàn vẹn Dữ liệu Cao:}
-    Logic xử lý nghiệp vụ chính trong \texttt{EventConsumerService} được bọc trong một \textbf{database transaction}. Điều này đảm bảo tính nguyên tử (atomicity) cho các thao tác ghi dữ liệu phức tạp, là một cơ chế bảo vệ cực kỳ quan trọng giúp dữ liệu luôn ở trạng thái nhất quán.
-
-    \item \textbf{Quản lý Session Tập trung và Hiệu quả:}
-    Việc xây dựng một module chuyên dụng (\texttt{RealtimeSessionModule}) để quản lý session của visitor trên \textbf{Redis} là một giải pháp sạch sẽ và hiệu quả. Nó cung cấp một cơ chế tra cứu nhanh chóng để gửi tin nhắn đến đúng client mục tiêu.
+    Việc sử dụng \textbf{database transaction} trong các nghiệp vụ ghi dữ liệu phức tạp (như xử lý tin nhắn mới hoặc chấp nhận lời mời) là một điểm cộng rất lớn, đảm bảo dữ liệu luôn ở trạng thái nhất quán.
 
     \item \textbf{Cấu trúc Module hóa Rõ ràng:}
-    Hệ thống tuân thủ tốt mô hình \textbf{Modular Monolith}. Việc phân chia các domain nghiệp vụ thành các module riêng biệt (User, Auth, Project, Inbox) giúp cho codebase có tổ chức, dễ hiểu và dễ bảo trì.
+    Việc phân chia các domain nghiệp vụ thành các module NestJS riêng biệt (User, Auth, Project, Inbox, v.v.) giúp cho codebase có tổ chức, dễ hiểu và dễ bảo trì.
 \end{itemize}
 
-\subsection{Các Điểm yếu, Rủi ro và Nợ Kỹ thuật (Technical Debt)}
-\label{subsec:diem-yeu}
+\subsection{Tổng kết Quá trình Phát triển Gần đây}
+\label{subsec:development-summary}
 
-Bên cạnh những điểm mạnh, hệ thống vẫn có một vài khu vực có thể được cải thiện để trở nên hoàn hảo hơn.
+Các ghi chép về quá trình sửa lỗi cho thấy một sự trưởng thành trong việc gỡ rối và ổn định hóa hệ thống. Hai ví dụ tiêu biểu:
 
 \begin{itemize}
-    \item \textbf{Logic Phân quyền Bị lặp lại:}
-    Đây là điểm yếu rõ ràng nhất. Logic kiểm tra quyền sở hữu của người dùng đối với một tài nguyên (ví dụ: một project hoặc một conversation) đang được triển khai lặp lại bên trong các phương thức của nhiều service khác nhau (\texttt{ProjectService}, \texttt{ConversationService}, \texttt{MessageService}). Ví dụ:
-    \begin{minted}{typescript}
-// Logic này xuất hiện ở nhiều nơi
-const resource = await this.repository.findOne(...);
-if (!resource || resource.userId !== user.id) {
-  throw new ForbiddenException(...);
-}
-    \end{minted}
-    Việc này không chỉ vi phạm nguyên tắc DRY (Don't Repeat Yourself) mà còn tiềm ẩn rủi ro bảo mật nếu một developer trong tương lai quên không thêm bước kiểm tra này.
-
-    \item \textbf{Khả năng Tối ưu Truy vấn CSDL:}
-    Trong một số phương thức như \texttt{sendAgentReply}, service cần phải thực hiện nhiều truy vấn liên tiếp để lấy đầy đủ thông tin (ví dụ: tìm conversation, rồi từ đó lấy visitor). Có thể tối ưu bằng cách sử dụng các phép JOIN phức tạp hơn hoặc các tính năng của QueryBuilder để giảm số lượng round-trip đến CSDL.
+    \item \textbf{Fix lỗi Conversation Status:} Một lỗi rất tinh vi đã được phát hiện và sửa chữa, trong đó việc so sánh ID dạng chuỗi và dạng số (\texttt{'2' === 2}) trong mã frontend đã thất bại. Việc này cho thấy quá trình debug đã đi sâu vào cả frontend và backend để tìm ra nguyên nhân gốc rễ và áp dụng giải pháp chuẩn xác (sử dụng \texttt{Number()}).
+    
+    \item \textbf{Bổ sung API theo nhu cầu:} Việc tạo ra endpoint \texttt{GET /inbox/visitors/:id} là một ví dụ điển hình cho việc phát triển lặp, trong đó backend đã phản hồi nhanh chóng để đáp ứng nhu cầu từ phía frontend (hiển thị thông tin visitor), hoàn thiện một tính năng còn dang dở.
 \end{itemize}
 
-\subsection{Đề xuất Cải tiến cho Tương lai}
-\label{subsec:de-xuat-cai-tien}
+\subsection{Phân tích UI/UX và Lộ trình Tương lai}
+\label{subsec:ui-ux-roadmap}
 
-Dựa trên các điểm yếu đã xác định, dưới đây là các đề xuất kiến trúc cụ thể để nâng cao chất lượng hệ thống trong các phiên bản tiếp theo.
+Các phân tích về giao diện người dùng chỉ ra rằng trong khi backend đã rất mạnh mẽ, frontend vẫn còn nhiều cơ hội để cải thiện trải nghiệm người dùng và bắt kịp với các tiêu chuẩn của ngành.
+
+\subsubsection{Điểm yếu của UI hiện tại}
+\begin{itemize}
+    \item \textbf{Trang Inbox:} Thiếu các tính năng quan trọng như tìm kiếm, bộ lọc nâng cao, timestamp cho tin nhắn, avatar, và message grouping. Giao diện soạn tin nhắn còn quá đơn giản, chưa hỗ trợ file đính kèm hay định dạng văn bản.
+    \item \textbf{Trang Settings:} Layout chưa responsive, các form còn cơ bản, thiếu các tính năng nâng cao như xem trước avatar, chỉ báo độ mạnh mật khẩu, hay xem trước widget. Các thẻ Project còn đơn điệu, chưa hiển thị các chỉ số thống kê quan trọng.
+\end{itemize}
+
+\subsubsection{Lộ trình Nâng cấp Đề xuất}
+Một lộ trình phát triển cho frontend đã được vạch ra, chia thành các giai đoạn rõ ràng:
+\begin{description}
+    \item[Phase 1 (Nền tảng):] Nâng cấp hệ thống màu sắc, animation, và các component cơ bản như Avatar, Header.
+    \item[Phase 2 (Trải nghiệm Cốt lõi):] Tập trung vào các cải tiến quan trọng nhất cho Inbox như message grouping, search/filter, và trình soạn thảo đa phương tiện.
+    \item[Phase 3 (Thông tin):] Làm giàu thông tin hiển thị, bao gồm panel chi tiết về visitor, timestamp và status indicator.
+    \item[Phase 4 (Tính năng Nâng cao):] Bổ sung các tính năng chuyên nghiệp như hỗ trợ file đính kèm, trả lời soạn sẵn (canned responses), và phím tắt.
+    \item[Phase 5 (Cộng tác \& Hiệu năng):] Xây dựng các tính năng làm việc nhóm như phân công hội thoại, và tối ưu hiệu năng cho quy mô lớn.
+\end{description}
+
+\subsection{Đề xuất Cải tiến cho Backend}
+\label{subsec:future-improvements}
+
+Dựa trên các phân tích trên, các cải tiến tiếp theo cho backend nên tập trung vào việc hỗ trợ các tính năng frontend mới và tiếp tục tối ưu hóa.
 
 \begin{itemize}
-    \item \textbf{Xây dựng một \texttt{OwnershipGuard} tái sử dụng:}
+    \item \textbf{Hỗ trợ các Tính năng Nâng cao cho Inbox:}
     \begin{itemize}
-        \item \textbf{Mô tả:} Tạo một NestJS Guard tùy chỉnh, có thể được áp dụng ở cấp độ controller hoặc phương thức. Guard này sẽ nhận vào các tham số như tên của entity (ví dụ: 'conversation') và tên của route parameter (ví dụ: 'id').
-        \item \textbf{Nhiệm vụ:} Guard sẽ tự động lấy \texttt{id} từ request, truy vấn CSDL để tìm tài nguyên tương ứng, và thực hiện logic kiểm tra quyền sở hữu \texttt{resource.userId === user.id}. Nếu không hợp lệ, nó sẽ tự động ném ra lỗi \texttt{ForbiddenException}.
-        \item \textbf{Lợi ích:} Trừu tượng hóa và tập trung hóa toàn bộ logic phân quyền vào một nơi duy nhất, giúp các service và controller trở nên sạch sẽ và an toàn hơn rất nhiều.
+        \item \textbf{Conversation Assignment:} Xây dựng logic và API cho phép các \texttt{MANAGER} có thể gán một cuộc hội thoại cho một agent cụ thể.
+        \item \textbf{Saved Replies:} Tạo các endpoint CRUD để quản lý các mẫu câu trả lời soạn sẵn, giúp tăng năng suất cho agent.
+        \item \textbf{Attachments:} Hiện thực hóa logic lưu trữ file (ví dụ: qua S3) và cập nhật API gửi tin nhắn để hỗ trợ file đính kèm.
     \end{itemize}
     
-    \item \textbf{Tái cấu trúc và Tối ưu các Truy vấn Service:}
+    \item \textbf{Tối ưu hóa Truy vấn CSDL:}
     \begin{itemize}
-        \item \textbf{Mô tả:} Dành thời gian rà soát lại các phương thức trong các service nghiệp vụ (đặc biệt là \texttt{InboxModule}) để xác định các cơ hội tối ưu hóa truy vấn CSDL.
-        \item \textbf{Hành động cụ thể:} Sử dụng TypeORM QueryBuilder để xây dựng các truy vấn phức tạp hơn, kết hợp nhiều phép JOIN để lấy tất cả dữ liệu cần thiết chỉ trong một lần gọi, thay vì nhiều lần gọi tuần tự.
+        \item \textbf{Mô tả:} Tiếp tục rà soát các service nghiệp vụ để xác định các cơ hội tối ưu hóa truy vấn, đặc biệt là ở các API trả về danh sách (listing APIs).
+        \item \textbf{Hành động cụ thể:} Sử dụng TypeORM QueryBuilder để xây dựng các truy vấn phức tạp hơn, kết hợp nhiều phép JOIN để lấy tất cả dữ liệu cần thiết chỉ trong một lần gọi, giảm số lượng round-trip đến CSDL.
     \end{itemize}
 \end{itemize}

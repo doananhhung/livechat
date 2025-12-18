@@ -1,8 +1,20 @@
 // src/widget/components/Message.tsx
 import { type Message as MessageType } from "../types";
+import { useMemo } from "preact/hooks";
 
 interface MessageProps {
   message: MessageType;
+}
+
+/**
+ * Sanitize message content to prevent XSS attacks
+ * Converts plain text to HTML-safe text while preserving line breaks
+ */
+function sanitizeContent(content: string): string {
+  const div = document.createElement("div");
+  div.textContent = content;
+  // Preserve line breaks
+  return div.innerHTML.replace(/\n/g, "<br>");
 }
 
 const SpinnerIcon = () => (
@@ -46,11 +58,19 @@ const ErrorIcon = () => (
 export const Message = ({ message }: MessageProps) => {
   const isVisitor = message.sender.type === "visitor";
 
+  // Memoize sanitized content to avoid recalculating on every render
+  const sanitizedContent = useMemo(
+    () => sanitizeContent(message.content),
+    [message.content]
+  );
+
   return (
     <div
       className={`flex items-end my-1 gap-2 ${
         isVisitor ? "justify-end" : "justify-start"
       }`}
+      role="article"
+      aria-label={`${isVisitor ? "Your" : "Agent"} message`}
     >
       <div
         className={`py-2 px-3 max-w-xs shadow-sm ${
@@ -59,11 +79,22 @@ export const Message = ({ message }: MessageProps) => {
             : "bg-gray-200 text-gray-800 rounded-r-xl rounded-t-xl"
         }`}
       >
-        <p className="break-words">{message.content}</p>
+        <p
+          className="break-words"
+          dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+        />
       </div>
-      <div className="flex-shrink-0">
-        {message.status === "sending" && <SpinnerIcon />}
-        {message.status === "failed" && <ErrorIcon />}
+      <div className="flex-shrink-0" role="status" aria-live="polite">
+        {message.status === "sending" && (
+          <span aria-label="Sending message">
+            <SpinnerIcon />
+          </span>
+        )}
+        {message.status === "failed" && (
+          <span aria-label="Failed to send message">
+            <ErrorIcon />
+          </span>
+        )}
       </div>
     </div>
   );

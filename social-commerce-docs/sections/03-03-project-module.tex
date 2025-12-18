@@ -3,40 +3,50 @@
 
 \subsubsection{Mục đích}
 
-\texttt{ProjectModule} là module nghiệp vụ cốt lõi, chịu trách nhiệm quản lý thực thể \texttt{Project}. Trong bối cảnh của ứng dụng, một "Dự án" đại diện cho một website cụ thể mà người dùng (agent) muốn tích hợp widget Live Chat. Module này cung cấp toàn bộ các thao tác CRUD (Tạo, Đọc, Cập nhật, Xóa) cho các dự án, đồng thời xử lý logic quan trọng liên quan đến cấu hình và bảo mật của widget. Nó là nền tảng cho tính năng đa dự án (multi-tenant) của hệ thống, cho phép mỗi người dùng quản lý nhiều website khác nhau một cách độc lập.
+\texttt{ProjectModule} là module nghiệp vụ cốt lõi, được xây dựng trên kiến trúc đa thành viên (multi-tenant) và phân quyền theo vai trò (role-based). Nó chịu trách nhiệm quản lý thực thể \texttt{Project}, các thành viên thuộc dự án, và luồng mời thành viên. Trong bối cảnh của ứng dụng, một "Dự án" đại diện cho một website cụ thể mà một nhóm người dùng (agents, managers) muốn tích hợp widget Live Chat. Module này cung cấp toàn bộ các thao tác CRUD cho dự án, quản lý thành viên, và cấu hình widget, với các quy tắc bảo mật chặt chẽ dựa trên vai trò.
 
-\subsubsection{Các Thành phần Chính (Files)}
-
+\subsubsection{Các Thực thể Cốt lõi (Core Entities)}
+Kiến trúc của module xoay quanh ba thực thể chính làm việc cùng nhau:
 \begin{description}
-    \item[\texttt{project.entity.ts}] Định nghĩa cấu trúc dữ liệu cho thực thể \texttt{Project} bằng TypeORM. Entity này chứa các thông tin quan trọng như \texttt{name}, \texttt{userId} (để xác định chủ sở hữu), \texttt{widgetSettings} (một trường JSONB linh hoạt để lưu các tùy chỉnh về giao diện như màu sắc, câu chào), và đặc biệt là \texttt{whitelistedDomains} (một mảng văn bản để lưu các domain được phép hiển thị widget).
+    \item[\texttt{Project}] Là thực thể trung tâm, đại diện cho một website hoặc một kênh kinh doanh. Nó chứa các thông tin cấu hình như tên, các domain được phép nhúng widget (\texttt{whitelistedDomains}), và các cài đặt cho widget (\texttt{widgetSettings}). Đáng chú ý, nó \textbf{không} còn chứa \texttt{userId} để xác định chủ sở hữu, thay vào đó, nó có mối quan hệ \texttt{OneToMany} với \texttt{ProjectMember}.
     
-    \item[\texttt{project.service.ts}] Chứa toàn bộ logic nghiệp vụ để thao tác với các dự án. Service này thực hiện các truy vấn CSDL, và quan trọng nhất là áp dụng các quy tắc về bảo mật và phân quyền, chẳng hạn như kiểm tra quyền sở hữu của người dùng đối với một dự án trước khi cho phép họ cập nhật hoặc xóa.
+    \item[\texttt{ProjectMember}] Đây là bảng kết nối (join table) quan trọng, liên kết một \texttt{User} với một \texttt{Project}. Thực thể này chứa \texttt{projectId}, \texttt{userId}, và quan trọng nhất là trường \texttt{role} (\texttt{MANAGER} hoặc \texttt{AGENT}). Sự tồn tại của một bản ghi trong bảng này xác định một người dùng là thành viên của dự án, và vai trò của họ quyết định quyền hạn của họ trong dự án đó.
     
-    \item[\texttt{project.controller.ts}] Cung cấp các API endpoint được bảo vệ (\texttt{JwtAuthGuard}) cho phép người dùng đã đăng nhập thực hiện các thao tác CRUD trên các dự án của chính họ. Controller này đóng vai trò là lớp giao tiếp, nhận request từ Agent Dashboard và gọi đến các phương thức tương ứng trong \texttt{ProjectService}.
-    
-    \item[\texttt{public-project.controller.ts}] Một controller đặc biệt, không yêu cầu xác thực, được thiết kế để phục vụ một mục đích duy nhất: cung cấp các cài đặt công khai của widget cho script widget khi nó được tải trên website của khách hàng.
-    
-    \item[\texttt{project.module.ts}] Đóng gói tất cả các thành phần trên, đăng ký \texttt{Project} entity với TypeORM và import \texttt{AuthModule} để có thể sử dụng các Guard bảo vệ.
+    \item[\texttt{Invitation}] Thực thể này lưu trữ một lời mời được gửi tới một địa chỉ email để tham gia một dự án với một vai trò cụ thể. Nó chứa một token bảo mật, duy nhất, có thời gian hết hạn, và trạng thái của lời mời (\texttt{PENDING}, \texttt{ACCEPTED}, \texttt{EXPIRED}).
 \end{description}
 
-\subsubsection{Phân tích các Phương thức Quan trọng}
+\subsubsection{Các Luồng Nghiệp vụ Chính}
 
-\paragraph{\texttt{project.service.ts}}
+\paragraph{1. Quản lý Dự án (CRUD)}
 \begin{itemize}
-    \item \texttt{create(dto, userId)}: Tạo một dự án mới và gán nó cho \texttt{userId} của người dùng đang thực hiện yêu cầu.
-    
-    \item \texttt{findAllForUser(userId)}: Lấy danh sách tất cả các dự án thuộc về một người dùng cụ thể.
-    
-    \item \texttt{findOne(id, userId)}: Tìm một dự án theo \texttt{id}. Phương thức này chứa một logic \textbf{kiểm tra quyền sở hữu} cực kỳ quan trọng: sau khi tìm thấy dự án, nó sẽ so sánh \texttt{project.userId} với \texttt{userId} của người dùng đang yêu cầu. Nếu không khớp, nó sẽ ném ra một lỗi \texttt{ForbiddenException}, ngăn chặn người dùng xem hoặc chỉnh sửa dự án của người khác.
-    
-    \item \texttt{update(id, dto, userId)}: Cập nhật thông tin một dự án. Nó tái sử dụng phương thức \texttt{findOne} để thực hiện việc kiểm tra quyền sở hữu trước khi tiến hành lưu các thay đổi.
-    
-    \item \texttt{getWidgetSettings(id, origin)}: Đây là phương thức phục vụ cho endpoint công khai. Nó tìm một dự án theo \texttt{id} và thực hiện logic \textbf{bảo mật Domain Whitelisting}. Nó so sánh \texttt{origin} của request (domain của website đang tải widget) với danh sách \texttt{whitelistedDomains} đã được lưu. Nếu domain không hợp lệ, phương thức sẽ trả về \texttt{null}, báo hiệu cho controller từ chối yêu cầu. Nếu hợp lệ, nó sẽ trả về các cài đặt widget, có kèm theo các giá trị mặc định để đảm bảo widget luôn hiển thị đúng.
+    \item \texttt{POST /projects}: Tạo một dự án mới. Một điểm kiến trúc quan trọng là khi một người dùng tạo dự án, hệ thống sẽ tự động tạo một bản ghi \texttt{ProjectMember} cho người dùng đó với vai trò là \texttt{MANAGER}.
+    \item \texttt{GET /projects}: Lấy danh sách tất cả các dự án mà người dùng hiện tại là thành viên. Response trả về không chỉ là danh sách các dự án, mà là một mảng các đối tượng \texttt{ProjectWithRole}, trong đó mỗi dự án được bổ sung thêm trường \texttt{myRole} để cho frontend biết vai trò của người dùng trong dự án đó là gì.
+    \item \texttt{PATCH /projects/:id}: Cập nhật thông tin cơ bản của dự án (tên, whitelisted domains). Endpoint này được bảo vệ và chỉ có \texttt{MANAGER} mới có thể truy cập.
+    \item \texttt{PATCH /projects/:id/widget-settings}: Cập nhật cấu hình riêng cho widget. Tương tự, chỉ có \texttt{MANAGER} mới có quyền.
 \end{itemize}
 
-\paragraph{\texttt{project.controller.ts} \& \texttt{public-project.controller.ts}}
+\paragraph{2. Hệ thống Lời mời (Invitation System)}
+Đây là một hệ thống con phức tạp cho phép các \texttt{MANAGER} mở rộng đội ngũ của mình.
 \begin{itemize}
-    \item \textbf{ProjectController:} Toàn bộ các endpoint (\texttt{POST /}, \texttt{GET /}, \texttt{PATCH /:id}) trong controller này đều được bảo vệ bởi \texttt{JwtAuthGuard} và sử dụng decorator \texttt{@GetCurrentUser} để đảm bảo mọi thao tác đều được thực hiện trong phạm vi tài khoản của người dùng đã đăng nhập.
-    
-    \item \textbf{PublicProjectController:} Controller này chỉ có một endpoint duy nhất là \texttt{GET /:id/widget-settings}. Nó không có Guard và có nhiệm vụ nhận request từ script widget, lấy header \texttt{origin}, và gọi đến service \texttt{getWidgetSettings}. Nó cũng chịu trách nhiệm chuyển đổi kết quả \texttt{null} từ service thành một response \texttt{403 Forbidden} cho client, thông báo rõ ràng về việc truy cập bị từ chối.
+    \item \texttt{POST /projects/invitations}: Một \texttt{MANAGER} có thể tạo một lời mời mới bằng cách cung cấp email người được mời, ID dự án, và vai trò. Service sẽ tạo một token, lưu vào CSDL và gửi email.
+    \item \textbf{Luồng email thông minh}: Service sẽ kiểm tra xem email được mời đã tồn tại trong hệ thống hay chưa. Nếu là người dùng mới, email sẽ chứa link đến trang đăng ký (kèm token). Nếu là người dùng đã có tài khoản, email sẽ chứa link trực tiếp đến trang chấp nhận lời mời.
+    \item \texttt{GET /projects/invitations/details?token=...}: Một endpoint công khai cho phép frontend lấy thông tin cơ bản của lời mời (như tên dự án, email) để hiển thị trên trang đăng ký, cải thiện trải nghiệm người dùng.
+    \item \texttt{POST /projects/invitations/accept?token=...}: Endpoint được bảo vệ, yêu cầu người dùng phải đăng nhập. Khi được gọi, service sẽ xác thực token, kiểm tra hết hạn, và nếu hợp lệ, sẽ tạo một bản ghi \texttt{ProjectMember} mới cho người dùng, chính thức thêm họ vào dự án. Sau đó, lời mời được đánh dấu là đã chấp nhận.
+    \item \texttt{GET /projects/:id/invitations} và \texttt{DELETE /projects/invitations/:invitationId}: Các endpoint cho phép \texttt{MANAGER} xem danh sách các lời mời đang chờ và hủy chúng nếu cần.
+\end{itemize}
+
+\paragraph{3. Quản lý Thành viên (Member Management)}
+Các endpoint này chỉ dành cho \texttt{MANAGER} để quản lý đội ngũ của mình.
+\begin{itemize}
+    \item \texttt{GET /projects/:id/members}: Lấy danh sách tất cả thành viên của một dự án, kèm theo thông tin chi tiết của họ (tên, email, vai trò, ngày tham gia).
+    \item \texttt{PATCH /projects/:projectId/members/:userId/role}: Thay đổi vai trò của một thành viên (ví dụ: nâng cấp một \texttt{AGENT} lên \texttt{MANAGER}). Hệ thống có logic ngăn chặn người dùng tự thay đổi vai trò của chính mình.
+    \item \texttt{DELETE /projects/:projectId/members/:userId}: Xóa một thành viên khỏi dự án. Người dùng không thể tự xóa chính mình.
+\end{itemize}
+
+\subsubsection{Phân quyền và Bảo mật}
+\begin{itemize}
+    \item \textbf{Từ bỏ mô hình Owner}: Mô hình cũ dựa trên một trường \texttt{userId} duy nhất trên \texttt{Project} đã được loại bỏ hoàn toàn.
+    \item \textbf{Phân quyền dựa trên vai trò (RBAC)}: Quyền truy cập và thao tác trên một dự án giờ đây được quyết định bởi sự tồn tại và vai trò trong bảng \texttt{ProjectMember}. Hầu hết các thao tác quản trị (cập nhật dự án, mời/xóa thành viên) đều yêu cầu vai trò \texttt{MANAGER}.
+    \item \textbf{Sử dụng Guard}: Module sử dụng một \texttt{RolesGuard} tùy chỉnh kết hợp với decorator \texttt{@Roles(ProjectRole.MANAGER)} để bảo vệ các endpoint nhạy cảm một cách khai báo và rõ ràng.
+    \item \textbf{Domain Whitelisting}: Logic lấy cấu hình widget vẫn giữ nguyên cơ chế bảo mật cốt lõi: nó so sánh \texttt{origin} của request với danh sách \texttt{whitelistedDomains} của dự án để ngăn chặn việc sử dụng widget trái phép.
 \end{itemize}

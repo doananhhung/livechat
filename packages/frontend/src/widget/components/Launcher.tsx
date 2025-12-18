@@ -32,10 +32,17 @@ export const Launcher = ({
       onClick={onClick}
       style={{ backgroundColor: primaryColor }}
       className="fixed bottom-5 right-5 w-16 h-16 rounded-full text-white flex items-center justify-center shadow-lg transition-all duration-300 ease-in-out transform hover:scale-110 z-[9999]"
+      aria-label={`Open chat${
+        unreadCount > 0 ? ` (${unreadCount} unread messages)` : ""
+      }`}
+      title="Open live chat"
     >
       <ChatIcon />
       {unreadCount > 0 && (
-        <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center border-2 border-white">
+        <span
+          className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center border-2 border-white"
+          aria-label={`${unreadCount} unread messages`}
+        >
           {unreadCount}
         </span>
       )}

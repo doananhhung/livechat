@@ -57,4 +57,17 @@ export class VisitorService {
       where: { visitorUid },
     });
   }
+
+  /**
+   * @NEW
+   * Finds a visitor by their ID.
+   * Used by the inbox controller to display visitor information.
+   * @param visitorId The ID of the visitor.
+   * @returns The Visitor entity or null if not found.
+   */
+  async getVisitorById(visitorId: number): Promise<Visitor | null> {
+    return this.entityManager.findOne(Visitor, {
+      where: { id: visitorId },
+    });
+  }
 }

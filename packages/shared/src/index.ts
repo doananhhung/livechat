@@ -1,6 +1,7 @@
 export * from "./agent-typing.dto";
 export * from "./change-password.dto";
 export * from "./conversation.entity";
+export * from "./conversation-list-response.dto";
 export * from "./create-project.dto";
 export * from "./email-change.dto";
 export * from "./exchange-code.dto";

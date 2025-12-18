@@ -58,6 +58,18 @@ const getConversationsByProjectId = async (
   const response = await api.get(`/inbox/conversations`, {
     params,
   });
+
+  console.log("📡 Frontend API response:", {
+    totalReceived: response.data.data?.length,
+    firstConversation: response.data.data?.[0]
+      ? {
+          id: response.data.data[0].id,
+          status: response.data.data[0].status,
+          hasVisitor: !!response.data.data[0].visitor,
+        }
+      : null,
+  });
+
   return response.data;
 };
 
@@ -204,8 +216,17 @@ export const useUpdateConversationStatus = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateConversationStatus,
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Invalidate conversations list to refresh the list
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      // Invalidate messages for this specific conversation
+      queryClient.invalidateQueries({
+        queryKey: ["messages", variables.conversationId],
+      });
+      console.log("✅ Conversation status updated:", data);
+    },
+    onError: (error) => {
+      console.error("❌ Failed to update conversation status:", error);
     },
   });
 };

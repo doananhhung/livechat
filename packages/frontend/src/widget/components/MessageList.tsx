@@ -38,16 +38,27 @@ export const MessageList = ({
   };
 
   return (
-    <div className="flex-grow p-4 overflow-y-auto">
+    <div
+      className="flex-grow p-4 overflow-y-auto"
+      role="log"
+      aria-live="polite"
+      aria-label="Chat messages"
+    >
       {messages.length === 0 ? (
-        <div className="h-full flex items-center justify-center text-gray-500">
+        <div
+          className="h-full flex items-center justify-center text-gray-500"
+          role="status"
+        >
           {welcomeMessage}
         </div>
       ) : (
         messages.map((msg, index) => (
           <div key={msg.id}>
             {shouldShowTimestamp(msg, messages[index - 1]) && (
-              <div className="text-center text-xs text-gray-400 my-2">
+              <div
+                className="text-center text-xs text-gray-400 my-2"
+                role="presentation"
+              >
                 {formatTimestamp(msg.timestamp)}
               </div>
             )}
@@ -56,7 +67,11 @@ export const MessageList = ({
         ))
       )}
       {isAgentTyping && (
-        <div className="flex items-end my-1 gap-2 justify-start">
+        <div
+          className="flex items-end my-1 gap-2 justify-start"
+          role="status"
+          aria-label="Agent is typing"
+        >
           <div className="py-2 px-3 max-w-xs shadow-sm bg-gray-200 text-gray-800 rounded-r-xl rounded-t-xl">
             <div className="typing-indicator">
               <span></span>
