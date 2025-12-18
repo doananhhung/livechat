@@ -178,15 +178,22 @@ export class EventsGateway
   }
 
   @SubscribeMessage('updateContext')
-  handleUpdateContext(
+  async handleUpdateContext(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { currentUrl: string }
-  ): void {
-    const { projectId, conversationId } = client.data;
-    if (!projectId || !conversationId) {
+  ): Promise<void> {
+    const { projectId, conversationId, visitorUid } = client.data;
+    if (!projectId || !conversationId || !visitorUid) {
       return;
     }
 
+    // Store currentUrl in Redis
+    await this.realtimeSessionService.setVisitorCurrentUrl(
+      visitorUid,
+      payload.currentUrl
+    );
+
+    // Broadcast to agents
     this.server.to(`project:${projectId}`).emit('visitorContextUpdated', {
       conversationId,
       currentUrl: payload.currentUrl,

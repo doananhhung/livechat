@@ -3,10 +3,14 @@
 import { Injectable } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { Visitor } from '@social-commerce/shared';
+import { RealtimeSessionService } from '../../realtime-session/realtime-session.service';
 
 @Injectable()
 export class VisitorService {
-  constructor(private readonly entityManager: EntityManager) {}
+  constructor(
+    private readonly entityManager: EntityManager,
+    private readonly realtimeSessionService: RealtimeSessionService
+  ) {}
 
   /**
    * Finds an existing visitor by their unique UID or creates a new one if not found.
@@ -62,12 +66,23 @@ export class VisitorService {
    * @NEW
    * Finds a visitor by their ID.
    * Used by the inbox controller to display visitor information.
+   * Populates currentUrl from Redis.
    * @param visitorId The ID of the visitor.
    * @returns The Visitor entity or null if not found.
    */
   async getVisitorById(visitorId: number): Promise<Visitor | null> {
-    return this.entityManager.findOne(Visitor, {
+    const visitor = await this.entityManager.findOne(Visitor, {
       where: { id: visitorId },
     });
+
+    if (visitor) {
+      // Populate currentUrl from Redis
+      visitor.currentUrl =
+        await this.realtimeSessionService.getVisitorCurrentUrl(
+          visitor.visitorUid
+        );
+    }
+
+    return visitor;
   }
 }

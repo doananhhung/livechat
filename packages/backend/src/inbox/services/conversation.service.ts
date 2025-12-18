@@ -143,6 +143,18 @@ export class ConversationService {
     // This executes the query built above.
     const [data, total] = await qb.getManyAndCount();
 
+    // Populate currentUrl for each visitor from Redis
+    await Promise.all(
+      data.map(async (conversation) => {
+        if (conversation.visitor) {
+          conversation.visitor.currentUrl =
+            await this.realtimeSessionService.getVisitorCurrentUrl(
+              conversation.visitor.visitorUid
+            );
+        }
+      })
+    );
+
     console.log('📊 Backend listByProject - Total:', total);
     if (data.length > 0) {
       console.log('📊 Sample conversation:', {
@@ -154,6 +166,7 @@ export class ConversationService {
           ? {
               id: data[0].visitor.id,
               displayName: data[0].visitor.displayName,
+              currentUrl: data[0].visitor.currentUrl,
             }
           : null,
       });

@@ -36,4 +36,26 @@ export class RealtimeSessionService {
     const key = this.getKey(visitorUid);
     await this.redis.del(key);
   }
+
+  private getCurrentUrlKey(visitorUid: string): string {
+    return `session:visitor:${visitorUid}:currentUrl`;
+  }
+
+  async setVisitorCurrentUrl(
+    visitorUid: string,
+    currentUrl: string
+  ): Promise<void> {
+    this.logger.log(
+      `Setting currentUrl for visitorUid: ${visitorUid} to ${currentUrl}`
+    );
+    const key = this.getCurrentUrlKey(visitorUid);
+    await this.redis.set(key, currentUrl);
+    await this.redis.expire(key, 3 * 24 * 60 * 60); // Expire in 3 days
+  }
+
+  async getVisitorCurrentUrl(visitorUid: string): Promise<string | null> {
+    this.logger.log(`Getting currentUrl for visitorUid: ${visitorUid}`);
+    const key = this.getCurrentUrlKey(visitorUid);
+    return this.redis.get(key);
+  }
 }

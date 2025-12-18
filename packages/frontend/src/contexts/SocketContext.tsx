@@ -78,14 +78,76 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       setTypingStatus(payload.conversationId, payload.isTyping);
     };
 
+    const handleVisitorContextUpdated = (payload: {
+      conversationId: number;
+      currentUrl: string;
+    }) => {
+      // Update the visitor's currentUrl in the conversations cache
+      queryClient.setQueriesData<any>(
+        { queryKey: ["conversations"] },
+        (oldData: any) => {
+          if (!oldData) return oldData;
+
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              data: page.data.map((conversation: any) => {
+                if (
+                  Number(conversation.id) === Number(payload.conversationId) &&
+                  conversation.visitor
+                ) {
+                  return {
+                    ...conversation,
+                    visitor: {
+                      ...conversation.visitor,
+                      currentUrl: payload.currentUrl,
+                    },
+                  };
+                }
+                return conversation;
+              }),
+            })),
+          };
+        }
+      );
+
+      // Also update the specific visitor cache if it exists
+      const conversationIdNum = Number(payload.conversationId);
+      const allConversations = queryClient
+        .getQueriesData<any>({ queryKey: ["conversations"] })
+        .flatMap(([, cacheData]) =>
+          cacheData?.pages.flatMap((page: any) => page.data)
+        );
+
+      const conversation = allConversations.find(
+        (c: any) => c && Number(c.id) === conversationIdNum
+      );
+
+      if (conversation?.visitor?.id) {
+        queryClient.setQueryData(
+          ["visitor", conversation.visitor.id],
+          (oldVisitor: any) => {
+            if (!oldVisitor) return oldVisitor;
+            return {
+              ...oldVisitor,
+              currentUrl: payload.currentUrl,
+            };
+          }
+        );
+      }
+    };
+
     socket.on("newMessage", handleNewMessage);
     socket.on("agentReplied", handleNewMessage);
     socket.on("visitorIsTyping", handleVisitorTyping);
+    socket.on("visitorContextUpdated", handleVisitorContextUpdated);
 
     return () => {
       socket.off("newMessage", handleNewMessage);
       socket.off("agentReplied", handleNewMessage);
       socket.off("visitorIsTyping", handleVisitorTyping);
+      socket.off("visitorContextUpdated", handleVisitorContextUpdated);
     };
   }, [
     socket,
