@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ProjectRole } from "@social-commerce/shared";
+import { ProjectRole } from "@live-chat/shared";
 import { getProjects } from "../services/projectApi";
 
 /**

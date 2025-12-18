@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { authenticator } from 'otplib';
-import { User } from '@social-commerce/shared';
+import { User } from '@live-chat/shared';
 import { toDataURL } from 'qrcode';
 
 @Injectable()
@@ -14,7 +14,7 @@ export class TwoFactorAuthenticationService {
     const secret = authenticator.generateSecret();
     const appName = this.configService.get<string>(
       'TWO_FACTOR_APP_NAME',
-      'SocialCommerce'
+      'LiveChat'
     );
     const otpAuthUrl = authenticator.keyuri(user.email, appName, secret);
 

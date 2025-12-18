@@ -19,7 +19,7 @@ import {
   WidgetSettingsDto,
   CreateInvitationDto,
   AcceptInvitationDto,
-} from '@social-commerce/shared';
+} from '@live-chat/shared';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetCurrentUser } from '../common/decorators/get-current-user.decorator';
 import { RolesGuard } from '../rbac/roles.guard';

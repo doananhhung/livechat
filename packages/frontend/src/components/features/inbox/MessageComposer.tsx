@@ -19,17 +19,20 @@ const MessageComposer = ({ conversationId }: MessageComposerProps) => {
   const { mutate: notifyTyping } = useNotifyAgentTyping();
   const typingTimeoutRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isMountedRef = useRef(true);
 
-  // Function to emit typing status
+  // Function to emit typing status - use useRef to avoid stale closures
   const handleTyping = (isTyping: boolean) => {
-    notifyTyping({ conversationId, isTyping });
+    if (isMountedRef.current) {
+      notifyTyping({ conversationId, isTyping });
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setContent(e.target.value);
 
     // If a timeout is already set, clear it
-    if (typingTimeoutRef.current) {
+    if (typingTimeoutRef.current !== null) {
       clearTimeout(typingTimeoutRef.current);
     } else {
       // If no timeout, it means typing just started
@@ -51,7 +54,7 @@ const MessageComposer = ({ conversationId }: MessageComposerProps) => {
       setContent("");
       inputRef.current?.focus();
       // Stop typing immediately on send
-      if (typingTimeoutRef.current) {
+      if (typingTimeoutRef.current !== null) {
         clearTimeout(typingTimeoutRef.current);
         typingTimeoutRef.current = null;
       }
@@ -61,14 +64,18 @@ const MessageComposer = ({ conversationId }: MessageComposerProps) => {
 
   // Cleanup effect for when the component unmounts or conversation changes
   useEffect(() => {
+    isMountedRef.current = true;
+
     return () => {
-      if (typingTimeoutRef.current) {
+      isMountedRef.current = false;
+      if (typingTimeoutRef.current !== null) {
         clearTimeout(typingTimeoutRef.current);
-        // Optionally emit false if component unmounts while typing
-        handleTyping(false);
+        typingTimeoutRef.current = null;
       }
+      // Send typing=false on unmount if needed
+      notifyTyping({ conversationId, isTyping: false });
     };
-  }, [conversationId]);
+  }, [conversationId, notifyTyping]);
 
   return (
     <form

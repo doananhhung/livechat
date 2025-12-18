@@ -9,7 +9,7 @@ import {
 } from "../../ui/Dialog";
 import { Button } from "../../ui/Button";
 import { useToast } from "../../ui/use-toast";
-import type { ProjectWithRole } from "@social-commerce/shared";
+import type { ProjectWithRole } from "@live-chat/shared";
 
 interface ProjectInfoDialogProps {
   project: ProjectWithRole;

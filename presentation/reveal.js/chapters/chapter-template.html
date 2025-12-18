@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <script>
+    // Load head (meta + links)
+    fetch('../shared/head.html')
+      .then(r => r.text())
+      .then(html => {
+        document.head.insertAdjacentHTML('afterbegin', html);
+      });
+    
+    // Load styles
+    fetch('../shared/styles.html')
+      .then(r => r.text())
+      .then(html => {
+        document.head.insertAdjacentHTML('beforeend', html);
+      });
+  </script>
+  <title>Chương X: Tiêu đề</title>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+      
+      <!-- Slide giới thiệu chương -->
+      <section>
+        <h1 class="chapter-title">Chương X: Tiêu đề</h1>
+        <p class="subtitle">(Subtitle)</p>
+      </section>
+
+      <!-- Nội dung slides ở đây -->
+      
+      <!-- Slide kết thúc -->
+      <section>
+        <h2 class="chapter-title">Kết thúc Chương X</h2>
+        <p><a href="../index.html">← Quay lại mục lục</a></p>
+      </section>
+
+    </div>
+  </div>
+  
+  <script>
+    // Load scripts sau khi DOM ready
+    window.addEventListener('DOMContentLoaded', () => {
+      fetch('../shared/scripts.html')
+        .then(r => r.text())
+        .then(html => {
+          document.body.insertAdjacentHTML('beforeend', html);
+        });
+    });
+  </script>
+</body>
+</html>

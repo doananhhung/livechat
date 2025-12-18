@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [preact()],
   resolve: {
     alias: {
-      "@social-commerce/shared": path.resolve(__dirname, "../shared/src"),
+      "@live-chat/shared": path.resolve(__dirname, "../shared/src"),
     },
   },
   build: {

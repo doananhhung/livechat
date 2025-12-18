@@ -13,6 +13,31 @@ const RETRY_DELAY = 2000; // ms
 
 let isInitialized = false;
 let cleanupFunctions: (() => void)[] = [];
+let initializationCount = 0;
+let cleanupCount = 0;
+
+// Utility function for timestamped logging
+const logWithTime = (component: string, message: string, ...args: any[]) => {
+  const timestamp = new Date().toLocaleTimeString("en-US", {
+    hour12: false,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    fractionalSecondDigits: 3,
+  });
+  console.log(`[${timestamp}] [${component}] ${message}`, ...args);
+};
+
+const errorWithTime = (component: string, message: string, ...args: any[]) => {
+  const timestamp = new Date().toLocaleTimeString("en-US", {
+    hour12: false,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    fractionalSecondDigits: 3,
+  });
+  console.error(`[${timestamp}] [${component}] ${message}`, ...args);
+};
 
 function createHostElement(): ShadowRoot {
   const hostElement = document.createElement("div");
@@ -64,32 +89,54 @@ async function initializeWidget(config: {
   projectId: string;
   visitor?: { name?: string; email?: string };
 }) {
+  initializationCount++;
+  logWithTime(
+    "Widget",
+    `🚀 initializeWidget() called | Attempt #${initializationCount} | isInitialized: ${isInitialized}`
+  );
+
   if (isInitialized || !config.projectId) {
+    logWithTime(
+      "Widget",
+      `⚠️ Initialization SKIPPED | isInitialized: ${isInitialized}, hasProjectId: ${!!config.projectId}`
+    );
     return;
   }
   isInitialized = true;
+  logWithTime("Widget", `✅ Setting isInitialized = true`);
 
   try {
+    logWithTime(
+      "Widget",
+      `📡 Fetching widget settings for projectId: ${config.projectId}`
+    );
     // 1. Fetch settings from the backend with retry logic
     const settings = await retryWithBackoff(() =>
       getWidgetSettings(config.projectId)
     );
+    logWithTime("Widget", `✅ Widget settings received:`, settings);
 
     // 2. Identify the visitor
     let visitorUid = localStorage.getItem("visitor_uid");
     if (!visitorUid) {
       visitorUid = crypto.randomUUID();
       localStorage.setItem("visitor_uid", visitorUid);
+      logWithTime("Widget", `🆕 Generated NEW visitor UID: ${visitorUid}`);
+    } else {
+      logWithTime("Widget", `♻️ Using EXISTING visitor UID: ${visitorUid}`);
     }
 
     // 3. Update the central state store
     useChatStore
       .getState()
       .setWidgetConfig({ ...settings, projectId: config.projectId });
+    logWithTime("Widget", `✅ Widget config set in store`);
 
+    logWithTime("Widget", `🔌 Calling socketService.connect()`);
     socketService.connect(config.projectId, visitorUid);
 
     // 4. Create the DOM host and render the app
+    logWithTime("Widget", `🎨 Creating shadow DOM and rendering app`);
     const shadowRoot = createHostElement();
     const appContainer = document.createElement("div");
     shadowRoot.appendChild(appContainer);
@@ -100,9 +147,14 @@ async function initializeWidget(config: {
       </ErrorBoundary>,
       appContainer
     );
+    logWithTime(
+      "Widget",
+      `✅ Widget initialized successfully | Total initializations: ${initializationCount}`
+    );
   } catch (error) {
-    console.error("Live Chat Widget initialization failed:", error);
+    errorWithTime("Widget", `❌ Widget initialization FAILED:`, error);
     isInitialized = false; // Reset flag on failure to allow re-initialization
+    logWithTime("Widget", `⚠️ Reset isInitialized = false due to error`);
 
     // Show user-friendly error message
     showErrorFallback();
@@ -140,17 +192,74 @@ function showErrorFallback() {
 
 // Cleanup function for widget teardown
 function cleanup() {
-  cleanupFunctions.forEach((fn) => fn());
+  cleanupCount++;
+  logWithTime(
+    "Widget",
+    `🧹 cleanup() called | Cleanup #${cleanupCount} | cleanupFunctions: ${cleanupFunctions.length}`
+  );
+
+  // Execute all registered cleanup functions
+  cleanupFunctions.forEach((fn, index) => {
+    try {
+      logWithTime("Widget", `🧹 Executing cleanup function #${index + 1}`);
+      fn();
+    } catch (error) {
+      errorWithTime(
+        "Widget",
+        `❌ Error during cleanup function #${index + 1}:`,
+        error
+      );
+    }
+  });
   cleanupFunctions = [];
+  logWithTime("Widget", `✅ All cleanup functions executed`);
+
+  // Disconnect socket and cleanup all listeners
+  logWithTime("Widget", `🔌 Calling socketService.disconnect()`);
   socketService.disconnect();
 
-  // Remove widget host element
+  // Remove widget host element and all its event listeners
   const hostElement = document.getElementById("live-chat-widget-host");
   if (hostElement) {
+    logWithTime("Widget", `🗑️ Removing shadow root and host element`);
+    // Remove shadow root content first
+    if (hostElement.shadowRoot) {
+      // Clear all content from shadow root
+      while (hostElement.shadowRoot.firstChild) {
+        hostElement.shadowRoot.removeChild(hostElement.shadowRoot.firstChild);
+      }
+      logWithTime("Widget", `✅ Shadow root content cleared`);
+    }
+    // Remove the host element itself
     hostElement.remove();
+    logWithTime("Widget", `✅ Host element removed`);
+  } else {
+    logWithTime("Widget", `⚠️ Host element not found (already removed?)`);
   }
 
+  // Remove error fallback if exists
+  const errorElement = document.getElementById("live-chat-widget-error");
+  if (errorElement) {
+    errorElement.remove();
+    logWithTime("Widget", `✅ Error fallback element removed`);
+  }
+
+  // Reset zustand store to initial state
+  useChatStore.setState({
+    widgetConfig: null,
+    isWindowOpen: false,
+    messages: [],
+    connectionStatus: "disconnected",
+    unreadCount: 0,
+    isAgentTyping: false,
+  });
+  logWithTime("Widget", `✅ Zustand store reset to initial state`);
+
   isInitialized = false;
+  logWithTime(
+    "Widget",
+    `✅ Cleanup complete | isInitialized = false | Total cleanups: ${cleanupCount}, Total inits: ${initializationCount}`
+  );
 }
 
 // Expose the global API for programmatic initialization
@@ -159,21 +268,38 @@ window.LiveChatWidget = {
   destroy: cleanup,
 };
 
+logWithTime("Widget", `🌐 Global API exposed: window.LiveChatWidget`);
+
 // Fallback logic for data-attribute based initialization
 setTimeout(() => {
   if (isInitialized) {
+    logWithTime(
+      "Widget",
+      `⏭️ Fallback init SKIPPED - widget already initialized`
+    );
     return;
   }
 
+  logWithTime("Widget", `🔍 Checking for data-attribute initialization...`);
   const scriptTag = document.getElementById(WIDGET_SCRIPT_ID);
   if (scriptTag) {
     const projectId = scriptTag.getAttribute("data-project-id");
     if (projectId) {
+      logWithTime(
+        "Widget",
+        `✅ Found data-project-id: ${projectId} - initializing widget`
+      );
       initializeWidget({ projectId });
     } else {
-      console.error(
-        "Live Chat Widget: data-project-id not found on script tag."
+      errorWithTime(
+        "Widget",
+        `❌ Script tag found but data-project-id attribute is missing`
       );
     }
+  } else {
+    logWithTime(
+      "Widget",
+      `⚠️ Script tag with id '${WIDGET_SCRIPT_ID}' not found - waiting for manual init`
+    );
   }
 }, INIT_TIMEOUT);

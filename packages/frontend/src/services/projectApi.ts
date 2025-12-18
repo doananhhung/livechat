@@ -9,10 +9,10 @@ import type {
   ProjectMemberDto,
   ProjectRole,
   UpdateProjectDto,
-} from "@social-commerce/shared";
+} from "@live-chat/shared";
 
 // --- Type Definitions ---
-// All type definitions are now imported from @social-commerce/shared
+// All type definitions are now imported from @live-chat/shared
 
 // Extended invitation with project details
 export interface InvitationWithProject extends Invitation {

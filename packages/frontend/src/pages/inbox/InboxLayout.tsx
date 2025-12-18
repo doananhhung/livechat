@@ -7,7 +7,6 @@ import * as projectApi from "../../services/projectApi";
 import { ProjectSelector } from "../../components/features/inbox/ProjectSelector";
 import { ConversationList } from "../../components/features/inbox/ConversationList";
 import { Spinner } from "../../components/ui/Spinner";
-import { SocketProvider } from "../../contexts/SocketContext";
 import { Button } from "../../components/ui/Button";
 import { useSocket } from "../../contexts/SocketContext";
 
@@ -47,6 +46,7 @@ const InboxContent = () => {
       }
     );
 
+    // Cleanup function to leave room
     return () => {
       // Also add it to the cleanup function
       socket.emit(
@@ -59,6 +59,7 @@ const InboxContent = () => {
         }
       );
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, projectId]);
 
   // The original JSX for the content goes here.
@@ -141,19 +142,19 @@ export const InboxLayout = () => {
     );
   }
 
+  // REMOVED nested SocketProvider to prevent duplicate socket connections
+  // Socket is already provided at root level in main.tsx
   return (
-    <SocketProvider>
-      <div className="flex h-[calc(100vh-5rem)] bg-muted/40">
-        <aside className="flex flex-col w-full md:w-1/3 max-w-sm border-r bg-card">
-          <header className="p-4 border-b">
-            <ProjectSelector projects={projects} activeProjectId={projectId} />
-          </header>
-          <main className="flex-1 overflow-y-auto">
-            <ConversationList />
-          </main>
-        </aside>
-        <InboxContent />
-      </div>
-    </SocketProvider>
+    <div className="flex h-[calc(100vh-5rem)] bg-muted/40">
+      <aside className="flex flex-col w-full md:w-1/3 max-w-sm border-r bg-card">
+        <header className="p-4 border-b">
+          <ProjectSelector projects={projects} activeProjectId={projectId} />
+        </header>
+        <main className="flex-1 overflow-y-auto">
+          <ConversationList />
+        </main>
+      </aside>
+      <InboxContent />
+    </div>
   );
 };

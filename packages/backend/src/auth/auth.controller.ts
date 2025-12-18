@@ -15,11 +15,14 @@ import {
 import { AuthService } from './auth.service';
 import {
   ChangePasswordDto,
+  SetPasswordDto,
   ExchangeCodeDto,
   RegisterDto,
   ResendVerificationDto,
   User,
-} from '@social-commerce/shared';
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from '@live-chat/shared';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { type Response } from 'express';
@@ -177,8 +180,41 @@ export class AuthController {
         Date.now() + this.refreshTokenExpiresIn * 24 * 60 * 60 * 1000
       ),
     });
+
+    const message = body.currentPassword
+      ? 'Mật khẩu đã được thay đổi thành công.'
+      : 'Mật khẩu đã được đặt thành công.';
+
     return {
-      message: 'Mật khẩu đã được thay đổi thành công.',
+      message,
+      accessToken: tokens.accessToken,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('set-password')
+  @HttpCode(HttpStatus.OK)
+  async setPassword(
+    @Request() req,
+    @Body() body: SetPasswordDto,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    await this.authService.setPassword(req.user.id, body.newPassword);
+    const tokens = await this.authService.loginAndReturnTokens(
+      req.user,
+      req.ip,
+      req.headers['user-agent'] || ''
+    );
+    response.cookie('refresh_token', tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      expires: new Date(
+        Date.now() + this.refreshTokenExpiresIn * 24 * 60 * 60 * 1000
+      ),
+    });
+    return {
+      message: 'Mật khẩu đã được đặt thành công.',
       accessToken: tokens.accessToken,
     };
   }
@@ -296,5 +332,153 @@ export class AuthController {
     });
 
     return { accessToken, user };
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(forgotPasswordDto.email);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.authService.resetPassword(
+      resetPasswordDto.token,
+      resetPasswordDto.newPassword
+    );
+  }
+
+  /**
+   * Initiate Google account linking for an authenticated user
+   * This endpoint requires the user to be authenticated
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('link-google')
+  async linkGoogleInit(@Req() req) {
+    // Store user ID in a one-time state token
+    const stateToken = await this.authService.generateOneTimeCode(req.user.id);
+
+    // Build Google OAuth URL with state parameter
+    // The state will be appended to the redirect URL
+    const apiBaseUrl = this.configService.get('API_BASE_URL');
+    const googleAuthUrl = `${apiBaseUrl}/auth/link-google/redirect?state=${stateToken}`;
+    return { redirectUrl: googleAuthUrl };
+  }
+
+  /**
+   * Google OAuth redirect for linking accounts
+   * This will redirect to Google's OAuth page with the state parameter
+   */
+  @Get('link-google/redirect')
+  @UseGuards(AuthGuard('google-link'))
+  async linkGoogleRedirect(@Req() req, @Query('state') state: string) {
+    // The guard will automatically redirect to Google OAuth
+    // The state parameter will be preserved by Passport
+    return HttpStatus.OK;
+  }
+
+  /**
+   * Callback for Google account linking
+   * This processes the OAuth callback and links the Google account
+   */
+  @Get('link-google/callback')
+  @UseGuards(AuthGuard('google-link'))
+  async linkGoogleCallback(@Req() req, @Res() res: Response) {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+
+    try {
+      // Get the Google profile from the request (populated by GoogleLinkStrategy)
+      const googleProfile = req.user as any;
+      const state = googleProfile.state;
+
+      if (!state) {
+        throw new UnauthorizedException('Missing state parameter.');
+      }
+
+      // Get the user ID from the state token
+      const key = `one-time-code:${state}`;
+      const userId = await this.authService['cacheManager'].get<string>(key);
+
+      if (!userId) {
+        throw new UnauthorizedException('Invalid or expired state token.');
+      }
+
+      // Delete the state token
+      await this.authService['cacheManager'].del(key);
+
+      // Link the accounts
+      await this.authService.linkGoogleAccount(userId, {
+        provider: googleProfile.provider,
+        providerId: googleProfile.providerId,
+        email: googleProfile.email,
+        name: googleProfile.name,
+        avatarUrl: googleProfile.avatarUrl,
+      });
+
+      // Redirect to frontend with success message
+      return res.redirect(`${frontendUrl}/settings/account?linkSuccess=true`);
+    } catch (error) {
+      const errorMessage = encodeURIComponent(
+        error instanceof Error
+          ? error.message
+          : 'Có lỗi xảy ra khi liên kết tài khoản.'
+      );
+      return res.redirect(
+        `${frontendUrl}/settings/account?linkError=${errorMessage}`
+      );
+    }
+  }
+
+  /**
+   * Unlink an OAuth account (e.g., Google)
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('unlink-oauth')
+  @HttpCode(HttpStatus.OK)
+  async unlinkOAuthAccount(@Req() req, @Body() body: { provider: string }) {
+    return this.authService.unlinkOAuthAccount(req.user.id, body.provider);
+  }
+
+  /**
+   * Get list of linked OAuth accounts
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('linked-accounts')
+  @HttpCode(HttpStatus.OK)
+  async getLinkedAccounts(@Req() req) {
+    return this.authService.getLinkedAccounts(req.user.id);
+  }
+
+  /**
+   * Verify email change using token from email
+   * Public endpoint - no authentication required
+   */
+  @Get('verify-email-change')
+  @HttpCode(HttpStatus.OK)
+  async verifyEmailChange(@Query('token') token: string, @Res() res: Response) {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+
+    try {
+      if (!token) {
+        throw new UnauthorizedException('Token không được cung cấp.');
+      }
+
+      const result = await this.authService.verifyEmailChange(token);
+
+      // Redirect to frontend with success message
+      return res.redirect(
+        `${frontendUrl}/login?emailChanged=true&newEmail=${encodeURIComponent(result.newEmail)}`
+      );
+    } catch (error) {
+      const errorMessage = encodeURIComponent(
+        error instanceof Error
+          ? error.message
+          : 'Có lỗi xảy ra khi xác nhận thay đổi email.'
+      );
+      return res.redirect(
+        `${frontendUrl}/settings/security?emailChangeError=${errorMessage}`
+      );
+    }
   }
 }

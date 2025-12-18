@@ -12,7 +12,7 @@ import {
   acceptInvitation,
   type InvitationWithProject,
 } from "../../services/projectApi";
-import { ProjectRole } from "@social-commerce/shared";
+import { ProjectRole } from "@live-chat/shared";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -171,98 +171,170 @@ const RegisterPage = () => {
   };
 
   return (
-    <AuthLayout title="Đăng ký tài khoản mới">
+    <AuthLayout
+      title="Tạo tài khoản mới"
+      subtitle="Bắt đầu hành trình của bạn với chúng tôi"
+    >
       {/* Show invitation info if present */}
       {loadingInvitation && (
-        <div className="mb-4 flex items-center justify-center gap-2 rounded-md bg-blue-50 p-3 text-blue-700">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span className="text-sm">Đang tải thông tin lời mời...</span>
+        <div className="mb-5 flex items-center justify-center gap-2 rounded-lg bg-blue-50 dark:bg-blue-950 p-3 border border-blue-200 dark:border-blue-800">
+          <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+            Đang tải thông tin lời mời...
+          </span>
         </div>
       )}
 
       {invitation && (
-        <div className="mb-4 rounded-md bg-blue-50 p-4 text-blue-700">
-          <p className="text-sm font-medium">
-            🎉 Bạn đang đăng ký để tham gia dự án:{" "}
-            <span className="font-bold">{invitation.project?.name}</span>
-          </p>
-          <p className="mt-1 text-xs text-blue-600">
-            Vai trò:{" "}
-            {invitation.role === ProjectRole.AGENT
-              ? "Nhân viên"
-              : "Quản lý viên"}
-          </p>
+        <div className="mb-5 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 p-4 border border-blue-200 dark:border-blue-800">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 text-2xl">🎉</div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                Lời mời tham gia dự án
+              </p>
+              <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
+                <span className="font-bold">{invitation.project?.name}</span>
+              </p>
+              <p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
+                Vai trò:{" "}
+                <span className="font-medium">
+                  {invitation.role === ProjectRole.AGENT
+                    ? "Nhân viên"
+                    : "Quản lý viên"}
+                </span>
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          type="text"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          placeholder="Tên đầy đủ"
-          required
-          disabled={isPending}
-        />
-        <Input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Địa chỉ email"
-          required
-          disabled={isPending || !!invitation} // Disable if invitation present
-          readOnly={!!invitation} // Make read-only if invitation present
-          className={invitation ? "bg-gray-100 text-gray-900" : ""}
-        />
-
-        {/* [5] Wrap password Input in a div to place icon */}
-        <div className="relative">
-          <Input
-            type={showPassword ? "text" : "password"} // [6] Dynamic type change
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Mật khẩu (tối thiểu 8 ký tự)"
-            required
-            disabled={isPending}
-            className="pr-10" // Add padding so the icon doesn't overlap the text
-          />
-          {/* [7] Button to hide/show password */}
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400"
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label
+            htmlFor="fullName"
+            className="block text-sm font-medium text-foreground mb-1.5"
           >
-            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-          </button>
-        </div>
-
-        {/* [8] New input for password confirmation */}
-        <div className="relative">
+            Họ và tên
+          </label>
           <Input
-            type={showPassword ? "text" : "password"}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Nhập lại mật khẩu"
+            id="fullName"
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Nguyễn Văn A"
             required
             disabled={isPending}
-            className="pr-10"
+            className="h-11"
           />
         </div>
 
-        <Button type="submit" size="lg" className="w-full" disabled={isPending}>
-          {isPending ? "Đang xử lý..." : "Tạo tài khoản"}
-        </Button>
-        <div className="text-center text-sm">
-          <p>
-            Đã có tài khoản?{" "}
-            <Link
-              to="/login"
-              className="font-medium text-primary hover:text-primary/90"
+        <div>
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-foreground mb-1.5"
+          >
+            Email
+          </label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="your@email.com"
+            required
+            disabled={isPending || !!invitation}
+            readOnly={!!invitation}
+            className={`h-11 ${invitation ? "bg-muted/50" : ""}`}
+          />
+          {invitation && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Email được lấy từ lời mời
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label
+            htmlFor="password"
+            className="block text-sm font-medium text-foreground mb-1.5"
+          >
+            Mật khẩu
+          </label>
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              disabled={isPending}
+              className="h-11 pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              tabIndex={-1}
             >
-              Đăng nhập
-            </Link>
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Tối thiểu 8 ký tự
           </p>
         </div>
+
+        <div>
+          <label
+            htmlFor="confirmPassword"
+            className="block text-sm font-medium text-foreground mb-1.5"
+          >
+            Xác nhận mật khẩu
+          </label>
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              type={showPassword ? "text" : "password"}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              disabled={isPending}
+              className="h-11 pr-10"
+            />
+          </div>
+        </div>
+
+        <Button type="submit" className="w-full h-11" disabled={isPending}>
+          {isPending ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
+        </Button>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-3 text-muted-foreground font-medium">
+              Hoặc
+            </span>
+          </div>
+        </div>
+
+        <p className="text-center text-sm text-muted-foreground">
+          Đã có tài khoản?{" "}
+          <Link
+            to="/login"
+            className="font-semibold text-primary hover:text-primary/90 transition-colors"
+          >
+            Đăng nhập ngay
+          </Link>
+        </p>
       </form>
     </AuthLayout>
   );

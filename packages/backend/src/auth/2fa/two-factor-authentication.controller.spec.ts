@@ -4,7 +4,13 @@ import { TwoFactorAuthenticationService } from './two-factor-authentication.serv
 import { UserService } from '../../user/user.service';
 import { AuthService } from '../auth.service';
 import { EncryptionService } from '../../common/services/encryption.service';
-import { BadRequestException, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import {
+  BadRequestException,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { TurnOn2faDto, User } from '@live-chat/shared';
 
 describe('TwoFactorAuthenticationController', () => {
   let controller: TwoFactorAuthenticationController;
@@ -12,6 +18,7 @@ describe('TwoFactorAuthenticationController', () => {
   let userService: jest.Mocked<UserService>;
   let authService: jest.Mocked<AuthService>;
   let encryptionService: jest.Mocked<EncryptionService>;
+  let configService: jest.Mocked<ConfigService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -36,7 +43,7 @@ describe('TwoFactorAuthenticationController', () => {
         {
           provide: AuthService,
           useValue: {
-            login: jest.fn(),
+            loginAndReturnTokens: jest.fn(),
           },
         },
         {
@@ -46,14 +53,23 @@ describe('TwoFactorAuthenticationController', () => {
             decrypt: jest.fn(),
           },
         },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
-    controller = module.get<TwoFactorAuthenticationController>(TwoFactorAuthenticationController);
+    controller = module.get<TwoFactorAuthenticationController>(
+      TwoFactorAuthenticationController
+    );
     twoFactorAuthService = module.get(TwoFactorAuthenticationService);
     userService = module.get(UserService);
     authService = module.get(AuthService);
     encryptionService = module.get(EncryptionService);
+    configService = module.get(ConfigService);
   });
 
   it('should be defined', () => {
@@ -62,103 +78,162 @@ describe('TwoFactorAuthenticationController', () => {
 
   describe('generate', () => {
     it('should generate a QR code and set a cookie', async () => {
-      const user = { id: 'userId' };
-      const secret = 'secret';
-      const otpAuthUrl = 'otpAuthUrl';
-      const qrCodeDataURL = 'qrCodeDataURL';
-      const encryptedSecret = 'encryptedSecret';
-      const res = {
-        cookie: jest.fn(),
-        json: jest.fn(),
-      };
-      twoFactorAuthService.generateSecret.mockResolvedValue({ secret, otpAuthUrl });
-      twoFactorAuthService.generateQrCodeDataURL.mockResolvedValue(qrCodeDataURL);
-      encryptionService.encrypt.mockReturnValue(encryptedSecret);
+      const req = { user: { id: '1' } };
+      const res = { cookie: jest.fn(), json: jest.fn() };
+      twoFactorAuthService.generateSecret.mockResolvedValue({
+        secret: 'secret',
+        otpAuthUrl: 'otp',
+      });
+      twoFactorAuthService.generateQrCodeDataURL.mockResolvedValue('qr-code');
+      encryptionService.encrypt.mockReturnValue('encrypted-secret');
 
-      await controller.generate({ user } as any, res as any);
+      await controller.generate(req as any, res as any);
 
-      expect(res.cookie).toHaveBeenCalledWith('2fa_secret', encryptedSecret, expect.any(Object));
-      expect(res.json).toHaveBeenCalledWith({ qrCodeDataURL });
+      expect(res.cookie).toHaveBeenCalledWith(
+        '2fa_secret',
+        'encrypted-secret',
+        expect.any(Object)
+      );
+      expect(res.json).toHaveBeenCalledWith({ qrCodeDataURL: 'qr-code' });
     });
   });
 
   describe('turnOn', () => {
-    it('should throw BadRequestException if cookie is not found', async () => {
+    const turnOnDto: TurnOn2faDto = { code: '123456' };
+
+    it('should throw BadRequestException if cookie is missing', async () => {
       const req = { cookies: {} };
-      await expect(controller.turnOn(req as any, { code: '123456' })).rejects.toThrow(BadRequestException);
+      await expect(controller.turnOn(req as any, turnOnDto)).rejects.toThrow(
+        BadRequestException
+      );
     });
 
     it('should throw UnauthorizedException if code is invalid', async () => {
-        const req = { cookies: { '2fa_secret': 'encryptedSecret' }, user: {id: '123'} };
-        encryptionService.decrypt.mockReturnValue('secret');
-        twoFactorAuthService.isCodeValid.mockReturnValue(false);
+      const req = { user: { id: '1' }, cookies: { '2fa_secret': 'secret' } };
+      encryptionService.decrypt.mockReturnValue('decrypted-secret');
+      twoFactorAuthService.isCodeValid.mockReturnValue(false);
 
-        await expect(controller.turnOn(req as any, { code: '123456' })).rejects.toThrow(UnauthorizedException);
+      await expect(controller.turnOn(req as any, turnOnDto)).rejects.toThrow(
+        UnauthorizedException
+      );
     });
 
-    it('should turn on 2fa and return recovery codes', async () => {
-        const req = { cookies: { '2fa_secret': 'encryptedSecret' }, user: { id: 'userId' } };
-        const recoveryCodes = ['code1', 'code2'];
-        encryptionService.decrypt.mockReturnValue('secret');
-        twoFactorAuthService.isCodeValid.mockReturnValue(true);
-        userService.turnOnTwoFactorAuthentication.mockResolvedValue({ user: {} as any, recoveryCodes });
+    it('should turn on 2FA and return recovery codes', async () => {
+      const req = { user: { id: '1' }, cookies: { '2fa_secret': 'secret' } };
+      const recoveryCodes = ['code1'];
+      encryptionService.decrypt.mockReturnValue('decrypted-secret');
+      twoFactorAuthService.isCodeValid.mockReturnValue(true);
+      userService.turnOnTwoFactorAuthentication.mockResolvedValue({
+        user: {} as User,
+        recoveryCodes,
+      });
 
-        const result = await controller.turnOn(req as any, { code: '123456' });
+      const result = await controller.turnOn(req as any, turnOnDto);
 
-        expect(result).toEqual({ message: 'Two-factor authentication has been enabled successfully.', recoveryCodes });
+      expect(result.recoveryCodes).toEqual(recoveryCodes);
     });
   });
 
   describe('authenticate', () => {
-    it('should throw ForbiddenException if 2fa is not enabled', async () => {
-        const user = { id: 'userId', isTwoFactorAuthenticationEnabled: false };
-        userService.findOneById.mockResolvedValue(user as any);
+    const authDto: TurnOn2faDto = { code: '123456' };
 
-        await expect(controller.authenticate({ user } as any, { code: '123456' })).rejects.toThrow(ForbiddenException);
+    it('should throw ForbiddenException if 2FA is not enabled', async () => {
+      const req = { user: { sub: '1' }, ip: 'ip', headers: {} };
+      const user = { isTwoFactorAuthenticationEnabled: false } as User;
+      userService.findOneById.mockResolvedValue(user);
+
+      await expect(
+        controller.authenticate(req as any, authDto, {} as any)
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw UnauthorizedException if code is invalid', async () => {
-        const user = { id: 'userId', isTwoFactorAuthenticationEnabled: true, twoFactorAuthenticationSecret: 'secret' };
-        userService.findOneById.mockResolvedValue(user as any);
-        encryptionService.decrypt.mockReturnValue('decryptedSecret');
-        twoFactorAuthService.isCodeValid.mockReturnValue(false);
+      const req = { user: { sub: '1' }, ip: 'ip', headers: {} };
+      const user = {
+        isTwoFactorAuthenticationEnabled: true,
+        twoFactorAuthenticationSecret: 'secret',
+      } as User;
+      userService.findOneById.mockResolvedValue(user);
+      encryptionService.decrypt.mockReturnValue('decrypted-secret');
+      twoFactorAuthService.isCodeValid.mockReturnValue(false);
 
-        await expect(controller.authenticate({ user } as any, { code: '123456' })).rejects.toThrow(UnauthorizedException);
+      await expect(
+        controller.authenticate(req as any, authDto, {} as any)
+      ).rejects.toThrow(UnauthorizedException);
     });
 
-    it('should return tokens if code is valid', async () => {
-        const user = { id: 'userId', isTwoFactorAuthenticationEnabled: true, twoFactorAuthenticationSecret: 'secret' };
-        const tokens = { accessToken: 'access', refreshToken: 'refresh' };
-        userService.findOneById.mockResolvedValue(user as any);
-        encryptionService.decrypt.mockReturnValue('decryptedSecret');
-        twoFactorAuthService.isCodeValid.mockReturnValue(true);
-        authService.login.mockResolvedValue(tokens);
+    it('should return tokens and user on successful authentication', async () => {
+      const req = { user: { sub: '1' }, ip: 'ip', headers: {} };
+      const res = { cookie: jest.fn(), json: jest.fn(), clearCookie: jest.fn() };
+      const user = {
+        isTwoFactorAuthenticationEnabled: true,
+        twoFactorAuthenticationSecret: 'secret',
+      } as User;
+      const tokens = {
+        accessToken: 'access',
+        refreshToken: 'refresh',
+        user,
+      };
+      userService.findOneById.mockResolvedValue(user);
+      encryptionService.decrypt.mockReturnValue('decrypted-secret');
+      twoFactorAuthService.isCodeValid.mockReturnValue(true);
+      authService.loginAndReturnTokens.mockResolvedValue(tokens);
+      configService.get.mockReturnValue('30d');
 
-        const result = await controller.authenticate({ user } as any, { code: '123456' });
+      await controller.authenticate(req as any, authDto, res as any);
 
-        expect(result).toEqual(tokens);
+      expect(res.cookie).toHaveBeenCalledWith(
+        'refresh_token',
+        'refresh',
+        expect.any(Object)
+      );
+      expect(res.clearCookie).toHaveBeenCalledWith('2fa_partial_token');
+      expect(res.json).toHaveBeenCalledWith({ accessToken: 'access', user });
     });
   });
 
   describe('turnOff', () => {
-    it('should throw UnauthorizedException if password is wrong', async () => {
-        const user = { id: 'userId', passwordHash: 'hashedPassword' };
-        userService.findOneById.mockResolvedValue(user as any);
-        // mock bcrypt.compare to return false
-        jest.spyOn(require('bcrypt'), 'compare').mockResolvedValue(false);
+    const turnOffDto: TurnOn2faDto = { code: '123456' };
 
-        await expect(controller.turnOff({ user } as any, { password: 'wrongPassword' })).rejects.toThrow(UnauthorizedException);
+    it('should throw ForbiddenException if 2FA is not enabled', async () => {
+      const req = { user: { id: '1' } };
+      const user = { isTwoFactorAuthenticationEnabled: false } as User;
+      userService.findOneById.mockResolvedValue(user);
+
+      await expect(controller.turnOff(req as any, turnOffDto)).rejects.toThrow(
+        ForbiddenException
+      );
     });
 
-    it('should turn off 2fa if password is correct', async () => {
-        const user = { id: 'userId', passwordHash: 'hashedPassword' };
-        userService.findOneById.mockResolvedValue(user as any);
-        jest.spyOn(require('bcrypt'), 'compare').mockResolvedValue(true);
+    it('should throw UnauthorizedException if code is invalid', async () => {
+      const req = { user: { id: '1' } };
+      const user = {
+        isTwoFactorAuthenticationEnabled: true,
+        twoFactorAuthenticationSecret: 'secret',
+      } as User;
+      userService.findOneById.mockResolvedValue(user);
+      encryptionService.decrypt.mockReturnValue('decrypted-secret');
+      twoFactorAuthService.isCodeValid.mockReturnValue(false);
 
-        const result = await controller.turnOff({ user } as any, { password: 'correctPassword' });
+      await expect(controller.turnOff(req as any, turnOffDto)).rejects.toThrow(
+        UnauthorizedException
+      );
+    });
 
-        expect(result).toEqual({ message: 'Two-factor authentication has been disabled.' });
-        expect(userService.turnOffTwoFactorAuthentication).toHaveBeenCalledWith('userId');
+    it('should turn off 2FA successfully', async () => {
+      const req = { user: { id: '1' } };
+      const user = {
+        isTwoFactorAuthenticationEnabled: true,
+        twoFactorAuthenticationSecret: 'secret',
+      } as User;
+      userService.findOneById.mockResolvedValue(user);
+      encryptionService.decrypt.mockReturnValue('decrypted-secret');
+      twoFactorAuthService.isCodeValid.mockReturnValue(true);
+
+      const result = await controller.turnOff(req as any, turnOffDto);
+
+      expect(userService.turnOffTwoFactorAuthentication).toHaveBeenCalledWith('1');
+      expect(result.message).toContain('disabled');
     });
   });
 });

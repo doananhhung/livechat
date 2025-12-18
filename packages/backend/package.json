@@ -1,5 +1,5 @@
 {
-  "name": "@social-commerce/backend",
+  "name": "@live-chat/backend",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -27,7 +27,7 @@
     "migration:revert": "npm run typeorm -- migration:revert"
   },
   "dependencies": {
-    "@social-commerce/shared": "file:../shared",
+    "@live-chat/shared": "file:../shared",
     "@aws-sdk/client-sqs": "^3.888.0",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/cache-manager": "^3.0.1",

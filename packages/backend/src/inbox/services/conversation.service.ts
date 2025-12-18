@@ -11,7 +11,7 @@ import {
   ConversationStatus,
   ListConversationsDto,
   User,
-} from '@social-commerce/shared';
+} from '@live-chat/shared';
 import { RealtimeSessionService } from '../../realtime-session/realtime-session.service';
 import { EventsGateway } from '../../gateway/events.gateway';
 import { ProjectService } from '../../projects/project.service';

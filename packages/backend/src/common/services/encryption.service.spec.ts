@@ -4,25 +4,15 @@ import { ConfigService } from '@nestjs/config';
 
 describe('EncryptionService', () => {
   let service: EncryptionService;
+  let configService: jest.Mocked<ConfigService>;
 
   const mockConfigService = {
-    get: jest.fn((key: string) => {
-      if (key === 'PAGE_TOKEN_ENCRYPTION_KEY') return '12345678901234567890123456789012'; // 32 chars
-      return null;
-    }),
+    get: jest.fn(),
   };
-
-  beforeEach(() => {
-    mockConfigService.get.mockImplementation((key: string) => {
-      if (key === 'PAGE_TOKEN_ENCRYPTION_KEY') return '12345678901234567890123456789012'; // 32 chars
-      return null;
-    });
-  });
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        EncryptionService,
         {
           provide: ConfigService,
           useValue: mockConfigService,
@@ -30,14 +20,19 @@ describe('EncryptionService', () => {
       ],
     }).compile();
 
-    service = module.get<EncryptionService>(EncryptionService);
+    configService = module.get(ConfigService);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
+  describe('with valid key', () => {
+    beforeEach(() => {
+      configService.get.mockReturnValue('12345678901234567890123456789012');
+      service = new EncryptionService(configService);
+    });
 
-  describe('encrypt and decrypt', () => {
+    it('should be defined', () => {
+      expect(service).toBeDefined();
+    });
+
     it('should encrypt and decrypt a string successfully', () => {
       const text = 'my secret text';
       const encrypted = service.encrypt(text);
@@ -48,27 +43,33 @@ describe('EncryptionService', () => {
     });
 
     it('should return a string in the correct format', () => {
-        const text = 'my secret text';
-        const encrypted = service.encrypt(text);
-        const parts = encrypted.split(':');
-        expect(parts.length).toBe(3);
+      const text = 'my secret text';
+      const encrypted = service.encrypt(text);
+      const parts = encrypted.split(':');
+      expect(parts.length).toBe(3);
     });
 
     it('should throw an error for invalid encrypted text format', () => {
-        const invalidEncryptedText = 'invalid-text';
-        expect(() => service.decrypt(invalidEncryptedText)).toThrow('Could not decrypt token.');
+      const invalidEncryptedText = 'invalid-text';
+      expect(() => service.decrypt(invalidEncryptedText)).toThrow(
+        'Could not decrypt token.'
+      );
     });
   });
 
-  describe('constructor', () => {
+  describe('constructor validation', () => {
     it('should throw an error if encryption key is not configured', () => {
-        mockConfigService.get.mockReturnValue(null);
-        expect(() => new EncryptionService(mockConfigService as any)).toThrow('PAGE_TOKEN_ENCRYPTION_KEY must be defined in .env and be 32 characters long.');
+      configService.get.mockReturnValue(null);
+      expect(() => new EncryptionService(configService)).toThrow(
+        'ENCRYPTION_KEY must be defined in .env and be 32 characters long.'
+      );
     });
 
     it('should throw an error if encryption key is not 32 characters long', () => {
-        mockConfigService.get.mockReturnValue('short-key');
-        expect(() => new EncryptionService(mockConfigService as any)).toThrow('PAGE_TOKEN_ENCRYPTION_KEY must be defined in .env and be 32 characters long.');
+      configService.get.mockReturnValue('short-key');
+      expect(() => new EncryptionService(configService)).toThrow(
+        'ENCRYPTION_KEY must be defined in .env and be 32 characters long.'
+      );
     });
   });
 });

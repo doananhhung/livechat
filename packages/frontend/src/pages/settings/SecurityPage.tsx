@@ -1,5 +1,5 @@
 // src/pages/settings/SecurityPage.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useAuthStore } from "../../stores/authStore";
 import { Button } from "../../components/ui/Button";
@@ -24,13 +24,24 @@ import {
   Shield,
   Lock,
   Mail,
+  Link as LinkIcon,
+  Unlink,
+  ExternalLink,
+  AlertCircle,
+  Clock,
 } from "lucide-react";
 import {
   useGenerate2faMutation,
   useTurnOn2faMutation,
   useDisable2faMutation,
   useChangePasswordMutation,
+  useSetPasswordMutation,
   useRequestEmailChangeMutation,
+  usePendingEmailChangeQuery,
+  useCancelEmailChangeMutation,
+  useLinkedAccountsQuery,
+  useInitiateLinkGoogleMutation,
+  useUnlinkOAuthAccountMutation,
 } from "../../services/settingsApi";
 
 // ========================================================================
@@ -394,6 +405,9 @@ const TwoFactorAuthSection = () => {
 // New component for changing password
 // ========================================================================
 const ChangePasswordForm = () => {
+  const user = useAuthStore((state) => state.user);
+  const hasPassword = user?.hasPassword ?? false;
+
   const {
     register,
     handleSubmit,
@@ -404,6 +418,7 @@ const ChangePasswordForm = () => {
   const { toast } = useToast();
   const setAccessToken = useAuthStore((state) => state.setAccessToken);
   const changePasswordMutation = useChangePasswordMutation();
+  const setPasswordMutation = useSetPasswordMutation();
 
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -412,31 +427,69 @@ const ChangePasswordForm = () => {
   const newPassword = watch("newPassword", "");
 
   const onSubmit = (data: any) => {
-    changePasswordMutation.mutate(
-      { currentPassword: data.currentPassword, newPassword: data.newPassword },
-      {
-        onSuccess: (data) => {
-          if (data.accessToken) {
-            setAccessToken(data.accessToken);
-          }
-          toast({
-            title: "Thành công",
-            description:
-              "Đổi mật khẩu thành công, tự động đăng xuất khỏi tất cả thiết bị.",
-          });
-          reset();
+    // If user has password, use change password endpoint
+    if (hasPassword) {
+      changePasswordMutation.mutate(
+        {
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword,
         },
-        onError: (error: any) => {
-          toast({
-            title: "Lỗi",
-            description:
-              error.response?.data?.message || "Không thể thay đổi mật khẩu.",
-            variant: "destructive",
-          });
-        },
-      }
-    );
+        {
+          onSuccess: (data) => {
+            if (data.accessToken) {
+              setAccessToken(data.accessToken);
+            }
+            toast({
+              title: "Thành công",
+              description:
+                data.message ||
+                "Đổi mật khẩu thành công, tự động đăng xuất khỏi tất cả thiết bị.",
+            });
+            reset();
+          },
+          onError: (error: any) => {
+            toast({
+              title: "Lỗi",
+              description:
+                error.response?.data?.message || "Không thể thay đổi mật khẩu.",
+              variant: "destructive",
+            });
+          },
+        }
+      );
+    }
+    // If user doesn't have password (OAuth account), use set password endpoint
+    else {
+      setPasswordMutation.mutate(
+        { newPassword: data.newPassword },
+        {
+          onSuccess: (data) => {
+            if (data.accessToken) {
+              setAccessToken(data.accessToken);
+            }
+            toast({
+              title: "Thành công",
+              description: data.message || "Đặt mật khẩu thành công.",
+            });
+            reset();
+            // Refresh user data to update hasPassword status
+            window.location.reload();
+          },
+          onError: (error: any) => {
+            toast({
+              title: "Lỗi",
+              description:
+                error.response?.data?.message || "Không thể đặt mật khẩu.",
+              variant: "destructive",
+            });
+          },
+        }
+      );
+    }
   };
+
+  const isLoading =
+    changePasswordMutation.isPending || setPasswordMutation.isPending;
 
   return (
     <div className="pt-6">
@@ -445,9 +498,13 @@ const ChangePasswordForm = () => {
           <Lock className="h-5 w-5 text-primary" />
         </div>
         <div>
-          <h3 className="text-lg font-medium">Thay đổi mật khẩu</h3>
+          <h3 className="text-lg font-medium">
+            {hasPassword ? "Thay đổi mật khẩu" : "Đặt mật khẩu"}
+          </h3>
           <p className="text-sm text-muted-foreground">
-            Chọn một mật khẩu mạnh mà bạn không sử dụng ở bất kỳ nơi nào khác.
+            {hasPassword
+              ? "Chọn một mật khẩu mạnh mà bạn không sử dụng ở bất kỳ nơi nào khác."
+              : "Đặt mật khẩu để có thể đăng nhập bằng email và mật khẩu."}
           </p>
         </div>
       </div>
@@ -455,39 +512,43 @@ const ChangePasswordForm = () => {
         onSubmit={handleSubmit(onSubmit)}
         className="space-y-4 max-w-md mt-4 p-6 border rounded-lg bg-card"
       >
-        <div>
-          <label
-            className="block text-sm font-medium text-foreground mb-2"
-            htmlFor="currentPassword"
-          >
-            Mật khẩu hiện tại
-          </label>
-          <div className="relative">
-            <Input
-              id="currentPassword"
-              type={showCurrentPassword ? "text" : "password"}
-              {...register("currentPassword", {
-                required: "Mật khẩu hiện tại là bắt buộc.",
-              })}
-            />
-            <button
-              type="button"
-              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        {hasPassword && (
+          <div>
+            <label
+              className="block text-sm font-medium text-foreground mb-2"
+              htmlFor="currentPassword"
             >
-              {showCurrentPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </button>
+              Mật khẩu hiện tại
+            </label>
+            <div className="relative">
+              <Input
+                id="currentPassword"
+                type={showCurrentPassword ? "text" : "password"}
+                {...register("currentPassword", {
+                  required: hasPassword
+                    ? "Mật khẩu hiện tại là bắt buộc."
+                    : false,
+                })}
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showCurrentPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+            {errors.currentPassword && (
+              <p className="text-xs text-destructive mt-1">
+                {errors.currentPassword.message as string}
+              </p>
+            )}
           </div>
-          {errors.currentPassword && (
-            <p className="text-xs text-destructive mt-1">
-              {errors.currentPassword.message as string}
-            </p>
-          )}
-        </div>
+        )}
         <div>
           <label
             className="block text-sm font-medium text-foreground mb-2"
@@ -562,10 +623,12 @@ const ChangePasswordForm = () => {
           )}
         </div>
         <div className="pt-4 border-t">
-          <Button type="submit" disabled={changePasswordMutation.isPending}>
-            {changePasswordMutation.isPending
+          <Button type="submit" disabled={isLoading}>
+            {isLoading
               ? "Đang cập nhật..."
-              : "Cập nhật mật khẩu"}
+              : hasPassword
+              ? "Cập nhật mật khẩu"
+              : "Đặt mật khẩu"}
           </Button>
         </div>
       </form>
@@ -574,11 +637,236 @@ const ChangePasswordForm = () => {
 };
 
 // ========================================================================
-// SECTION 3: CHANGE EMAIL
-// New component for changing email
+// SECTION 3: LINKED ACCOUNTS
+// Component for managing linked OAuth accounts (Google, etc.)
+// ========================================================================
+const LinkedAccountsSection = () => {
+  const user = useAuthStore((state) => state.user);
+  const { toast } = useToast();
+  const { data: linkedAccounts, isLoading } = useLinkedAccountsQuery();
+  const initiateLinkMutation = useInitiateLinkGoogleMutation();
+  const unlinkMutation = useUnlinkOAuthAccountMutation();
+
+  const [isUnlinkDialogOpen, setIsUnlinkDialogOpen] = useState(false);
+  const [accountToUnlink, setAccountToUnlink] = useState<string | null>(null);
+
+  const isGoogleLinked = linkedAccounts?.some(
+    (account) => account.provider === "google"
+  );
+
+  const handleLinkGoogle = () => {
+    initiateLinkMutation.mutate(undefined, {
+      onSuccess: (data) => {
+        // Redirect to Google OAuth
+        window.location.href = data.redirectUrl;
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Lỗi",
+          description:
+            error.response?.data?.message ||
+            "Không thể khởi tạo liên kết Google.",
+          variant: "destructive",
+        });
+      },
+    });
+  };
+
+  const handleUnlinkAccount = (provider: string) => {
+    setAccountToUnlink(provider);
+    setIsUnlinkDialogOpen(true);
+  };
+
+  const confirmUnlink = () => {
+    if (!accountToUnlink) return;
+
+    unlinkMutation.mutate(
+      { provider: accountToUnlink },
+      {
+        onSuccess: (data) => {
+          toast({
+            title: "Thành công",
+            description: data.message,
+          });
+          setIsUnlinkDialogOpen(false);
+          setAccountToUnlink(null);
+        },
+        onError: (error: any) => {
+          toast({
+            title: "Lỗi",
+            description:
+              error.response?.data?.message || "Không thể hủy liên kết.",
+            variant: "destructive",
+          });
+        },
+      }
+    );
+  };
+
+  const getProviderIcon = (provider: string) => {
+    switch (provider) {
+      case "google":
+        return (
+          <svg className="h-5 w-5" viewBox="0 0 24 24">
+            <path
+              fill="currentColor"
+              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+            />
+            <path
+              fill="currentColor"
+              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+            />
+            <path
+              fill="currentColor"
+              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+            />
+            <path
+              fill="currentColor"
+              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+            />
+          </svg>
+        );
+      default:
+        return <LinkIcon className="h-5 w-5" />;
+    }
+  };
+
+  const getProviderName = (provider: string) => {
+    switch (provider) {
+      case "google":
+        return "Google";
+      default:
+        return provider.charAt(0).toUpperCase() + provider.slice(1);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start gap-3">
+        <div className="mt-1 p-2 rounded-lg bg-primary/10">
+          <LinkIcon className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <h3 className="text-lg font-medium">Tài khoản liên kết</h3>
+          <p className="text-sm text-muted-foreground">
+            Liên kết tài khoản của bạn với các nhà cung cấp OAuth để đăng nhập
+            nhanh hơn.
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-4 max-w-md">
+        {/* Google Account */}
+        <div className="p-4 border rounded-lg bg-card">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-muted">
+                {getProviderIcon("google")}
+              </div>
+              <div>
+                <p className="font-medium">Google</p>
+                {isGoogleLinked ? (
+                  <p className="text-xs text-muted-foreground">Đã liên kết</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Chưa liên kết</p>
+                )}
+              </div>
+            </div>
+            {isGoogleLinked ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleUnlinkAccount("google")}
+                disabled={unlinkMutation.isPending}
+              >
+                <Unlink className="h-4 w-4 mr-2" />
+                Hủy liên kết
+              </Button>
+            ) : (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleLinkGoogle}
+                disabled={initiateLinkMutation.isPending}
+              >
+                {initiateLinkMutation.isPending ? (
+                  "Đang khởi tạo..."
+                ) : (
+                  <>
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Liên kết
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* List of linked accounts */}
+        {isLoading && (
+          <p className="text-sm text-muted-foreground">Đang tải...</p>
+        )}
+      </div>
+
+      {/* Unlink Confirmation Dialog */}
+      <Dialog open={isUnlinkDialogOpen} onOpenChange={setIsUnlinkDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xác nhận hủy liên kết</DialogTitle>
+            <DialogDescription>
+              {!user?.hasPassword ? (
+                <>
+                  <p className="mb-2">
+                    <strong>Cảnh báo:</strong> Bạn chưa có mật khẩu cho tài
+                    khoản này.
+                  </p>
+                  <p>
+                    Bạn cần đặt mật khẩu trước khi hủy liên kết tài khoản{" "}
+                    {accountToUnlink ? getProviderName(accountToUnlink) : ""}.
+                    Điều này đảm bảo bạn vẫn có thể đăng nhập vào tài khoản.
+                  </p>
+                </>
+              ) : (
+                <>
+                  Bạn có chắc muốn hủy liên kết tài khoản{" "}
+                  {accountToUnlink ? getProviderName(accountToUnlink) : ""}?
+                  <br />
+                  Bạn sẽ không thể đăng nhập bằng tài khoản này nữa.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsUnlinkDialogOpen(false)}
+            >
+              Hủy
+            </Button>
+            {user?.hasPassword && (
+              <Button
+                variant="destructive"
+                onClick={confirmUnlink}
+                disabled={unlinkMutation.isPending}
+              >
+                {unlinkMutation.isPending ? "Đang hủy..." : "Xác nhận"}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+// ========================================================================
+// SECTION 4: CHANGE EMAIL
+// Component for changing email address
 // ========================================================================
 const ChangeEmailForm = () => {
   const user = useAuthStore((state) => state.user);
+  const hasPassword = user?.hasPassword ?? false;
+
   const {
     register,
     handleSubmit,
@@ -587,15 +875,42 @@ const ChangeEmailForm = () => {
   } = useForm();
   const { toast } = useToast();
   const requestEmailChangeMutation = useRequestEmailChangeMutation();
+  const { data: pendingEmailChange, isLoading: isPendingLoading } =
+    usePendingEmailChangeQuery();
+  const cancelEmailChangeMutation = useCancelEmailChangeMutation();
+
+  const handleCancelEmailChange = () => {
+    cancelEmailChangeMutation.mutate(undefined, {
+      onSuccess: (response) => {
+        toast({
+          title: "Đã hủy",
+          description:
+            response.message || "Yêu cầu thay đổi email đã được hủy.",
+        });
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Lỗi",
+          description:
+            error.response?.data?.message || "Không thể hủy yêu cầu.",
+          variant: "destructive",
+        });
+      },
+    });
+  };
 
   const onSubmit = (data: any) => {
     requestEmailChangeMutation.mutate(
       { newEmail: data.newEmail, password: data.password },
       {
-        onSuccess: () => {
+        onSuccess: (response) => {
+          const description = response.warning
+            ? `${response.warning}\n\nMột liên kết xác nhận đã được gửi đến ${data.newEmail}.`
+            : `Một liên kết xác nhận đã được gửi đến ${data.newEmail}.`;
+
           toast({
             title: "Kiểm tra hộp thư đến của bạn",
-            description: `Một liên kết xác nhận đã được gửi đến ${data.newEmail}.`,
+            description,
           });
           reset();
         },
@@ -625,54 +940,137 @@ const ChangeEmailForm = () => {
           </p>
         </div>
       </div>
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="space-y-4 max-w-md mt-4 p-6 border rounded-lg bg-card"
-      >
-        <div>
-          <label
-            className="block text-sm font-medium text-foreground"
-            htmlFor="newEmail"
-          >
-            Địa chỉ Email mới
-          </label>
-          <Input
-            id="newEmail"
-            type="email"
-            {...register("newEmail", { required: "Email mới là bắt buộc." })}
-          />
-          {errors.newEmail && (
-            <p className="text-xs text-destructive mt-1">
-              {errors.newEmail.message as string}
-            </p>
-          )}
+
+      {/* Pending Email Change Alert */}
+      {isPendingLoading ? (
+        <div className="max-w-md mt-4 p-4 border rounded-lg bg-card animate-pulse">
+          <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+          <div className="h-3 bg-muted rounded w-1/2"></div>
         </div>
-        <div>
-          <label
-            className="block text-sm font-medium text-foreground"
-            htmlFor="password"
-          >
-            Xác minh bằng mật khẩu hiện tại
-          </label>
-          <Input
-            id="password"
-            type="password"
-            {...register("password", {
-              required: "Cần có mật khẩu để xác minh.",
-            })}
-          />
-          {errors.password && (
-            <p className="text-xs text-destructive mt-1">
-              {errors.password.message as string}
-            </p>
-          )}
+      ) : pendingEmailChange ? (
+        <div className="max-w-md mt-4 p-6 border rounded-lg bg-card border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+          <div className="flex items-start gap-3">
+            <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="font-medium text-foreground mb-2">
+                Yêu cầu thay đổi email đang chờ xác nhận
+              </h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Một email xác nhận đã được gửi đến{" "}
+                <strong className="text-foreground">
+                  {pendingEmailChange.newEmail}
+                </strong>
+                . Vui lòng kiểm tra hộp thư và nhấp vào liên kết xác nhận để
+                hoàn tất quá trình thay đổi email.
+              </p>
+              <div className="text-xs text-muted-foreground mb-4">
+                <p>
+                  ⏰ Liên kết sẽ hết hạn vào:{" "}
+                  {new Date(pendingEmailChange.expiresAt).toLocaleString(
+                    "vi-VN",
+                    {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    }
+                  )}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancelEmailChange}
+                disabled={cancelEmailChangeMutation.isPending}
+                className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              >
+                {cancelEmailChangeMutation.isPending
+                  ? "Đang hủy..."
+                  : "Hủy yêu cầu"}
+              </Button>
+            </div>
+          </div>
         </div>
-        <Button type="submit" disabled={requestEmailChangeMutation.isPending}>
-          {requestEmailChangeMutation.isPending
-            ? "Đang gửi..."
-            : "Yêu cầu thay đổi Email"}
-        </Button>
-      </form>
+      ) : null}
+
+      {!hasPassword ? (
+        // Show warning if user doesn't have password (OAuth account)
+        <div className="max-w-md mt-4 p-6 border rounded-lg bg-card">
+          <div className="flex items-start gap-3 p-4 bg-warning/10 border border-warning/20 rounded-lg">
+            <Shield className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="font-medium text-foreground mb-2">
+                Yêu cầu đặt mật khẩu
+              </h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Để thay đổi địa chỉ email, bạn cần đặt mật khẩu cho tài khoản
+                trước. Điều này đảm bảo tính bảo mật khi thay đổi thông tin quan
+                trọng.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Vui lòng cuộn lên phía trên và sử dụng chức năng{" "}
+                <strong>"Đặt mật khẩu"</strong> trước khi thay đổi email.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : pendingEmailChange ? (
+        // Disable form if there's a pending request
+        <div className="max-w-md mt-4 p-6 border rounded-lg bg-card opacity-50">
+          <p className="text-sm text-muted-foreground text-center">
+            Bạn cần hoàn tất hoặc hủy yêu cầu thay đổi email hiện tại trước khi
+            tạo yêu cầu mới.
+          </p>
+        </div>
+      ) : (
+        // Show form if user has password
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-4 max-w-md mt-4 p-6 border rounded-lg bg-card"
+        >
+          <div>
+            <label
+              className="block text-sm font-medium text-foreground mb-2"
+              htmlFor="newEmail"
+            >
+              Địa chỉ Email mới
+            </label>
+            <Input
+              id="newEmail"
+              type="email"
+              {...register("newEmail", { required: "Email mới là bắt buộc." })}
+            />
+            {errors.newEmail && (
+              <p className="text-xs text-destructive mt-1">
+                {errors.newEmail.message as string}
+              </p>
+            )}
+          </div>
+          <div>
+            <label
+              className="block text-sm font-medium text-foreground mb-2"
+              htmlFor="password"
+            >
+              Xác minh bằng mật khẩu hiện tại
+            </label>
+            <Input
+              id="password"
+              type="password"
+              {...register("password", {
+                required: "Cần có mật khẩu để xác minh.",
+              })}
+            />
+            {errors.password && (
+              <p className="text-xs text-destructive mt-1">
+                {errors.password.message as string}
+              </p>
+            )}
+          </div>
+          <Button type="submit" disabled={requestEmailChangeMutation.isPending}>
+            {requestEmailChangeMutation.isPending
+              ? "Đang gửi..."
+              : "Yêu cầu thay đổi Email"}
+          </Button>
+        </form>
+      )}
     </div>
   );
 };
@@ -681,6 +1079,35 @@ const ChangeEmailForm = () => {
 // MAIN COMPONENT: Orchestrates all sections
 // ========================================================================
 export const SecurityPage = () => {
+  const { toast } = useToast();
+
+  // Handle redirect from Google OAuth linking
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+
+    if (urlParams.get("linkSuccess")) {
+      toast({
+        title: "Thành công",
+        description: "Liên kết tài khoản Google thành công!",
+      });
+      // Clean up URL
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
+    if (urlParams.get("linkError")) {
+      const error = urlParams.get("linkError");
+      toast({
+        title: "Lỗi",
+        description: decodeURIComponent(
+          error || "Có lỗi xảy ra khi liên kết tài khoản."
+        ),
+        variant: "destructive",
+      });
+      // Clean up URL
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [toast]);
+
   return (
     <div className="space-y-6">
       <TwoFactorAuthSection />
@@ -688,6 +1115,10 @@ export const SecurityPage = () => {
       <hr className="my-6" />
 
       <ChangePasswordForm />
+
+      <hr className="my-6" />
+
+      <LinkedAccountsSection />
 
       <hr className="my-6" />
 

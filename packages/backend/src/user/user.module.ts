@@ -1,12 +1,18 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CacheModule } from '@nestjs/cache-manager';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
-import { RefreshToken, User } from '@social-commerce/shared';
+import { EmailChangeRequest, RefreshToken, User } from '@live-chat/shared';
 import { EncryptionService } from '../common/services/encryption.service';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, RefreshToken])],
+  imports: [
+    TypeOrmModule.forFeature([User, RefreshToken, EmailChangeRequest]),
+    CacheModule.register(),
+    MailModule,
+  ],
   providers: [UserService, EncryptionService],
   controllers: [UserController],
   exports: [UserService],

@@ -11,6 +11,9 @@ A modern, full-stack live chat application built with NestJS, React, and Socket.
 - **Real-time Messaging**: Instant bi-directional communication via Socket.IO
 - **Embeddable Widget**: Lightweight chat widget for any website
 - **Multi-Project Support**: Manage multiple chat projects from one dashboard
+
+## ✨ Features
+
 - **Team Collaboration**: Role-based access control (Owner, Manager, Member)
 - **Conversation Management**: Organized inbox with status tracking
 - **Invitation System**: Invite team members with smart user detection
@@ -50,7 +53,7 @@ live_chat_app/
 │   ├── backend/          # NestJS API server
 │   ├── frontend/         # React dashboard + embeddable widget
 │   └── shared/           # Shared types and utilities
-└── social-commerce-docs/ # LaTeX documentation
+└── docs/                 # Project documentation
 ```
 
 ### Technology Stack
@@ -281,7 +284,7 @@ VITE_WIDGET_API_URL=http://localhost:3000
 
 - **Backend API**: [packages/backend/README.md](./packages/backend/README.md)
 - **Frontend**: [packages/frontend/README.md](./packages/frontend/README.md)
-- **Architecture**: [social-commerce-docs/](./social-commerce-docs/)
+- **Architecture**: [docs/](./docs/)
 
 ### AI Assistant Notes
 

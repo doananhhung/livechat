@@ -7,6 +7,10 @@ import type {
   MessageStatus,
 } from "../types";
 
+// Constants for memory management
+const MAX_MESSAGES = 500; // Keep only last 500 messages to prevent memory leak
+const MESSAGE_CLEANUP_THRESHOLD = 600; // Start cleanup when reaching this
+
 interface ChatState {
   widgetConfig: WidgetConfig | null;
   isWindowOpen: boolean;
@@ -46,7 +50,14 @@ export const useChatStore = create<ChatState>((set) => ({
   toggleWindow: () => set((state) => ({ isWindowOpen: !state.isWindowOpen })),
 
   addMessage: (message) =>
-    set((state) => ({ messages: [...state.messages, message] })),
+    set((state) => {
+      const newMessages = [...state.messages, message];
+      // Cleanup old messages if exceeding threshold
+      if (newMessages.length > MESSAGE_CLEANUP_THRESHOLD) {
+        return { messages: newMessages.slice(-MAX_MESSAGES) };
+      }
+      return { messages: newMessages };
+    }),
 
   updateMessageStatus: (messageId, status) =>
     set((state) => ({
@@ -71,5 +82,9 @@ export const useChatStore = create<ChatState>((set) => ({
 
   setAgentIsTyping: (isTyping) => set({ isAgentTyping: isTyping }),
 
-  loadConversationHistory: (history) => set({ messages: history }),
+  loadConversationHistory: (history) => {
+    // Limit history to prevent memory issues
+    const limitedHistory = history.slice(-MAX_MESSAGES);
+    set({ messages: limitedHistory });
+  },
 }));

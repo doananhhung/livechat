@@ -16,7 +16,7 @@ import {
   ProjectRole,
   Project,
   User,
-} from '@social-commerce/shared';
+} from '@live-chat/shared';
 import { MailService } from '../mail/mail.service';
 import { ConfigService } from '@nestjs/config';
 
@@ -168,7 +168,7 @@ export class InvitationService {
       <p>${invitationUrl}</p>
       <p>Lời mời này sẽ hết hạn sau 7 ngày.</p>
       <p>Nếu bạn không muốn tham gia dự án này, vui lòng bỏ qua email này.</p>
-      <p>Trân trọng,<br>Đội ngũ Social Commerce</p>
+      <p>Trân trọng,<br>Đội ngũ Live Chat</p>
     `;
 
     await this.mailService.sendMail(invitation.email, subject, html);

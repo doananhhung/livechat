@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserService } from './user.service';
-import { EmailChangeDto, UpdateUserDto, User } from '@social-commerce/shared';
+import { EmailChangeDto, UpdateUserDto, User } from '@live-chat/shared';
 
 @Controller('user')
 @UseGuards(JwtAuthGuard)
@@ -19,20 +19,25 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get('me')
-  async getProfile(@Request() req): Promise<Omit<User, 'passwordHash'>> {
+  async getProfile(
+    @Request() req
+  ): Promise<Omit<User, 'passwordHash'> & { hasPassword: boolean }> {
     const userId = req.user.id; // take user ID from the request after authentication
     const user = await this.userService.findOneById(userId);
 
     // Very important: Remove the passwordHash field before returning to the client
     const { passwordHash, ...result } = user;
-    return result;
+    return {
+      ...result,
+      hasPassword: !!passwordHash,
+    };
   }
 
   @Patch('me')
   async updateProfile(
     @Request() req,
     @Body(new ValidationPipe()) updateUserDto: UpdateUserDto
-  ): Promise<Omit<User, 'passwordHash'>> {
+  ): Promise<Omit<User, 'passwordHash'> & { hasPassword: boolean }> {
     const userId = req.user.id;
     const updatedUser = await this.userService.updateProfile(
       userId,
@@ -40,7 +45,10 @@ export class UserController {
     );
 
     const { passwordHash, ...result } = updatedUser;
-    return result;
+    return {
+      ...result,
+      hasPassword: !!passwordHash,
+    };
   }
 
   @Delete('me')
@@ -53,11 +61,28 @@ export class UserController {
   @Post('request-email-change')
   async requestEmailChange(@Request() req, @Body() body: EmailChangeDto) {
     const userId = req.user.id;
-    await this.userService.requestEmailChange(
+    return await this.userService.requestEmailChange(
       userId,
       body.newEmail,
       body.password
     );
-    return { message: 'Yêu cầu thay đổi email đã được gửi.' };
+  }
+
+  @Get('pending-email-change')
+  async getPendingEmailChange(@Request() req) {
+    const userId = req.user.id;
+    const pendingRequest = await this.userService.getPendingEmailChange(userId);
+    return pendingRequest
+      ? {
+          newEmail: pendingRequest.newEmail,
+          expiresAt: pendingRequest.expiresAt,
+        }
+      : null;
+  }
+
+  @Post('cancel-email-change')
+  async cancelEmailChange(@Request() req) {
+    const userId = req.user.id;
+    return await this.userService.cancelEmailChange(userId);
   }
 }

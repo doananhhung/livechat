@@ -6,6 +6,7 @@ import {
   Inject,
   NotFoundException,
   Logger,
+  BadRequestException,
 } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
@@ -18,7 +19,9 @@ import {
   UserStatus,
   RefreshToken,
   UserIdentity,
-} from '@social-commerce/shared';
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from '@live-chat/shared';
 import { ConfigService } from '@nestjs/config';
 import { EntityManager } from 'typeorm';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -212,7 +215,7 @@ export class AuthService {
 
   async changePassword(
     userId: string,
-    currentPassword: string,
+    currentPassword: string | undefined,
     newPassword: string
   ): Promise<void> {
     return await this.entityManager.transaction(async (entityManager) => {
@@ -221,15 +224,31 @@ export class AuthService {
         throw new UnauthorizedException('Người dùng không tồn tại.');
       }
 
-      const isPasswordValid = await bcrypt.compare(
-        currentPassword,
-        user.passwordHash as string
-      );
-      if (!isPasswordValid) {
-        throw new ForbiddenException({
-          message: 'Mật khẩu hiện tại không đúng.',
-          errorCode: 'WRONG_PASSWORD',
-        });
+      // If user has a password, require current password verification
+      if (user.passwordHash) {
+        if (!currentPassword) {
+          throw new BadRequestException({
+            message: 'Mật khẩu hiện tại là bắt buộc khi bạn đã có mật khẩu.',
+            errorCode: 'CURRENT_PASSWORD_REQUIRED',
+          });
+        }
+
+        const isPasswordValid = await bcrypt.compare(
+          currentPassword,
+          user.passwordHash
+        );
+        if (!isPasswordValid) {
+          throw new ForbiddenException({
+            message: 'Mật khẩu hiện tại không đúng.',
+            errorCode: 'WRONG_PASSWORD',
+          });
+        }
+      }
+      // If user doesn't have a password (OAuth account), they can set one without current password
+      else {
+        this.logger.log(
+          `User ${userId} is setting password for the first time (OAuth account)`
+        );
       }
 
       const newHashedPassword = await bcrypt.hash(newPassword, 12);
@@ -237,6 +256,30 @@ export class AuthService {
       await entityManager.save(user);
 
       await this.logoutAll(userId);
+    });
+  }
+
+  async setPassword(userId: string, newPassword: string): Promise<void> {
+    return await this.entityManager.transaction(async (entityManager) => {
+      const user = await this.userService.findOneById(userId);
+      if (!user) {
+        throw new UnauthorizedException('Người dùng không tồn tại.');
+      }
+
+      // Only allow setting password if user doesn't have one
+      if (user.passwordHash) {
+        throw new BadRequestException({
+          message:
+            'Bạn đã có mật khẩu. Vui lòng sử dụng chức năng đổi mật khẩu.',
+          errorCode: 'PASSWORD_ALREADY_EXISTS',
+        });
+      }
+
+      const newHashedPassword = await bcrypt.hash(newPassword, 12);
+      user.passwordHash = newHashedPassword;
+      await entityManager.save(user);
+
+      this.logger.log(`User ${userId} has set their password successfully`);
     });
   }
 
@@ -255,7 +298,7 @@ export class AuthService {
   ): Promise<{
     accessToken: string;
     refreshToken: string;
-    user: Omit<User, 'passwordHash'>;
+    user: Omit<User, 'passwordHash'> & { hasPassword: boolean };
   }> {
     const tokens = await this._generateTokens(user.id, user.email);
 
@@ -279,7 +322,13 @@ export class AuthService {
     await this.userService.updateLastLogin(user.id);
     const { passwordHash, ...userResult } = user;
 
-    return { ...tokens, user: userResult };
+    return {
+      ...tokens,
+      user: {
+        ...userResult,
+        hasPassword: !!passwordHash, // Add hasPassword field to indicate if user has a password
+      },
+    };
   }
 
   async generate2FAPartialToken(userId: string) {
@@ -418,7 +467,13 @@ export class AuthService {
 
       // 1. User already exists with this provider
       if (existingIdentity) {
-        return existingIdentity.user;
+        const user = existingIdentity.user;
+        // Ensure email is marked as verified since OAuth provider has verified it
+        if (!user.isEmailVerified) {
+          user.isEmailVerified = true;
+          await entityManager.save(user);
+        }
+        return user;
       }
 
       // 2. Link with an existing account with the same email
@@ -427,17 +482,39 @@ export class AuthService {
       });
 
       if (user) {
-        // Update avatar if not already set
-        if (!user.avatarUrl) {
+        // Update user information from Google profile if not already set
+        // and mark email as verified since Google has already verified it
+        let needsUpdate = false;
+
+        // Update avatar if not set
+        if (!user.avatarUrl && profile.avatarUrl) {
           user.avatarUrl = profile.avatarUrl;
+          needsUpdate = true;
+        }
+
+        // Update full name if not set or is empty
+        if ((!user.fullName || user.fullName.trim() === '') && profile.name) {
+          user.fullName = profile.name;
+          needsUpdate = true;
+        }
+
+        // Mark email as verified
+        if (!user.isEmailVerified) {
+          user.isEmailVerified = true;
+          needsUpdate = true;
+        }
+
+        if (needsUpdate) {
           await entityManager.save(user);
         }
       } else {
-        // 3. Create a completely new user
+        // 3. Create a completely new user with verified email
+        // since Google has already verified this email
         user = entityManager.create(User, {
           email: profile.email,
           fullName: profile.name,
           avatarUrl: profile.avatarUrl,
+          isEmailVerified: true, // Email is already verified by Google
         });
         await entityManager.save(user);
       }
@@ -500,5 +577,299 @@ export class AuthService {
     }
 
     return await this.loginAndReturnTokens(user, ip, userAgent);
+  }
+
+  /**
+   * Handle forgot password request.
+   * Sends a password reset email with a token.
+   * @param email the email address of the user
+   * @returns Promise<{ message: string; isOAuthUser?: boolean }> success message and OAuth status
+   */
+  async forgotPassword(
+    email: string
+  ): Promise<{ message: string; isOAuthUser?: boolean }> {
+    this.logger.log(`🔵 [ForgotPassword] Request for email: ${email}`);
+
+    const user = await this.userService.findOneByEmail(email);
+
+    // To prevent email enumeration, we always return the same success message
+    // regardless of whether the user exists or not
+    if (!user) {
+      this.logger.log(`ℹ️ [ForgotPassword] User not found for email: ${email}`);
+      return {
+        message:
+          'Nếu email của bạn tồn tại trong hệ thống, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu.',
+      };
+    }
+
+    // Check if user has a password (OAuth users might not have one)
+    if (!user.passwordHash) {
+      this.logger.log(
+        `⚠️ [ForgotPassword] User ${user.id} has no password (OAuth account)`
+      );
+      return {
+        message:
+          'Tài khoản này được đăng nhập bằng Google. Vui lòng sử dụng nút "Đăng nhập bằng Google" để truy cập.',
+        isOAuthUser: true,
+      };
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const tokenKey = `reset-password-token:${resetToken}`;
+    await this.cacheManager.set(tokenKey, user.id, 900000); // 15 minutes
+
+    this.logger.log(
+      `✅ [ForgotPassword] Reset token stored in Redis for user: ${user.id}`
+    );
+
+    // Send reset email
+    await this.mailService.sendPasswordResetEmail(user, resetToken);
+
+    this.logger.log(`✅ [ForgotPassword] Reset email sent to: ${user.email}`);
+
+    return {
+      message:
+        'Nếu email của bạn tồn tại trong hệ thống, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu.',
+    };
+  }
+
+  /**
+   * Reset password using a valid reset token.
+   * @param token the reset token from email
+   * @param newPassword the new password
+   * @returns Promise<{ message: string }> success message
+   */
+  async resetPassword(
+    token: string,
+    newPassword: string
+  ): Promise<{ message: string }> {
+    this.logger.log(`🔵 [ResetPassword] Attempting to reset password`);
+
+    const tokenKey = `reset-password-token:${token}`;
+    const userId = await this.cacheManager.get<string>(tokenKey);
+
+    if (!userId) {
+      this.logger.error(`❌ [ResetPassword] Token not found or expired`);
+      throw new BadRequestException(
+        'Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.'
+      );
+    }
+
+    this.logger.log(`✅ [ResetPassword] Found userId from token: ${userId}`);
+
+    return await this.entityManager.transaction(async (entityManager) => {
+      const user = await this.userService.findOneById(userId);
+      if (!user) {
+        throw new NotFoundException('Người dùng không tồn tại.');
+      }
+
+      // Hash new password
+      const newHashedPassword = await bcrypt.hash(newPassword, 12);
+      user.passwordHash = newHashedPassword;
+      await entityManager.save(user);
+
+      this.logger.log(
+        `✅ [ResetPassword] Password updated for user: ${userId}`
+      );
+
+      // Delete the reset token (one-time use)
+      await this.cacheManager.del(tokenKey);
+
+      this.logger.log(`✅ [ResetPassword] Reset token deleted`);
+
+      // Logout all sessions for security
+      await this.logoutAll(userId);
+
+      this.logger.log(
+        `✅ [ResetPassword] All sessions logged out for user: ${userId}`
+      );
+
+      return {
+        message:
+          'Mật khẩu đã được đặt lại thành công. Vui lòng đăng nhập với mật khẩu mới.',
+      };
+    });
+  }
+
+  /**
+   * Link a Google account to an existing user account.
+   * This is used when a logged-in user wants to connect their Google account.
+   * @param userId the ID of the currently logged-in user
+   * @param profile the Google OAuth profile
+   * @returns Promise<{ message: string; user: User }> success message and updated user info
+   */
+  async linkGoogleAccount(
+    userId: string,
+    profile: {
+      provider: string;
+      providerId: string;
+      email: string;
+      name: string;
+      avatarUrl: string;
+    }
+  ): Promise<{
+    message: string;
+    user: Omit<User, 'passwordHash'> & { hasPassword: boolean };
+  }> {
+    this.logger.log(
+      `🔵 [LinkGoogleAccount] User ${userId} is linking Google account: ${profile.email}`
+    );
+
+    return this.entityManager.transaction(async (entityManager) => {
+      // 1. Get the current user
+      const user = await this.userService.findOneById(userId);
+      if (!user) {
+        throw new UnauthorizedException('Người dùng không tồn tại.');
+      }
+
+      // 2. Check if this Google account is already linked to another user
+      const existingIdentity = await entityManager.findOne(UserIdentity, {
+        where: { provider: profile.provider, providerId: profile.providerId },
+        relations: ['user'],
+      });
+
+      if (existingIdentity) {
+        if (existingIdentity.user.id === userId) {
+          // Already linked to this user
+          throw new ConflictException(
+            'Tài khoản Google này đã được liên kết với tài khoản của bạn.'
+          );
+        } else {
+          // Linked to a different user
+          throw new ConflictException(
+            'Tài khoản Google này đã được liên kết với một tài khoản khác.'
+          );
+        }
+      }
+
+      // 3. Check if the email matches (optional security check)
+      if (user.email !== profile.email) {
+        this.logger.warn(
+          `⚠️ [LinkGoogleAccount] Email mismatch: user email ${user.email} vs Google email ${profile.email}`
+        );
+        throw new BadRequestException(
+          'Email của tài khoản Google không khớp với email tài khoản hiện tại.'
+        );
+      }
+
+      // 4. Create new identity for the user
+      const newIdentity = entityManager.create(UserIdentity, {
+        provider: profile.provider,
+        providerId: profile.providerId,
+        user: user,
+      });
+      await entityManager.save(newIdentity);
+
+      this.logger.log(
+        `✅ [LinkGoogleAccount] Successfully linked Google account for user ${userId}`
+      );
+
+      // 5. Update user information from Google profile if not already set
+      let needsUpdate = false;
+
+      // Update avatar if not set
+      if (!user.avatarUrl && profile.avatarUrl) {
+        user.avatarUrl = profile.avatarUrl;
+        needsUpdate = true;
+      }
+
+      // Update full name if not set or is empty
+      if ((!user.fullName || user.fullName.trim() === '') && profile.name) {
+        user.fullName = profile.name;
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        await entityManager.save(user);
+      }
+
+      // 6. Mark email as verified since Google has verified it
+      if (!user.isEmailVerified) {
+        user.isEmailVerified = true;
+        await entityManager.save(user);
+      }
+
+      const { passwordHash, ...userResult } = user;
+
+      return {
+        message: 'Liên kết tài khoản Google thành công.',
+        user: {
+          ...userResult,
+          hasPassword: !!passwordHash,
+        },
+      };
+    });
+  }
+
+  /**
+   * Unlink a Google account from a user.
+   * @param userId the ID of the user
+   * @param provider the OAuth provider (e.g., 'google')
+   * @returns Promise<{ message: string }> success message
+   */
+  async unlinkOAuthAccount(
+    userId: string,
+    provider: string
+  ): Promise<{ message: string }> {
+    this.logger.log(
+      `🔵 [UnlinkOAuthAccount] User ${userId} is unlinking ${provider} account`
+    );
+
+    return this.entityManager.transaction(async (entityManager) => {
+      const user = await this.userService.findOneById(userId);
+      if (!user) {
+        throw new UnauthorizedException('Người dùng không tồn tại.');
+      }
+
+      // Check if user has a password, if not, they can't unlink their only auth method
+      if (!user.passwordHash) {
+        throw new BadRequestException(
+          'Bạn cần đặt mật khẩu trước khi hủy liên kết tài khoản Google. Điều này đảm bảo bạn vẫn có thể đăng nhập vào tài khoản.'
+        );
+      }
+
+      const identity = await entityManager.findOne(UserIdentity, {
+        where: { userId, provider },
+      });
+
+      if (!identity) {
+        throw new NotFoundException(
+          `Không tìm thấy tài khoản ${provider} được liên kết.`
+        );
+      }
+
+      await entityManager.remove(identity);
+
+      this.logger.log(
+        `✅ [UnlinkOAuthAccount] Successfully unlinked ${provider} account for user ${userId}`
+      );
+
+      return {
+        message: `Đã hủy liên kết tài khoản ${provider} thành công.`,
+      };
+    });
+  }
+
+  /**
+   * Get linked OAuth accounts for a user.
+   * @param userId the ID of the user
+   * @returns Promise<UserIdentity[]> list of linked OAuth accounts
+   */
+  async getLinkedAccounts(userId: string): Promise<UserIdentity[]> {
+    return this.entityManager.find(UserIdentity, {
+      where: { userId },
+    });
+  }
+
+  /**
+   * Proxy method to verify email change
+   * @param token Verification token
+   * @returns Result from UserService
+   */
+  async verifyEmailChange(
+    token: string
+  ): Promise<{ message: string; newEmail: string }> {
+    return this.userService.verifyEmailChange(token);
   }
 }

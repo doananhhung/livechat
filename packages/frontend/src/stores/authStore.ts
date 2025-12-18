@@ -4,15 +4,15 @@ import { persist } from "zustand/middleware";
 import api from "../lib/api";
 import { AxiosError } from "axios";
 import { queryClient } from "../main";
-import type { User } from "@social-commerce/shared";
+import type { User, UserResponse } from "@live-chat/shared";
 
 interface AuthState {
-  user: User | null;
+  user: UserResponse | null;
   accessToken: string | null;
   isAuthenticated: boolean;
-  login: (userData: User, token: string) => void;
+  login: (userData: UserResponse, token: string) => void;
   logout: () => void;
-  setUser: (userData: User) => void;
+  setUser: (userData: UserResponse) => void;
   setState: (state: Partial<AuthState>) => void;
   setAuthData: (data: { accessToken: string; user: any }) => void;
   setAccessToken: (token: string | null) => void;
@@ -57,7 +57,7 @@ export const useAuthStore = create<AuthState>()(
 
       verifySessionAndFetchUser: async () => {
         try {
-          const { data: user } = await api.get<User>("/user/me");
+          const { data: user } = await api.get<UserResponse>("/user/me");
 
           if (user && user.id) {
             const accessToken = get().accessToken;

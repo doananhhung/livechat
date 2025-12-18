@@ -12,8 +12,8 @@
     "baseUrl": ".",
     "paths": {
       // Use built output of shared to avoid cross-rootDir compilation
-      "@social-commerce/shared": ["packages/shared/dist", "../../packages/shared/dist"],
-      "@social-commerce/shared/*": ["packages/shared/dist/*", "../../packages/shared/dist/*"]
+      "@live-chat/shared": ["packages/shared/dist", "../../packages/shared/dist"],
+      "@live-chat/shared/*": ["packages/shared/dist/*", "../../packages/shared/dist/*"]
     }
   },
   "exclude": ["node_modules", "dist"]

@@ -3,11 +3,11 @@ import { JwtStrategy } from './jwt.strategy';
 import { UserService } from '../../user/user.service';
 import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException } from '@nestjs/common';
-import { User } from '../../user/entities/user.entity';
+import { User, GlobalRole } from '@live-chat/shared';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
-  let userService: UserService;
+  let userService: jest.Mocked<UserService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -22,14 +22,14 @@ describe('JwtStrategy', () => {
         {
           provide: ConfigService,
           useValue: {
-            get: jest.fn().mockReturnValue('testSecret'),
+            get: jest.fn().mockReturnValue('test-secret'),
           },
         },
       ],
     }).compile();
 
     strategy = module.get<JwtStrategy>(JwtStrategy);
-    userService = module.get<UserService>(UserService);
+    userService = module.get(UserService);
   });
 
   it('should be defined', () => {
@@ -38,25 +38,27 @@ describe('JwtStrategy', () => {
 
   describe('validate', () => {
     it('should return user object if validation is successful', async () => {
-      const user = new User();
-      user.id = 'userId';
-      user.email = 'test@example.com';
-      user.tokensValidFrom = new Date(Date.now() - 10000);
+      const user = {
+        id: 'userId',
+        email: 'test@example.com',
+        role: GlobalRole.USER,
+        tokensValidFrom: new Date(Date.now() - 10000),
+      } as User;
       const payload = {
         sub: 'userId',
         email: 'test@example.com',
-        iat: Date.now() / 1000,
+        iat: Math.floor(Date.now() / 1000),
       };
-      jest.spyOn(userService, 'findOneById').mockResolvedValue(user);
+      userService.findOneById.mockResolvedValue(user);
 
       const result = await strategy.validate(payload);
 
-      expect(result).toEqual({ id: user.id, email: user.email });
+      expect(result).toEqual({ id: user.id, email: user.email, role: user.role });
     });
 
     it('should throw UnauthorizedException for invalid payload', async () => {
       await expect(strategy.validate(null as any)).rejects.toThrow(
-        UnauthorizedException
+        new UnauthorizedException('Invalid token payload.')
       );
     });
 
@@ -64,29 +66,30 @@ describe('JwtStrategy', () => {
       const payload = {
         sub: 'userId',
         email: 'test@example.com',
-        iat: Date.now() / 1000,
+        iat: Math.floor(Date.now() / 1000),
       };
-      jest.spyOn(userService, 'findOneById').mockResolvedValue(null as any);
+      userService.findOneById.mockResolvedValue(undefined as any);
 
       await expect(strategy.validate(payload)).rejects.toThrow(
-        UnauthorizedException
+        new UnauthorizedException('User not found.')
       );
     });
 
     it('should throw UnauthorizedException if token is revoked', async () => {
-      const user = new User();
-      user.id = 'userId';
-      user.email = 'test@example.com';
-      user.tokensValidFrom = new Date(Date.now() + 10000);
+      const user = {
+        id: 'userId',
+        email: 'test@example.com',
+        tokensValidFrom: new Date(Date.now() + 10000),
+      } as User;
       const payload = {
         sub: 'userId',
         email: 'test@example.com',
-        iat: Date.now() / 1000,
+        iat: Math.floor(Date.now() / 1000),
       };
-      jest.spyOn(userService, 'findOneById').mockResolvedValue(user);
+      userService.findOneById.mockResolvedValue(user);
 
       await expect(strategy.validate(payload)).rejects.toThrow(
-        UnauthorizedException
+        new UnauthorizedException('Token has been revoked.')
       );
     });
   });

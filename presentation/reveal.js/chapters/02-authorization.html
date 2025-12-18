@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <script>
+    // Load head (meta + links)
+    fetch('../shared/head.html')
+      .then(r => r.text())
+      .then(html => {
+        document.head.insertAdjacentHTML('afterbegin', html);
+      });
+    
+    // Load styles
+    fetch('../shared/styles.html')
+      .then(r => r.text())
+      .then(html => {
+        document.head.insertAdjacentHTML('beforeend', html);
+      });
+  </script>
+  <title>Chương 2: Phân quyền</title>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <section>
+        <h1 class="chapter-title">Chương 2: Phân quyền</h1>
+      </section>
+
+      <!-- Chương 2: Phân quyền -->
+      <section>
+        <!-- Slide 1: Tiêu đề -->
+        <section>
+          <h1 class="chapter-title">Phân Tích Sâu Về Phân Quyền Dự Án</h1>
+          <p class="subtitle">Người trình bày: Đinh Việt Hoàng</p>
+          <aside class="notes">
+            Chương này tập trung vào cơ chế phân quyền (Authorization) trong dự án. Chúng ta sẽ đi từ khái niệm cơ bản đến triển khai cụ thể với NestJS Guards.
+          </aside>
+        </section>
+
+        <!-- Slide 2: Chương trình -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18M3 12h18M3 18h18" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Chương trình</h2>
+                    </div>
+                    <div class="right-column">
+                        <ol style="font-size: 0.9em; line-height: 1.8;">
+                            <li class="fragment">Phân biệt Xác thực và Phân quyền</li>
+                            <li class="fragment">Mô hình RBAC (Role-Based Access Control)</li>
+                            <li class="fragment">Vai trò Toàn cục vs. Vai trò Dự án</li>
+                            <li class="fragment">Triển khai với NestJS Guards</li>
+                            <li class="fragment">Luồng ví dụ: Kiểm tra vai trò trong dự án</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              Chương trình bao gồm 5 phần chính:
+              1. Làm rõ sự khác biệt giữa Authentication và Authorization
+              2. Tìm hiểu mô hình RBAC - phương pháp tiêu chuẩn để quản lý quyền hạn
+              3. Phân biệt 2 loại vai trò: Global (toàn cục) và Project (dự án)
+              4. Cách triển khai thực tế với RolesGuard trong NestJS
+              5. Xem một ví dụ cụ thể về cách hệ thống kiểm tra quyền
+            </aside>
+        </section>
+
+        <!-- Slide 3: Xác thực vs. Phân quyền -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 12h12M6 12l4-4m-4 4 4 4M18 12l-4-4m4 4-4 4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Hai khái niệm Cốt lõi</h2>
+                    </div>
+                    <div class="right-column">
+                        <div style="display: flex; gap: 30px; align-items: stretch;">
+                            <div style="flex: 1; border: 2px solid #4CAF50; border-radius: 10px; padding: 20px; text-align: center;">
+                                <p style="font-size: 3em; margin: 0;">🛂</p>
+                                <h3 style="color: #4CAF50; margin: 15px 0;">Xác thực</h3>
+                                <p style="font-size: 1.1em; font-weight: bold; margin: 10px 0;">Bạn là ai?</p>
+                                <p style="font-size: 0.85em; color: #666; font-style: italic;">Xuất trình CMND/CCCD để vào cửa tòa nhà</p>
+                                <p style="font-size: 0.8em; margin-top: 15px;">Ví dụ: Đăng nhập bằng email/mật khẩu, hoặc qua Google</p>
+                            </div>
+                            <div style="flex: 1; border: 2px solid #2196F3; border-radius: 10px; padding: 20px; text-align: center;">
+                                <p style="font-size: 3em; margin: 0;">🔑</p>
+                                <h3 style="color: #2196F3; margin: 15px 0;">Phân quyền</h3>
+                                <p style="font-size: 1.1em; font-weight: bold; margin: 10px 0;">Bạn được phép làm gì?</p>
+                                <p style="font-size: 0.85em; color: #666; font-style: italic;">Thẻ thang máy chỉ cho phép đi đến một số tầng</p>
+                                <p style="font-size: 0.8em; margin-top: 15px;">Ví dụ: Chỉ MANAGER mới xóa được dự án</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              Hai khái niệm cốt lõi của bảo mật:
+              - AUTHENTICATION (Xác thực): Xác minh danh tính - "Bạn là ai?". Đây là quá trình kiểm tra xem người dùng có đúng là người mà họ khai báo hay không. Ví dụ: đăng nhập bằng email và mật khẩu, hoặc qua Google.
+              - AUTHORIZATION (Phân quyền): Xác định quyền truy cập - "Bạn được phép làm gì?". Sau khi danh tính đã được xác thực, đây là quá trình xác định những hành động, tài nguyên, hoặc khu vực nào mà người dùng đó được phép truy cập. Ví dụ: Chỉ có MANAGER mới được phép xóa một dự án.
+              
+              Phép ẩn dụ: Xác thực là việc xuất trình CMND/CCCD để vào cửa tòa nhà. Phân quyền là chiếc thẻ thang máy chỉ cho phép bạn đi đến một số tầng nhất định.
+            </aside>
+        </section>
+
+        <!-- Slide 4: Mô hình RBAC -->
+        <section>
+          <section>
+              <div class="slide-content-card">
+                  <div class="layout-container">
+                      <div class="left-column">
+                          <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17 20v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M23 20v-2a4 4 0 0 0-3-3.87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 3.13a4 4 0 0 1 0 7.75" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                          <h2>Mô hình RBAC</h2>
+                          <p style="font-size: 0.8em; color: #666;">(Role-Based Access Control)</p>
+                      </div>
+                      <div class="right-column">
+                          <h3 style="margin-bottom: 20px;">3 khái niệm chính</h3>
+                          <div style="display: flex; flex-direction: column; gap: 15px;">
+                              <div class="fragment" style="background: #f5f5f5; padding: 15px; border-radius: 8px; border-left: 4px solid #4CAF50;">
+                                  <h4 style="margin: 0 0 8px 0; color: #4CAF50;">👤 User (Người dùng)</h4>
+                                  <p style="margin: 0; font-size: 0.85em;">Chủ thể thực hiện các hành động trong hệ thống</p>
+                              </div>
+                              <div class="fragment" style="background: #f5f5f5; padding: 15px; border-radius: 8px; border-left: 4px solid #2196F3;">
+                                  <h4 style="margin: 0 0 8px 0; color: #2196F3;">🎭 Role (Vai trò)</h4>
+                                  <p style="margin: 0; font-size: 0.85em;">Tập hợp quyền hạn được định nghĩa trước (ADMIN, MANAGER, AGENT)</p>
+                              </div>
+                              <div class="fragment" style="background: #f5f5f5; padding: 15px; border-radius: 8px; border-left: 4px solid #FF9800;">
+                                  <h4 style="margin: 0 0 8px 0; color: #FF9800;">🎯 Scope (Phạm vi)</h4>
+                                  <p style="margin: 0; font-size: 0.85em;">Ngữ cảnh vai trò có hiệu lực: <strong>Toàn cục</strong> hoặc <strong>Dự án</strong></p>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+              <aside class="notes">
+                Hệ thống sử dụng mô hình RBAC (Role-Based Access Control) - một phương pháp tiêu chuẩn để quản lý quyền hạn.
+                
+                3 khái niệm chính:
+                1. USER (Người dùng): Chủ thể (actor) trong hệ thống, là người thực hiện các hành động.
+                2. ROLE (Vai trò): Một tập hợp các quyền hạn được định nghĩa trước (ví dụ: ADMIN, MANAGER, AGENT). Người dùng được gán vào các vai trò này.
+                3. SCOPE (Phạm vi): Ngữ cảnh mà vai trò có hiệu lực. Có 2 phạm vi chính:
+                   - Toàn cục (Global): Áp dụng trên toàn bộ ứng dụng
+                   - Dự án (Project): Chỉ áp dụng trong một dự án cụ thể
+                   
+                Quyền không được gán trực tiếp cho người dùng, mà được gán cho các vai trò.
+              </aside>
+          </section>
+          
+          <section>
+              <div class="slide-content-card">
+                  <div class="layout-container">
+                      <div class="left-column">
+                          <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17 20v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M23 20v-2a4 4 0 0 0-3-3.87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 3.13a4 4 0 0 1 0 7.75" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                          <h2>Phạm vi vai trò</h2>
+                      </div>
+                      <div class="right-column">
+                          <div class="mermaid">
+                              graph TD
+                                  subgraph Global["🌐 Phạm vi: Toàn cục"]
+                                      User1(User: Alice) --> Role1(Global Role: ADMIN);
+                                  end
+                                  subgraph ProjectA["📁 Phạm vi: Dự án A"]
+                                      User2(User: Bob) --> Role2(Project Role: MANAGER);
+                                  end
+                                  subgraph ProjectB["📁 Phạm vi: Dự án B"]
+                                      User2 --> Role3(Project Role: AGENT);
+                                  end
+                                  AdminDashboard("Admin Dashboard")
+                                  ProjectA_Manage("Quản lý Dự án A")
+                                  ProjectB_Chat("Chat trong Dự án B")
+                                  Role1 -- "có thể truy cập" --> AdminDashboard;
+                                  Role2 -- "cho phép" --> ProjectA_Manage;
+                                  Role3 -- "cho phép" --> ProjectB_Chat;
+                          </div>
+                      </div>
+                  </div>
+              </div>
+              <aside class="notes">
+                Sơ đồ minh họa cách vai trò hoạt động trong 2 phạm vi:
+                
+                1. PHẠM VI TOÀN CỤC: Alice có vai trò ADMIN ở cấp toàn hệ thống. Cô ấy có thể truy cập Admin Dashboard và quản lý toàn bộ ứng dụng.
+                
+                2. PHẠM VI DỰ ÁN: Bob có vai trò khác nhau trong các dự án khác nhau:
+                   - Trong Dự án A: Bob là MANAGER, có quyền quản lý dự án, thành viên và cuộc trò chuyện
+                   - Trong Dự án B: Bob chỉ là AGENT, chỉ có quyền xử lý các cuộc trò chuyện
+                   
+                Điều này cho thấy sự linh hoạt của hệ thống: một người dùng có thể có vai trò và quyền hạn khác nhau tùy theo ngữ cảnh.
+              </aside>
+          </section>
+          <!-- Slide 5: Định nghĩa Vai trò -->
+          <section>
+              <div class="slide-content-card">
+                  <div class="layout-container">
+                      <div class="left-column">
+                          <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.625 6.125a3.5 3.5 0 1 0 0-4.25 3.5 3.5 0 0 0 0 4.25Z" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/><path d="m21.375 11.125-5.913 5.913a3.5 3.5 0 0 1-4.95 0l-5.912-5.913a3.5 3.5 0 0 1 0-4.95l5.913-5.912a3.5 3.5 0 0 1 4.95 0l5.912 5.912a3.5 3.5 0 0 1 0 4.95Z" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.625 22.125a3.5 3.5 0 1 0 0-4.25 3.5 3.5 0 0 0 0 4.25Z" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                          <h2>Định nghĩa Vai trò</h2>
+                      </div>
+                      <div class="right-column">
+                          <p style="margin-bottom: 20px;">Các vai trò được định nghĩa bằng <strong>Enum</strong> để đảm bảo tính nhất quán</p>
+                          <div style="display: flex; gap: 25px;">
+                              <div style="flex: 1;">
+                                  <h4 style="color: #4CAF50; margin-bottom: 10px;">🌐 Vai trò Toàn cục</h4>
+                                  <p style="font-size: 0.75em; color: #666; margin-bottom: 10px;">Lưu trong bảng <code>users</code></p>
+                                  <pre style="margin: 0;"><code class="typescript" data-trim data-noescape>
+// packages/shared/src/
+// global-roles.enum.ts
+
+export enum GlobalRole {
+  ADMIN = "admin",
+  USER = "user",
+}
+                                  </code></pre>
+                              </div>
+                              <div style="flex: 1;">
+                                  <h4 style="color: #2196F3; margin-bottom: 10px;">📁 Vai trò Dự án</h4>
+                                  <p style="font-size: 0.75em; color: #666; margin-bottom: 10px;">Lưu trong bảng <code>project_members</code></p>
+                                  <pre style="margin: 0;"><code class="typescript" data-trim data-noescape>
+// packages/shared/src/
+// project-roles.enum.ts
+
+export enum ProjectRole {
+  MANAGER = "manager",
+  AGENT = "agent",
+}
+                                  </code></pre>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+              <aside class="notes">
+                Các vai trò được định nghĩa thông qua Enum trong TypeScript để đảm bảo tính nhất quán xuyên suốt ứng dụng.
+                
+                VAI TRÒ TOÀN CỤC (Global Roles):
+                - Áp dụng cho toàn bộ hệ thống
+                - Được lưu trực tiếp trong bảng 'users'
+                - Có 2 vai trò: ADMIN (toàn quyền truy cập hệ thống) và USER (người dùng thông thường)
+                - File: packages/shared/src/global-roles.enum.ts
+                
+                VAI TRÒ DỰ ÁN (Project Roles):
+                - Chỉ có hiệu lực trong phạm vi một dự án cụ thể
+                - Được lưu trong bảng 'project_members' (quan hệ many-to-many giữa users và projects)
+                - Có 2 vai trò: MANAGER (quản lý dự án, thành viên và cuộc trò chuyện) và AGENT (chỉ xử lý các cuộc trò chuyện)
+                - File: packages/shared/src/project-roles.enum.ts
+                
+                Việc sử dụng Enum giúp tránh lỗi đánh máy và dễ dàng refactor code.
+              </aside>
+          </section>
+        </section>
+
+        <!-- Slide 6: Triển khai với RolesGuard -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke-width="1.5"/><path d="m9 12 2 2 4-4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Triển khai: RolesGuard</h2>
+                    </div>
+                    <div class="right-column">
+                        <p style="margin-bottom: 15px;">Logic phân quyền được <strong>tập trung</strong> tại một Guard duy nhất</p>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="fragment" style="background: linear-gradient(90deg, #4CAF50 0%, transparent 100%); padding: 12px 15px; border-radius: 6px;">
+                                <strong style="color: #fff;">1. Đọc Decorator</strong>
+                                <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #fff;">Lấy vai trò yêu cầu từ <code>@Roles()</code></p>
+                            </div>
+                            <div class="fragment" style="background: linear-gradient(90deg, #2196F3 0%, transparent 100%); padding: 12px 15px; border-radius: 6px;">
+                                <strong style="color: #fff;">2. Xác định Phạm vi</strong>
+                                <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #fff;">Tự động nhận diện <code>GlobalRole</code> hay <code>ProjectRole</code></p>
+                            </div>
+                            <div class="fragment" style="background: linear-gradient(90deg, #FF9800 0%, transparent 100%); padding: 12px 15px; border-radius: 6px;">
+                                <strong style="color: #fff;">3. Kiểm tra Quyền</strong>
+                                <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #fff;">Global: So sánh <code>user.role</code> | Project: Truy vấn DB + So sánh</p>
+                            </div>
+                            <div class="fragment" style="background: linear-gradient(90deg, #9C27B0 0%, transparent 100%); padding: 12px 15px; border-radius: 6px;">
+                                <strong style="color: #fff;">4. Áp dụng Kế thừa</strong>
+                                <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #fff;">Ví dụ: <code>MANAGER</code> có tất cả quyền của <code>AGENT</code></p>
+                            </div>
+                            <div class="fragment" style="background: linear-gradient(90deg, #f44336 0%, transparent 100%); padding: 12px 15px; border-radius: 6px;">
+                                <strong style="color: #fff;">5. Trả về Quyết định</strong>
+                                <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #fff;"><code>true</code> (cho phép) hoặc <code>false</code> (403 Forbidden)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              Toàn bộ logic phân quyền của hệ thống được xử lý bởi RolesGuard. Guard này được kích hoạt trên các endpoint được đánh dấu bởi decorator @Roles().
+              
+              LUỒNG HOẠT ĐỘNG CỦA ROLESGUARD:
+              
+              1. KIỂM TRA DECORATOR: Guard đọc các vai trò yêu cầu từ decorator @Roles(ProjectRole.MANAGER, ...). Decorator này được đặt trên controller method.
+              
+              2. XÁC ĐỊNH PHẠM VI: Guard tự động phát hiện vai trò yêu cầu là GlobalRole hay ProjectRole bằng cách kiểm tra xem giá trị có nằm trong enum nào.
+              
+              3. KIỂM TRA QUYỀN:
+                 - Nếu là GlobalRole: So sánh vai trò trong object user (đã được gắn bởi JwtAuthGuard) với vai trò yêu cầu.
+                 - Nếu là ProjectRole:
+                   a. Lấy projectId từ request.params (ví dụ: /projects/:id)
+                   b. Truy vấn bảng project_members để tìm vai trò của người dùng trong dự án đó
+                   c. So sánh vai trò thực tế với vai trò yêu cầu
+              
+              4. ÁP DỤNG KẾ THỪA: Logic kiểm tra có tính đến sự kế thừa vai trò. Ví dụ, MANAGER có tất cả quyền của AGENT, nên nếu endpoint yêu cầu AGENT, người dùng có vai trò MANAGER cũng được phép truy cập.
+              
+              5. TRẢ VỀ QUYẾT ĐỊNH: Guard trả về true (cho phép truy cập) hoặc false (ném ra lỗi 403 Forbidden).
+              
+              Cách tiếp cận này giúp logic phân quyền được tập trung, nhất quán, và dễ bảo trì. Chỉ cần thay đổi ở một nơi, toàn bộ hệ thống sẽ được cập nhật.
+            </aside>
+        </section>
+
+        <!-- Slide 7: Luồng ví dụ -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke-width="1.5"/><path d="M14.5 9.5 9.5 14.5M9.5 9.5l5 5" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <h2>Ví dụ thực tế</h2>
+                        <p style="font-size: 0.85em; color: #666;">AGENT cố gắng thực hiện hành động của MANAGER</p>
+                    </div>
+                    <div class="right-column">
+                        <div class="mermaid" style="font-size: 0.65em;">
+                            sequenceDiagram
+                                actor Agent as "👤 User<br/>(Role: AGENT)"
+                                participant Client as "🖥️ Client"
+                                participant Backend as "⚙️ Backend"
+                                participant RolesGuard as "🛡️ RolesGuard"
+                                participant DB as "🗄️ Database"
+                                
+                                Agent->>Client: Gửi request cập nhật dự án
+                                Note over Agent,Client: Hành động của MANAGER
+                                Client->>Backend: PATCH /projects/{id}
+                                activate Backend
+                                
+                                Backend->>RolesGuard: JwtAuthGuard OK<br/>→ canActivate()?
+                                activate RolesGuard
+                                Note over RolesGuard: Vai trò yêu cầu:<br/>ProjectRole.MANAGER
+                                RolesGuard->>DB: Lấy vai trò user<br/>trong dự án {id}
+                                DB-->>RolesGuard: Trả về: 'agent'
+                                Note over RolesGuard: So sánh:<br/>'agent' ≠ 'manager'<br/>❌ KHÔNG KHỚP
+                                RolesGuard-->>Backend: return false
+                                deactivate RolesGuard
+                                
+                                Backend-->>Client: 403 Forbidden
+                                Note over Backend,Client: Bạn không có quyền<br/>thực hiện hành động này
+                                deactivate Backend
+                                
+                                Note over Agent,DB: ✅ TRUY CẬP BỊ TỪ CHỐI<br/>Hệ thống hoạt động chính xác
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              Đây là sơ đồ minh họa cách hệ thống ngăn chặn một AGENT thực hiện hành động của MANAGER.
+              
+              KỊCH BẢN: Một user có vai trò AGENT cố gắng cập nhật thông tin dự án - một hành động chỉ dành cho MANAGER.
+              
+              LUỒNG XỬ LÝ:
+              
+              1. User (AGENT) gửi request cập nhật dự án từ Client
+              2. Client gửi request: PATCH /projects/{id}
+              3. Backend nhận request, JwtAuthGuard xác thực thành công (user đã đăng nhập)
+              4. RolesGuard được kích hoạt:
+                 - Đọc decorator: Endpoint này yêu cầu vai trò ProjectRole.MANAGER
+                 - Nhận diện đây là ProjectRole, nên cần kiểm tra trong dự án cụ thể
+                 - Truy vấn Database: Lấy vai trò của user trong dự án {id}
+                 - Database trả về: 'agent'
+                 - So sánh: 'agent' vs 'manager' → KHÔNG KHỚP
+                 - RolesGuard trả về false
+              5. Backend ném ra lỗi 403 Forbidden
+              6. Client nhận được response với thông báo: "Bạn không có quyền thực hiện hành động này"
+              
+              KẾT QUẢ: Truy cập bị từ chối. Hệ thống hoạt động chính xác, bảo vệ tài nguyên khỏi truy cập trái phép.
+              
+              Đây là một ví dụ điển hình về cách phân quyền theo dự án hoạt động, đảm bảo người dùng chỉ có thể thực hiện các hành động phù hợp với vai trò của họ trong từng dự án cụ thể.
+            </aside>
+        </section>
+
+        <!-- Slide 8: Hỏi & Đáp -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container" style="text-align: center;">
+                    <div style="width: 100%;">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 80px; height: 80px; margin: 0 auto 30px;">
+                            <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke-width="1.5"/>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 17h.01" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <h1 style="font-size: 2.5em; margin-bottom: 30px;">Cảm ơn!</h1>
+                        <h2 style="font-size: 1.5em; color: #666;">Có câu hỏi nào không?</h2>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              Đây là slide kết thúc chương Phân quyền. 
+              
+              TÓM TẮT NHỮNG ĐIỂM CHÍNH:
+              1. Authentication (Xác thực) xác minh danh tính, Authorization (Phân quyền) xác định quyền truy cập
+              2. Hệ thống sử dụng mô hình RBAC với vai trò được định nghĩa rõ ràng
+              3. Có 2 phạm vi: Global (toàn cục) và Project (dự án)
+              4. RolesGuard tập trung hóa logic phân quyền, tự động nhận diện phạm vi và kiểm tra quyền
+              5. Hệ thống bảo vệ tài nguyên hiệu quả bằng cách từ chối các hành động không được phép
+              
+              Sẵn sàng trả lời các câu hỏi về:
+              - Cách thức hoạt động của RolesGuard
+              - Sự khác biệt giữa Global và Project roles
+              - Cách triển khai trong code thực tế
+              - Các tình huống sử dụng cụ thể
+            </aside>
+        </section>
+      </section>
+
+    </div>
+  </div>
+  
+  <script>
+    // Load scripts sau khi DOM ready
+    window.addEventListener('DOMContentLoaded', () => {
+      fetch('../shared/scripts.html')
+        .then(r => r.text())
+        .then(html => {
+          document.body.insertAdjacentHTML('beforeend', html);
+        });
+    });
+  </script>
+</body>
+</html>

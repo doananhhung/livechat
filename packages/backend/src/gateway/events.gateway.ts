@@ -20,7 +20,7 @@ import {
   VisitorIdentifiedEvent,
   VisitorMessageReceivedEvent,
 } from '../inbox/events';
-import { Conversation, Visitor } from '@social-commerce/shared';
+import { Conversation, Visitor } from '@live-chat/shared';
 
 const NEW_MESSAGE_CHANNEL = 'new_message_channel';
 

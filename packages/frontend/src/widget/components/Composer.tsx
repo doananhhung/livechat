@@ -84,10 +84,12 @@ export const Composer = ({
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
-      if (typingTimeoutRef.current) {
+      if (typingTimeoutRef.current !== null) {
         clearTimeout(typingTimeoutRef.current);
         typingTimeoutRef.current = null;
       }
+      // Clear message times to prevent memory leak
+      messageTimes.current = [];
     };
   }, []);
 
@@ -113,7 +115,7 @@ export const Composer = ({
     setContent(value);
     setError("");
 
-    if (!typingTimeoutRef.current) {
+    if (typingTimeoutRef.current === null) {
       onTypingChange(true);
     } else {
       clearTimeout(typingTimeoutRef.current);
@@ -146,7 +148,7 @@ export const Composer = ({
     setError("");
 
     // Clear typing indicator
-    if (typingTimeoutRef.current) {
+    if (typingTimeoutRef.current !== null) {
       clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = null;
     }

@@ -13,7 +13,7 @@ import { Button } from "../../ui/Button";
 import { ProjectInfoDialog } from "./ProjectInfoDialog";
 import { ProjectMembersDialog } from "./ProjectMembersDialog";
 import { ProjectWidgetSettingsDialog } from "./ProjectWidgetSettingsDialog";
-import type { ProjectWithRole } from "@social-commerce/shared";
+import type { ProjectWithRole } from "@live-chat/shared";
 import { useAuthStore } from "../../../stores/authStore";
 
 interface ProjectManagementMenuProps {

@@ -11,6 +11,7 @@ import { SQSClient } from '@aws-sdk/client-sqs';
 import { GatewayModule } from '../gateway/gateway.module';
 import {
   Conversation,
+  EmailChangeRequest,
   Invitation,
   Message,
   Project,
@@ -20,7 +21,7 @@ import {
   User,
   UserIdentity,
   Visitor,
-} from '@social-commerce/shared';
+} from '@live-chat/shared';
 
 export const LIVE_CHAT_EVENTS_QUEUE = 'live-chat-events-queue';
 
@@ -43,6 +44,7 @@ export const LIVE_CHAT_EVENTS_QUEUE = 'live-chat-events-queue';
         database: configService.get<string>('PSQL_DATABASE'),
         entities: [
           Conversation,
+          EmailChangeRequest,
           Invitation,
           Message,
           Project,

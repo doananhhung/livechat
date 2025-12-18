@@ -6,7 +6,7 @@ import { VisitorService } from './services/visitor.service';
 import { RealtimeSessionService } from '../realtime-session/realtime-session.service';
 import { SqsService } from '../event-producer/sqs.service';
 import { EventsGateway } from '../gateway/events.gateway';
-import { Message } from '@social-commerce/shared';
+import { Message } from '@live-chat/shared';
 
 @Injectable()
 export class InboxEventHandlerService {

@@ -8,7 +8,7 @@ import { updateProject } from "../../services/projectApi";
 import type {
   ProjectWithRole,
   UpdateProjectDto,
-} from "@social-commerce/shared";
+} from "@live-chat/shared";
 
 interface ProjectBasicSettingsFormProps {
   project: ProjectWithRole;

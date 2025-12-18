@@ -14,7 +14,7 @@ import { updateProjectSettings } from "../../../services/projectApi";
 import type {
   ProjectWithRole,
   WidgetSettingsDto,
-} from "@social-commerce/shared";
+} from "@live-chat/shared";
 
 interface ProjectWidgetSettingsDialogProps {
   project: ProjectWithRole;

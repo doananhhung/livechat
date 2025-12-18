@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="dist/reset.css">
+  <link rel="stylesheet" href="dist/reveal.css">
+  <link rel="stylesheet" href="dist/theme/black.css" id="theme">
+  <link rel="stylesheet" href="plugin/highlight/monokai.css">
+  
+  <title>Security Presentation - Table of Contents</title>
+  
+  <style>
+    :root {
+      --accent-color: #818CF8;
+      --text-color: #EAEAEA;
+      --text-light-color: #A0A0A0;
+      --card-bg-color: rgba(26, 32, 44, 0.5);
+      --left-column-bg: rgba(20, 26, 38, 0.85);
+      --font-main: 'Inter', sans-serif;
+    }
+
+    @keyframes gradient-animation {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .reveal {
+        background: linear-gradient(-45deg, #120031, #100020, #0f0019, #0a0011);
+        background-size: 400% 400%;
+        animation: gradient-animation 30s ease infinite;
+    }
+
+    .reveal, .reveal p, .reveal li {
+      font-family: var(--font-main);
+      font-weight: 300;
+      color: var(--text-color);
+    }
+
+    .reveal h1, .reveal h2, .reveal h3 {
+      font-family: var(--font-main);
+      font-weight: 700;
+      color: var(--text-color);
+      text-transform: none;
+    }
+
+    .reveal .accent {
+      color: var(--accent-color);
+    }
+
+    .reveal .chapter-title {
+        font-size: 3.5em;
+        font-weight: 700;
+        color: var(--accent-color);
+    }
+    
+    .reveal ul {
+        list-style: none;
+        padding-left: 0;
+    }
+    
+    .reveal ul li {
+        padding-left: 1.5em;
+        position: relative;
+        margin-bottom: 0.75em;
+    }
+    
+    .reveal ul li::before {
+        content: "■";
+        position: absolute;
+        left: 0;
+        color: var(--accent-color);
+        font-size: 0.8em;
+        top: 0.2em;
+    }
+    
+    .reveal a {
+        color: var(--accent-color);
+        text-decoration: none;
+    }
+    
+    .reveal a:hover {
+        color: #9ca3ff;
+        text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <section>
+        <h1>Bảo Mật Dự Án</h1>
+        <h3>Chọn Chương</h3>
+        <ul>
+          <li><a href="chapters/01-authentication.html">Chương 1: Xác thực</a></li>
+          <li><a href="chapters/02-authorization.html">Chương 2: Phân quyền</a></li>
+          <li><a href="chapters/03-data-encryption.html">Chương 3: Mã hóa Dữ liệu</a></li>
+          <li><a href="chapters/04-api-websocket-security.html">Chương 4: API & WebSocket</a></li>
+        </ul>
+      </section>
+			      <section>
+        <h1 class="chapter-title">Hỏi & Đáp</h1>
+        <h3 class="r-mt-4 accent">Cảm ơn!</h3>
+      </section>
+
+    </div>
+  </div>
+  
+  <script src="dist/reveal.js"></script>
+  <script src="plugin/notes/notes.js"></script>
+  <script src="plugin/markdown/markdown.js"></script>
+  <script src="plugin/highlight/highlight.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1920,
+      height: 1080,
+      hash: true,
+      slideNumber: true,
+      plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ],
+      backgroundTransition: 'fade',
+      transition: 'slide'
+    });
+  </script>
+</body>
+</html>

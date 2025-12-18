@@ -8,7 +8,7 @@ import {
   ProjectWithRole,
   UpdateProjectDto,
   WidgetSettingsDto,
-} from '@social-commerce/shared';
+} from '@live-chat/shared';
 
 @Injectable()
 export class ProjectService {

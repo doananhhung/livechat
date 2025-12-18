@@ -3,10 +3,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../lib/api";
 import type {
   ChangePasswordDto,
+  SetPasswordDto,
   EmailChangeDto,
   UpdateUserDto,
   User,
-} from "@social-commerce/shared";
+} from "@live-chat/shared";
 
 // === TYPES ===
 // Define data types for request and response
@@ -34,6 +35,24 @@ interface ChangePasswordResponse {
   accessToken: string;
 }
 
+// Linked OAuth accounts types
+interface LinkedAccount {
+  id: string;
+  provider: string;
+  providerId: string;
+  userId: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+interface LinkGoogleAccountResponse {
+  redirectUrl: string;
+}
+
+interface UnlinkOAuthAccountPayload {
+  provider: string;
+}
+
 // === QUERY KEYS ===
 
 export const changePassword = async (
@@ -43,16 +62,38 @@ export const changePassword = async (
   return response.data;
 };
 
+export const setPassword = async (
+  payload: SetPasswordDto
+): Promise<ChangePasswordResponse> => {
+  const response = await api.post("/auth/set-password", payload);
+  return response.data;
+};
+
 export const requestEmailChange = async (
   payload: EmailChangeDto
-): Promise<{ message: string }> => {
+): Promise<{ message: string; warning?: string }> => {
   const response = await api.post("/user/request-email-change", payload);
+  return response.data;
+};
+
+export const getPendingEmailChange = async (): Promise<{
+  newEmail: string;
+  expiresAt: string;
+} | null> => {
+  const response = await api.get("/user/pending-email-change");
+  return response.data;
+};
+
+export const cancelEmailChange = async (): Promise<{ message: string }> => {
+  const response = await api.post("/user/cancel-email-change");
   return response.data;
 };
 
 const settingsKeys = {
   profile: ["me"] as const, // Change to 'me' to match other files
   connectedPages: ["connectedPages"] as const,
+  linkedAccounts: ["linkedAccounts"] as const,
+  pendingEmailChange: ["pendingEmailChange"] as const,
 };
 
 // === API FUNCTIONS ===
@@ -93,6 +134,25 @@ export const disconnectPage = async (pageId: string): Promise<void> => {
   await api.delete(`/connected-pages/${pageId}`);
 };
 
+// Linked Accounts API functions
+export const initiateLinkGoogleAccount =
+  async (): Promise<LinkGoogleAccountResponse> => {
+    const response = await api.get("/auth/link-google");
+    return response.data;
+  };
+
+export const unlinkOAuthAccount = async (
+  payload: UnlinkOAuthAccountPayload
+): Promise<{ message: string }> => {
+  const response = await api.post("/auth/unlink-oauth", payload);
+  return response.data;
+};
+
+export const fetchLinkedAccounts = async (): Promise<LinkedAccount[]> => {
+  const response = await api.get("/auth/linked-accounts");
+  return response.data;
+};
+
 // === REACT QUERY HOOKS ===
 // These hooks will use the API functions above
 
@@ -102,9 +162,42 @@ export const useChangePasswordMutation = () => {
   });
 };
 
+export const useSetPasswordMutation = () => {
+  return useMutation({
+    mutationFn: setPassword,
+  });
+};
+
 export const useRequestEmailChangeMutation = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: requestEmailChange,
+    onSuccess: () => {
+      // Invalidate pending email change query to refresh the status
+      queryClient.invalidateQueries({
+        queryKey: settingsKeys.pendingEmailChange,
+      });
+    },
+  });
+};
+
+export const usePendingEmailChangeQuery = () => {
+  return useQuery<{ newEmail: string; expiresAt: string } | null>({
+    queryKey: settingsKeys.pendingEmailChange,
+    queryFn: getPendingEmailChange,
+  });
+};
+
+export const useCancelEmailChangeMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: cancelEmailChange,
+    onSuccess: () => {
+      // Invalidate pending email change query to refresh the status
+      queryClient.invalidateQueries({
+        queryKey: settingsKeys.pendingEmailChange,
+      });
+    },
   });
 };
 
@@ -165,6 +258,30 @@ export const useDisconnectPageMutation = () => {
     mutationFn: disconnectPage,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: settingsKeys.connectedPages });
+    },
+  });
+};
+
+// Linked Accounts hooks
+export const useLinkedAccountsQuery = () => {
+  return useQuery<LinkedAccount[]>({
+    queryKey: settingsKeys.linkedAccounts,
+    queryFn: fetchLinkedAccounts,
+  });
+};
+
+export const useInitiateLinkGoogleMutation = () => {
+  return useMutation<LinkGoogleAccountResponse>({
+    mutationFn: initiateLinkGoogleAccount,
+  });
+};
+
+export const useUnlinkOAuthAccountMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<{ message: string }, Error, UnlinkOAuthAccountPayload>({
+    mutationFn: unlinkOAuthAccount,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: settingsKeys.linkedAccounts });
     },
   });
 };

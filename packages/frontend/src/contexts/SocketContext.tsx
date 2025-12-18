@@ -9,7 +9,7 @@ import {
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "../stores/authStore";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Message } from "@social-commerce/shared";
+import type { Message } from "@live-chat/shared";
 import { useTypingStore } from "../stores/typingStore";
 import { useProjectStore } from "../stores/projectStore";
 import { useLocation } from "react-router-dom";
@@ -29,6 +29,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       return;
     }
 
+    // Define all handlers as stable references
     const handleNewMessage = async (newMessage: Message) => {
       const conversationId = parseInt(String(newMessage.conversationId), 10);
 
@@ -143,6 +144,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
     socket.on("visitorIsTyping", handleVisitorTyping);
     socket.on("visitorContextUpdated", handleVisitorContextUpdated);
 
+    // CRITICAL: Always cleanup listeners on unmount or when dependencies change
     return () => {
       socket.off("newMessage", handleNewMessage);
       socket.off("agentReplied", handleNewMessage);
@@ -179,25 +181,38 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         auth: {
           token: accessToken,
         },
+        // Prevent multiple instances
+        forceNew: true,
       });
 
-      newSocket.on("connect", () => {
+      const handleConnect = () => {
+        console.log("✅ Socket connected");
         setSocket(newSocket);
-      });
+      };
 
-      newSocket.on("disconnect", () => {
+      const handleDisconnect = () => {
         console.log("❌ Socket disconnected");
-      });
+      };
+
+      newSocket.on("connect", handleConnect);
+      newSocket.on("disconnect", handleDisconnect);
 
       return () => {
+        // Properly cleanup socket
+        newSocket.off("connect", handleConnect);
+        newSocket.off("disconnect", handleDisconnect);
         newSocket.disconnect();
+        newSocket.close();
+        setSocket(null);
       };
     } else {
       if (socket) {
         socket.disconnect();
+        socket.close();
         setSocket(null);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken]);
 
   return (

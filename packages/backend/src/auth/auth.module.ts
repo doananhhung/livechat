@@ -9,13 +9,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
-import { RefreshToken, TwoFactorRecoveryCode } from '@social-commerce/shared';
+import { RefreshToken, TwoFactorRecoveryCode } from '@live-chat/shared';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TwoFactorAuthenticationController } from './2fa/two-factor-authentication.controller';
 import { TwoFactorAuthenticationService } from './2fa/two-factor-authentication.service';
 import { EncryptionService } from '../common/services/encryption.service';
 import { TwoFactorAuthenticationStrategy } from './strategies/2fa-partial-token.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { GoogleLinkStrategy } from './strategies/google-link.strategy';
 import { MailModule } from '../mail/mail.module';
 
 @Module({
@@ -44,6 +45,7 @@ import { MailModule } from '../mail/mail.module';
     LocalStrategy,
     JwtStrategy,
     GoogleStrategy,
+    GoogleLinkStrategy,
     TwoFactorAuthenticationStrategy,
     RefreshTokenStrategy,
     EncryptionService,

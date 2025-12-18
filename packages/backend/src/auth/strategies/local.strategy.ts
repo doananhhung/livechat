@@ -6,7 +6,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { AuthService } from '../auth.service';
-import { User } from '@social-commerce/shared';
+import { User } from '@live-chat/shared';
 
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy) {

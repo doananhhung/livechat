@@ -24,7 +24,7 @@ import {
   SendReplyDto,
   UpdateConversationDto,
   User,
-} from '@social-commerce/shared';
+} from '@live-chat/shared';
 import { GetCurrentUser } from '../common/decorators/get-current-user.decorator';
 import { RolesGuard } from '../rbac/roles.guard';
 import { Roles } from '../rbac/roles.decorator';

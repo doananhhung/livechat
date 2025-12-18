@@ -9,7 +9,7 @@ import { EntityManager } from 'typeorm';
 import { ConversationService } from '../inbox/services/conversation.service';
 import { VisitorService } from '../inbox/services/visitor.service';
 import { MessageService } from '../inbox/services/message.service';
-import { MessageStatus } from '@social-commerce/shared';
+import { MessageStatus } from '@live-chat/shared';
 import {
   SQSClient,
   ReceiveMessageCommand,

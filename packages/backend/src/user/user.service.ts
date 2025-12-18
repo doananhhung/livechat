@@ -1,17 +1,30 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  Inject,
+  Logger,
+} from '@nestjs/common';
 import {
   CreateUserDto,
+  EmailChangeRequest,
   RefreshToken,
   TwoFactorRecoveryCode,
   UpdateUserDto,
   User,
+  UserIdentity,
   UserStatus,
-} from '@social-commerce/shared';
+} from '@live-chat/shared';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, Repository, MoreThan, LessThan } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { EncryptionService } from '../common/services/encryption.service';
+import { MailService } from '../mail/mail.service';
 import * as crypto from 'crypto';
+import { ConfigService } from '@nestjs/config';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 interface SetRefreshTokenOptions {
   refreshToken: string;
@@ -24,14 +37,40 @@ interface SetRefreshTokenOptions {
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepository: Repository<RefreshToken>,
+    @InjectRepository(EmailChangeRequest)
+    private readonly emailChangeRequestRepository: Repository<EmailChangeRequest>,
     private readonly entityManager: EntityManager,
-    private readonly encryptionService: EncryptionService
+    private readonly encryptionService: EncryptionService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly mailService: MailService,
+    private readonly configService: ConfigService
   ) {}
+
+  @Cron(CronExpression.EVERY_DAY_AT_3AM)
+  async handleExpiredTokensCleanup() {
+    this.logger.log(
+      '[Cron] Running scheduled task to clean up expired refresh tokens...'
+    );
+
+    const result = await this.refreshTokenRepository.delete({
+      expiresAt: LessThan(new Date()),
+    });
+
+    if (result.affected && result.affected > 0) {
+      this.logger.log(
+        `[Cron] Successfully deleted ${result.affected} expired refresh tokens.`
+      );
+    } else {
+      this.logger.log('[Cron] No expired refresh tokens found to delete.');
+    }
+  }
 
   /**
    * Create a new user and save it to the database.
@@ -70,37 +109,363 @@ export class UserService {
     return await this.userRepository.findOne({ where: { email } });
   }
 
+  /**
+   * Request email change - creates a verification token and sends emails
+   * @param userId User ID requesting the change
+   * @param newEmail New email address
+   * @param currentPassword Current password for verification
+   * @returns Promise<{ message: string; newEmail: string }>
+   */
   async requestEmailChange(
     userId: string,
     newEmail: string,
     currentPassword: string
-  ): Promise<void> {
+  ): Promise<{ message: string; newEmail: string; warning?: string }> {
+    this.logger.log(
+      `[requestEmailChange] Starting email change request for user: ${userId} to new email: ${newEmail}`
+    );
     const user = await this.findOneById(userId);
 
+    // 1. Validate user has password (OAuth users must set password first)
+    if (!user.passwordHash) {
+      this.logger.warn(
+        `[requestEmailChange] User ${userId} has no password set`
+      );
+      throw new BadRequestException(
+        'Bạn cần đặt mật khẩu trước khi có thể thay đổi email.'
+      );
+    }
+
+    // 2. Verify current password
     const isPasswordValid = await bcrypt.compare(
       currentPassword,
-      user.passwordHash as string
+      user.passwordHash
     );
 
     if (!isPasswordValid) {
+      this.logger.warn(
+        `[requestEmailChange] Invalid password for user: ${userId}`
+      );
       throw new UnauthorizedException('Mật khẩu hiện tại không đúng.');
     }
 
-    const IsEmailTaken = await this.userRepository.findOne({
-      where: { email: newEmail },
-    });
-    if (IsEmailTaken) {
-      throw new UnauthorizedException('Email này đã được sử dụng.');
+    // 3. Validate new email
+    if (user.email === newEmail) {
+      this.logger.warn(
+        `[requestEmailChange] New email same as current for user: ${userId}`
+      );
+      throw new BadRequestException('Email mới phải khác với email hiện tại.');
     }
 
-    // Here you would typically generate a verification token and send an email to the new address.
-    // For simplicity, we'll just update the email directly.
+    // Check if email is already taken
+    const isEmailTaken = await this.userRepository.findOne({
+      where: { email: newEmail },
+    });
+    if (isEmailTaken) {
+      this.logger.warn(
+        `[requestEmailChange] Email ${newEmail} is already taken`
+      );
+      throw new BadRequestException('Email này đã được sử dụng.');
+    }
 
-    user.email = newEmail;
+    // 4. Check if user has linked OAuth accounts - warn them
+    const userWithIdentities = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['identities'],
+    });
+
+    const hasLinkedOAuth =
+      userWithIdentities?.identities &&
+      userWithIdentities.identities.length > 0;
+    const oauthWarning = hasLinkedOAuth
+      ? 'Lưu ý: Tất cả tài khoản liên kết (Google, v.v.) sẽ bị hủy liên kết sau khi thay đổi email vì email không còn khớp.'
+      : undefined;
+
+    // 5. Check for existing pending request
+    this.logger.log(
+      `[requestEmailChange] Checking for existing pending request for user: ${userId}`
+    );
+    const existingRequest = await this.emailChangeRequestRepository.findOne({
+      where: {
+        userId,
+        isVerified: false,
+        isCancelled: false,
+        expiresAt: MoreThan(new Date()),
+      },
+    });
+
+    if (existingRequest) {
+      this.logger.warn(
+        `[requestEmailChange] Found existing pending request for user: ${userId}`
+      );
+      throw new BadRequestException(
+        'Bạn đã có một yêu cầu thay đổi email đang chờ xử lý. Vui lòng kiểm tra email hoặc hủy yêu cầu cũ.'
+      );
+    }
+
+    // 6. Create verification token
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24); // Expire after 24 hours
+
+    // 7. Save request to database
     await this.entityManager.transaction(async (entityManager) => {
-      await entityManager.save(User, user);
+      const emailChangeRequest = entityManager.create(EmailChangeRequest, {
+        userId,
+        oldEmail: user.email,
+        newEmail,
+        token,
+        expiresAt,
+      });
+      await entityManager.save(emailChangeRequest);
+    });
+
+    // 8. Store token info in Redis for quick verification
+    const tokenKey = `email-change:${token}`;
+    const tokenData = {
+      userId,
+      newEmail,
+      oldEmail: user.email,
+    };
+    await this.cacheManager.set(
+      tokenKey,
+      JSON.stringify(tokenData),
+      24 * 60 * 60 * 1000
+    ); // 24 hours in ms
+
+    // 9. Send emails
+    this.logger.log(
+      `[requestEmailChange] Sending verification email to new address: ${newEmail}`
+    );
+    try {
+      // Send verification email to new address
+      await this.mailService.sendEmailChangeVerification(user, newEmail, token);
+
+      // Send notification email to old address
+      await this.mailService.sendEmailChangeNotification(user, newEmail);
+
+      this.logger.log(
+        `[requestEmailChange] Emails sent successfully for user: ${userId}`
+      );
+    } catch (error) {
+      this.logger.error(
+        `[requestEmailChange] Failed to send emails for user: ${userId}`,
+        error
+      );
+      throw new BadRequestException(
+        'Không thể gửi email xác nhận. Vui lòng thử lại sau.'
+      );
+    }
+
+    console.log('📧 Email change requested:');
+    console.log(`   User: ${user.email} (${userId})`);
+    console.log(`   New email: ${newEmail}`);
+    console.log(`   Verification token: ${token}`);
+    console.log(
+      `   Verification URL: ${process.env.FRONTEND_URL}/verify-email-change?token=${token}`
+    );
+    if (oauthWarning) {
+      console.log(`   ⚠️  ${oauthWarning}`);
+    }
+
+    return {
+      message:
+        'Yêu cầu thay đổi email đã được gửi. Vui lòng kiểm tra email mới để xác nhận.',
+      newEmail,
+      warning: oauthWarning,
+    };
+  }
+
+  /**
+   * Verify email change using token
+   * @param token Verification token from email
+   * @returns Promise<{ message: string; newEmail: string }>
+   */
+  async verifyEmailChange(
+    token: string
+  ): Promise<{ message: string; newEmail: string }> {
+    this.logger.log(`[verifyEmailChange] Verifying token: ${token}`);
+    // 1. Find the request
+    const request = await this.emailChangeRequestRepository.findOne({
+      where: {
+        token,
+        isVerified: false,
+        isCancelled: false,
+      },
+      relations: ['user'],
+    });
+
+    if (!request) {
+      this.logger.warn(`[verifyEmailChange] Invalid or used token: ${token}`);
+      throw new BadRequestException('Token không hợp lệ hoặc đã được sử dụng.');
+    }
+
+    this.logger.log(
+      `[verifyEmailChange] Found request for user: ${request.userId}`
+    );
+
+    // 2. Check if expired
+    if (new Date() > request.expiresAt) {
+      this.logger.warn(
+        `[verifyEmailChange] Token expired for user: ${request.userId}`
+      );
+      throw new BadRequestException(
+        'Token đã hết hạn. Vui lòng yêu cầu thay đổi email mới.'
+      );
+    }
+
+    // 3. Check if new email is still available
+    const isEmailTaken = await this.userRepository.findOne({
+      where: { email: request.newEmail },
+    });
+    if (isEmailTaken) {
+      this.logger.warn(
+        `[verifyEmailChange] Email ${request.newEmail} is now taken by another user`
+      );
+      throw new BadRequestException(
+        'Email này đã được sử dụng bởi người khác.'
+      );
+    }
+
+    // 4. Update user email and mark request as verified
+    this.logger.log(
+      `[verifyEmailChange] Updating email from ${request.oldEmail} to ${request.newEmail} for user: ${request.userId}`
+    );
+
+    let hadLinkedOAuth = false;
+    let oauthAccountCount = 0;
+
+    await this.entityManager.transaction(async (entityManager) => {
+      // Load user with relations to check for identities
+      const user = await entityManager.findOne(User, {
+        where: { id: request.userId },
+        relations: ['identities'],
+      });
+
+      if (!user) {
+        throw new BadRequestException('Người dùng không tồn tại.');
+      }
+
+      // Check if user has linked OAuth accounts
+      const hasLinkedOAuth = user.identities && user.identities.length > 0;
+      hadLinkedOAuth = hasLinkedOAuth;
+      oauthAccountCount = user.identities?.length || 0;
+
+      user.email = request.newEmail;
+      await entityManager.save(user);
+
+      request.isVerified = true;
+      await entityManager.save(request);
+
+      // If user has linked OAuth accounts, unlink them because email no longer matches
+      if (hasLinkedOAuth) {
+        await entityManager.delete(UserIdentity, { userId: user.id });
+        console.log(
+          `⚠️  Unlinked ${oauthAccountCount} OAuth account(s) due to email change`
+        );
+      }
+
+      // Invalidate all refresh tokens to log out all devices
+      await entityManager.delete(RefreshToken, { userId: user.id });
+
+      // Invalidate all access tokens by updating tokensValidFrom
+      // This ensures that even if access tokens haven't expired yet, they will be rejected
+      user.tokensValidFrom = new Date();
+      await entityManager.save(user);
+    });
+
+    // 5. Clear Redis cache
+    const tokenKey = `email-change:${token}`;
+    await this.cacheManager.del(tokenKey);
+
+    // 6. Send confirmation email to old address
+    this.logger.log(
+      `[verifyEmailChange] Sending confirmation email to old address: ${request.oldEmail}`
+    );
+    try {
+      await this.mailService.sendEmailChangeConfirmation(
+        request.oldEmail,
+        request.newEmail,
+        request.user.fullName
+      );
+      this.logger.log(
+        `[verifyEmailChange] Confirmation email sent successfully`
+      );
+    } catch (error) {
+      this.logger.error(
+        `[verifyEmailChange] Failed to send confirmation email, but email change was successful`,
+        error
+      );
+      // Don't throw error - email change was successful even if confirmation email fails
+    }
+
+    console.log('✅ Email change verified:');
+    console.log(`   User ID: ${request.userId}`);
+    console.log(`   Old email: ${request.oldEmail}`);
+    console.log(`   New email: ${request.newEmail}`);
+    console.log(`   All sessions invalidated: YES`);
+    console.log(
+      `   OAuth accounts unlinked: ${hadLinkedOAuth ? `YES (${oauthAccountCount})` : 'NO'}`
+    );
+
+    return {
+      message:
+        'Email đã được thay đổi thành công. Vui lòng đăng nhập lại bằng email mới.',
+      newEmail: request.newEmail,
+    };
+  }
+
+  /**
+   * Cancel email change request
+   * @param userId User ID
+   * @returns Promise<{ message: string }>
+   */
+  async cancelEmailChange(userId: string): Promise<{ message: string }> {
+    const request = await this.emailChangeRequestRepository.findOne({
+      where: {
+        userId,
+        isVerified: false,
+        isCancelled: false,
+        expiresAt: MoreThan(new Date()),
+      },
+    });
+
+    if (!request) {
+      throw new BadRequestException(
+        'Không tìm thấy yêu cầu thay đổi email đang chờ xử lý.'
+      );
+    }
+
+    request.isCancelled = true;
+    await this.emailChangeRequestRepository.save(request);
+
+    // Clear Redis cache
+    const tokenKey = `email-change:${request.token}`;
+    await this.cacheManager.del(tokenKey);
+
+    return {
+      message: 'Yêu cầu thay đổi email đã được hủy.',
+    };
+  }
+
+  /**
+   * Get pending email change request for a user
+   * @param userId User ID
+   * @returns Promise<EmailChangeRequest | null>
+   */
+  async getPendingEmailChange(
+    userId: string
+  ): Promise<EmailChangeRequest | null> {
+    return this.emailChangeRequestRepository.findOne({
+      where: {
+        userId,
+        isVerified: false,
+        isCancelled: false,
+        expiresAt: MoreThan(new Date()),
+      },
     });
   }
+
   /**
    * Update a user's profile with the provided data.
    *
@@ -177,6 +542,27 @@ export class UserService {
     } = options;
 
     return this.entityManager.transaction(async (entityManager) => {
+      // Enforce session limit
+      const sessionLimit =
+        parseInt(this.configService.get<string>('SESSION_LIMIT') as string) ||
+        5;
+
+      const userTokens = await entityManager.find(RefreshToken, {
+        where: { userId },
+        order: { createdAt: 'ASC' },
+      });
+
+      if (userTokens.length >= sessionLimit) {
+        const tokensToRemove = userTokens.slice(
+          0,
+          userTokens.length - sessionLimit + 1
+        );
+        await entityManager.remove(tokensToRemove);
+        this.logger.log(
+          `[SessionLimit] Removed ${tokensToRemove.length} oldest session(s) for user ${userId}`
+        );
+      }
+
       const hashedToken = await bcrypt.hash(refreshToken, 12);
       let finalIpAddress = ipAddress;
       let finalUserAgent = userAgent;

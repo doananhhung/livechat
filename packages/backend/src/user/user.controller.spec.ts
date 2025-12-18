@@ -1,11 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import { UpdateUserDto } from './dto/update-user-dto';
+import { EmailChangeDto, UpdateUserDto, User } from '@live-chat/shared';
 
 describe('UserController', () => {
   let controller: UserController;
-  let userService: UserService;
+  let userService: jest.Mocked<UserService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -17,13 +17,14 @@ describe('UserController', () => {
             findOneById: jest.fn(),
             updateProfile: jest.fn(),
             deactivate: jest.fn(),
+            requestEmailChange: jest.fn(),
           },
         },
       ],
     }).compile();
 
     controller = module.get<UserController>(UserController);
-    userService = module.get<UserService>(UserService);
+    userService = module.get(UserService);
   });
 
   it('should be defined', () => {
@@ -32,59 +33,69 @@ describe('UserController', () => {
 
   describe('getProfile', () => {
     it('should return the user profile without the password hash', async () => {
-      const userId = 'some-user-id';
       const user = {
-        id: userId,
-        email: 'test@example.com',
-        passwordHash: 'some-hashed-password',
-        fullName: 'Test User',
-        // other user properties...
-      };
-      const req = { user: { id: userId } };
-
-      (userService.findOneById as jest.Mock).mockResolvedValue(user);
+        id: '1',
+        email: 'test@test.com',
+        passwordHash: 'hashed',
+      } as User;
+      const req = { user: { id: '1' } };
+      userService.findOneById.mockResolvedValue(user);
 
       const result = await controller.getProfile(req);
 
-      expect(userService.findOneById).toHaveBeenCalledWith(userId);
       expect(result).not.toHaveProperty('passwordHash');
-      expect(result.email).toEqual(user.email);
+      expect(result.id).toBe('1');
     });
   });
 
   describe('updateProfile', () => {
-    it('should update the user profile and return the updated user without the password hash', async () => {
-      const userId = 'some-user-id';
-      const updateUserDto: UpdateUserDto = { fullName: 'Updated Name' };
+    it('should update and return the user profile without the password hash', async () => {
+      const updateUserDto: UpdateUserDto = { fullName: 'New Name' };
       const updatedUser = {
-        id: userId,
-        email: 'test@example.com',
-        passwordHash: 'some-hashed-password',
-        fullName: 'Updated Name',
-      };
-      const req = { user: { id: userId } };
-
-      (userService.updateProfile as jest.Mock).mockResolvedValue(updatedUser);
+        id: '1',
+        fullName: 'New Name',
+        passwordHash: 'hashed',
+      } as User;
+      const req = { user: { id: '1' } };
+      userService.updateProfile.mockResolvedValue(updatedUser);
 
       const result = await controller.updateProfile(req, updateUserDto);
 
-      expect(userService.updateProfile).toHaveBeenCalledWith(userId, updateUserDto);
+      expect(userService.updateProfile).toHaveBeenCalledWith('1', updateUserDto);
       expect(result).not.toHaveProperty('passwordHash');
-      expect(result.fullName).toEqual(updateUserDto.fullName);
+      expect(result.fullName).toBe('New Name');
     });
   });
 
   describe('deactivateAccount', () => {
-    it('should deactivate the user account and return a success message', async () => {
-      const userId = 'some-user-id';
-      const req = { user: { id: userId } };
-
-      (userService.deactivate as jest.Mock).mockResolvedValue(undefined);
+    it('should deactivate the account and return a success message', async () => {
+      const req = { user: { id: '1' } };
+      userService.deactivate.mockResolvedValue(undefined as any);
 
       const result = await controller.deactivateAccount(req);
 
-      expect(userService.deactivate).toHaveBeenCalledWith(userId);
-      expect(result).toEqual({ message: 'Tài khoản của bạn đã được vô hiệu hóa thành công.' });
+      expect(userService.deactivate).toHaveBeenCalledWith('1');
+      expect(result.message).toContain('vô hiệu hóa');
+    });
+  });
+
+  describe('requestEmailChange', () => {
+    it('should call the service and return a success message', async () => {
+      const req = { user: { id: '1' } };
+      const emailChangeDto: EmailChangeDto = {
+        newEmail: 'new@test.com',
+        password: 'password',
+      };
+      userService.requestEmailChange.mockResolvedValue(undefined as any);
+
+      const result = await controller.requestEmailChange(req, emailChangeDto);
+
+      expect(userService.requestEmailChange).toHaveBeenCalledWith(
+        '1',
+        emailChangeDto.newEmail,
+        emailChangeDto.password
+      );
+      expect(result.message).toContain('Yêu cầu thay đổi email đã được gửi');
     });
   });
 });

@@ -15,9 +15,9 @@ import {
   Code,
 } from "lucide-react";
 import { PermissionGate } from "../../components/PermissionGate";
-import { ProjectRole, WidgetPosition } from "@social-commerce/shared";
+import { ProjectRole, WidgetPosition } from "@live-chat/shared";
 import { ProjectBasicSettingsForm } from "../../components/projects/ProjectBasicSettingsForm";
-import type { WidgetSettingsDto } from "@social-commerce/shared";
+import type { WidgetSettingsDto } from "@live-chat/shared";
 
 export const ProjectSettingsPage = () => {
   const { toast } = useToast();

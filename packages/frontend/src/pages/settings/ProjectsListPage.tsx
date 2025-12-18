@@ -8,7 +8,7 @@ import { Spinner } from "../../components/ui/Spinner";
 import { useToast } from "../../components/ui/use-toast";
 import { UserPlus, Settings } from "lucide-react";
 import { PermissionGate } from "../../components/PermissionGate";
-import { ProjectRole } from "@social-commerce/shared";
+import { ProjectRole } from "@live-chat/shared";
 
 export const ProjectsListPage = () => {
   const { toast } = useToast();

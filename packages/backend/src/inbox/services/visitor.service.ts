@@ -2,7 +2,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
-import { Visitor } from '@social-commerce/shared';
+import { Visitor } from '@live-chat/shared';
 import { RealtimeSessionService } from '../../realtime-session/realtime-session.service';
 
 @Injectable()

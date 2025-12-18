@@ -8,7 +8,7 @@ import type {
   RegisterResponseDto,
   ResendVerificationDto,
   User,
-} from "@social-commerce/shared";
+} from "@live-chat/shared";
 
 // ========================================================================
 // API FUNCTIONS
@@ -81,6 +81,38 @@ export const exchangeCodeForToken = async (
   return data;
 };
 
+/**
+ * Sends a password reset email to the user.
+ * @param email - The user's email address
+ * @returns {Promise<{ message: string; isOAuthUser?: boolean }>} Success message and OAuth status
+ */
+export const forgotPassword = async (
+  email: string
+): Promise<{ message: string; isOAuthUser?: boolean }> => {
+  const { data } = await api.post<{ message: string; isOAuthUser?: boolean }>(
+    "/auth/forgot-password",
+    { email }
+  );
+  return data;
+};
+
+/**
+ * Resets the user's password using the token from the reset email.
+ * @param token - The reset token from the email link
+ * @param newPassword - The new password
+ * @returns {Promise<{ message: string }>} Success message
+ */
+export const resetPassword = async (
+  token: string,
+  newPassword: string
+): Promise<{ message: string }> => {
+  const { data } = await api.post<{ message: string }>("/auth/reset-password", {
+    token,
+    newPassword,
+  });
+  return data;
+};
+
 // ========================================================================
 // CUSTOM HOOKS
 // ========================================================================
@@ -117,6 +149,38 @@ export const useRegisterMutation = (
 ) => {
   return useMutation({
     mutationFn: registerUser,
+    ...options,
+  });
+};
+
+export const useForgotPasswordMutation = (
+  options?: Omit<
+    UseMutationOptions<
+      { message: string; isOAuthUser?: boolean },
+      Error,
+      string
+    >,
+    "mutationFn"
+  >
+) => {
+  return useMutation({
+    mutationFn: forgotPassword,
+    ...options,
+  });
+};
+
+export const useResetPasswordMutation = (
+  options?: Omit<
+    UseMutationOptions<
+      { message: string },
+      Error,
+      { token: string; newPassword: string }
+    >,
+    "mutationFn"
+  >
+) => {
+  return useMutation({
+    mutationFn: ({ token, newPassword }) => resetPassword(token, newPassword),
     ...options,
   });
 };

@@ -78,15 +78,15 @@ test.html
 cloudflare.txt
 
 # Documentation build artifacts
-social-commerce-docs/*.pdf
-social-commerce-docs/*.synctex.gz
-social-commerce-docs/*.aux
-social-commerce-docs/*.fdb_latexmk
-social-commerce-docs/*.fls
-social-commerce-docs/*.log
-social-commerce-docs/*.zip
-social-commerce-docs/svg-inkscape/*.pdf
-social-commerce-docs/_minted-*
+docs/*.pdf
+docs/*.synctex.gz
+docs/*.aux
+docs/*.fdb_latexmk
+docs/*.fls
+docs/*.log
+docs/*.zip
+docs/svg-inkscape/*.pdf
+docs/_minted-*
 
 # Docker
 docker-compose.override.yml

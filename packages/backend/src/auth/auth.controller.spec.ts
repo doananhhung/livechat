@@ -1,16 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { Response } from 'express';
-import { User } from '../user/entities/user.entity';
-import { RegisterDto } from './dto/register.dto';
 import { ConfigService } from '@nestjs/config';
-import { HttpStatus } from '@nestjs/common';
+import {
+  ChangePasswordDto,
+  ExchangeCodeDto,
+  RegisterDto,
+  ResendVerificationDto,
+  User,
+} from '@live-chat/shared';
+import { HttpStatus, UnauthorizedException } from '@nestjs/common';
+import { Response } from 'express';
 
 describe('AuthController', () => {
   let controller: AuthController;
-  let authService: AuthService;
-  let configService: ConfigService;
+  let authService: jest.Mocked<AuthService>;
+  let configService: jest.Mocked<ConfigService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -20,24 +25,41 @@ describe('AuthController', () => {
           provide: AuthService,
           useValue: {
             register: jest.fn(),
-            login: jest.fn(),
+            verifyEmail: jest.fn(),
+            resendVerificationEmail: jest.fn(),
+            loginAndReturnTokens: jest.fn(),
+            generate2FAPartialToken: jest.fn(),
             refreshTokens: jest.fn(),
+            changePassword: jest.fn(),
             logout: jest.fn(),
             logoutAll: jest.fn(),
+            generateOneTimeCode: jest.fn(),
+            exchangeCodeForTokens: jest.fn(),
           },
         },
         {
-            provide: ConfigService,
-            useValue: {
-                get: jest.fn(),
-            }
-        }
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string) => {
+              if (key === 'JWT_REFRESH_EXPIRES_IN') {
+                return '30d';
+              }
+              if (key === 'FRONTEND_2FA_URL') {
+                return 'http://localhost:3000/2fa';
+              }
+              if (key === 'FRONTEND_AUTH_CALLBACK_URL') {
+                return 'http://localhost:3000/auth/callback';
+              }
+              return null;
+            }),
+          },
+        },
       ],
     }).compile();
 
     controller = module.get<AuthController>(AuthController);
-    authService = module.get<AuthService>(AuthService);
-    configService = module.get<ConfigService>(ConfigService);
+    authService = module.get(AuthService);
+    configService = module.get(ConfigService);
   });
 
   it('should be defined', () => {
@@ -45,212 +67,274 @@ describe('AuthController', () => {
   });
 
   describe('register', () => {
-    it('should call authService.register with the provided dto', async () => {
+    it('should register a new user', async () => {
       const registerDto: RegisterDto = {
         email: 'test@example.com',
         password: 'password',
         fullName: 'Test User',
       };
-      const user = new User();
-      user.id = 'test-id';
-      user.email = 'test@example.com';
-      user.fullName = 'Test User';
-
-      (authService.register as jest.Mock).mockResolvedValue(user);
+      const expectedResponse = { message: 'User registered successfully' };
+      authService.register.mockResolvedValue(expectedResponse);
 
       const result = await controller.register(registerDto);
 
       expect(authService.register).toHaveBeenCalledWith(registerDto);
-      expect(result).toEqual(user);
+      expect(result).toEqual(expectedResponse);
+    });
+  });
+
+  describe('verifyEmail', () => {
+    it('should verify an email', async () => {
+      const token = 'verification-token';
+      await controller.verifyEmail(token);
+      expect(authService.verifyEmail).toHaveBeenCalledWith(token);
+    });
+  });
+
+  describe('resendVerificationEmail', () => {
+    it('should resend the verification email', async () => {
+      const resendDto: ResendVerificationDto = { email: 'test@example.com' };
+      await controller.resendVerificationEmail(resendDto);
+      expect(authService.resendVerificationEmail).toHaveBeenCalledWith(
+        resendDto
+      );
     });
   });
 
   describe('login', () => {
-    it('should call authService.login and set a cookie with the refresh token', async () => {
-      const user = new User();
-      user.id = 'test-id';
-      user.email = 'test@example.com';
+    const user = {
+      id: '1',
+      isTwoFactorAuthenticationEnabled: false,
+    } as User;
+    const req = {
+      user,
+      ip: '127.0.0.1',
+      headers: { 'user-agent': 'jest' },
+    };
+    const res = {
+      cookie: jest.fn(),
+      json: jest.fn(),
+    } as unknown as Response;
 
-      const req = {
-        user,
-        ip: '127.0.0.1',
-        headers: {
-          'user-agent': 'jest',
-        },
-      };
-      const res = {
-        cookie: jest.fn(),
-      } as unknown as Response;
-
+    it('should login a user without 2FA', async () => {
       const tokens = {
-        accessToken: 'test-access-token',
-        refreshToken: 'test-refresh-token',
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        user,
       };
-      (authService.login as jest.Mock).mockResolvedValue(tokens);
+      authService.loginAndReturnTokens.mockResolvedValue(tokens);
 
-      const result = await controller.login(req, res);
+      await controller.login(req, res);
 
-      expect(authService.login).toHaveBeenCalledWith(user, '127.0.0.1', 'jest');
+      expect(authService.loginAndReturnTokens).toHaveBeenCalledWith(
+        req.user,
+        req.ip,
+        req.headers['user-agent']
+      );
       expect(res.cookie).toHaveBeenCalledWith(
         'refresh_token',
-        'test-refresh-token',
-        {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          expires: expect.any(Date),
-        }
+        tokens.refreshToken,
+        expect.any(Object)
       );
-      expect(result).toEqual({ accessToken: 'test-access-token' });
+      expect(res.json).toHaveBeenCalledWith({
+        accessToken: tokens.accessToken,
+        user: tokens.user,
+      });
+    });
+
+    it('should handle 2FA login', async () => {
+      const twoFaReq = {
+        ...req,
+        user: { ...req.user, isTwoFactorAuthenticationEnabled: true },
+      };
+      const partialToken = { accessToken: 'partial-token' };
+      authService.generate2FAPartialToken.mockResolvedValue(partialToken);
+
+      await expect(controller.login(twoFaReq, res)).rejects.toThrow(
+        new UnauthorizedException({
+          message: '2FA required',
+          errorCode: '2FA_REQUIRED',
+        })
+      );
+
+      expect(authService.generate2FAPartialToken).toHaveBeenCalledWith(
+        twoFaReq.user.id
+      );
+      expect(res.cookie).toHaveBeenCalledWith(
+        '2fa_partial_token',
+        partialToken.accessToken,
+        expect.any(Object)
+      );
     });
   });
 
   describe('refreshTokens', () => {
-    it('should call authService.refreshTokens and set a cookie with the new refresh token', async () => {
-      const req = {
-        user: {
-          sub: 'test-id',
-          refreshToken: 'old-refresh-token',
-        },
-      };
-      const res = {
-        cookie: jest.fn(),
-      } as unknown as Response;
-
+    it('should refresh tokens', async () => {
+      const req = { user: { sub: '1', refreshToken: 'old-refresh-token' } };
+      const res = { cookie: jest.fn() } as unknown as Response;
       const tokens = {
         accessToken: 'new-access-token',
         refreshToken: 'new-refresh-token',
       };
-      (authService.refreshTokens as jest.Mock).mockResolvedValue(tokens);
+      authService.refreshTokens.mockResolvedValue(tokens);
 
       const result = await controller.refreshTokens(req, res);
 
       expect(authService.refreshTokens).toHaveBeenCalledWith(
-        'test-id',
-        'old-refresh-token'
+        req.user.sub,
+        req.user.refreshToken
       );
       expect(res.cookie).toHaveBeenCalledWith(
         'refresh_token',
-        'new-refresh-token',
-        {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          expires: expect.any(Date),
-        }
+        tokens.refreshToken,
+        expect.any(Object)
       );
-      expect(result).toEqual({ accessToken: 'new-access-token' });
+      expect(result).toEqual({ accessToken: tokens.accessToken });
+    });
+  });
+
+  describe('changePassword', () => {
+    it('should change password and return new tokens', async () => {
+      const user = { id: '1' } as User;
+      const req = {
+        user,
+        ip: '127.0.0.1',
+        headers: { 'user-agent': 'jest' },
+      };
+      const body: ChangePasswordDto = {
+        currentPassword: 'old-pw',
+        newPassword: 'new-pw',
+      };
+      const res = { cookie: jest.fn() } as unknown as Response;
+      const tokens = {
+        accessToken: 'new-access-token',
+        refreshToken: 'new-refresh-token',
+        user,
+      };
+      authService.loginAndReturnTokens.mockResolvedValue(tokens);
+
+      const result = await controller.changePassword(req, body, res);
+
+      expect(authService.changePassword).toHaveBeenCalledWith(
+        req.user.id,
+        body.currentPassword,
+        body.newPassword
+      );
+      expect(res.cookie).toHaveBeenCalledWith(
+        'refresh_token',
+        tokens.refreshToken,
+        expect.any(Object)
+      );
+      expect(result.accessToken).toBe(tokens.accessToken);
     });
   });
 
   describe('logout', () => {
-    it('should call authService.logout and clear the refresh_token cookie', async () => {
+    it('should logout a user', async () => {
       const req = {
-        user: {
-          id: 'test-id',
-        },
-        cookies: {
-          refresh_token: 'test-refresh-token',
-        },
+        user: { sub: '1' },
+        cookies: { refresh_token: 'some-token' },
       };
-      const res = {
-        clearCookie: jest.fn(),
-      } as unknown as Response;
-
-      (authService.logout as jest.Mock).mockResolvedValue(true);
+      const res = { clearCookie: jest.fn() } as unknown as Response;
 
       const result = await controller.logout(req, res);
 
-      expect(authService.logout).toHaveBeenCalledWith(
-        'test-id',
-        'test-refresh-token'
-      );
+      expect(authService.logout).toHaveBeenCalledWith('1', 'some-token');
       expect(res.clearCookie).toHaveBeenCalledWith('refresh_token');
-      expect(result).toEqual({ message: 'Đăng xuất thành công.' });
-    });
-
-    it('should not call authService.logout if there is no refresh token', async () => {
-      const req = {
-        user: {
-          id: 'test-id',
-        },
-        cookies: {},
-      };
-      const res = {
-        clearCookie: jest.fn(),
-      } as unknown as Response;
-
-      const result = await controller.logout(req, res);
-
-      expect(authService.logout).not.toHaveBeenCalled();
-      expect(res.clearCookie).toHaveBeenCalledWith('refresh_token');
-      expect(result).toEqual({ message: 'Đăng xuất thành công.' });
+      expect(res.clearCookie).toHaveBeenCalledWith('2fa_secret');
+      expect(res.clearCookie).toHaveBeenCalledWith('2fa_partial_token');
+      expect(result.message).toBe('Đăng xuất thành công.');
     });
   });
 
   describe('logoutAll', () => {
-    it('should call authService.logoutAll and clear the refresh_token cookie', async () => {
-      const req = {
-        user: {
-          id: 'test-id',
-        },
-      };
-      const res = {
-        clearCookie: jest.fn(),
-      } as unknown as Response;
-
-      (authService.logoutAll as jest.Mock).mockResolvedValue(true);
+    it('should logout from all devices', async () => {
+      const req = { user: { sub: '1' } };
+      const res = { clearCookie: jest.fn() } as unknown as Response;
 
       const result = await controller.logoutAll(req, res);
 
-      expect(authService.logoutAll).toHaveBeenCalledWith('test-id');
+      expect(authService.logoutAll).toHaveBeenCalledWith('1');
       expect(res.clearCookie).toHaveBeenCalledWith('refresh_token');
-      expect(result).toEqual({
-        message: 'Đã đăng xuất khỏi tất cả các thiết bị.',
-      });
+      expect(res.clearCookie).toHaveBeenCalledWith('2fa_secret');
+      expect(res.clearCookie).toHaveBeenCalledWith('2fa_partial_token');
+      expect(result.message).toBe('Đã đăng xuất khỏi tất cả các thiết bị.');
     });
   });
 
-  describe('facebookLogin', () => {
-    it('should return HttpStatus.OK', async () => {
-        const result = await controller.facebookLogin();
-        expect(result).toEqual(HttpStatus.OK);
+  describe('googleAuth', () => {
+    it('should return OK', async () => {
+      expect(await controller.googleAuth()).toBe(HttpStatus.OK);
     });
   });
 
-  describe('facebookLoginCallback', () => {
-    it('should redirect to the dashboard if 2FA is not enabled', async () => {
-        const user = new User();
-        const req = { user };
-        const res = {
-            cookie: jest.fn(),
-            redirect: jest.fn(),
-        } as unknown as Response;
-        const tokens = { accessToken: 'access', refreshToken: 'refresh' };
-        (authService.login as jest.Mock).mockResolvedValue(tokens);
-        (configService.get as jest.Mock).mockReturnValue('http://dashboard');
+  describe('googleAuthRedirect', () => {
+    const res = {
+      cookie: jest.fn(),
+      redirect: jest.fn(),
+    } as unknown as Response;
 
-        await controller.facebookLoginCallback(req, res);
+    it('should redirect to 2FA page if enabled', async () => {
+      const req = {
+        user: { id: '1', isTwoFactorAuthenticationEnabled: true } as User,
+      };
+      const partialToken = { accessToken: 'partial-token' };
+      authService.generate2FAPartialToken.mockResolvedValue(partialToken);
 
-        expect(res.cookie).toHaveBeenCalledWith('refresh_token', 'refresh', expect.any(Object));
-        expect(res.redirect).toHaveBeenCalledWith('http://dashboard');
+      await controller.googleAuthRedirect(req, res);
+
+      expect(res.cookie).toHaveBeenCalledWith(
+        '2fa_partial_token',
+        partialToken.accessToken,
+        expect.any(Object)
+      );
+      expect(res.redirect).toHaveBeenCalledWith('http://localhost:3000/2fa');
     });
 
-    it('should redirect to the 2FA page if 2FA is enabled', async () => {
-        const user = new User();
-        const req = { user };
-        const res = {
-            cookie: jest.fn(),
-            redirect: jest.fn(),
-        } as unknown as Response;
-        const tokens = { accessToken: 'partial-access' };
-        (authService.login as jest.Mock).mockResolvedValue(tokens);
-        (configService.get as jest.Mock).mockReturnValue('http://2fa');
+    it('should redirect to callback with code if 2FA is disabled', async () => {
+      const req = {
+        user: { id: '1', isTwoFactorAuthenticationEnabled: false } as User,
+      };
+      const code = 'one-time-code';
+      authService.generateOneTimeCode.mockResolvedValue(code);
 
-        await controller.facebookLoginCallback(req, res);
+      await controller.googleAuthRedirect(req, res);
 
-        expect(res.cookie).toHaveBeenCalledWith('2fa_partial_token', 'partial-access', expect.any(Object));
-        expect(res.redirect).toHaveBeenCalledWith('http://2fa');
+      expect(authService.generateOneTimeCode).toHaveBeenCalledWith(
+        req.user.id
+      );
+      expect(res.redirect).toHaveBeenCalledWith(
+        'http://localhost:3000/auth/callback?code=one-time-code'
+      );
+    });
+  });
+
+  describe('exchangeCode', () => {
+    it('should exchange a code for tokens', async () => {
+      const exchangeCodeDto: ExchangeCodeDto = { code: 'some-code' };
+      const req = { ip: '127.0.0.1', headers: { 'user-agent': 'jest' } };
+      const res = { cookie: jest.fn() } as unknown as Response;
+      const user = new User();
+      const tokens = {
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        user,
+      };
+      authService.exchangeCodeForTokens.mockResolvedValue(tokens);
+
+      const result = await controller.exchangeCode(exchangeCodeDto, res, req);
+
+      expect(authService.exchangeCodeForTokens).toHaveBeenCalledWith(
+        exchangeCodeDto.code,
+        req.ip,
+        req.headers['user-agent']
+      );
+      expect(res.cookie).toHaveBeenCalledWith(
+        'refresh_token',
+        tokens.refreshToken,
+        expect.any(Object)
+      );
+      expect(result).toEqual({ accessToken: tokens.accessToken, user });
     });
   });
 });

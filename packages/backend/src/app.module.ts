@@ -33,6 +33,7 @@ import { MailModule } from './mail/mail.module';
 import { APP_GUARD } from '@nestjs/core';
 import {
   Conversation,
+  EmailChangeRequest,
   Invitation,
   Message,
   Project,
@@ -42,10 +43,13 @@ import {
   User,
   UserIdentity,
   Visitor,
-} from '@social-commerce/shared';
+} from '@live-chat/shared';
+
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
@@ -79,6 +83,7 @@ import {
         database: configService.get<string>('PSQL_DATABASE') || 'your_database',
         entities: [
           Conversation,
+          EmailChangeRequest,
           Invitation,
           Message,
           Project,

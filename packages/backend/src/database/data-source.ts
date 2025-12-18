@@ -11,7 +11,8 @@ import {
   User,
   UserIdentity,
   Visitor,
-} from '@social-commerce/shared';
+  EmailChangeRequest,
+} from '@live-chat/shared';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import * as dotenv from 'dotenv';
 import { ConfigService } from '@nestjs/config';
@@ -40,6 +41,7 @@ export const AppDataSource = new DataSource({
     User,
     UserIdentity,
     Visitor,
+    EmailChangeRequest,
   ],
   migrations: ['src/database/migrations/*.ts'],
   namingStrategy: new SnakeNamingStrategy(),

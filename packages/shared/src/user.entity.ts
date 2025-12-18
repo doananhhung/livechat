@@ -95,3 +95,11 @@ export class User {
   @UpdateDateColumn({ type: "timestamptz" })
   updatedAt: Date;
 }
+
+/**
+ * User response type - excludes sensitive fields and adds computed properties
+ * This is what the API returns to clients
+ */
+export type UserResponse = Omit<User, "passwordHash"> & {
+  hasPassword: boolean;
+};

@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <script>
+    // Load head (meta + links)
+    fetch('../shared/head.html')
+      .then(r => r.text())
+      .then(html => {
+        document.head.insertAdjacentHTML('afterbegin', html);
+      });
+    
+    // Load styles
+    fetch('../shared/styles.html')
+      .then(r => r.text())
+      .then(html => {
+        document.head.insertAdjacentHTML('beforeend', html);
+      });
+  </script>
+  <title>Chương 3: Mã Hóa Dữ Liệu</title>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <section>
+        <h1 class="chapter-title">Chương 3: Mã Hóa Dữ Liệu</h1>
+      </section>
+
+      <!-- 7 slides về Data Encryption -->
+             <!-- Chương 3: Mã hóa Dữ liệu -->
+      <section>
+        <section>
+          <h1 class="chapter-title">Chương 3: Mã Hóa Dữ Liệu</h1>
+          <p class="subtitle">(Data Encryption)</p>
+        </section>
+
+        <!-- Slide 1: Hashing vs. Encryption -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 12.07V21.93a.07.07 0 0 0 .07.07h6.86a.07.07 0 0 0 .07-.07V12.07a.07.07 0 0 0-.07-.07H9.07a.07.07 0 0 0-.07.07Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.5 2h-2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.5 5.5H16a2 2 0 0 1 2 2v4.5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.5 5.5H8a2 2 0 0 0-2 2v4.5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Hashing vs. Encryption</h2>
+                    </div>
+                    <div class="right-column">
+                        <div style="display: flex; justify-content: space-around; gap: 20px;">
+                            <div style="flex: 1; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                                <h4>🔒 Hashing (Bcrypt)</h4>
+                                <p style="margin-top: 10px;"><strong>Một chiều</strong> - Không thể đảo ngược</p>
+                                <p style="font-size: 0.85em; opacity: 0.8;">Xác minh mật khẩu, tokens</p>
+                            </div>
+                            <div style="flex: 1; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                                <h4>🔐 Encryption (AES-256-GCM)</h4>
+                                <p style="margin-top: 10px;"><strong>Hai chiều</strong> - Mã hóa & Giải mã</p>
+                                <p style="font-size: 0.85em; opacity: 0.8;">Lưu trữ OAuth tokens, 2FA secrets</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                Hai kỹ thuật chính để bảo vệ dữ liệu trong database. Hashing với bcrypt cho mật khẩu - một chiều, không thể đảo ngược, dùng salt rounds = 12. Encryption với AES-256-GCM cho dữ liệu cần đọc lại như OAuth tokens và 2FA secrets.
+            </aside>
+        </section>
+
+        <!-- Slide 2: Data at Rest - Bcrypt Hashing -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke-width="1.5"/><path d="M12 8v8" stroke-width="1.5" stroke-linecap="round"/><path d="M15 11h-3M12 15h3" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <h2>Data at Rest: Bcrypt Hashing</h2>
+                    </div>
+                    <div class="right-column">
+                        <p>Bảo vệ dữ liệu bằng băm một chiều - <strong>không thể đảo ngược</strong>.</p>
+                        <table style="font-size: 0.8em; margin-top: 15px;">
+                            <thead><tr><th>Dữ liệu</th><th>Vị trí</th><th>Lý do</th></tr></thead>
+                            <tbody>
+                                <tr><td>Mật khẩu</td><td><code>users.passwordHash</code></td><td>Chỉ cần xác minh, không đọc lại</td></tr>
+                                <tr><td>Refresh Token</td><td><code>refresh_tokens.hashedToken</code></td><td>Ngăn chặn session hijacking</td></tr>
+                                <tr><td>2FA Recovery Codes</td><td><code>two_factor_recovery_codes.hashedCode</code></td><td>Dùng một lần, chỉ so sánh</td></tr>
+                            </tbody>
+                        </table>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(100,200,255,0.1); border-left: 3px solid #64c8ff; border-radius: 4px;">
+                            <p style="font-size: 0.85em; margin: 0;">⚙️ <strong>Salt Rounds = 12</strong> → 2<sup>12</sup> iterations (chống brute-force)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                Bcrypt hashing được dùng cho tất cả dữ liệu chỉ cần xác minh. Mật khẩu được hash với salt rounds = 12 - nghĩa là 4096 iterations, đủ chậm để chống brute-force nhưng không ảnh hưởng user experience. Refresh tokens cũng được hash trước khi lưu DB - nếu DB bị breach, attacker không thể dùng tokens. Recovery codes tương tự - hash và chỉ so sánh khi cần.
+            </aside>
+        </section>
+
+        <!-- Slide 3: Data at Rest - AES-256-GCM Encryption -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Data at Rest: AES-256-GCM</h2>
+                    </div>
+                    <div class="right-column">
+                        <p>Mã hóa đối xứng cho dữ liệu cần <strong>đọc lại</strong>.</p>
+                        <table style="font-size: 0.8em; margin-top: 15px;">
+                            <thead><tr><th>Dữ liệu</th><th>Vị trí</th><th>Lý do</th></tr></thead>
+                            <tbody>
+                                <tr><td><strong>2FA Secret</strong></td><td><code>users.twoFactorAuthenticationSecret</code></td><td>Cần giải mã để xác minh TOTP</td></tr>
+                                <tr><td><strong>OAuth Tokens</strong></td><td><code>user_identities.accessToken</code></td><td>Cần giải mã để gọi Google API</td></tr>
+                            </tbody>
+                        </table>
+                        <div style="margin-top: 15px; padding: 12px; background: rgba(255,200,100,0.1); border-left: 3px solid #ffc864; border-radius: 4px;">
+                            <p style="font-size: 0.85em; margin: 0;"><strong>EncryptionService</strong></p>
+                            <ul style="font-size: 0.8em; margin: 5px 0 0 20px; line-height: 1.6;">
+                                <li>256-bit key từ <code>ENCRYPTION_KEY</code></li>
+                                <li>Random IV (16 bytes) cho mỗi lần mã hóa</li>
+                                <li>Auth Tag (16 bytes) - đảm bảo tính toàn vẹn</li>
+                                <li>Format: <code>IV:AuthTag:Encrypted</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                AES-256-GCM được dùng cho dữ liệu cần giải mã. 2FA Secret - khi user nhập TOTP code, ta cần giải mã secret để verify. OAuth tokens - khi cần gọi Google API thay mặt user, ta giải mã access token. GCM mode rất quan trọng - nó cung cấp Authenticated Encryption, nghĩa là vừa bảo mật vừa đảm bảo dữ liệu không bị thay đổi. Mỗi lần mã hóa dùng IV ngẫu nhiên mới - cùng plaintext sẽ tạo ra ciphertext khác nhau.
+            </aside>
+        </section>
+
+        <!-- Slide 4: EncryptionService Detail -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 12h6M9 16h6M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>EncryptionService</h2>
+                    </div>
+                    <div class="right-column">
+                        <p>Dịch vụ mã hóa trung tâm của hệ thống.</p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+                            <div style="padding: 12px; background: rgba(100,200,255,0.1); border-radius: 6px;">
+                                <h4 style="margin: 0 0 8px 0;">🔐 Encrypt</h4>
+                                <ol style="font-size: 0.8em; margin: 0; padding-left: 20px; line-height: 1.6;">
+                                    <li>Generate random IV</li>
+                                    <li>Create cipher với key + IV</li>
+                                    <li>Encrypt plaintext</li>
+                                    <li>Get auth tag từ cipher</li>
+                                    <li>Return <code>IV:Tag:Encrypted</code></li>
+                                </ol>
+                            </div>
+                            <div style="padding: 12px; background: rgba(255,200,100,0.1); border-radius: 6px;">
+                                <h4 style="margin: 0 0 8px 0;">🔓 Decrypt</h4>
+                                <ol style="font-size: 0.8em; margin: 0; padding-left: 20px; line-height: 1.6;">
+                                    <li>Parse <code>IV:Tag:Encrypted</code></li>
+                                    <li>Create decipher với key + IV</li>
+                                    <li>Set auth tag</li>
+                                    <li>Decrypt ciphertext</li>
+                                    <li>Return plaintext</li>
+                                </ol>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(255,100,100,0.1); border-left: 3px solid #ff6464; border-radius: 4px;">
+                            <p style="font-size: 0.85em; margin: 0;">⚠️ <strong>Key Management:</strong> <code>ENCRYPTION_KEY</code> phải 32 ký tự, không commit vào Git</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                EncryptionService là core service xử lý mã hóa/giải mã. Constructor validates ENCRYPTION_KEY phải đúng 32 characters - nếu không đúng, app không start. Encrypt flow: tạo random IV mới cho mỗi lần encrypt, tạo cipher với algorithm aes-256-gcm, encrypt data, lấy auth tag, combine thành format IV:Tag:Encrypted. Decrypt ngược lại: parse chuỗi, tạo decipher, set auth tag để verify integrity, decrypt. Nếu data bị tamper, auth tag validation sẽ fail.
+            </aside>
+        </section>
+
+        <!-- Slide 5: Random Tokens -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke-width="1.5"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Random Tokens</h2>
+                    </div>
+                    <div class="right-column">
+                        <p>Tokens ngẫu nhiên cho các hành động tạm thời.</p>
+                        <table style="font-size: 0.8em; margin-top: 15px;">
+                            <thead><tr><th>Token Type</th><th>Storage</th><th>TTL</th></tr></thead>
+                            <tbody>
+                                <tr><td>Email Verification</td><td>Redis</td><td>15 phút</td></tr>
+                                <tr><td>Password Reset</td><td>Redis</td><td>15 phút</td></tr>
+                                <tr><td>Email Change</td><td>Redis</td><td>15 phút</td></tr>
+                            </tbody>
+                        </table>
+                        <div style="margin-top: 15px; padding: 12px; background: rgba(100,255,200,0.1); border-left: 3px solid #64ffc8; border-radius: 4px;">
+                            <p style="font-size: 0.85em; margin: 0;"><strong>Đặc điểm:</strong></p>
+                            <ul style="font-size: 0.8em; margin: 5px 0 0 20px; line-height: 1.6;">
+                                <li><code>crypto.randomBytes(32).toString('hex')</code> → 64 chars</li>
+                                <li>256 bits entropy - không thể brute-force</li>
+                                <li>Dùng một lần - xóa sau khi verify</li>
+                                <li>Tự động hết hạn với Redis TTL</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                Random tokens được dùng cho các hành động tạm thời. Generate bằng crypto.randomBytes - cryptographically random, 256 bits entropy. Lưu trong Redis với TTL tự động - không pollution main database. Email verification, password reset, email change - tất cả đều dùng pattern này. One-time use - sau khi verify, token bị xóa ngay. Hết 15 phút, Redis tự động xóa. Safe cho URLs vì dùng hex encoding.
+            </aside>
+        </section>
+
+        <!-- Slide 6: Data in Transit -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.5 16H4.5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h15a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2Z" stroke-width="1.5"/><path d="M12 16v2a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-2m10 0v2a2 2 0 0 1-2 2h-2" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <h2>Data in Transit</h2>
+                    </div>
+                    <div class="right-column">
+                        <p>Bảo vệ dữ liệu khi truyền qua mạng.</p>
+                        <div class="mermaid">
+                            graph LR
+                                User[👤 User] -->|HTTPS/WSS| LB[Load Balancer]
+                                LB -->|TLS Termination| LB
+                                LB -->|HTTP| App[🖥️ NestJS App]
+                                
+                                style User fill:#64c8ff,stroke:#333,stroke-width:2px
+                                style LB fill:#ffc864,stroke:#333,stroke-width:2px
+                                style App fill:#64ffc8,stroke:#333,stroke-width:2px
+                        </div>
+                        <div style="margin-top: 15px; display: flex; gap: 10px;">
+                            <div style="flex: 1; padding: 10px; background: rgba(100,200,255,0.1); border-radius: 6px;">
+                                <p style="font-size: 0.85em; margin: 0;"><strong>HTTPS:</strong> REST API</p>
+                            </div>
+                            <div style="flex: 1; padding: 10px; background: rgba(255,200,100,0.1); border-radius: 6px;">
+                                <p style="font-size: 0.85em; margin: 0;"><strong>WSS:</strong> WebSocket</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                Data in transit được bảo vệ bằng TLS/SSL. HTTPS cho REST API, WSS cho WebSocket. Trong production, TLS termination xảy ra ở Load Balancer hoặc reverse proxy - Nginx, CloudFlare. User kết nối qua HTTPS/WSS, load balancer decrypt và forward qua HTTP trong mạng nội bộ an toàn. NestJS app chỉ cần chạy HTTP và trust infrastructure đã handle encryption. TLS 1.2 hoặc 1.3, strong ciphers, valid certificates.
+            </aside>
+        </section>
+
+        <!-- Slide 7: Cookie Security -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" stroke-width="1.5"/><path d="M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 8h.01M16 16h.01" stroke-width="2" stroke-linecap="round"/></svg>
+                        <h2>Cookie Security</h2>
+                    </div>
+                    <div class="right-column">
+                        <p>Bảo vệ tokens trong HttpOnly cookies.</p>
+                        <table style="font-size: 0.8em; margin-top: 15px;">
+                            <thead><tr><th>Attribute</th><th>Value</th><th>Purpose</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>httpOnly</code></td><td><code>true</code></td><td>Chống XSS - không access từ JS</td></tr>
+                                <tr><td><code>secure</code></td><td><code>true</code></td><td>Chỉ gửi qua HTTPS</td></tr>
+                                <tr><td><code>sameSite</code></td><td><code>none/lax</code></td><td>Chống CSRF attacks</td></tr>
+                            </tbody>
+                        </table>
+                        <div style="margin-top: 15px; padding: 12px; background: rgba(100,200,255,0.1); border-left: 3px solid #64c8ff; border-radius: 4px;">
+                            <p style="font-size: 0.85em; margin: 0;"><strong>Cookies được bảo vệ:</strong></p>
+                            <ul style="font-size: 0.8em; margin: 5px 0 0 20px; line-height: 1.6;">
+                                <li><code>refresh_token</code> - 30 ngày</li>
+                                <li><code>2fa_partial_token</code> - 5 phút</li>
+                                <li><code>2fa_secret</code> - 5 phút (tạm thời)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                HttpOnly cookies là layer bảo vệ quan trọng cho tokens. HttpOnly true nghĩa là JavaScript không thể access - chống XSS. Secure true nghĩa là chỉ gửi qua HTTPS - chống man-in-the-middle. SameSite none cho cross-origin requests nhưng phải có secure, lax cho same-site. Refresh token lưu 30 ngày - long-lived. 2FA partial token chỉ 5 phút - chỉ dùng để verify OTP. 2FA secret temporary cookie - chỉ trong quá trình setup 2FA.
+            </aside>
+        </section>
+      </section>
+
+    </div>
+  </div>
+  
+  <script>
+    // Load scripts sau khi DOM ready
+    window.addEventListener('DOMContentLoaded', () => {
+      fetch('../shared/scripts.html')
+        .then(r => r.text())
+        .then(html => {
+          document.body.insertAdjacentHTML('beforeend', html);
+        });
+    });
+  </script>
+
+</body>
+</html>

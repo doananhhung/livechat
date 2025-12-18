@@ -19,6 +19,7 @@ interface ChatWindowProps {
 export const ChatWindow = (props: ChatWindowProps) => {
   const windowRef = useRef<HTMLDivElement>(null);
   const previousOpenState = useRef(props.isOpen);
+  const keydownHandlerRef = useRef<((e: KeyboardEvent) => void) | null>(null);
 
   // Focus management for accessibility
   useEffect(() => {
@@ -31,16 +32,27 @@ export const ChatWindow = (props: ChatWindowProps) => {
 
   // Keyboard handler for ESC key
   useEffect(() => {
-    if (!props.isOpen) return;
+    if (!props.isOpen) {
+      // Cleanup handler if window is closed
+      if (keydownHandlerRef.current) {
+        window.removeEventListener("keydown", keydownHandlerRef.current);
+        keydownHandlerRef.current = null;
+      }
+      return;
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         props.onClose();
       }
     };
+    keydownHandlerRef.current = handleKeyDown;
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      keydownHandlerRef.current = null;
+    };
   }, [props.isOpen, props.onClose]);
 
   if (!props.isOpen) {

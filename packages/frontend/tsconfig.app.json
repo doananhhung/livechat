@@ -12,8 +12,8 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "paths": {
-      "@social-commerce/shared": ["../shared/src"],
-      "@social-commerce/shared/*": ["../shared/src/*"]
+      "@live-chat/shared": ["../shared/src"],
+      "@live-chat/shared/*": ["../shared/src/*"]
     }
   },
   "include": ["src"]

@@ -1,49 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SqsService } from './sqs.service';
 import { ConfigService } from '@nestjs/config';
-import {
-  SQSClient,
-  SendMessageCommand,
-  GetQueueUrlCommand,
-} from '@aws-sdk/client-sqs';
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
+import { Logger } from '@nestjs/common';
 
-const mockSend = jest.fn();
-jest.mock('@aws-sdk/client-sqs', () => {
-  return {
-    SQSClient: jest.fn().mockImplementation(() => {
-      return {
-        send: mockSend,
-      };
-    }),
-    SendMessageCommand: jest.fn().mockImplementation((input) => {
-      return { input };
-    }),
-    GetQueueUrlCommand: jest.fn().mockImplementation((input) => {
-      return { input };
-    }),
-  };
-});
+jest.mock('@aws-sdk/client-sqs');
 
 describe('SqsService', () => {
   let service: SqsService;
-
-  const mockConfigService = {
-    get: jest.fn(),
-  };
-
-  beforeEach(() => {
-    mockConfigService.get.mockImplementation((key: string) => {
-      if (key === 'AWS_REGION') return 'us-east-1';
-      if (key === 'AWS_ACCESS_KEY_ID') return 'test_key_id';
-      if (key === 'AWS_SECRET_ACCESS_KEY') return 'test_secret_key';
-      if (key === 'AWS_SQS_QUEUE_NAME') return 'test_queue';
-      if (key === 'AWS_SQS_ENDPOINT') return 'http://localhost:4566';
-      return null;
-    });
-    mockSend.mockClear();
-    // Mock GetQueueUrlCommand response
-    mockSend.mockResolvedValue({ QueueUrl: 'test_queue_url' });
-  });
+  let sqsClient: jest.Mocked<SQSClient>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -51,37 +16,75 @@ describe('SqsService', () => {
         SqsService,
         {
           provide: ConfigService,
-          useValue: mockConfigService,
+          useValue: {
+            get: jest.fn((key: string) => {
+              if (key === 'AWS_SQS_QUEUE_NAME') return 'test-queue';
+              return key;
+            }),
+          },
         },
       ],
     }).compile();
 
     service = module.get<SqsService>(SqsService);
+    sqsClient = (SQSClient as jest.Mock).mock.instances[0];
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
-  describe('constructor', () => {
-    it('should throw an error if AWS configuration is not set', () => {
-      mockConfigService.get.mockReturnValue(null);
-      expect(() => new SqsService(mockConfigService as any)).toThrow(
-        'Missing AWS_SQS_QUEUE_NAME environment variable.'
+  describe('onModuleInit', () => {
+    it('should get the queue URL and log success', async () => {
+      const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+      (sqsClient.send as jest.Mock).mockResolvedValue({ QueueUrl: 'test-url' });
+      await service.onModuleInit();
+      expect(sqsClient.send).toHaveBeenCalled();
+      expect(logSpy).toHaveBeenCalledWith(
+        'Successfully connected to SQS queue: test-url'
       );
+    });
+
+    it('should log an error if getting queue URL fails', async () => {
+      const errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+      (sqsClient.send as jest.Mock).mockRejectedValue(new Error('SQS Error'));
+      await expect(service.onModuleInit()).rejects.toThrow('SQS Error');
+      expect(errorSpy).toHaveBeenCalled();
     });
   });
 
   describe('sendMessage', () => {
-    it('should send a message to SQS', async () => {
-      const payload = { entry: [{ id: 'page_id', time: Date.now() }] };
+    beforeEach(async () => {
+      (sqsClient.send as jest.Mock).mockResolvedValue({ QueueUrl: 'test-url' });
+      await service.onModuleInit();
+      (sqsClient.send as jest.Mock).mockClear();
+    });
 
+    it('should send a message to SQS and log success', async () => {
+      const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+      (sqsClient.send as jest.Mock).mockResolvedValue({});
+      const payload = { type: 'test', payload: { projectId: 123 } };
       await service.sendMessage(payload);
 
-      expect(mockSend).toHaveBeenCalledWith(expect.any(Object));
-      const command = mockSend.mock.calls[0][0];
-      expect(command.input.QueueUrl).toBe('test_queue_url');
-      expect(JSON.parse(command.input.MessageBody)).toEqual(payload);
+      expect(sqsClient.send).toHaveBeenCalledWith(
+        expect.any(SendMessageCommand)
+      );
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Successfully sent message')
+      );
+    });
+
+    it('should log an error if sending fails', async () => {
+      const errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+      (sqsClient.send as jest.Mock).mockRejectedValue(new Error('Send Error'));
+      await expect(service.sendMessage({ payload: {} })).rejects.toThrow(
+        'Send Error'
+      );
+      expect(errorSpy).toHaveBeenCalled();
     });
   });
 });

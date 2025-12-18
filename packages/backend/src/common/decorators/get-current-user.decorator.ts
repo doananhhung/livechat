@@ -1,6 +1,6 @@
 // src/common/decorators/get-current-user.decorator.ts
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { User } from '@social-commerce/shared';
+import { User } from '@live-chat/shared';
 
 /**
  * Custom decorator to extract the user object from the request.

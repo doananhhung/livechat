@@ -22,7 +22,7 @@ import type {
   CreateInvitationDto,
   Invitation,
   ProjectRole,
-} from "@social-commerce/shared";
+} from "@live-chat/shared";
 import { useIsProjectManager } from "../../hooks/useProjectRole";
 import { Spinner } from "../../components/ui/Spinner";
 

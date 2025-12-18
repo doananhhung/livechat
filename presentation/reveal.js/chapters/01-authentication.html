@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <script>
+    // Load head (meta + links)
+    fetch('../shared/head.html')
+      .then(r => r.text())
+      .then(html => {
+        document.head.insertAdjacentHTML('afterbegin', html);
+      });
+    
+    // Load styles
+    fetch('../shared/styles.html')
+      .then(r => r.text())
+      .then(html => {
+        document.head.insertAdjacentHTML('beforeend', html);
+      });
+  </script>
+  <title>Chương 1: Xác thực</title>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <!-- Slide giới thiệu chương -->
+      <section>
+        <h1 class="chapter-title">Chương 1: Xác thực</h1>
+      </section>
+
+            <!-- Chương 1: Xác thực -->
+      <section>
+        <section>
+          <h1 class="chapter-title">Chương 1: Xác thực</h1>
+          <p class="subtitle">(Authentication)</p>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 8V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 12H3m0 0 3-3m-3 3 3 3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Email & Mật khẩu</h2>
+                    </div>
+                    <div class="right-column">
+                        <p>Nền tảng cho quá trình đăng ký và đăng nhập an toàn.</p>
+                        <ul>
+                            <li><strong>Đăng ký:</strong> Tạo tài khoản mới với mật khẩu được băm an toàn và yêu cầu xác minh email.</li>
+                            <li><strong>Đăng nhập:</strong> Xác minh người dùng qua `bcrypt.compare` và kiểm tra trạng thái tài khoản.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 12h1M12 12h1M8 12h1M15 16h1M11 16h1M7 16h1M16 8h1M12 8h1M8 8h1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 12c0-4.418 4.418-8 10-8s10 3.582 10 8-4.418 8-10 8-10-3.582-10-8Z" stroke-width="1.5"/></svg>
+                        <h2>Luồng Đăng ký An toàn</h2>
+                    </div>
+                    <div class="right-column">
+                        <div class="mermaid">
+                            sequenceDiagram
+                                actor User as Người dùng
+                                participant Client
+                                participant Backend
+                                participant DB as Cơ sở dữ liệu
+                                participant Redis
+                                participant MailService as Dịch vụ Mail
+                                User->>Client: Điền thông tin (tên, email, mật khẩu)
+                                Client->>Backend: POST /auth/register
+                                activate Backend
+                                Backend->>DB: Kiểm tra email đã tồn tại chưa?
+                                alt Email đã tồn tại
+                                    DB-->>Backend: Trả về người dùng hiện có
+                                    Backend-->>Client: 409 Conflict (Email đã được sử dụng)
+                                else Email chưa tồn tại
+                                    DB-->>Backend: null
+                                    Backend->>Backend: Băm mật khẩu (bcrypt)
+                                    Backend->>DB: Tạo người dùng mới (isEmailVerified: false)
+                                    DB-->>Backend: Trả về người dùng mới
+                                    Backend->>Backend: Tạo token xác thực duy nhất
+                                    Backend->>Redis: Lưu token với ID người dùng (TTL 15 phút)
+                                    Redis-->>Backend: OK
+                                    Backend->>MailService: Gửi email xác thực
+                                    MailService-->>Backend: OK
+                                    Backend-->>Client: 201 Created (Đăng ký thành công)
+                                end
+                                deactivate Backend
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              - Đầu tiên là kiểm tra email có duy nhất không để tránh trùng lặp.
+              - Tiếp theo, và quan trọng nhất, là băm mật khẩu. Chúng ta dùng `bcrypt` với cost factor là 12. Đây là một tiêu chuẩn an toàn, đủ chậm để chống lại tấn công brute-force.
+              - Sau đó, tài khoản được tạo nhưng ở trạng thái chưa xác thực (`isEmailVerified: false`).
+              - Một token ngẫu nhiên, duy nhất được tạo và lưu vào Redis, có thời gian hết hạn là 15 phút. Việc lưu vào Redis nhanh và hiệu quả cho các token tạm thời.
+              - Cuối cùng, gửi email cho người dùng. Họ phải nhấp vào link trong vòng 15 phút để kích hoạt tài khoản.
+            </aside>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 12h1M12 12h1M8 12h1M15 16h1M11 16h1M7 16h1M16 8h1M12 8h1M8 8h1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 12c0-4.418 4.418-8 10-8s10 3.582 10 8-4.418 8-10 8-10-3.582-10-8Z" stroke-width="1.5"/></svg>
+                        <h2>Luồng Đăng nhập An toàn</h2>
+                    </div>
+                    <div class="right-column">
+                        <div class="mermaid">
+                            sequenceDiagram
+                                actor User as Người dùng
+                                participant Client
+                                participant Backend
+                                participant DB as Cơ sở dữ liệu
+                                User->>Client: Nhập email & mật khẩu
+                                Client->>Backend: POST /auth/login
+                                activate Backend
+                                Backend->>Backend: LocalAuthGuard xác thực thông tin
+                                activate Backend
+                                Backend->>DB: Tìm người dùng theo email
+                                DB-->>Backend: Trả về người dùng với mật khẩu đã băm
+                                Backend->>Backend: bcrypt.compare(password, hash)
+                                alt Thông tin chính xác
+                                    Backend->>DB: Kiểm tra isEmailVerified & không bị đình chỉ
+                                    DB-->>Backend: Trạng thái người dùng OK
+                                    alt 2FA được bật
+                                        Backend-->>Client: 200 OK (yêu cầu 2FA), đặt 2fa_partial_token
+                                    else 2FA bị tắt
+                                        Backend->>Backend: Tạo Access & Refresh Token
+                                        Backend->>DB: Lưu trữ Refresh Token đã băm
+                                        Backend-->>Client: 200 OK (cấp tokens)
+                                    end
+                                else Thông tin không chính xác
+                                    Backend-->>Client: 401 Unauthorized
+                                end
+                                deactivate Backend
+                                deactivate Backend
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              - Luồng này được bảo vệ bởi một Guard của NestJS là `LocalAuthGuard`.
+              - Nó sẽ dùng hàm `bcrypt.compare` để so sánh mật khẩu người dùng nhập với hash trong DB. Cách này an toàn vì không bao giờ giải mã mật khẩu và chống được timing attacks.
+              - Nếu thông tin đăng nhập đúng, chúng ta phải kiểm tra thêm 2 điều quan trọng: email đã được xác thực chưa (`isEmailVerified`), và tài khoản có bị admin đình chỉ (`suspended`) không.
+              - Nếu mọi thứ đều ổn, hệ thống sẽ kiểm tra xem người dùng có bật 2FA hay không để quyết định trả về token đầy đủ hay chỉ là token tạm thời cho bước 2FA.
+            </aside>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 12a2 2 0 1 0-4 0 2 2 0 0 0 4 0Z" stroke-width="1.5"/><path d="M21.838 10.691C21.258 9.53 19.643 8 16.5 8c-2.43 0-4.214.975-5.5 2.118M12 13.882C10.786 15.025 8.93 16 6.5 16c-3.143 0-4.758-1.53-5.338-2.691A1.5 1.5 0 0 1 2.162 11h19.676a1.5 1.5 0 0 1 1.002 2.691C22.258 14.47 20.643 16 17.5 16c-2.43 0-4.214-.975-5.5-2.118" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <h2>Quản lý Phiên với JWT</h2>
+                    </div>
+                    <div class="right-column">
+                        <ul>
+                            <li>Xác thực phi trạng thái (stateless) bằng JSON Web Tokens.</li>
+                            <li>Access Token có thời hạn ngắn cho các yêu cầu API.</li>
+                            <li>Refresh Token an toàn, có thời hạn dài để tạo phiên mới.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 16.493V19.5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-3.007" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.5 16.493a3.5 3.5 0 1 1 3 0" stroke-width="1.5"/><path d="M12 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 4v2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Cấu trúc & Lưu trữ Token</h2>
+                    </div>
+                    <div class="right-column">
+                        <ul>
+                            <li><strong>Access Token (15 phút)</strong>
+                              <ul><li>Chứa `userId` và `email`.</li><li>Được gửi trong header `Authorization: Bearer`.</li></ul>
+                            </li>
+                            <li><strong>Refresh Token (30 ngày)</strong>
+                              <ul><li>Chỉ chứa `userId`.</li><li>Được lưu trữ trong một cookie `HttpOnly` an toàn để chống lại các cuộc tấn công XSS.</li><li>Chỉ được sử dụng để lấy một access token mới.</li></ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+            <section>
+                <div class="slide-content-card">
+                    <div class="layout-container">
+                        <div class="left-column">
+                            <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.642 19.425 15 17.783m-6 0 1.642 1.642M12 6.217V12m0 0v5.783m0-5.783-4.243 4.243M12 12l4.243 4.243" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M21.121 14.121A8.962 8.962 0 0 1 12 21a8.962 8.962 0 0 1-9.121-6.879M2.879 9.879A8.962 8.962 0 0 1 12 3a8.962 8.962 0 0 1 9.121 6.879" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <h2>Bảo mật JWT</h2>
+                        </div>
+                        <div class="right-column">
+                            <p>Chúng tôi áp dụng nhiều lớp bảo vệ cho JWT để đảm bảo an toàn tối đa cho phiên đăng nhập của người dùng.</p>
+                            <ul>
+                                <li><strong>Xoay vòng (Rotation)</strong>: Ngăn chặn tấn công chiếm dụng lại token.</li>
+                                <li><strong>Thu hồi (Revocation)</strong>: Vô hiệu hóa ngay lập tức các phiên cũ.</li>
+                                <li><strong>Giới hạn Phiên (Session Limiting)</strong>: Giảm thiểu rủi ro lạm dụng tài khoản.</li>
+                                <li><strong>Dọn dẹp (Cleanup)</strong>: Duy trì hiệu suất và vệ sinh hệ thống.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section>
+                <h2>Bảo mật JWT: Xoay vòng & Thu hồi</h2>
+                <div style="display: flex; gap: 40px; align-items: flex-start;">
+                    <div style="flex: 1;">
+                        <h4>Xoay vòng Refresh Token</h4>
+                        <p style="font-size: 0.8em;">Mỗi khi một refresh token được sử dụng để lấy access token mới, token đó sẽ bị vô hiệu hóa và một refresh token hoàn toàn mới được cấp. Điều này đảm bảo rằng nếu một refresh token bị rò rỉ, nó chỉ có thể được sử dụng một lần, giảm thiểu đáng kể bề mặt tấn công.</p>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4>Thu hồi Token qua `tokensValidFrom`</h4>
+                        <p style="font-size: 0.8em;">Khi người dùng đổi mật khẩu hoặc "đăng xuất khỏi tất cả thiết bị", chúng ta cập nhật một trường `tokensValidFrom` trong DB. Mọi token được cấp trước thời điểm này sẽ không hợp lệ.</p>
+                        <pre><code class="typescript" data-trim data-noescape>
+                        // Trong quá trình xác thực token
+                        if (payload.iat < user.tokensValidFrom) {
+                          throw new UnauthorizedException("Token đã bị thu hồi.");
+                        }
+                        </code></pre>
+                    </div>
+                </div>
+            </section>
+            <section>
+                <h2>Bảo mật JWT: Giới hạn & Dọn dẹp</h2>
+                <div style="display: flex; gap: 40px; align-items: flex-start;">
+                    <div style="flex: 1;">
+                        <h4>Giới hạn Phiên đăng nhập</h4>
+                        <p style="font-size: 0.8em;">Hệ thống giới hạn mỗi người dùng chỉ có tối đa <strong>5 phiên đăng nhập</strong> (5 refresh token) hoạt động cùng lúc. Khi đăng nhập từ thiết bị thứ 6, phiên đăng nhập cũ nhất sẽ tự động bị hủy. Điều này giúp ngăn chặn việc lạm dụng tài khoản trên nhiều thiết bị.</p>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4>Dọn dẹp Token hết hạn</h4>
+                        <p style="font-size: 0.8em;">Một tác vụ tự động (cron job) chạy hàng ngày vào lúc 3:00 AM để xóa tất cả các refresh token đã hết hạn khỏi cơ sở dữ liệu. Việc này giúp giữ cho bảng `refresh_tokens` luôn sạch sẽ, tối ưu hóa hiệu suất truy vấn và đảm bảo vệ sinh hệ thống.</p>
+                    </div>
+                </div>
+            </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke-width="1.5"/><path d="M12 11.5v5M12 7.5v1" stroke-width="1.5" stroke-linecap="round"/><path d="M16.5 14.5c-.5-1-1.5-1.5-2.5-1.5s-2 .5-2.5 1.5" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <h2>Google OAuth 2.0</h2>
+                    </div>
+                    <div class="right-column">
+                        <p>Đăng nhập xã hội liền mạch và an toàn.</p>
+                        <ol>
+                            <li>Người dùng được chuyển hướng đến Google để xác thực.</li>
+                            <li>Google chuyển hướng trở lại với một mã ủy quyền (authorization code).</li>
+                            <li>Backend đổi mã để lấy hồ sơ người dùng, sau đó tìm hoặc tạo người dùng trong DB.</li>
+                            <li>Backend tạo một mã dùng một lần, chuyển về cho frontend để đổi lấy JWTs.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.5 14.5c-.5-1-1.5-1.5-2.5-1.5s-2 .5-2.5 1.5" stroke-width="1.5" stroke-linecap="round"/><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke-width="1.5"/><path d="M12 11.5v5M12 7.5v1" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <h2>Luồng Google OAuth 2.0</h2>
+                    </div>
+                    <div class="right-column">
+                        <div class="mermaid">
+                            sequenceDiagram
+                                actor User as Người dùng
+                                participant Browser as Trình duyệt
+                                participant Backend
+                                participant Google
+                                User->>Browser: Nhấp "Đăng nhập bằng Google"
+                                Browser->>Backend: GET /auth/google
+                                Backend->>Browser: 302 Chuyển hướng đến Google OAuth
+                                Browser->>Google: Người dùng xác thực & cấp quyền
+                                Google->>Browser: 302 Chuyển hướng đến /auth/google/callback?code=...
+                                Browser->>Backend: GET /auth/google/callback?code=...
+                                Backend->>Google: Trao đổi mã ủy quyền để lấy access token
+                                Google-->>Backend: Trả về Google Access Token & Hồ sơ
+                                Backend->>Backend: Xác thực hồ sơ, tìm hoặc tạo người dùng trong DB
+                                Backend->>Backend: Tạo mã dùng một lần (cho frontend)
+                                Backend->>Browser: 302 Chuyển hướng đến frontend_url?code=...
+                                Browser->>Backend: POST /auth/exchange-code với mã dùng một lần
+                                Backend->>Backend: Xác thực mã, tạo JWTs
+                                Backend-->>Browser: Trả về Access Token & đặt cookie Refresh Token
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              - Điểm mấu chốt ở đây là tách biệt luồng callback từ Google và luồng cấp token cho client.
+              - Sau khi backend nhận callback từ Google và xác thực người dùng, nó không trả về JWT ngay lập tức.
+              - Thay vào đó, nó tạo một mã dùng một lần (one-time code) và chuyển hướng người dùng về frontend với mã này.
+              - Frontend sau đó dùng mã này để gọi một endpoint khác, và lúc đó backend mới chính thức cấp JWT.
+              - Cách này an toàn hơn, tránh lộ token trên URL và tuân thủ chuẩn OAuth2.
+            </aside>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 10a1 1 0 1 0-2 0 1 1 0 0 0 2 0Z" stroke-width="1.5"/><path d="M2.48 13.5h19.04M12 2.5v19" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <h2>Bảo mật Liên kết Tài khoản</h2>
+                    </div>
+                    <div class="right-column">
+                        <ul>
+                            <li>Người dùng đã xác thực có thể liên kết tài khoản Google của họ trong phần cài đặt.</li>
+                            <li><strong>Kiểm tra Bảo mật:</strong> Hệ thống sẽ từ chối nếu tài khoản Google đó đã được liên kết với một người dùng khác.</li>
+                            <li><strong>Yêu cầu Hủy liên kết:</strong> Để tránh bị khóa tài khoản (không thể đăng nhập), người dùng phải đặt mật khẩu cho tài khoản của họ *trước khi* được phép hủy liên kết với Google.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 13V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 16H4m0 0 3-3m-3 3 3 3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Xác thực hai yếu tố (2FA)</h2>
+                    </div>
+                    <div class="right-column">
+                        <p>Thêm một lớp bảo mật bổ sung dựa trên TOTP (Time-based One-Time Password).</p>
+                        <ul>
+                            <li>Người dùng liên kết tài khoản với một ứng dụng xác thực (ví dụ: Google Authenticator).</li>
+                            <li>Sau khi đăng nhập bằng mật khẩu, họ phải cung cấp một mã 6 chữ số thay đổi theo thời gian.</li>
+                            <li>Cung cấp 10 mã khôi phục dùng một lần (đã được băm) phòng trường hợp mất thiết bị.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 13V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 16H4m0 0 3-3m-3 3 3 3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Luồng Thiết lập 2FA</h2>
+                    </div>
+                    <div class="right-column">
+                        <div class="mermaid">
+                            sequenceDiagram
+                                actor User
+                                participant Client
+                                participant Backend
+                                User->>Client: Yêu cầu bật 2FA
+                                Client->>Backend: POST /2fa/generate
+                                Backend->>Backend: Tạo secret, trả về QR code
+                                Backend-->>Client: Gửi QR code URL
+                                User->>Client: Quét QR, nhập mã 6 số
+                                Client->>Backend: POST /2fa/turn-on
+                                Backend->>Backend: Xác thực mã
+                                alt Mã hợp lệ
+                                    Backend->>Backend: Lưu secret & mã khôi phục
+                                    Backend-->>Client: 200 OK (2FA đã bật)
+                                else Mã không hợp lệ
+                                    Backend-->>Client: 400 Bad Request
+                                end
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              - Khi người dùng yêu cầu bật 2FA, backend sẽ tạo một secret duy nhất.
+              - Secret này được lưu tạm thời trong một cookie `HttpOnly` được mã hóa, chỉ có hiệu lực 5 phút, và gửi về cho client dưới dạng QR code. Việc này đảm bảo secret chỉ tồn tại trong một thời gian ngắn và an toàn.
+              - Người dùng quét mã, nhập mã 6 số. Backend sẽ xác thực mã này với secret đã lưu tạm thời.
+              - Nếu thành công, secret sẽ được mã hóa vĩnh viễn và lưu vào DB, đồng thời tạo ra 10 mã khôi phục đã được băm để người dùng lưu lại.
+            </aside>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 13V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 16H4m0 0 3-3m-3 3 3 3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Luồng Đăng nhập với 2FA</h2>
+                    </div>
+                    <div class="right-column">
+                        <div class="mermaid">
+                            sequenceDiagram
+                                actor User
+                                participant Client
+                                participant Backend
+                                User->>Client: Nhập email & mật khẩu
+                                Client->>Backend: POST /auth/login
+                                Backend->>Backend: Xác thực thành công, thấy 2FA bật
+                                Backend-->>Client: 200 OK (yêu cầu 2FA), cấp `2fa_partial_token`
+                                User->>Client: Nhập mã 2FA (6 số)
+                                Client->>Backend: POST /2fa/authenticate
+                                Backend->>Backend: Xác thực mã 2FA
+                                alt Mã hợp lệ
+                                    Backend->>Backend: Cấp Access & Refresh Token đầy đủ
+                                    Backend-->>Client: 200 OK
+                                else Mã không hợp lệ
+                                    Backend-->>Client: 401 Unauthorized
+                                end
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              - Sau khi đăng nhập bằng mật khẩu thành công, hệ thống không cấp token đầy đủ ngay.
+              - Thay vào đó, nó cấp một `2fa_partial_token` đặc biệt, có thời hạn ngắn (5 phút) và được lưu trong cookie `HttpOnly`.
+              - Token này không đủ quyền để truy cập các API quan trọng, nó chỉ có quyền gọi đến endpoint `/2fa/authenticate`.
+              - Chỉ sau khi người dùng cung cấp mã 2FA (hoặc mã khôi phục) hợp lệ, hệ thống mới cấp Access và Refresh token đầy đủ.
+            </aside>
+        </section>
+
+        <section>
+          <h2 class="chapter-title" style="font-size: 2.5em; color: var(--text-color);">Quản lý Tài khoản An toàn</h2>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke-width="1.5"/><path d="M15 12H9" stroke-width="1.5" stroke-linecap="round"/><path d="M3 12h2m14 0h2" stroke-width="1.5" stroke-linecap="round"/><path d="M12 3v2m0 14v2" stroke-width="1.5" stroke-linecap="round"/><path d="m4.929 4.929 1.414 1.414m11.314 11.314 1.414 1.414" stroke-width="1.5" stroke-linecap="round"/><path d="m17.657 4.929-1.414 1.414m-8.485 11.314-1.414 1.414" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <h2>Luồng Quên Mật khẩu</h2>
+                    </div>
+                    <div class="right-column">
+                        <div class="mermaid">
+                            sequenceDiagram
+                                actor User
+                                participant Client
+                                participant Backend
+                                participant Redis
+                                participant MailService
+                                User->>Client: Nhấp "Quên mật khẩu"
+                                Client->>Backend: POST /auth/forgot-password
+                                Backend->>Backend: Tạo token (lưu vào Redis, TTL 15 phút)
+                                Backend->>MailService: Gửi email chứa link đặt lại
+                                Backend-->>Client: 200 OK
+                                User->>Client: Nhấp link, nhập mật khẩu mới
+                                Client->>Backend: POST /auth/reset-password
+                                Backend->>Redis: Xác thực token
+                                alt Token hợp lệ
+                                    Backend->>Backend: Cập nhật mật khẩu & Vô hiệu hóa tất cả phiên
+                                    Backend-->>Client: 200 OK
+                                else Token không hợp lệ
+                                    Backend-->>Client: 400 Bad Request
+                                end
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              - Luồng này cũng dựa trên token dùng một lần được lưu trong Redis với TTL ngắn (15 phút). Token sẽ bị xóa ngay sau khi sử dụng.
+              - Quan trọng nhất: Sau khi đặt lại mật khẩu thành công, chúng ta phải vô hiệu hóa tất cả các phiên đăng nhập đang hoạt động của người dùng đó (`logoutAll`). Điều này để ngăn chặn trường hợp kẻ tấn công đã chiếm được phiên cũ và vẫn có thể truy cập ngay cả khi người dùng đã đổi mật khẩu.
+            </aside>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 16V8a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v8a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4Z" stroke-width="1.5"/><path d="m8 10 4 2 4-2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Luồng Thay đổi Email</h2>
+                    </div>
+                    <div class="right-column">
+                        <div class="mermaid">
+                            sequenceDiagram
+                                actor User
+                                participant Client
+                                participant Backend
+                                participant MailService
+                                User->>Client: Yêu cầu đổi email (nhập mật khẩu)
+                                Client->>Backend: POST /user/request-email-change
+                                alt Mật khẩu đúng
+                                    Backend->>MailService: Gửi link xác minh đến email MỚI
+                                    Backend->>MailService: Gửi thông báo đến email CŨ
+                                    Backend-->>Client: 200 OK
+                                else Mật khẩu sai
+                                    Backend-->>Client: 401 Unauthorized
+                                end
+                                User->>Client: Nhấp link xác minh trong email mới
+                                Client->>Backend: GET /user/verify-email-change
+                                alt Token hợp lệ
+                                    Backend->>Backend: Cập nhật email & Vô hiệu hóa tất cả phiên
+                                    Backend-->>Client: 200 OK
+                                else Token không hợp lệ
+                                    Backend-->>Client: 400 Bad Request
+                                end
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              - Để tăng cường bảo mật, người dùng phải nhập mật khẩu hiện tại của họ.
+              - Hệ thống sẽ gửi email đến cả hai địa chỉ: một email xác minh đến địa chỉ mới (để xác nhận quyền sở hữu) và một email thông báo đến địa chỉ cũ (để cảnh báo về hoạt động thay đổi).
+              - Tương tự như đổi mật khẩu, sau khi đổi email thành công, tất cả các phiên cũng bị vô hiệu hóa để đảm bảo an toàn.
+            </aside>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 3H9a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 17H9.5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Các Cơ chế Đăng xuất</h2>
+                    </div>
+                    <div class="right-column" style="display: flex; gap: 20px;">
+                        <div style="flex: 1;">
+                            <p style="text-align: center;"><strong>Đăng xuất Thiết bị Hiện tại</strong></p>
+                            <div class="mermaid">
+                                sequenceDiagram
+                                    Client->>Backend: POST /auth/logout
+                                    Backend->>DB: Xóa Refresh Token
+                                    DB-->>Backend: OK
+                                    Backend-->>Client: 200 OK
+                            </div>
+                        </div>
+                        <div style="flex: 1;">
+                            <p style="text-align: center;"><strong>Đăng xuất Tất cả Thiết bị</strong></p>
+                            <div class="mermaid">
+                                sequenceDiagram
+                                    Client->>Backend: POST /auth/logout-all
+                                    Backend->>DB: Cập nhật `tokensValidFrom`
+                                    Backend->>DB: Xóa tất cả Refresh Token
+                                    DB-->>Backend: OK
+                                    Backend-->>Client: 200 OK
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              - Chúng ta có 2 cơ chế.
+              - **Đăng xuất thông thường:** Chỉ xóa refresh token của phiên hiện tại khỏi DB. Các phiên trên thiết bị khác không bị ảnh hưởng.
+              - **"Đăng xuất tất cả":** Đây là một tính năng bảo mật mạnh hơn. Nó cập nhật trường `tokensValidFrom` của người dùng thành thời gian hiện tại, làm cho TẤT CẢ các token đã cấp trước đó (cả access và refresh) trở nên vô hiệu, đồng thời xóa sạch các refresh token trong DB.
+            </aside>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke-width="1.5"/><path d="M14.5 9.5 9.5 14.5M9.5 9.5l5 5" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <h2>Vòng đời Người dùng</h2>
+                    </div>
+                    <div class="right-column">
+                        <div class="mermaid">
+                            stateDiagram-v2
+                                [*] --> PendingVerification: Đăng ký
+                                PendingVerification --> Active: Xác minh Email
+                                PendingVerification --> [*]: Xóa
+                                Active --> Suspended: Quản trị viên đình chỉ
+                                Suspended --> Active: Kích hoạt lại
+                                Active --> [*]: Người dùng Xóa
+                                Suspended --> [*]: Người dùng Xóa
+
+                                note right of Active
+                                  Một người dùng "Active" có thể đăng nhập bằng:
+                                  - Email & Mật khẩu
+                                  - Google OAuth (nếu đã liên kết)
+                                end note
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+      </section>
+
+    </div>
+  </div>
+  <script>
+    // Load scripts sau khi DOM ready
+    window.addEventListener('DOMContentLoaded', () => {
+      fetch('../shared/scripts.html')
+        .then(r => r.text())
+        .then(html => {
+          document.body.insertAdjacentHTML('beforeend', html);
+        });
+    });
+  </script>
+</body>
+</html>

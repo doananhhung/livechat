@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Widget Memory Leak Test</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      h1 {
+        color: #333;
+        border-bottom: 3px solid #4caf50;
+        padding-bottom: 10px;
+      }
+      h2 {
+        color: #555;
+        margin-top: 0;
+      }
+      .button-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 15px 0;
+      }
+      button {
+        padding: 12px 24px;
+        font-size: 14px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 600;
+      }
+      .btn-primary {
+        background: #4caf50;
+        color: white;
+      }
+      .btn-primary:hover {
+        background: #45a049;
+      }
+      .btn-danger {
+        background: #f44336;
+        color: white;
+      }
+      .btn-danger:hover {
+        background: #da190b;
+      }
+      .btn-warning {
+        background: #ff9800;
+        color: white;
+      }
+      .btn-warning:hover {
+        background: #e68900;
+      }
+      .btn-info {
+        background: #2196f3;
+        color: white;
+      }
+      .btn-info:hover {
+        background: #0b7dda;
+      }
+      .status {
+        padding: 15px;
+        border-radius: 4px;
+        margin: 15px 0;
+        font-weight: bold;
+      }
+      .status.running {
+        background: #dff0d8;
+        color: #3c763d;
+        border-left: 4px solid #3c763d;
+      }
+      .status.stopped {
+        background: #f2dede;
+        color: #a94442;
+        border-left: 4px solid #a94442;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
+      }
+      .stat-card {
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 4px;
+        border-left: 4px solid #2196f3;
+      }
+      .stat-label {
+        font-size: 12px;
+        color: #666;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+      }
+      .stat-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #333;
+      }
+      .instructions {
+        background: #e3f2fd;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 20px 0;
+        border-left: 4px solid #2196f3;
+      }
+      .instructions ol {
+        margin: 10px 0;
+        padding-left: 20px;
+      }
+      .instructions li {
+        margin: 8px 0;
+      }
+      code {
+        background: #f5f5f5;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: "Courier New", monospace;
+      }
+      .warning {
+        background: #fff3cd;
+        border-left: 4px solid #ff9800;
+        padding: 15px;
+        margin: 15px 0;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔍 Widget Memory Leak Investigation</h1>
+
+      <div class="instructions">
+        <h3 style="margin-top: 0">📋 Test Instructions:</h3>
+        <ol>
+          <li>
+            Open <strong>DevTools</strong> (F12) → Go to
+            <strong>Console</strong> tab
+          </li>
+          <li>
+            Open <strong>Memory</strong> tab → Keep it ready for snapshots
+          </li>
+          <li>
+            Click "<strong>Start Test</strong>" to begin automatic testing
+          </li>
+          <li>Watch the console logs with timestamps</li>
+          <li>Take memory snapshots every 2 minutes</li>
+          <li>
+            Look for patterns mentioned in
+            <code>MEMORY_LEAK_INVESTIGATION.md</code>
+          </li>
+        </ol>
+      </div>
+
+      <div class="warning">
+        ⚠️ <strong>Important:</strong> Keep this tab in focus (visible) for
+        accurate testing. The widget pauses URL tracking when tab is hidden.
+      </div>
+    </div>
+
+    <div class="container">
+      <h2>⚙️ Test Controls</h2>
+
+      <div id="testStatus" class="status stopped">⏸️ Test Status: STOPPED</div>
+
+      <div class="button-group">
+        <button class="btn-primary" onclick="startTest()">▶️ Start Test</button>
+        <button class="btn-danger" onclick="stopTest()">⏹️ Stop Test</button>
+        <button class="btn-warning" onclick="simulateVisibilityChange()">
+          👁️ Simulate Tab Switch
+        </button>
+        <button class="btn-info" onclick="simulateNavigation()">
+          🔗 Simulate Navigation
+        </button>
+        <button class="btn-info" onclick="printStats()">📊 Print Stats</button>
+      </div>
+    </div>
+
+    <div class="container">
+      <h2>📊 Live Statistics</h2>
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Test Duration</div>
+          <div class="stat-value" id="duration">0:00</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Tab Switches</div>
+          <div class="stat-value" id="tabSwitches">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">URL Changes</div>
+          <div class="stat-value" id="urlChanges">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Page Reloads</div>
+          <div class="stat-value" id="reloads">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <h2>📝 What to Look For in Console</h2>
+      <div
+        style="
+          background: #f9f9f9;
+          padding: 15px;
+          border-radius: 4px;
+          font-family: monospace;
+          font-size: 12px;
+        "
+      >
+        <div style="margin: 5px 0">
+          🔴 <strong>BAD:</strong> [HH:MM:SS] [SocketService xxx] ⚠️ STALE
+          SOCKET FOUND!
+        </div>
+        <div style="margin: 5px 0">
+          🔴 <strong>BAD:</strong> Connection attempt #2, #3, #4... (increasing)
+        </div>
+        <div style="margin: 5px 0">
+          🔴 <strong>BAD:</strong> 🔄 RECONNECT ATTEMPT (many times)
+        </div>
+        <div style="margin: 5px 0">
+          🔴 <strong>BAD:</strong> Event handlers count keeps growing (22, 33,
+          44...)
+        </div>
+        <div style="margin: 5px 0; margin-top: 15px">
+          ✅ <strong>GOOD:</strong> Connection count = Disconnection count (±1)
+        </div>
+        <div style="margin: 5px 0">
+          ✅ <strong>GOOD:</strong> Event handlers stay at ~14
+        </div>
+        <div style="margin: 5px 0">
+          ✅ <strong>GOOD:</strong> No "STALE SOCKET" warnings
+        </div>
+      </div>
+    </div>
+
+    <!-- Widget will be loaded here -->
+    <script>
+      // Test state
+      let testStartTime = null;
+      let testInterval = null;
+      let tabSwitchCount = 0;
+      let urlChangeCount = 0;
+      let reloadCount = 0;
+      let currentUrl = 1;
+
+      // Update duration display
+      function updateDuration() {
+        if (!testStartTime) return;
+        const elapsed = Math.floor((Date.now() - testStartTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        document.getElementById("duration").textContent = `${minutes}:${seconds
+          .toString()
+          .padStart(2, "0")}`;
+      }
+
+      // Start test
+      function startTest() {
+        if (testInterval) {
+          alert("Test is already running!");
+          return;
+        }
+
+        console.log(
+          "%c========================================",
+          "color: blue; font-weight: bold"
+        );
+        console.log(
+          "%c🚀 MEMORY LEAK TEST STARTED",
+          "color: green; font-weight: bold; font-size: 16px"
+        );
+        console.log(
+          "%c========================================",
+          "color: blue; font-weight: bold"
+        );
+        console.log("");
+        console.log("📋 Instructions:");
+        console.log("1. Take a memory snapshot NOW (Baseline)");
+        console.log("2. Wait 2 minutes, take another snapshot");
+        console.log("3. Wait 2 more minutes, take final snapshot");
+        console.log("4. Compare snapshots for object growth");
+        console.log("");
+        console.log("🔍 Watch for:");
+        console.log("  - Connection attempt numbers");
+        console.log('  - "STALE SOCKET FOUND" warnings');
+        console.log("  - Event handlers count");
+        console.log("  - Reconnection attempts");
+        console.log("");
+
+        testStartTime = Date.now();
+        document.getElementById("testStatus").className = "status running";
+        document.getElementById("testStatus").textContent =
+          "▶️ Test Status: RUNNING";
+
+        // Update duration every second
+        testInterval = setInterval(() => {
+          updateDuration();
+
+          // Auto-simulate events every 30 seconds
+          if ((Date.now() - testStartTime) % 30000 < 1000) {
+            if (Math.random() > 0.5) {
+              simulateNavigation();
+            } else {
+              simulateVisibilityChange();
+            }
+          }
+        }, 1000);
+      }
+
+      // Stop test
+      function stopTest() {
+        if (!testInterval) {
+          alert("No test is running!");
+          return;
+        }
+
+        clearInterval(testInterval);
+        testInterval = null;
+
+        console.log("");
+        console.log(
+          "%c========================================",
+          "color: blue; font-weight: bold"
+        );
+        console.log(
+          "%c⏹️ MEMORY LEAK TEST STOPPED",
+          "color: red; font-weight: bold; font-size: 16px"
+        );
+        console.log(
+          "%c========================================",
+          "color: blue; font-weight: bold"
+        );
+        console.log("");
+        printStats();
+
+        document.getElementById("testStatus").className = "status stopped";
+        document.getElementById("testStatus").textContent =
+          "⏸️ Test Status: STOPPED";
+      }
+
+      // Simulate visibility change
+      function simulateVisibilityChange() {
+        tabSwitchCount++;
+        document.getElementById("tabSwitches").textContent = tabSwitchCount;
+
+        console.log("");
+        console.log(
+          "%c👁️ SIMULATING TAB SWITCH",
+          "color: orange; font-weight: bold"
+        );
+
+        // Simulate hidden
+        Object.defineProperty(document, "hidden", {
+          value: true,
+          writable: true,
+          configurable: true,
+        });
+        document.dispatchEvent(new Event("visibilitychange"));
+
+        // Restore visible after 2 seconds
+        setTimeout(() => {
+          Object.defineProperty(document, "hidden", {
+            value: false,
+            writable: true,
+            configurable: true,
+          });
+          document.dispatchEvent(new Event("visibilitychange"));
+          console.log(
+            "%c👁️ TAB VISIBLE AGAIN",
+            "color: green; font-weight: bold"
+          );
+          console.log("");
+        }, 2000);
+      }
+
+      // Simulate navigation
+      function simulateNavigation() {
+        urlChangeCount++;
+        currentUrl++;
+        document.getElementById("urlChanges").textContent = urlChangeCount;
+
+        console.log("");
+        console.log(
+          "%c🔗 SIMULATING URL CHANGE",
+          "color: purple; font-weight: bold"
+        );
+
+        // Change URL hash
+        window.location.hash = `page${currentUrl}`;
+        console.log("New URL:", window.location.href);
+        console.log("");
+      }
+
+      // Print statistics
+      function printStats() {
+        console.log("");
+        console.log(
+          "%c📊 TEST STATISTICS",
+          "color: blue; font-weight: bold; font-size: 14px"
+        );
+        console.log("================================");
+        if (testStartTime) {
+          const elapsed = Math.floor((Date.now() - testStartTime) / 1000);
+          console.log(
+            `⏱️  Duration: ${Math.floor(elapsed / 60)}m ${elapsed % 60}s`
+          );
+        }
+        console.log(`👁️  Tab Switches: ${tabSwitchCount}`);
+        console.log(`🔗 URL Changes: ${urlChangeCount}`);
+        console.log(`🔄 Page Reloads: ${reloadCount}`);
+        console.log("================================");
+        console.log("");
+        console.log("💡 Next: Take a memory snapshot in DevTools > Memory tab");
+        console.log("");
+      }
+
+      // Track page reloads
+      window.addEventListener("beforeunload", () => {
+        reloadCount++;
+        localStorage.setItem("reloadCount", reloadCount);
+      });
+
+      // Restore reload count
+      const savedReloadCount = localStorage.getItem("reloadCount");
+      if (savedReloadCount) {
+        reloadCount = parseInt(savedReloadCount);
+        document.getElementById("reloads").textContent = reloadCount;
+      }
+
+      // Instructions on load
+      console.log(
+        "%c========================================",
+        "color: blue; font-weight: bold"
+      );
+      console.log(
+        "%c🔍 Widget Memory Leak Test Page Loaded",
+        "color: green; font-weight: bold; font-size: 14px"
+      );
+      console.log(
+        "%c========================================",
+        "color: blue; font-weight: bold"
+      );
+      console.log("");
+      console.log('📋 Ready to test! Click "Start Test" button above.');
+      console.log("");
+      console.log(
+        "📖 Read MEMORY_LEAK_INVESTIGATION.md for detailed instructions"
+      );
+      console.log("");
+    </script>
+
+    <!-- Load the widget -->
+    <script
+      id="your-app-widget-script"
+      data-project-id="1"
+      src="/dist-widget/widget.js"
+    ></script>
+  </body>
+</html>

@@ -33,8 +33,16 @@ export const UserNav = () => {
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="avatar" className="relative rounded-full">
-          <Avatar name={user.fullName} className="h-11 w-11" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative rounded-full h-11 w-11 p-0"
+        >
+          <Avatar
+            name={user.fullName}
+            src={user.avatarUrl}
+            className="h-10 w-10 ring-2 ring-border ring-offset-2 ring-offset-background"
+          />
         </Button>
       </DropdownMenuTrigger>
 

@@ -7,7 +7,7 @@ import {
   Message,
   MessageStatus,
   User,
-} from '@social-commerce/shared';
+} from '@live-chat/shared';
 import { EventsGateway } from '../../gateway/events.gateway';
 import {
   Injectable,
@@ -18,7 +18,7 @@ import {
 import { RealtimeSessionService } from '../../realtime-session/realtime-session.service';
 import { ProjectService } from '../../projects/project.service';
 
-// Redefine DTO for message creation, removing old Facebook fields
+// DTO for message creation
 interface CreateMessagePayload {
   conversationId: number;
   content: string;
