@@ -34,6 +34,7 @@ const InboxContent = () => {
     console.log("socket:", socket);
 
     // Add the callback function as the third argument
+    console.log("[Socket.IO] Emitting joinProjectRoom", payload);
     socket.emit(
       "joinProjectRoom",
       payload,
@@ -49,6 +50,7 @@ const InboxContent = () => {
     // Cleanup function to leave room
     return () => {
       // Also add it to the cleanup function
+      console.log("[Socket.IO] Emitting leaveProjectRoom", payload);
       socket.emit(
         "leaveProjectRoom",
         payload,

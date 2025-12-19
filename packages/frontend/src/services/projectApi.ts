@@ -95,10 +95,14 @@ export const getProjectInvitations = async (
 
 /**
  * Cancels a pending invitation.
- * @param invitationId - The ID of the invitation to cancel
+ * @param projectId - The ID of the project where the invitation exists.
+ * @param invitationId - The ID of the invitation to cancel.
  */
-export const cancelInvitation = async (invitationId: string): Promise<void> => {
-  await api.delete(`/projects/invitations/${invitationId}`);
+export const cancelInvitation = async (
+  projectId: number,
+  invitationId: string
+): Promise<void> => {
+  await api.delete(`/projects/${projectId}/invitations/${invitationId}`);
 };
 
 /**

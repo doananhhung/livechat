@@ -13,17 +13,30 @@ import { Spinner } from "../../../components/ui/Spinner";
 import { Avatar } from "../../../components/ui/Avatar";
 import { useTypingStore } from "../../../stores/typingStore";
 import { TypingIndicator } from "./TypingIndicator";
-import { useEffect } from "react";
+import { useEffect, useState } from "react"; // 1. Import useState
 import { Button } from "../../ui/Button";
 import { formatMessageTime } from "../../../lib/dateUtils";
 import { cn } from "../../../lib/utils";
 import { useToast } from "../../ui/use-toast";
+import { Dialog, DialogContent } from "../../ui/Dialog"; // 2. Import Dialog
+import { ZoomIn } from "lucide-react"; // 3. Import an icon
 
 /**
  * Component displaying detailed visitor information.
  */
 const VisitorContextPanel = ({ visitorId }: { visitorId: number }) => {
   const { data: visitor, isLoading } = useGetVisitor(visitorId);
+  // 4. Add state for the dialog
+  const [isScreenshotModalOpen, setScreenshotModalOpen] = useState(false);
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+  const screenshotUrl =
+    visitor?.currentUrl && API_BASE_URL
+      ? `${API_BASE_URL}/utils/screenshot?url=${encodeURIComponent(
+          visitor.currentUrl
+        )}`
+      : null;
 
   return (
     <aside className="w-64 bg-card border-l p-4 hidden lg:block">
@@ -46,16 +59,65 @@ const VisitorContextPanel = ({ visitorId }: { visitorId: number }) => {
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary break-all hover:underline"
+              title={visitor.currentUrl || "Không rõ"}
             >
               {visitor.currentUrl || "Không rõ"}
             </a>
           </div>
+
+          {/* === 5. MODIFIED SCREENSHOT BLOCK === */}
+          {screenshotUrl && (
+            <div className="space-y-2">
+              <p className="font-medium text-muted-foreground">
+                Xem trước trang:
+              </p>
+              {/* Make the preview a clickable button */}
+              <button
+                type="button"
+                onClick={() => setScreenshotModalOpen(true)}
+                className="w-full aspect-[16/10] rounded-md border bg-muted flex items-center justify-center overflow-hidden relative group cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <img
+                  src={screenshotUrl}
+                  alt={`Screenshot of ${visitor.currentUrl}`}
+                  className="w-full h-full object-cover object-top"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display =
+                      "none";
+                  }}
+                  key={screenshotUrl}
+                />
+                {/* Add a zoom-in icon overlay on hover */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <ZoomIn className="h-8 w-8 text-white" />
+                </div>
+              </button>
+            </div>
+          )}
+          {/* === END OF MODIFIED BLOCK === */}
         </div>
       )}
+
+      {/* === 6. ADD THE DIALOG COMPONENT === */}
+      {/* It will show the same screenshotUrl */}
+      <Dialog
+        open={isScreenshotModalOpen}
+        onOpenChange={setScreenshotModalOpen}
+        className="max-w-[70vw]"
+      >
+        <DialogContent className="p-2">
+          {" "}
+          {/* Remove size class from here */}
+          <img
+            src={screenshotUrl || ""}
+            alt={`Screenshot of ${visitor?.currentUrl}`}
+            className="w-full h-auto object-contain max-h-[80vh]"
+          />
+        </DialogContent>
+      </Dialog>
     </aside>
   );
 };
-
 /**
  * Component displaying the message list in a conversation.
  */

@@ -1,35 +1,9 @@
 import {
-  formatDistanceToNow,
   format,
   isToday,
   isYesterday,
   isThisWeek,
 } from "date-fns";
-import { vi } from "date-fns/locale";
-
-/**
- * Format timestamp for conversation list
- * - "5 phút trước" for recent messages
- * - "Hôm qua 14:30" for yesterday
- * - "23/10 10:15" for older
- */
-export const formatConversationTime = (date: Date | string): string => {
-  const dateObj = typeof date === "string" ? new Date(date) : date;
-
-  if (isToday(dateObj)) {
-    return formatDistanceToNow(dateObj, { addSuffix: true, locale: vi });
-  }
-
-  if (isYesterday(dateObj)) {
-    return `Hôm qua ${format(dateObj, "HH:mm")}`;
-  }
-
-  if (isThisWeek(dateObj)) {
-    return format(dateObj, "EEEE HH:mm", { locale: vi });
-  }
-
-  return format(dateObj, "dd/MM HH:mm");
-};
 
 /**
  * Format timestamp for message bubbles

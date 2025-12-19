@@ -29,6 +29,10 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       return;
     }
 
+    socket.onAny((event, ...args) => {
+      console.log(`[Socket.IO] Event received: ${event}`, args);
+    });
+
     // Define all handlers as stable references
     const handleNewMessage = async (newMessage: Message) => {
       const conversationId = parseInt(String(newMessage.conversationId), 10);
@@ -66,6 +70,10 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
 
       // Also invalidate conversations to update snippets/unread counts
       if (currentProjectId) {
+        console.log(
+          "Invalidating conversations cache for project:",
+          currentProjectId
+        );
         queryClient.invalidateQueries({
           queryKey: ["conversations", currentProjectId],
         });
@@ -181,8 +189,6 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         auth: {
           token: accessToken,
         },
-        // Prevent multiple instances
-        forceNew: true,
       });
 
       const handleConnect = () => {

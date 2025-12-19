@@ -6,18 +6,12 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Spinner } from "../../components/ui/Spinner";
 import { useToast } from "../../components/ui/use-toast";
-import {
-  ChevronRight,
-  ChevronDown,
-  ArrowLeft,
-  Info,
-  Palette,
-  Code,
-} from "lucide-react";
+import { ChevronRight, ArrowLeft, Info, Palette, Code } from "lucide-react";
 import { PermissionGate } from "../../components/PermissionGate";
 import { ProjectRole, WidgetPosition } from "@live-chat/shared";
 import { ProjectBasicSettingsForm } from "../../components/projects/ProjectBasicSettingsForm";
 import type { WidgetSettingsDto } from "@live-chat/shared";
+import { getWidgetSnippet } from "../../lib/widget";
 
 export const ProjectSettingsPage = () => {
   const { toast } = useToast();
@@ -101,16 +95,6 @@ export const ProjectSettingsPage = () => {
       companyLogoUrl: companyLogoUrl.trim() || undefined,
       agentDisplayName: agentDisplayName.trim() || undefined,
     });
-  };
-
-  const getWidgetSnippet = (projectId: number) => {
-    return `<script
-  id="your-app-widget-script"
-  src="https://cdn.yourdomain.com/widget.js"
-  data-project-id="${projectId}"
-  async
-  defer
-></script>`;
   };
 
   if (isLoading) {

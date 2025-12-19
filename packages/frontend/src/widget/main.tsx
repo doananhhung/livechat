@@ -6,7 +6,7 @@ import { useChatStore } from "./store/useChatStore";
 import { socketService } from "./services/socketService";
 import widgetStyles from "./styles/widget.css?inline";
 
-const WIDGET_SCRIPT_ID = "your-app-widget-script";
+const WIDGET_SCRIPT_ID = "live-chat-widget";
 const INIT_TIMEOUT = 500; // ms - Configurable constant instead of magic number
 const MAX_RETRY_ATTEMPTS = 3;
 const RETRY_DELAY = 2000; // ms
@@ -39,6 +39,8 @@ const errorWithTime = (component: string, message: string, ...args: any[]) => {
   console.error(`[${timestamp}] [${component}] ${message}`, ...args);
 };
 
+/** * Create the host element and attach shadow DOM
+ */
 function createHostElement(): ShadowRoot {
   const hostElement = document.createElement("div");
   hostElement.id = "live-chat-widget-host";
@@ -132,7 +134,10 @@ async function initializeWidget(config: {
       .setWidgetConfig({ ...settings, projectId: config.projectId });
     logWithTime("Widget", `✅ Widget config set in store`);
 
-    logWithTime("Widget", `🔌 Calling socketService.connect()`);
+    logWithTime(
+      "Widget",
+      `🔌 Calling socketService.connect() with visitorUid: ${visitorUid}`
+    );
     socketService.connect(config.projectId, visitorUid);
 
     // 4. Create the DOM host and render the app
@@ -141,6 +146,44 @@ async function initializeWidget(config: {
     const appContainer = document.createElement("div");
     shadowRoot.appendChild(appContainer);
 
+    // Do this once before the App renders
+
+    // 1. Store the original functions
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+
+    // 2. Create a new custom event we can listen for
+    const createUrlChangeEvent = () => new Event("urlchange");
+
+    // 3. Monkey-patch pushState
+    history.pushState = function (
+      ...args: [
+        data: any,
+        unused: string,
+        url?: string | URL | null | undefined
+      ]
+    ) {
+      // Call the original function
+      originalPushState.apply(this, args);
+
+      // Dispatch our custom event
+      window.dispatchEvent(createUrlChangeEvent());
+    };
+
+    // 4. Monkey-patch replaceState
+    history.replaceState = function (
+      ...args: [
+        data: any,
+        unused: string,
+        url?: string | URL | null | undefined
+      ]
+    ) {
+      // Call the original function
+      originalReplaceState.apply(this, args);
+
+      // Dispatch our custom event
+      window.dispatchEvent(createUrlChangeEvent());
+    };
     render(
       <ErrorBoundary>
         <App />

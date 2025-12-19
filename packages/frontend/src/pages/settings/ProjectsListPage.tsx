@@ -9,6 +9,7 @@ import { useToast } from "../../components/ui/use-toast";
 import { UserPlus, Settings } from "lucide-react";
 import { PermissionGate } from "../../components/PermissionGate";
 import { ProjectRole } from "@live-chat/shared";
+import { getWidgetSnippet } from "../../lib/widget";
 
 export const ProjectsListPage = () => {
   const { toast } = useToast();
@@ -84,16 +85,6 @@ export const ProjectsListPage = () => {
       name: trimmedName,
       whitelistedDomains: finalDomains,
     });
-  };
-
-  const getWidgetSnippet = (projectId: number) => {
-    return `<script
-  id="your-app-widget-script"
-  src="https://cdn.yourdomain.com/widget.js"
-  data-project-id="${projectId}"
-  async
-  defer
-></script>`;
   };
 
   if (isLoading) {
@@ -186,14 +177,22 @@ export const ProjectsListPage = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">{project.name}</h3>
                 <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => navigate(`/projects/${project.id}/settings`)}
+                  <PermissionGate
+                    projectId={project.id}
+                    requiredRole={ProjectRole.MANAGER}
                   >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Cài đặt
-                  </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        navigate(`/projects/${project.id}/settings`)
+                      }
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Cài đặt
+                    </Button>
+                  </PermissionGate>
+
                   <PermissionGate
                     projectId={project.id}
                     requiredRole={ProjectRole.MANAGER}

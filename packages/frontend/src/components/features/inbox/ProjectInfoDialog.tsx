@@ -10,6 +10,7 @@ import {
 import { Button } from "../../ui/Button";
 import { useToast } from "../../ui/use-toast";
 import type { ProjectWithRole } from "@live-chat/shared";
+import { getWidgetSnippet } from "../../../lib/widget";
 
 interface ProjectInfoDialogProps {
   project: ProjectWithRole;
@@ -25,16 +26,6 @@ export const ProjectInfoDialog = ({
   const { toast } = useToast();
   const [copiedSnippet, setCopiedSnippet] = useState(false);
   const [copiedProjectId, setCopiedProjectId] = useState(false);
-
-  const getWidgetSnippet = (projectId: number) => {
-    return `<script
-  id="your-app-widget-script"
-  src="https://cdn.yourdomain.com/widget.js"
-  data-project-id="${projectId}"
-  async
-  defer
-></script>`;
-  };
 
   const copyToClipboard = async (text: string, type: "snippet" | "id") => {
     try {

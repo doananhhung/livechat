@@ -89,7 +89,8 @@ const InviteMembersPage = () => {
 
   // Mutation to cancel invitation
   const { mutate: cancelInvite } = useMutation({
-    mutationFn: cancelInvitation,
+    mutationFn: (invitationId: string) =>
+      cancelInvitation(Number(projectId), invitationId),
     onSuccess: () => {
       toast({
         title: "Thành công",

@@ -17,6 +17,7 @@ import type {
   Visitor,
 } from "@live-chat/shared";
 import { MessageStatus } from "@live-chat/shared";
+import type { rest } from "lodash";
 
 // --- Type Definitions ---
 // All type definitions are now imported from @live-chat/shared
@@ -61,13 +62,7 @@ const getConversationsByProjectId = async (
 
   console.log("📡 Frontend API response:", {
     totalReceived: response.data.data?.length,
-    firstConversation: response.data.data?.[0]
-      ? {
-          id: response.data.data[0].id,
-          status: response.data.data[0].status,
-          hasVisitor: !!response.data.data[0].visitor,
-        }
-      : null,
+    conversations: response.data.data,
   });
 
   return response.data;
@@ -110,8 +105,9 @@ const sendAgentReply = async ({
 // --- Custom Hooks ---
 
 export const useGetConversations = (params: Partial<ListConversationsDto>) => {
+  const { projectId, ...restParams } = params;
   return useInfiniteQuery({
-    queryKey: ["conversations", params],
+    queryKey: ["conversations", projectId, restParams],
     queryFn: ({ pageParam = 1 }) => {
       if (!params.projectId) {
         return Promise.resolve({ data: [], total: 0, page: 1, limit: 10 });

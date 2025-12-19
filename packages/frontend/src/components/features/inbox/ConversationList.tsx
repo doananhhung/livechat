@@ -11,7 +11,12 @@ import { useTypingStore } from "../../../stores/typingStore";
 import { useProjectStore } from "../../../stores/projectStore";
 import { Button } from "../../ui/Button";
 import { Avatar } from "../../ui/Avatar";
-import { formatConversationTime } from "../../../lib/dateUtils";
+import { useTimeAgo } from "../../../hooks/useTimeAgo";
+
+const ConversationTime = ({ date }: { date: Date | string }) => {
+  const timeAgo = useTimeAgo(date);
+  return <>{timeAgo}</>;
+};
 
 export const ConversationList = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -85,13 +90,13 @@ export const ConversationList = () => {
         </div>
       ) : (
         <nav className="flex-1 overflow-y-auto">
-          {conversations.map((convo) => {
-            const isTyping = typingStatus[convo.id];
+          {conversations.map((conversation) => {
+            const isTyping = typingStatus[conversation.id];
 
             return (
               <NavLink
-                key={convo.id}
-                to={`/inbox/projects/${projectId}/conversations/${convo.id}`}
+                key={conversation.id}
+                to={`/inbox/projects/${projectId}/conversations/${conversation.id}`}
                 className={({ isActive }) =>
                   cn(
                     "block p-4 border-b transition-all duration-200",
@@ -103,9 +108,9 @@ export const ConversationList = () => {
                   )
                 }
                 onClick={() => {
-                  if (convo.unreadCount > 0) {
+                  if (conversation.unreadCount > 0) {
                     updateConversation({
-                      conversationId: convo.id,
+                      conversationId: conversation.id,
                       payload: { read: true },
                     });
                   }
@@ -113,7 +118,7 @@ export const ConversationList = () => {
               >
                 <div className="flex items-start gap-3">
                   <Avatar
-                    name={convo.visitor.displayName}
+                    name={conversation.visitor.displayName}
                     size="md"
                     className="flex-shrink-0"
                   />
@@ -122,21 +127,22 @@ export const ConversationList = () => {
                       <p
                         className={cn(
                           "font-semibold truncate",
-                          convo.unreadCount > 0 && "text-foreground"
+                          conversation.unreadCount > 0 && "text-foreground"
                         )}
                       >
-                        {convo.visitor.displayName}
+                        {conversation.visitor.displayName}
                       </p>
                       <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
-                        {convo.updatedAt &&
-                          formatConversationTime(convo.updatedAt)}
+                        {conversation.updatedAt && (
+                          <ConversationTime date={conversation.updatedAt} />
+                        )}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <p
                         className={cn(
                           "text-sm truncate",
-                          convo.unreadCount > 0
+                          conversation.unreadCount > 0
                             ? "text-foreground font-medium"
                             : "text-muted-foreground"
                         )}
@@ -144,12 +150,12 @@ export const ConversationList = () => {
                         {isTyping ? (
                           <i className="text-primary">Đang nhập...</i>
                         ) : (
-                          convo.lastMessageSnippet || "Chưa có tin nhắn."
+                          conversation.lastMessageSnippet || "Chưa có tin nhắn."
                         )}
                       </p>
-                      {convo.unreadCount > 0 && (
+                      {conversation.unreadCount > 0 && (
                         <span className="bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 min-w-[20px] px-1.5 flex items-center justify-center flex-shrink-0 animate-bounce-subtle">
-                          {convo.unreadCount}
+                          {conversation.unreadCount}
                         </span>
                       )}
                     </div>
