@@ -22,11 +22,8 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { CommonModule } from './common/common.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
-import {
-  REDIS_PUBLISHER_CLIENT,
-  REDIS_SUBSCRIBER_CLIENT,
-  RedisModule,
-} from './redis/redis.module';
+import { REDIS_PUBLISHER_CLIENT, RedisModule } from './redis/redis.module';
+import { UtilsModule } from './screenshot/utils.module';
 import { RedisClientType } from 'redis';
 import { MailModule } from './mail/mail.module';
 // import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -113,6 +110,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ProjectModule,
     CommonModule,
     MailModule,
+    UtilsModule,
   ],
   controllers: [AppController],
   providers: [

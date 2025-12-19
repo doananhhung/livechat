@@ -4,6 +4,7 @@ import {
   NotFoundException,
   Inject,
   forwardRef,
+  Logger,
 } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import {
@@ -66,6 +67,7 @@ export class ConversationService {
       });
       await conversationRepo.save(conversation);
     }
+
     return conversation;
   }
 
@@ -251,17 +253,26 @@ export class ConversationService {
   }
 
   /**
-   * @NEW
-   * Gets the active conversation and its recent messages for a given visitor ID.
-   * Intended for use by the EventsGateway to provide chat history on connect.
+   * Finds an open conversation for a visitor, including its message history.
+   * If one doesn't exist, a new conversation is created.
+   *
    * @param visitorId The ID of the visitor.
-   * @returns The Conversation entity with messages, or null if not found.
+   * @param projectId The ID of the project.
+   * @param manager The EntityManager to perform database operations.
+   * @returns A Promise containing the conversation (with or without messages).
    */
-  async getHistoryByVisitorId(visitorId: number): Promise<Conversation | null> {
-    return this.entityManager.findOne(Conversation, {
+  async getOrCreateHistoryByVisitorId(
+    projectId: number,
+    visitorId: number,
+    manager: EntityManager
+  ): Promise<Conversation> {
+    const conversationRepo = manager.getRepository(Conversation);
+
+    let conversation = await conversationRepo.findOne({
       where: {
         visitor: { id: visitorId },
-        status: ConversationStatus.OPEN, // Optional: only get open conversations
+        project: { id: projectId },
+        status: ConversationStatus.OPEN,
       },
       relations: ['messages'], // Eagerly load messages
       order: {
@@ -270,6 +281,19 @@ export class ConversationService {
         },
       },
     });
+
+    if (!conversation) {
+      conversation = conversationRepo.create({
+        project: { id: projectId },
+        visitor: { id: visitorId },
+        status: ConversationStatus.OPEN,
+      });
+      await conversationRepo.save(conversation);
+
+      conversation.messages = [];
+    }
+
+    return conversation;
   }
 
   /**

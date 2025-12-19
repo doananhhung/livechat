@@ -51,19 +51,6 @@ export class VisitorService {
 
   /**
    * @NEW
-   * Finds a visitor by their unique UID. Does not require a transaction.
-   * Intended for use in non-transactional contexts like the EventsGateway.
-   * @param visitorUid The unique identifier for the visitor.
-   * @returns The Visitor entity or null if not found.
-   */
-  async findByUid(visitorUid: string): Promise<Visitor | null> {
-    return this.entityManager.findOne(Visitor, {
-      where: { visitorUid },
-    });
-  }
-
-  /**
-   * @NEW
    * Finds a visitor by their ID.
    * Used by the inbox controller to display visitor information.
    * Populates currentUrl from Redis.

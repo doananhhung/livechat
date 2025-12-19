@@ -82,12 +82,22 @@ export class EventsGateway
         this.eventEmitter.emit('redis.message.received', message);
       }
     });
+
+    this.server.use((socket, next) => {
+      socket.onAny((event, ...args) => {
+        this.logger.log(`Socket event: ${event}`, {
+          socketId: socket.id,
+          args,
+        });
+      });
+      next();
+    });
   }
 
   public prepareSocketForVisitor(
     socketId: string,
-    visitor: Visitor | null,
-    conversation: Conversation | null,
+    visitor: Visitor,
+    conversation: Conversation,
     projectId: number,
     visitorUid: string
   ) {
@@ -100,33 +110,38 @@ export class EventsGateway
     socket.data.projectId = projectId;
     socket.data.visitorUid = visitorUid;
 
-    if (visitor) {
+    if (visitor && visitor.id) {
+      this.logger.log(
+        `Associating visitorId ${visitor.id} with socket ${socket.id}`
+      );
       socket.data.visitorId = visitor.id;
     }
 
-    if (conversation) {
-      const messagesForFrontend: MessageFrontend[] = conversation.messages.map(
-        (msg) => ({
-          id: msg.id,
-          content: msg.content || '',
-          sender: {
-            type: msg.fromCustomer ? 'visitor' : 'agent',
-            name: msg.senderId,
-          },
-          status: msg.status as MessageStatus,
-          timestamp: msg.createdAt.toISOString(),
-        })
-      );
+    let messagesForFrontend: MessageFrontend[] = [];
 
-      socket.emit('conversationHistory', {
-        messages: messagesForFrontend,
-      });
-      if (visitor)
-        this.logger.log(
-          `Loaded conversation history for visitor ${visitor.id} in project ${projectId} successfully.`
-        );
-      socket.data.conversationId = conversation.id;
+    if (conversation && conversation.messages) {
+      messagesForFrontend = conversation.messages.map((msg) => ({
+        id: msg.id,
+        content: msg.content || '',
+        sender: {
+          type: msg.fromCustomer ? 'visitor' : 'agent',
+          name: msg.senderId,
+        },
+        status: msg.status as MessageStatus,
+        timestamp: msg.createdAt.toISOString(),
+      }));
+    } else {
+      this.logger.log(
+        `No messages found for conversationId ${conversation.id}`
+      );
+      this.logger.log(`messages: ${JSON.stringify(conversation.messages)}`);
     }
+
+    this.logger.log(`Emitting conversationHistory to ${socket.id}`);
+    socket.data.conversationId = conversation.id;
+    socket.emit('conversationHistory', {
+      messages: messagesForFrontend,
+    });
   }
 
   @SubscribeMessage('identify')
@@ -170,6 +185,7 @@ export class EventsGateway
   ): void {
     const { projectId, conversationId } = client.data;
     if (projectId) {
+      this.logger.log(`Emitting visitorIsTyping to project ${projectId}`);
       this.server.to(`project:${projectId}`).emit('visitorIsTyping', {
         conversationId,
         isTyping: payload.isTyping,
@@ -183,7 +199,28 @@ export class EventsGateway
     @MessageBody() payload: { currentUrl: string }
   ): Promise<void> {
     const { projectId, conversationId, visitorUid } = client.data;
-    if (!projectId || !conversationId || !visitorUid) {
+
+    let missingData = false;
+    if (!projectId) {
+      this.logger.warn(
+        `Missing projectId for socket ${client.id} in handleUpdateContext`
+      );
+      missingData = true;
+    }
+    if (!conversationId) {
+      this.logger.warn(
+        `Missing conversationId for socket ${client.id} in handleUpdateContext`
+      );
+      missingData = true;
+    }
+    if (!visitorUid) {
+      this.logger.warn(
+        `Missing visitorUid for socket ${client.id} in handleUpdateContext`
+      );
+      missingData = true;
+    }
+
+    if (missingData) {
       return;
     }
 
@@ -194,6 +231,7 @@ export class EventsGateway
     );
 
     // Broadcast to agents
+    this.logger.log(`Emitting visitorContextUpdated to project ${projectId}`);
     this.server.to(`project:${projectId}`).emit('visitorContextUpdated', {
       conversationId,
       currentUrl: payload.currentUrl,
@@ -227,6 +265,7 @@ export class EventsGateway
     isTyping: boolean,
     agentName: string
   ) {
+    this.logger.log(`Emitting agentIsTyping to ${visitorSocketId}`);
     this.server.to(visitorSocketId).emit('agentIsTyping', {
       agentName,
       isTyping,
@@ -234,11 +273,13 @@ export class EventsGateway
   }
 
   public sendReplyToVisitor(visitorSocketId: string, message: any) {
+    this.logger.log(`Emitting agentReplied to ${visitorSocketId}`);
     this.server.to(visitorSocketId).emit('agentReplied', message);
   }
 
   public visitorMessageSent(visitorSocketId: string, data: any) {
     try {
+      this.logger.log(`Emitting messageSent to ${visitorSocketId}`);
       this.server.to(visitorSocketId).emit('messageSent', data);
     } catch (error) {
       this.logger.log(error);

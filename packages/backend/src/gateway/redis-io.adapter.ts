@@ -15,6 +15,7 @@ export class RedisIoAdapter extends IoAdapter {
     private readonly configService: ConfigService
   ) {
     super(app);
+    this.logger.log('RedisIoAdapter constructor invoked.');
   }
 
   async connectToRedis(): Promise<void> {
@@ -38,6 +39,7 @@ export class RedisIoAdapter extends IoAdapter {
   }
 
   createIOServer(port: number, options?: ServerOptions): any {
+    this.logger.log('createIOServer method invoked.');
     const server: Server = super.createIOServer(port, {
       ...options,
       cors: {
@@ -46,6 +48,7 @@ export class RedisIoAdapter extends IoAdapter {
         credentials: true,
       },
     });
+    this.logger.log(`Socket.IO server created with path: /socket.io/`);
 
     server.adapter(this.adapterConstructor);
 

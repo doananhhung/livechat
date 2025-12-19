@@ -25,6 +25,7 @@ async function bootstrap() {
   const redisIoAdapter = new RedisIoAdapter(app, configService);
   await redisIoAdapter.connectToRedis();
   app.useWebSocketAdapter(redisIoAdapter);
+  Logger.log('WebSocket adapter (RedisIoAdapter) has been set.', 'main.ts');
 
   const logger = new LoggerMiddleware();
 

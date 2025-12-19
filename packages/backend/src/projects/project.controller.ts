@@ -36,7 +36,6 @@ export class ProjectController {
     private readonly invitationService: InvitationService
   ) {}
 
-  @Roles(ProjectRole.MANAGER)
   @Post()
   create(
     @Body() createProjectDto: CreateProjectDto,
@@ -51,24 +50,24 @@ export class ProjectController {
   }
 
   @Roles(ProjectRole.MANAGER)
-  @Patch(':id')
+  @Patch(':projectId')
   update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('projectId', ParseIntPipe) projectId: number,
     @Body() updateProjectDto: UpdateProjectDto,
     @GetCurrentUser() user: User
   ) {
-    return this.projectService.update(id, updateProjectDto, user.id);
+    return this.projectService.update(projectId, updateProjectDto, user.id);
   }
 
   @Roles(ProjectRole.MANAGER)
-  @Patch(':id/widget-settings')
+  @Patch(':projectId/widget-settings')
   updateWidgetSettings(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('projectId', ParseIntPipe) projectId: number,
     @GetCurrentUser() user: User,
     @Body() widgetSettingsDto: WidgetSettingsDto
   ) {
     return this.projectService.updateWidgetSettings(
-      id,
+      projectId,
       user.id,
       widgetSettingsDto
     );
@@ -89,17 +88,18 @@ export class ProjectController {
   }
 
   @Roles(ProjectRole.MANAGER)
-  @Get(':id/invitations')
+  @Get(':projectId/invitations')
   getProjectInvitations(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('projectId', ParseIntPipe) projectId: number,
     @GetCurrentUser() user: User
   ) {
-    return this.invitationService.getProjectInvitations(id, user.id);
+    return this.invitationService.getProjectInvitations(projectId, user.id);
   }
 
   @Roles(ProjectRole.MANAGER)
-  @Delete('invitations/:invitationId')
+  @Delete(':projectId/invitations/:invitationId')
   cancelInvitation(
+    @Param('projectId', ParseIntPipe) projectId: number, // This is for the guard
     @Param('invitationId') invitationId: string,
     @GetCurrentUser() user: User
   ) {
@@ -123,12 +123,12 @@ export class ProjectController {
 
   // Project Members Management
   @Roles(ProjectRole.MANAGER)
-  @Get(':id/members')
+  @Get(':projectId/members')
   getProjectMembers(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('projectId', ParseIntPipe) projectId: number,
     @GetCurrentUser() user: User
   ) {
-    return this.projectService.getProjectMembers(id, user.id);
+    return this.projectService.getProjectMembers(projectId, user.id);
   }
 
   @Roles(ProjectRole.MANAGER)

@@ -3,12 +3,15 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { User } from '@live-chat/shared';
+import { config } from 'process';
 
 @Injectable()
 export class MailService {
   private transporter: nodemailer.Transporter;
 
   constructor(private readonly configService: ConfigService) {
+    console.log(configService.get<string>('MAIL_USER'));
+    console.log(configService.get<string>('MAIL_APP_PASSWORD'));
     // Create a transporter object using the SMTP transport
     this.transporter = nodemailer.createTransport({
       host: this.configService.get<string>('MAIL_HOST'), // 'smtp.gmail.com'

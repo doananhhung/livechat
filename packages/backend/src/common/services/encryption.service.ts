@@ -16,10 +16,16 @@ export class EncryptionService {
 
   constructor(private readonly configService: ConfigService) {
     const secretKey = this.configService.get<string>('ENCRYPTION_KEY');
-    if (!secretKey || secretKey.length !== 32) {
+    if (!secretKey) {
       throw new Error(
-        'ENCRYPTION_KEY must be defined in .env and be 32 characters long.'
+        'ENCRYPTION_KEY must be defined in .env '
       );
+    }
+
+    if (secretKey.length !== 32) {
+      console.log('Provided ENCRYPTION_KEY:', secretKey);
+      console.log('Provided ENCRYPTION_KEY length:', secretKey.length);
+      throw new Error('ENCRYPTION_KEY must be 32 characters long.');
     }
     this.key = Buffer.from(secretKey, 'utf-8');
   }

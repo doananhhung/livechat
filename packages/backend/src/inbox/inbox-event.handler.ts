@@ -6,7 +6,7 @@ import { VisitorService } from './services/visitor.service';
 import { RealtimeSessionService } from '../realtime-session/realtime-session.service';
 import { SqsService } from '../event-producer/sqs.service';
 import { EventsGateway } from '../gateway/events.gateway';
-import { Message } from '@live-chat/shared';
+import { EntityManager } from 'typeorm';
 
 @Injectable()
 export class InboxEventHandlerService {
@@ -17,7 +17,8 @@ export class InboxEventHandlerService {
     private readonly visitorService: VisitorService,
     private readonly realtimeSessionService: RealtimeSessionService,
     private readonly sqsService: SqsService,
-    private readonly eventsGateway: EventsGateway
+    private readonly eventsGateway: EventsGateway,
+    private readonly entityManager: EntityManager
   ) {}
 
   @OnEvent('visitor.identified')
@@ -31,14 +32,23 @@ export class InboxEventHandlerService {
       payload.socketId
     );
 
-    const visitor = await this.visitorService.findByUid(payload.visitorUid);
-    let conversation: any;
+    const { visitor, conversation } = await this.entityManager.transaction(
+      async (manager) => {
+        const visitor = await this.visitorService.findOrCreateByUid(
+          payload.projectId,
+          payload.visitorUid,
+          manager
+        );
 
-    if (visitor) {
-      conversation = await this.conversationService.getHistoryByVisitorId(
-        visitor.id
-      );
-    }
+        let conversation =
+          await this.conversationService.getOrCreateHistoryByVisitorId(
+            payload.projectId,
+            visitor.id,
+            manager
+          );
+        return { visitor, conversation };
+      }
+    );
 
     this.eventsGateway.prepareSocketForVisitor(
       payload.socketId,

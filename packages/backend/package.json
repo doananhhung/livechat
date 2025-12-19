@@ -27,8 +27,8 @@
     "migration:revert": "npm run typeorm -- migration:revert"
   },
   "dependencies": {
-    "@live-chat/shared": "file:../shared",
     "@aws-sdk/client-sqs": "^3.888.0",
+    "@live-chat/shared": "file:../shared",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/cache-manager": "^3.0.1",
     "@nestjs/common": "^11.0.1",
@@ -37,8 +37,8 @@
     "@nestjs/event-emitter": "^3.0.1",
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/passport": "^11.0.5",
-    "@nestjs/platform-express": "^11.0.1",
-    "@nestjs/platform-socket.io": "^11.1.6",
+    "@nestjs/platform-express": "^11.1.7",
+    "@nestjs/platform-socket.io": "^11.1.7",
     "@nestjs/serve-static": "^5.0.3",
     "@nestjs/throttler": "^6.4.0",
     "@nestjs/typeorm": "^11.0.0",
@@ -60,6 +60,7 @@
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
     "pg": "^8.16.3",
+    "puppeteer": "^24.26.1",
     "qrcode": "^1.5.3",
     "redis": "^4.7.1",
     "reflect-metadata": "^0.2.2",
