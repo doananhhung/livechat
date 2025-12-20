@@ -24,6 +24,12 @@
       --font-main: 'Inter', sans-serif;
     }
 
+    .mermaid [id$="arrowhead"] path {
+    fill: var(--text-muted) !important;
+    stroke: var(--text-muted) !important;
+}
+
+
     @keyframes gradient-animation {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
@@ -165,37 +171,52 @@
     <div class="slides">
 
       <!-- Slide Giới thiệu -->
-      <section>
-        <h1 class="main-title">Kiến trúc Bảo mật Dự án</h1>
-        <h3 class="subtitle">Phân tích Kỹ thuật Chi tiết</h3>
+          <section>
+        <h1 class="main-title">Xây dựng Hệ thống Bảo mật Thực tế cho Ứng dụng Web hiện đại</h1>
+        <h3 class="subtitle" style="margin-top: 0.8em;">Từ kiến trúc đến triển khai kỹ thuật</h3>
         <p class="r-mt-4">
-          <small class="subtitle">Người trình bày: Đinh Việt Hoàng</small>
+          <small class="subtitle">Người trình bày: Đinh Việt Hoàng</small> <br>
+          <small class="subtitle">Mã sinh viên: 23010051</small>
         </p>
-      </section>
+    </section>
 
-      <section>
-        <div class="slide-content-card">
-            <div class="layout-container">
-                <div class="left-column">
-                    <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 6h13M8 12h13M8 18h13M3 6h0M3 12h0M3 18h0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    <h2>Nội dung chính</h2>
+                  <section>
+                <div class="slide-content-card">
+                    <div class="layout-container">
+                        <div class="left-column">
+                            <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8 6h13M8 12h13M8 18h13M3 6h0M3 12h0M3 18h0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <h2>Nội dung chính</h2>
+                        </div>
+                        <div class="right-column">
+                            <div style="display: flex; flex-direction: column; gap: 18px;">
+                                <div class="fragment" style="background: linear-gradient(90deg, rgba(76,175,80,0.12) 0%, transparent 100%); padding: 18px 22px; border-radius: 12px; box-shadow: 0 1px 4px rgba(76,175,80,0.04);">
+                                    <h4 style="color: #4CAF50; margin: 0 0 8px 0; font-weight: 700; font-size: 1.15em;">🔑 Xác thực & Quản lý phiên</h4>
+                                    <p style="font-size: 1.05em; margin: 0; color: #fff; font-weight: 400;">Email, mật khẩu, Google OAuth, 2FA, JWT, token rotation</p>
+                                </div>
+                                <div class="fragment" style="background: linear-gradient(90deg, rgba(33,150,243,0.12) 0%, transparent 100%); padding: 18px 22px; border-radius: 12px; box-shadow: 0 1px 4px rgba(33,150,243,0.04);">
+                                    <h4 style="color: #2196F3; margin: 0 0 8px 0; font-weight: 700; font-size: 1.15em;">🛡️ Phân quyền & Kiểm soát truy cập</h4>
+                                    <p style="font-size: 1.05em; margin: 0; color: #fff; font-weight: 400;">RBAC, vai trò toàn cục & dự án, Guards, ví dụ thực tế</p>
+                                </div>
+                                <div class="fragment" style="background: linear-gradient(90deg, rgba(255,152,0,0.12) 0%, transparent 100%); padding: 18px 22px; border-radius: 12px; box-shadow: 0 1px 4px rgba(255,152,0,0.04);">
+                                    <h4 style="color: #FF9800; margin: 0 0 8px 0; font-weight: 700; font-size: 1.15em;">🔒 Mã hóa & Bảo vệ dữ liệu</h4>
+                                    <p style="font-size: 1.05em; margin: 0; color: #fff; font-weight: 400;">Hashing, AES-256-GCM, cookie security, data in transit</p>
+                                </div>
+                                <div class="fragment" style="background: linear-gradient(90deg, rgba(156,39,176,0.12) 0%, transparent 100%); padding: 18px 22px; border-radius: 12px; box-shadow: 0 1px 4px rgba(156,39,176,0.04);">
+                                    <h4 style="color: #9C27B0; margin: 0 0 8px 0; font-weight: 700; font-size: 1.15em;">🌐 Bảo mật API & WebSocket</h4>
+                                    <p style="font-size: 1.05em; margin: 0; color: #fff; font-weight: 400;">Kiến trúc 3 lớp, phòng thủ chiều sâu, session & endpoint security</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="right-column">
-                    <ul>
-                        <li>Các Cơ chế Xác thực Cốt lõi</li>
-                        <li>Kiểm soát Truy cập Dựa trên Vai trò (RBAC)</li>
-                        <li>Mã hóa Dữ liệu: "At Rest" & "In Transit"</li>
-                        <li>Bảo mật API & WebSocket</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-      </section>
+            </section>
 
-      <!-- Chương 1: Xác thực -->
+      <!-- Phần 1: Xác thực -->
       <section>
         <section>
-          <h1 class="chapter-title">Chương 1: Xác thực</h1>
+          <h1 class="chapter-title">Phần 1: Xác thực</h1>
           <p class="subtitle">(Authentication)</p>
         </section>
 
@@ -206,11 +227,42 @@
                         <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 8V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 12H3m0 0 3-3m-3 3 3 3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         <h2>Email & Mật khẩu</h2>
                     </div>
-                    <div class="right-column">
+                                        <div class="right-column">
                         <p>Nền tảng cho quá trình đăng ký và đăng nhập an toàn.</p>
-                        <ul>
-                            <li><strong>Đăng ký:</strong> Tạo tài khoản mới với mật khẩu được băm an toàn và yêu cầu xác minh email.</li>
-                            <li><strong>Đăng nhập:</strong> Xác minh người dùng qua `bcrypt.compare` và kiểm tra trạng thái tài khoản.</li>
+                        <ul style="padding-left: 0; margin-top: 18px;">
+                            <li class="fragment"
+                                style="
+                                    background: linear-gradient(90deg, rgba(76,175,80,0.18) 0%, transparent 100%);
+                                    padding: 18px 24px;
+                                    border-radius: 14px;
+                                    margin-bottom: 16px;
+                                    box-shadow: 0 4px 16px rgba(76,175,80,0.10);
+                                    border-left: 6px solid #4CAF50;
+                                    display: flex; align-items: center; gap: 16px;
+                                    transition: box-shadow 0.3s;
+                                ">
+                                <span style="font-size: 2em; color: #4CAF50;">🟢</span>
+                                <div>
+                                    <strong style="color: #4CAF50; font-size: 1.1em;">Đăng ký:</strong>
+                                    <span style="font-size: 1em;">Tạo tài khoản mới với mật khẩu được băm an toàn và yêu cầu xác minh email.</span>
+                                </div>
+                            </li>
+                            <li class="fragment"
+                                style="
+                                    background: linear-gradient(90deg, rgba(33,150,243,0.18) 0%, transparent 100%);
+                                    padding: 18px 24px;
+                                    border-radius: 14px;
+                                    box-shadow: 0 4px 16px rgba(33,150,243,0.10);
+                                    border-left: 6px solid #2196F3;
+                                    display: flex; align-items: center; gap: 16px;
+                                    transition: box-shadow 0.3s;
+                                ">
+                                <span style="font-size: 2em; color: #2196F3;">🔵</span>
+                                <div>
+                                    <strong style="color: #2196F3; font-size: 1.1em;">Đăng nhập:</strong>
+                                    <span style="font-size: 1em;">Xác minh người dùng qua <code>bcrypt.compare</code> và kiểm tra trạng thái tài khoản.</span>
+                                </div>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -367,7 +419,7 @@
                 
                 1. ACCESS TOKEN (15 phút):
                 - Dùng cho các API request hàng ngày
-                - Được gửi trong header Authorization: Bearer <token>
+                - Được gửi trong header Authorization: Bearer token
                 - Chứa thông tin: userId, email
                 - Thời hạn ngắn để giảm thiểu rủi ro nếu bị đánh cắp
                 - Nếu hết hạn, client dùng refresh token để lấy token mới
@@ -418,7 +470,7 @@
                                 </div>
         
                                 <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px;">
-                                    <p style="margin: 0; font-size: 0.75em; line-height: 1.6;">✅ Gửi với mọi API request<br/>✅ Client có thể đọc (decode)<br/>✅ Hết hạn nhanh = An toàn hơn</p>
+                                    <p style="margin: 0; font-size: 0.75em; line-height: 1.6;">✅ Gửi với mọi API request<br/>✅ Có thể dùng để lưu trữ thông tin của client<br/>✅ Hết hạn nhanh = An toàn hơn</p>
                                 </div>
                             </div>
         
@@ -463,7 +515,7 @@
                 
                 LƯU TRỮ:
                 - Client lưu trong memory hoặc localStorage
-                - Gửi trong header Authorization: Bearer <token> với mọi API request
+                - Gửi trong header Authorization: Bearer token với mọi API request
                 - Client có thể decode để đọc thông tin (nhưng không thể sửa vì có signature)
                 
                 ĐẶC ĐIỂM:
@@ -506,7 +558,7 @@
                             <p style="font-size: 0.8em; color: #666;">(JWT Security Measures)</p>
                         </div>
                         <div class="right-column">
-                            <p style="margin-bottom: 20px;">Chúng tôi áp dụng <strong>4 lớp bảo vệ</strong> cho JWT để đảm bảo an toàn tối đa</p>
+                            <p style="margin-bottom: 20px;">Trang web áp dụng <strong>4 lớp bảo vệ</strong> cho JWT để đảm bảo an toàn tối đa</p>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                                 <div class="fragment" style="background: #575757; padding: 15px; border-radius: 8px; border-left: 4px solid #4CAF50;">
                                     <h4 style="margin: 0 0 8px 0; color: #4CAF50;">🔄 Xoay vòng Token</h4>
@@ -514,7 +566,7 @@
                                 </div>
                                 <div class="fragment" style="background: #575757; padding: 15px; border-radius: 8px; border-left: 4px solid #2196F3;">
                                     <h4 style="margin: 0 0 8px 0; color: #2196F3;">⛔ Thu hồi Token</h4>
-                                    <p style="margin: 0; font-size: 0.85em;">Vô hiệu hóa ngay lập tức các phiên cũ</p>
+                                    <p style="margin: 0; font-size: 0.85em;">Lập tức vô hiệu mọi token, ngăn chặn truy cập trái phép</p>
                                 </div>
                                 <div class="fragment" style="background: #575757; padding: 15px; border-radius: 8px; border-left: 4px solid #FF9800;">
                                     <h4 style="margin: 0 0 8px 0; color: #FF9800;">🔢 Giới hạn Phiên</h4>
@@ -548,41 +600,71 @@
                         </div>
                         <div class="right-column">
                             <h3 style="margin-bottom: 15px;">Cơ chế hoạt động</h3>
-                            <p style="font-size: 0.9em; margin-bottom: 20px;">Mỗi khi một <strong>refresh token</strong> được sử dụng để lấy access token mới, token đó sẽ <strong>bị vô hiệu hóa</strong> và một refresh token hoàn toàn mới được cấp.</p>
+                            <p style="font-size: 0.9em; margin-bottom: 20px;">Mỗi khi một <strong>refresh token</strong> được sử dụng để lấy access token mới, token đó sẽ <strong>bị xóa khỏi database</strong> và một refresh token hoàn toàn mới được cấp.</p>
                             
                             <div style="background: #575757; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
-                                <h4 style="color: #4CAF50; margin-bottom: 10px;">✅ Lợi ích</h4>
+                                <h4 style="color: #4CAF50; margin-bottom: 10px;">✅ Lợi ích Cơ bản</h4>
                                 <ul style="font-size: 0.85em; line-height: 1.8;">
-                                    <li>Nếu refresh token bị rò rỉ, nó <strong>chỉ có thể được sử dụng một lần</strong></li>
-                                    <li>Giảm thiểu đáng kể bề mặt tấn công (attack surface)</li>
-                                    <li>Phát hiện được việc sử dụng token bị đánh cắp</li>
+                                    <li>Mỗi refresh token <strong>chỉ có thể được sử dụng một lần</strong></li>
+                                    <li>Giảm thiểu thời gian token bị đánh cắp có thể gây hại</li>
                                 </ul>
                             </div>
             
-                            <div style="background: rgba(33, 150, 243, 0.1); padding: 15px; border-left: 4px solid #2196F3; border-radius: 4px;">
-                                <p style="margin: 0; font-size: 0.85em;"><strong>💡 Lưu ý:</strong> Người dùng hợp pháp luôn có token mới nhất, kẻ tấn công chỉ có token đã cũ và vô hiệu</p>
+                            <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.05) 100%); padding: 20px; border-radius: 8px; border: 2px solid rgba(239, 68, 68, 0.3); margin-bottom: 15px;">
+                                <h4 style="color: #ef4444; margin-bottom: 10px;">🚨 Phát hiện Tấn công (Replay Attack Detection)</h4>
+                                <p style="font-size: 0.85em; margin-bottom: 10px;">Khi kẻ tấn công cố gắng sử dụng một token <strong>đã được dùng trước đó</strong>:</p>
+                                <ul style="font-size: 0.85em; line-height: 1.8;">
+                                    <li>Hệ thống kiểm tra database → <strong>Không tìm thấy token</strong></li>
+                                    <li>Nhận diện đây là <strong>dấu hiệu tấn công</strong></li>
+                                    <li>Kích hoạt <code>logoutAll()</code> → <strong>Vô hiệu hóa TOÀN BỘ phiên</strong> của user</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
                 </div>
                 <aside class="notes">
-                    XOAY VÒNG REFRESH TOKEN là một trong những kỹ thuật bảo mật quan trọng nhất:
+                    XOAY VÒNG REFRESH TOKEN - Cơ chế bảo mật với khả năng phát hiện tấn công tự động:
                     
-                    CƠ CHẾ: Khi client gửi request để refresh access token bằng refresh token hiện có, server sẽ:
+                    CƠ CHẾ CƠ BẢN: Khi client gửi request để refresh access token, server sẽ:
                     1. Xác thực refresh token
-                    2. Tạo một cặp access + refresh token hoàn toàn mới
-                    3. VÔ HIỆU HÓA refresh token cũ bằng cách xóa nó khỏi database
-                    4. Trả về cặp token mới cho client
+                    2. TÌM VÀ XÓA token đó khỏi database
+                    3. Tạo một cặp access + refresh token hoàn toàn mới
+                    4. Lưu refresh token MỚI vào database
+                    5. Trả về cặp token mới cho client
                     
-                    LỢI ÍCH BẢO MẬT:
-                    - Nếu một kẻ tấn công đánh cắp được refresh token, họ chỉ có thể sử dụng nó MỘT LẦN duy nhất
-                    - Lần sử dụng thứ hai (dù từ người dùng hợp pháp hay kẻ tấn công) sẽ THẤT BẠI vì token đã bị vô hiệu hóa
-                    - Điều này tạo ra một cơ chế phát hiện: nếu có ai đó cố gắng dùng một refresh token đã được sử dụng, đó là dấu hiệu của tấn công
+                    TÍNH NĂNG PHÁT HIỆN TẤN CÔNG (QUAN TRỌNG NHẤT):
                     
-                    So với việc để refresh token tồn tại suốt 30 ngày, cơ chế này giảm đáng kể thời gian mà một token bị đánh cắp có thể gây hại.
+                    KỊCH BẢN: Một kẻ tấn công đánh cắp được refresh token của bạn SAU KHI bạn đã dùng nó.
+                    
+                    ĐIỀU GÌ XẢY RA KHI KẺ TẤN CÔNG CỐ DÙNG TOKEN ĐÃ CŨ?
+                    
+                    1. Kẻ tấn công gửi request với token đã bị đánh cắp
+                    2. Server kiểm tra database để tìm token này
+                    3. KHÔNG TÌM THẤY - vì token này đã bị XÓA trong lần rotation trước đó
+                    4. Server NHẬN BIẾT: Đây là dấu hiệu của một cuộc tấn công "replay attack"
+                       - Nếu là người dùng hợp pháp, họ sẽ có token MỚI NHẤT
+                       - Việc ai đó dùng token CŨ chứng tỏ có người đã đánh cắp nó
+                    
+                    5. KÍCH HOẠT PHẢN ÁNH BẢO MẬT:
+                       - Server gọi hàm logoutAll() cho user đó
+                       - XÓA TẤT CẢ refresh tokens của user khỏi database
+                       - Vô hiệu hóa TOÀN BỘ phiên đăng nhập trên MỌI thiết bị
+                       - Cập nhật tokensValidFrom để invalidate cả access tokens
+                    
+                    6. KẾT QUẢ:
+                       - Kẻ tấn công: Bị chặn ngay lập tức, không thể tiếp tục
+                       - Người dùng hợp pháp: Bị đăng xuất khỏi tất cả thiết bị
+                       - Người dùng phải đăng nhập lại để khôi phục quyền truy cập
+                       - Tài khoản được bảo vệ khỏi truy cập trái phép
+                    
+                    ĐÂY LÀ SỰ KHÁC BIỆT LỚN:
+                    - Thay vì chỉ từ chối một request đơn lẻ
+                    - Hệ thống CHỦ ĐỘNG phát hiện và phản ứng với mối đe dọa
+                    - Tự động bảo vệ toàn bộ tài khoản, không cần can thiệp thủ công
+                    
+                    So với việc để refresh token tồn tại suốt 30 ngày mà không có cơ chế này, token rotation với threat detection cung cấp một lớp bảo vệ chủ động và tự động chống lại các cuộc tấn công.
                 </aside>
-            </section>
-            
+            </section>            
             <!-- Slide: Thu hồi Token -->
             <section>
                 <div class="slide-content-card">
@@ -594,7 +676,7 @@
                         </div>
                         <div class="right-column">
                             <h3 style="margin-bottom: 15px;">Sử dụng trường <code>tokensValidFrom</code></h3>
-                            <p style="font-size: 0.9em; margin-bottom: 20px;">Khi người dùng <strong>đổi mật khẩu</strong> hoặc <strong>"đăng xuất khỏi tất cả thiết bị"</strong>, chúng ta cập nhật trường <code>tokensValidFrom</code> trong database.</p>
+                            <p style="font-size: 0.9em; margin-bottom: 20px;">Khi người dùng <strong>đổi mật khẩu</strong> hoặc <strong>"đăng xuất khỏi tất cả thiết bị"</strong>, trang web cập nhật trường <code>tokensValidFrom</code> trong database.</p>
                             
                             <div style="background: #575757; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
                                 <h4 style="color: #FF9800; margin-bottom: 10px;">⚙️ Cách hoạt động</h4>
@@ -720,20 +802,46 @@
                     <div class="left-column">
                         <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke-width="1.5"/><path d="M12 11.5v5M12 7.5v1" stroke-width="1.5" stroke-linecap="round"/><path d="M16.5 14.5c-.5-1-1.5-1.5-2.5-1.5s-2 .5-2.5 1.5" stroke-width="1.5" stroke-linecap="round"/></svg>
                         <h2>Google OAuth 2.0</h2>
+                        <p style="font-size: 0.8em; color: #666; margin-top: 10px;">Đăng nhập xã hội an toàn</p>
                     </div>
                     <div class="right-column">
-                        <p>Đăng nhập xã hội liền mạch và an toàn.</p>
-                        <ol>
-                            <li>Người dùng được chuyển hướng đến Google để xác thực.</li>
-                            <li>Google chuyển hướng trở lại với một mã ủy quyền (authorization code).</li>
-                            <li>Backend đổi mã để lấy hồ sơ người dùng, sau đó tìm hoặc tạo người dùng trong DB.</li>
-                            <li>Backend tạo một mã dùng một lần, chuyển về cho frontend để đổi lấy JWTs.</li>
-                        </ol>
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(76, 175, 80, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #4CAF50;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">1️⃣</span>
+                                    <h4 style="margin: 0; color: #4CAF50;">Chuyển hướng đến Google</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Người dùng được chuyển đến trang đăng nhập Google để xác thực</p>
+                            </div>
+        
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(33, 150, 243, 0.15) 0%, rgba(33, 150, 243, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #2196F3;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">2️⃣</span>
+                                    <h4 style="margin: 0; color: #2196F3;">Nhận mã ủy quyền</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Google chuyển hướng trở lại với một mã ủy quyền (<code>authorization code</code>)</p>
+                            </div>
+        
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(255, 152, 0, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #FF9800;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">3️⃣</span>
+                                    <h4 style="margin: 0; color: #FF9800;">Tạo/Tìm người dùng</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Backend đổi mã để lấy hồ sơ, sau đó tìm hoặc tạo người dùng trong DB</p>
+                            </div>
+        
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(156, 39, 176, 0.15) 0%, rgba(156, 39, 176, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #9C27B0;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">4️⃣</span>
+                                    <h4 style="margin: 0; color: #9C27B0;">Cấp JWT an toàn</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Backend tạo mã dùng một lần, chuyển về frontend để đổi lấy JWT</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
-
         <section>
             <div class="slide-content-card">
                 <div class="layout-container">
@@ -785,35 +893,76 @@
                         <h2>Bảo mật Liên kết Tài khoản</h2>
                     </div>
                     <div class="right-column">
-                        <ul>
-                            <li>Người dùng đã xác thực có thể liên kết tài khoản Google của họ trong phần cài đặt.</li>
-                            <li><strong>Kiểm tra Bảo mật:</strong> Hệ thống sẽ từ chối nếu tài khoản Google đó đã được liên kết với một người dùng khác.</li>
-                            <li><strong>Yêu cầu Hủy liên kết:</strong> Để tránh bị khóa tài khoản (không thể đăng nhập), người dùng phải đặt mật khẩu cho tài khoản của họ *trước khi* được phép hủy liên kết với Google.</li>
-                        </ul>
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(76, 175, 80, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #4CAF50;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">🔗</span>
+                                    <h4 style="margin: 0; color: #4CAF50;">Liên kết Tài khoản</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Người dùng đã xác thực có thể liên kết tài khoản Google trong phần cài đặt</p>
+                            </div>
+        
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #ef4444;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">🛡️</span>
+                                    <h4 style="margin: 0; color: #ef4444;">Kiểm tra Bảo mật</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Hệ thống từ chối nếu tài khoản Google đã được liên kết với người dùng khác</p>
+                            </div>
+        
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(255, 152, 0, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #FF9800;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">⚠️</span>
+                                    <h4 style="margin: 0; color: #FF9800;">Yêu cầu Hủy liên kết</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Để tránh bị khóa tài khoản, người dùng phải đặt mật khẩu <strong>trước khi</strong> hủy liên kết Google</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
-
+        
         <section>
             <div class="slide-content-card">
                 <div class="layout-container">
                     <div class="left-column">
                         <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 13V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 16H4m0 0 3-3m-3 3 3 3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         <h2>Xác thực hai yếu tố (2FA)</h2>
+                        <p style="font-size: 0.8em; color: #666; margin-top: 10px;">Lớp bảo mật bổ sung</p>
                     </div>
                     <div class="right-column">
-                        <p>Thêm một lớp bảo mật bổ sung dựa trên TOTP (Time-based One-Time Password).</p>
-                        <ul>
-                            <li>Người dùng liên kết tài khoản với một ứng dụng xác thực (ví dụ: Google Authenticator).</li>
-                            <li>Sau khi đăng nhập bằng mật khẩu, họ phải cung cấp một mã 6 chữ số thay đổi theo thời gian.</li>
-                            <li>Cung cấp 10 mã khôi phục dùng một lần (đã được băm) phòng trường hợp mất thiết bị.</li>
-                        </ul>
+                        <p style="margin-bottom: 20px;">Thêm một lớp bảo vệ dựa trên <strong>TOTP</strong> (Time-based One-Time Password)</p>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 15px;">
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(76, 175, 80, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #4CAF50;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">📱</span>
+                                    <h4 style="margin: 0; color: #4CAF50;">Liên kết Ứng dụng</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Người dùng liên kết tài khoản với ứng dụng xác thực (Google Authenticator, Authy...)</p>
+                            </div>
+        
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(33, 150, 243, 0.15) 0%, rgba(33, 150, 243, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #2196F3;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">🔢</span>
+                                    <h4 style="margin: 0; color: #2196F3;">Mã Xác thực</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Sau khi đăng nhập bằng mật khẩu, cung cấp mã 6 chữ số thay đổi theo thời gian</p>
+                            </div>
+        
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(156, 39, 176, 0.15) 0%, rgba(156, 39, 176, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #9C27B0;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">🔐</span>
+                                    <h4 style="margin: 0; color: #9C27B0;">Mã Khôi phục</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Cung cấp 10 mã khôi phục dùng một lần (đã băm) phòng trường hợp mất thiết bị</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
-
         <section>
             <div class="slide-content-card">
                 <div class="layout-container">
@@ -1004,44 +1153,15 @@
         </section>
       </section>
 
-      <!-- Chương 2: Phân quyền -->
+      <!-- Phần 2: Phân quyền -->
       <section>
         <!-- Slide 1: Tiêu đề -->
         <section>
-          <h1 class="chapter-title">Chương 2: Phân quyền</h1>
+          <h1 class="chapter-title">Phần 2: Phân quyền</h1>
           <p class="subtitle">(Authorization)</p>
           <aside class="notes">
-            Chương này tập trung vào cơ chế phân quyền (Authorization) trong dự án. Chúng ta sẽ đi từ khái niệm cơ bản đến triển khai cụ thể với NestJS Guards.
+            Phần này tập trung vào cơ chế phân quyền (Authorization) trong dự án. Chúng ta sẽ đi từ khái niệm cơ bản đến triển khai cụ thể với NestJS Guards.
           </aside>
-        </section>
-
-        <!-- Slide 2: Chương trình -->
-        <section>
-            <div class="slide-content-card">
-                <div class="layout-container">
-                    <div class="left-column">
-                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18M3 12h18M3 18h18" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        <h2>Chương trình</h2>
-                    </div>
-                    <div class="right-column">
-                        <ol style="font-size: 0.9em; line-height: 1.8;">
-                            <li class="fragment">Phân biệt Xác thực và Phân quyền</li>
-                            <li class="fragment">Mô hình RBAC (Role-Based Access Control)</li>
-                            <li class="fragment">Vai trò Toàn cục vs. Vai trò Dự án</li>
-                            <li class="fragment">Triển khai với NestJS Guards</li>
-                            <li class="fragment">Luồng ví dụ: Kiểm tra vai trò trong dự án</li>
-                        </ol>
-                    </div>
-                </div>
-            </div>
-            <aside class="notes">
-              Chương trình bao gồm 5 phần chính:
-              1. Làm rõ sự khác biệt giữa Authentication và Authorization
-              2. Tìm hiểu mô hình RBAC - phương pháp tiêu chuẩn để quản lý quyền hạn
-              3. Phân biệt 2 loại vai trò: Global (toàn cục) và Project (dự án)
-              4. Cách triển khai thực tế với RolesGuard trong NestJS
-              5. Xem một ví dụ cụ thể về cách hệ thống kiểm tra quyền
-            </aside>
         </section>
 
         <!-- Slide 3: Xác thực vs. Phân quyền -->
@@ -1355,10 +1475,10 @@ export enum ProjectRole {
         </section>
         </section>
 
-      <!-- Chương 3: Mã hóa Dữ liệu -->
+      <!-- Phần 3: Mã hóa Dữ liệu -->
       <section>
         <section>
-          <h1 class="chapter-title">Chương 3: Mã Hóa Dữ Liệu</h1>
+          <h1 class="chapter-title">Phần 3: Mã Hóa Dữ Liệu</h1>
           <p class="subtitle">(Data Encryption)</p>
         </section>
 
@@ -1603,11 +1723,11 @@ export enum ProjectRole {
         </section>
       </section>
 
-      <!-- Chương 4: Bảo mật API & WebSocket -->
+      <!-- Phần 4: Bảo mật API & WebSocket -->
       <section>
         <!-- Slide 1: Tiêu đề -->
         <section>
-          <h1 class="chapter-title">Chương 4: Bảo Mật API & WebSocket</h1>
+          <h1 class="chapter-title">Phần 4: Bảo Mật API & WebSocket</h1>
             <p class="subtitle">(API & WebSocket Security)</p>
           <aside class="notes">
             <p><strong>Chương trình:</strong></p>
@@ -1878,6 +1998,34 @@ export enum ProjectRole {
         </section>
       </section>
 
+      <section>
+          <section><h1 class="chapter-title">Demo</h1></section>
+          <section>
+            <h2>Authentication Demo</h2>
+            <video
+              controls
+              src="./demo_video/authentication_demo.mkv"
+              style="width: 80%"
+            ></video>
+          </section>
+          <section>
+            <h2>Authorization Demo</h2>
+            <video
+              controls
+              src="./demo_video/authorization_demo.mkv"
+              style="width: 80%"
+            ></video>
+          </section>
+          <section>
+            <h2>Web Function Demo</h2>
+            <video
+              controls
+              src="./demo_video/web_function_demo.mkv"
+              style="width: 80%"
+            ></video>
+          </section>
+        </section>
+
       <!-- Kết luận -->
       <section>
         <h1 class="chapter-title">Hỏi & Đáp</h1>
@@ -1891,7 +2039,7 @@ export enum ProjectRole {
   <script src="plugin/notes/notes.js"></script>
   <script src="plugin/markdown/markdown.js"></script>
   <script src="plugin/highlight/highlight.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11.10.0/dist/mermaid.min.js"></script>
   <script>
     Reveal.initialize({
       width: 1920,
@@ -1902,7 +2050,39 @@ export enum ProjectRole {
       backgroundTransition: 'fade',
       transition: 'slide'
     });
-    mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+    mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+    const renderMermaid = async () => {
+      const graphs = document.querySelectorAll(".mermaid:not([data-processed])");
+      
+      for (let i = 0; i < graphs.length; i++) {
+        const item = graphs[i];
+        const graphId = `mermaid-graph-${Date.now()}-${i}`;
+        const graphDefinition = item.textContent.trim();
+        
+        try {
+          // API mới của Mermaid (v10+)
+          const { svg } = await mermaid.render(graphId, graphDefinition);
+          item.innerHTML = svg;
+          item.setAttribute('data-processed', 'true');
+        } catch (error) {
+          console.error('Mermaid render error:', error);
+          item.innerHTML = `<pre style="color: red;">Mermaid Error: ${error.message}</pre>`;
+        }
+      }
+    };
+
+    // Render khi Reveal.js sẵn sàng
+    Reveal.on('ready', async () => {
+      await renderMermaid();
+    });
+
+    // Render lại khi chuyển slide
+    Reveal.on('slidechanged', async () => {
+      setTimeout(async () => {
+        await renderMermaid();
+      }, 100);
+    });
+
   </script>
 </body>
 </html>

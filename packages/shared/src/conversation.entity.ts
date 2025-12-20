@@ -8,64 +8,67 @@ import {
   OneToMany,
   JoinColumn,
   Index,
-} from 'typeorm';
-import { Message } from './message.entity';
-import { Project } from './project.entity';
-import { Visitor } from './visitor.entity';
+} from "typeorm";
+import { Message } from "./message.entity";
+import { Project } from "./project.entity";
+import { Visitor } from "./visitor.entity";
 
 export enum ConversationStatus {
-  OPEN = 'open',
-  CLOSED = 'closed',
-  PENDING = 'pending',
+  OPEN = "open",
+  CLOSED = "closed",
+  PENDING = "pending",
 }
 
-@Entity('conversations')
+@Entity("conversations")
 export class Conversation {
-  @PrimaryGeneratedColumn('increment', { type: 'bigint' })
+  @PrimaryGeneratedColumn("increment", { type: "bigint" })
   id: number;
 
   @ManyToOne(() => Project, (project) => project.conversations, {
-    onDelete: 'SET NULL',
+    onDelete: "CASCADE",
   })
-  @JoinColumn({ name: 'project_id' })
+  @JoinColumn({ name: "project_id" })
   project: Project;
 
-  @Column({ type: 'bigint', name: 'project_id' })
+  @Column({ type: "bigint", name: "project_id" })
   projectId: number;
 
   @ManyToOne(() => Visitor, (visitor) => visitor.conversations, {
-    onDelete: 'SET NULL',
+    onDelete: "CASCADE",
   })
-  @JoinColumn({ name: 'visitor_id' })
+  @JoinColumn({ name: "visitor_id" })
   visitor: Visitor;
 
-  @Column({ type: 'text', nullable: true, name: 'last_message_snippet' })
+  @Column({ type: "bigint", name: "visitor_id" })
+  visitorId: number;
+
+  @Column({ type: "text", nullable: true, name: "last_message_snippet" })
   lastMessageSnippet: string | null;
 
   @Column({
-    type: 'timestamptz',
+    type: "timestamptz",
     nullable: true,
-    name: 'last_message_timestamp',
+    name: "last_message_timestamp",
   })
   lastMessageTimestamp: Date | null;
 
   @Index()
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: ConversationStatus,
     default: ConversationStatus.OPEN,
   })
   status: ConversationStatus;
 
-  @Column({ type: 'integer', default: 0, name: 'unread_count' })
+  @Column({ type: "integer", default: 0, name: "unread_count" })
   unreadCount: number;
 
   @OneToMany(() => Message, (message) => message.conversation)
   messages: Message[];
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: "timestamptz", name: "created_at" })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ type: "timestamptz", name: "updated_at" })
   updatedAt: Date;
 }

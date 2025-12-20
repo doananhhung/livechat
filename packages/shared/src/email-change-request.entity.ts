@@ -20,7 +20,7 @@ export class EmailChangeRequest {
   // Relation to User entity - uses the same "user_id" column
   @ManyToOne(() => User, { onDelete: "CASCADE" })
   @JoinColumn({ name: "user_id", referencedColumnName: "id" })
-  user?: User;
+  user: User;
 
   // Maps to database column "old_email"
   @Column({ type: "varchar", name: "old_email", nullable: false })

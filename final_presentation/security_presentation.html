@@ -1,0 +1,2088 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Phân Tích Sâu Về Bảo Mật Dự Án</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="dist/reset.css">
+  <link rel="stylesheet" href="dist/reveal.css">
+  <link rel="stylesheet" href="dist/theme/black.css" id="theme">
+  <link rel="stylesheet" href="plugin/highlight/monokai.css">
+
+  <style>
+    :root {
+      --accent-color: #818CF8;
+      --text-color: #EAEAEA;
+      --text-light-color: #A0A0A0;
+      --card-bg-color: rgba(26, 32, 44, 0.5);
+      --left-column-bg: rgba(20, 26, 38, 0.85);
+      --font-main: 'Inter', sans-serif;
+    }
+
+    .mermaid [id$="arrowhead"] path {
+    fill: var(--text-muted) !important;
+    stroke: var(--text-muted) !important;
+}
+
+
+    @keyframes gradient-animation {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .reveal {
+        background: linear-gradient(-45deg, #120031, #100020, #0f0019, #0a0011);
+        background-size: 400% 400%;
+        animation: gradient-animation 30s ease infinite;
+    }
+
+    .reveal, .reveal p, .reveal li {
+      font-family: var(--font-main);
+      font-weight: 300;
+      color: var(--text-color);
+    }
+
+    .reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6 {
+      font-family: var(--font-main);
+      font-weight: 700;
+      color: var(--text-color);
+      text-transform: none;
+    }
+
+    .reveal .accent {
+      color: var(--accent-color);
+    }
+
+    .reveal .main-title {
+      font-size: 2.8em;
+      font-weight: 700;
+      color: var(--accent-color);
+    }
+
+    .reveal .chapter-title {
+        font-size: 3.5em;
+        font-weight: 700;
+        color: var(--accent-color);
+    }
+    
+    .reveal .subtitle {
+        font-weight: 300;
+        color: var(--text-light-color);
+    }
+
+    .slide-content-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        margin: auto;
+        background-color: var(--card-bg-color);
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+
+    .layout-container {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      justify-content: center;
+      height: 100%;
+      width: 100%;
+      padding: 40px;
+    }
+
+    .left-column {
+      flex: 0 0 35%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 20px 40px 20px 20px;
+      margin: 20px;
+      background-color: var(--left-column-bg);
+      border-radius: 16px;
+      margin-right: 40px;
+    }
+
+    .left-column h2 {
+      font-size: 1.6em;
+      font-weight: 700;
+      color: var(--accent-color);
+      text-align: left;
+      margin-top: 20px;
+    }
+
+    .right-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      text-align: left;
+      overflow-y: auto; /* Add scroll for overflow content */
+      padding-right: 15px; /* For scrollbar spacing */
+    }
+
+    .right-column ul {
+        list-style: none;
+        padding-left: 0;
+    }
+    .right-column ul li {
+        padding-left: 1.5em;
+        position: relative;
+        margin-bottom: 0.75em;
+    }
+    .right-column ul li::before {
+        content: "■";
+        position: absolute;
+        left: 0;
+        color: var(--accent-color);
+        font-size: 0.8em;
+        top: 0.2em;
+    }
+
+    .slide-icon {
+      width: 70px;
+      height: 70px;
+      stroke: var(--accent-color);
+      stroke-width: 1.5;
+      fill: none;
+    }
+
+    .reveal .mermaid {
+        font-size: 0.85em;
+        background-color: transparent;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- Slide Giới thiệu -->
+          <section>
+        <h1 class="main-title">Xây dựng Hệ thống Bảo mật Thực tế cho Ứng dụng Web hiện đại</h1>
+        <h3 class="subtitle" style="margin-top: 0.8em;">Từ kiến trúc đến triển khai kỹ thuật</h3>
+        <p class="r-mt-4">
+          <small class="subtitle">Người trình bày: Đinh Việt Hoàng</small> <br>
+          <small class="subtitle">Mã sinh viên: 23010051</small>
+        </p>
+    </section>
+
+                  <section>
+                <div class="slide-content-card">
+                    <div class="layout-container">
+                        <div class="left-column">
+                            <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8 6h13M8 12h13M8 18h13M3 6h0M3 12h0M3 18h0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <h2>Nội dung chính</h2>
+                        </div>
+                        <div class="right-column">
+                            <div style="display: flex; flex-direction: column; gap: 18px;">
+                                <div class="fragment" style="background: linear-gradient(90deg, rgba(76,175,80,0.12) 0%, transparent 100%); padding: 18px 22px; border-radius: 12px; box-shadow: 0 1px 4px rgba(76,175,80,0.04);">
+                                    <h4 style="color: #4CAF50; margin: 0 0 8px 0; font-weight: 700; font-size: 1.15em;">🔑 Xác thực & Quản lý phiên</h4>
+                                    <p style="font-size: 1.05em; margin: 0; color: #fff; font-weight: 400;">Email, mật khẩu, Google OAuth, 2FA, JWT, token rotation</p>
+                                </div>
+                                <div class="fragment" style="background: linear-gradient(90deg, rgba(33,150,243,0.12) 0%, transparent 100%); padding: 18px 22px; border-radius: 12px; box-shadow: 0 1px 4px rgba(33,150,243,0.04);">
+                                    <h4 style="color: #2196F3; margin: 0 0 8px 0; font-weight: 700; font-size: 1.15em;">🛡️ Phân quyền & Kiểm soát truy cập</h4>
+                                    <p style="font-size: 1.05em; margin: 0; color: #fff; font-weight: 400;">RBAC, vai trò toàn cục & dự án, Guards, ví dụ thực tế</p>
+                                </div>
+                                <div class="fragment" style="background: linear-gradient(90deg, rgba(255,152,0,0.12) 0%, transparent 100%); padding: 18px 22px; border-radius: 12px; box-shadow: 0 1px 4px rgba(255,152,0,0.04);">
+                                    <h4 style="color: #FF9800; margin: 0 0 8px 0; font-weight: 700; font-size: 1.15em;">🔒 Mã hóa & Bảo vệ dữ liệu</h4>
+                                    <p style="font-size: 1.05em; margin: 0; color: #fff; font-weight: 400;">Hashing, AES-256-GCM, cookie security, data in transit</p>
+                                </div>
+                                <div class="fragment" style="background: linear-gradient(90deg, rgba(156,39,176,0.12) 0%, transparent 100%); padding: 18px 22px; border-radius: 12px; box-shadow: 0 1px 4px rgba(156,39,176,0.04);">
+                                    <h4 style="color: #9C27B0; margin: 0 0 8px 0; font-weight: 700; font-size: 1.15em;">🌐 Bảo mật API & WebSocket</h4>
+                                    <p style="font-size: 1.05em; margin: 0; color: #fff; font-weight: 400;">Kiến trúc 3 lớp, phòng thủ chiều sâu, session & endpoint security</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+      <!-- Phần 1: Xác thực -->
+      <section>
+        <section>
+          <h1 class="chapter-title">Phần 1: Xác thực</h1>
+          <p class="subtitle">(Authentication)</p>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 8V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 12H3m0 0 3-3m-3 3 3 3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Email & Mật khẩu</h2>
+                    </div>
+                                        <div class="right-column">
+                        <p>Nền tảng cho quá trình đăng ký và đăng nhập an toàn.</p>
+                        <ul style="padding-left: 0; margin-top: 18px;">
+                            <li class="fragment"
+                                style="
+                                    background: linear-gradient(90deg, rgba(76,175,80,0.18) 0%, transparent 100%);
+                                    padding: 18px 24px;
+                                    border-radius: 14px;
+                                    margin-bottom: 16px;
+                                    box-shadow: 0 4px 16px rgba(76,175,80,0.10);
+                                    border-left: 6px solid #4CAF50;
+                                    display: flex; align-items: center; gap: 16px;
+                                    transition: box-shadow 0.3s;
+                                ">
+                                <span style="font-size: 2em; color: #4CAF50;">🟢</span>
+                                <div>
+                                    <strong style="color: #4CAF50; font-size: 1.1em;">Đăng ký:</strong>
+                                    <span style="font-size: 1em;">Tạo tài khoản mới với mật khẩu được băm an toàn và yêu cầu xác minh email.</span>
+                                </div>
+                            </li>
+                            <li class="fragment"
+                                style="
+                                    background: linear-gradient(90deg, rgba(33,150,243,0.18) 0%, transparent 100%);
+                                    padding: 18px 24px;
+                                    border-radius: 14px;
+                                    box-shadow: 0 4px 16px rgba(33,150,243,0.10);
+                                    border-left: 6px solid #2196F3;
+                                    display: flex; align-items: center; gap: 16px;
+                                    transition: box-shadow 0.3s;
+                                ">
+                                <span style="font-size: 2em; color: #2196F3;">🔵</span>
+                                <div>
+                                    <strong style="color: #2196F3; font-size: 1.1em;">Đăng nhập:</strong>
+                                    <span style="font-size: 1em;">Xác minh người dùng qua <code>bcrypt.compare</code> và kiểm tra trạng thái tài khoản.</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 12h1M12 12h1M8 12h1M15 16h1M11 16h1M7 16h1M16 8h1M12 8h1M8 8h1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 12c0-4.418 4.418-8 10-8s10 3.582 10 8-4.418 8-10 8-10-3.582-10-8Z" stroke-width="1.5"/></svg>
+                        <h2>Luồng Đăng ký An toàn</h2>
+                    </div>
+                    <div class="right-column">
+                        <div class="mermaid">
+                            sequenceDiagram
+                                actor User as Người dùng
+                                participant Client
+                                participant Backend
+                                participant DB as Cơ sở dữ liệu
+                                participant Redis
+                                participant MailService as Dịch vụ Mail
+                                User->>Client: Điền thông tin (tên, email, mật khẩu)
+                                Client->>Backend: POST /auth/register
+                                activate Backend
+                                Backend->>DB: Kiểm tra email đã tồn tại chưa?
+                                alt Email đã tồn tại
+                                    DB-->>Backend: Trả về người dùng hiện có
+                                    Backend-->>Client: 409 Conflict (Email đã được sử dụng)
+                                else Email chưa tồn tại
+                                    DB-->>Backend: null
+                                    Backend->>Backend: Băm mật khẩu (bcrypt)
+                                    Backend->>DB: Tạo người dùng mới (isEmailVerified: false)
+                                    DB-->>Backend: Trả về người dùng mới
+                                    Backend->>Backend: Tạo token xác thực duy nhất
+                                    Backend->>Redis: Lưu token với ID người dùng (TTL 15 phút)
+                                    Redis-->>Backend: OK
+                                    Backend->>MailService: Gửi email xác thực
+                                    MailService-->>Backend: OK
+                                    Backend-->>Client: 201 Created (Đăng ký thành công)
+                                end
+                                deactivate Backend
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              - Đầu tiên là kiểm tra email có duy nhất không để tránh trùng lặp.
+              - Tiếp theo, và quan trọng nhất, là băm mật khẩu. Chúng ta dùng `bcrypt` với cost factor là 12. Đây là một tiêu chuẩn an toàn, đủ chậm để chống lại tấn công brute-force.
+              - Sau đó, tài khoản được tạo nhưng ở trạng thái chưa xác thực (`isEmailVerified: false`).
+              - Một token ngẫu nhiên, duy nhất được tạo và lưu vào Redis, có thời gian hết hạn là 15 phút. Việc lưu vào Redis nhanh và hiệu quả cho các token tạm thời.
+              - Cuối cùng, gửi email cho người dùng. Họ phải nhấp vào link trong vòng 15 phút để kích hoạt tài khoản.
+            </aside>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 12h1M12 12h1M8 12h1M15 16h1M11 16h1M7 16h1M16 8h1M12 8h1M8 8h1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 12c0-4.418 4.418-8 10-8s10 3.582 10 8-4.418 8-10 8-10-3.582-10-8Z" stroke-width="1.5"/></svg>
+                        <h2>Luồng Đăng nhập An toàn</h2>
+                    </div>
+                    <div class="right-column">
+                        <div class="mermaid">
+                            sequenceDiagram
+                                actor User as Người dùng
+                                participant Client
+                                participant Backend
+                                participant DB as Cơ sở dữ liệu
+                                User->>Client: Nhập email & mật khẩu
+                                Client->>Backend: POST /auth/login
+                                activate Backend
+                                Backend->>Backend: LocalAuthGuard xác thực thông tin
+                                activate Backend
+                                Backend->>DB: Tìm người dùng theo email
+                                DB-->>Backend: Trả về người dùng với mật khẩu đã băm
+                                Backend->>Backend: bcrypt.compare(password, hash)
+                                alt Thông tin chính xác
+                                    Backend->>DB: Kiểm tra isEmailVerified & không bị đình chỉ
+                                    DB-->>Backend: Trạng thái người dùng OK
+                                    alt 2FA được bật
+                                        Backend-->>Client: 200 OK (yêu cầu 2FA), đặt 2fa_partial_token
+                                    else 2FA bị tắt
+                                        Backend->>Backend: Tạo Access & Refresh Token
+                                        Backend->>DB: Lưu trữ Refresh Token đã băm
+                                        Backend-->>Client: 200 OK (cấp tokens)
+                                    end
+                                else Thông tin không chính xác
+                                    Backend-->>Client: 401 Unauthorized
+                                end
+                                deactivate Backend
+                                deactivate Backend
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              - Luồng này được bảo vệ bởi một Guard của NestJS là `LocalAuthGuard`.
+              - Nó sẽ dùng hàm `bcrypt.compare` để so sánh mật khẩu người dùng nhập với hash trong DB. Cách này an toàn vì không bao giờ giải mã mật khẩu và chống được timing attacks.
+              - Nếu thông tin đăng nhập đúng, chúng ta phải kiểm tra thêm 2 điều quan trọng: email đã được xác thực chưa (`isEmailVerified`), và tài khoản có bị admin đình chỉ (`suspended`) không.
+              - Nếu mọi thứ đều ổn, hệ thống sẽ kiểm tra xem người dùng có bật 2FA hay không để quyết định trả về token đầy đủ hay chỉ là token tạm thời cho bước 2FA.
+            </aside>
+        </section>
+
+        <!-- Slide: Quản lý Phiên với JWT -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 12a2 2 0 1 0-4 0 2 2 0 0 0 4 0Z" stroke-width="1.5"/><path d="M21.838 10.691C21.258 9.53 19.643 8 16.5 8c-2.43 0-4.214.975-5.5 2.118M12 13.882C10.786 15.025 8.93 16 6.5 16c-3.143 0-4.758-1.53-5.338-2.691A1.5 1.5 0 0 1 2.162 11h19.676a1.5 1.5 0 0 1 1.002 2.691C22.258 14.47 20.643 16 17.5 16c-2.43 0-4.214-.975-5.5-2.118" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <h2>Quản lý Phiên với JWT</h2>
+                        <p style="font-size: 0.8em; color: #666;">(JSON Web Tokens)</p>
+                    </div>
+                    <div class="right-column">
+                        <p style="margin-bottom: 20px;">Xác thực <strong>phi trạng thái (stateless)</strong> - không cần lưu session trên server</p>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 15px;">
+                            <div class="fragment" style="background: #575757; padding: 15px; border-radius: 8px; border-left: 4px solid #4CAF50;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <h4 style="margin: 0 0 5px 0; color: #4CAF50;">🎫 Access Token</h4>
+                                        <p style="margin: 0; font-size: 0.85em; color: #ccc;">Cho các yêu cầu API hàng ngày</p>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <span style="display: inline-block; background: rgba(76, 175, 80, 0.2); padding: 4px 12px; border-radius: 4px; font-size: 0.9em; color: #4CAF50; font-weight: bold;">15 phút</span>
+                                    </div>
+                                </div>
+                            </div>
+        
+                            <div class="fragment" style="background: #575757; padding: 15px; border-radius: 8px; border-left: 4px solid #2196F3;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <h4 style="margin: 0 0 5px 0; color: #2196F3;">🔐 Refresh Token</h4>
+                                        <p style="margin: 0; font-size: 0.85em; color: #ccc;">Để tạo Access Token mới</p>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <span style="display: inline-block; background: rgba(33, 150, 243, 0.2); padding: 4px 12px; border-radius: 4px; font-size: 0.9em; color: #2196F3; font-weight: bold;">30 ngày</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="fragment" style="margin-top: 20px; background: rgba(33, 150, 243, 0.1); padding: 15px; border-left: 4px solid #2196F3; border-radius: 4px;">
+                            <p style="margin: 0; font-size: 0.85em;"><strong>💡 Lợi ích:</strong> Thời hạn ngắn của Access Token giảm thiểu rủi ro nếu bị đánh cắp, trong khi Refresh Token cho phép duy trì phiên đăng nhập lâu dài</p>
+                        </div>
+                        </div>
+        
+                        
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                Hệ thống sử dụng JWT (JSON Web Tokens) cho xác thực phi trạng thái (stateless authentication).
+                
+                HAI LOẠI TOKEN:
+                
+                1. ACCESS TOKEN (15 phút):
+                - Dùng cho các API request hàng ngày
+                - Được gửi trong header Authorization: Bearer token
+                - Chứa thông tin: userId, email
+                - Thời hạn ngắn để giảm thiểu rủi ro nếu bị đánh cắp
+                - Nếu hết hạn, client dùng refresh token để lấy token mới
+                
+                2. REFRESH TOKEN (30 ngày):
+                - Dùng để tạo access token mới khi access token hết hạn
+                - Được lưu trong HttpOnly cookie an toàn - không thể truy cập từ JavaScript, chống XSS
+                - Chỉ chứa: userId (ít thông tin hơn)
+                - Thời hạn dài để duy trì phiên đăng nhập
+                - Chỉ được dùng cho endpoint /auth/refresh
+                
+                LỢI ÍCH CỦA MÔ HÌNH NÀY:
+                - Stateless: Server không cần lưu trữ session, dễ scale
+                - Bảo mật: Access token ngắn hạn, refresh token được bảo vệ trong HttpOnly cookie
+                - Trải nghiệm tốt: User không cần đăng nhập lại trong 30 ngày
+            </aside>
+        </section>
+        
+        <!-- Slide: Cấu trúc & Lưu trữ Token -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 16.493V19.5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-3.007" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.5 16.493a3.5 3.5 0 1 1 3 0" stroke-width="1.5"/><path d="M12 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 4v2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Cấu trúc & Lưu trữ</h2>
+                    </div>
+                    <div class="right-column">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(76, 175, 80, 0.05) 100%); padding: 20px; border-radius: 10px; border: 2px solid rgba(76, 175, 80, 0.3);">
+                                <h4 style="color: #4CAF50; margin: 0 0 15px 0; font-size: 1.1em;">🎫 Access Token</h4>
+                                
+                                <div style="margin-bottom: 15px;">
+                                    <p style="font-size: 0.75em; color: #aaa; margin: 0 0 8px 0;">PAYLOAD</p>
+                                    <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; font-family: monospace; font-size: 0.75em;">
+                                        {<br/>
+                                        &nbsp;&nbsp;"userId": 123,<br/>
+                                        &nbsp;&nbsp;"email": "user@example.com"<br/>
+                                        }
+                                    </div>
+                                </div>
+        
+                                <div style="margin-bottom: 15px;">
+                                    <p style="font-size: 0.75em; color: #aaa; margin: 0 0 8px 0;">LƯU TRỮ</p>
+                                    <div style="background: rgba(76, 175, 80, 0.2); padding: 8px 12px; border-radius: 6px;">
+                                        <p style="margin: 0; font-size: 0.8em;">📤 Authorization Header</p>
+                                        <code style="font-size: 0.75em; color: #4CAF50;">Bearer eyJhbGc...</code>
+                                    </div>
+                                </div>
+        
+                                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px;">
+                                    <p style="margin: 0; font-size: 0.75em; line-height: 1.6;">✅ Gửi với mọi API request<br/>✅ Có thể dùng để lưu trữ thông tin của client<br/>✅ Hết hạn nhanh = An toàn hơn</p>
+                                </div>
+                            </div>
+        
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(33, 150, 243, 0.15) 0%, rgba(33, 150, 243, 0.05) 100%); padding: 20px; border-radius: 10px; border: 2px solid rgba(33, 150, 243, 0.3);">
+                                <h4 style="color: #2196F3; margin: 0 0 15px 0; font-size: 1.1em;">🔐 Refresh Token</h4>
+                                
+                                <div style="margin-bottom: 15px;">
+                                    <p style="font-size: 0.75em; color: #aaa; margin: 0 0 8px 0;">PAYLOAD</p>
+                                    <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; font-family: monospace; font-size: 0.75em;">
+                                        {<br/>
+                                        &nbsp;&nbsp;"userId": 123<br/>
+                                        }
+                                    </div>
+                                </div>
+        
+                                <div style="margin-bottom: 15px;">
+                                    <p style="font-size: 0.75em; color: #aaa; margin: 0 0 8px 0;">LƯU TRỮ</p>
+                                    <div style="background: rgba(33, 150, 243, 0.2); padding: 8px 12px; border-radius: 6px;">
+                                        <p style="margin: 0; font-size: 0.8em;">🍪 HttpOnly Cookie</p>
+                                        <code style="font-size: 0.75em; color: #2196F3;">Set-Cookie: refresh_token=...</code>
+                                    </div>
+                                </div>
+        
+                                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px;">
+                                    <p style="margin: 0; font-size: 0.75em; line-height: 1.6;">🔒 Chống XSS (JS không đọc được)<br/>🔒 Chỉ dùng cho /auth/refresh<br/>🔒 Token thật được hash trong DB</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                Chi tiết về cấu trúc và cách lưu trữ hai loại token:
+                
+                ACCESS TOKEN:
+                
+                PAYLOAD (Dữ liệu trong token):
+                - userId: ID người dùng trong database
+                - email: Email của người dùng
+                - iat: Issued At - thời điểm token được tạo
+                - exp: Expiration - thời điểm token hết hạn (15 phút sau iat)
+                
+                LƯU TRỮ:
+                - Client lưu trong memory hoặc localStorage
+                - Gửi trong header Authorization: Bearer token với mọi API request
+                - Client có thể decode để đọc thông tin (nhưng không thể sửa vì có signature)
+                
+                ĐẶC ĐIỂM:
+                - Thời hạn ngắn (15 phút) nên nếu bị đánh cắp, kẻ tấn công chỉ có cửa sổ nhỏ để khai thác
+                - Chứa nhiều thông tin để giảm số lần query database
+                
+                ---
+                
+                REFRESH TOKEN:
+                
+                PAYLOAD (Dữ liệu trong token):
+                - userId: Chỉ có ID, không có email hay thông tin nhạy cảm khác
+                - iat: Issued At
+                - exp: Expiration (30 ngày sau iat)
+                
+                LƯU TRỮ:
+                - Server gửi về trong HttpOnly Cookie
+                - HttpOnly = JavaScript không thể đọc = Chống XSS attacks
+                - Cookie tự động được browser gửi kèm request đến /auth/refresh
+                - Token thật (plain text) được hash bằng bcrypt trước khi lưu vào database
+                
+                ĐẶC ĐIỂM:
+                - Chỉ được dùng cho một endpoint duy nhất: POST /auth/refresh
+                - Thời hạn dài (30 ngày) nhưng được bảo vệ kỹ càng
+                - Mỗi lần dùng, token cũ bị xóa và token mới được tạo (Token Rotation)
+                
+                TẠI SAO HASH REFRESH TOKEN TRONG DB?
+                - Nếu database bị breach, attacker không thể dùng refresh tokens để chiếm tài khoản
+                - Tương tự như cách ta hash mật khẩu
+            </aside>
+        </section>
+            <!-- Slide: Bảo mật JWT - Tổng quan -->
+
+            <section>
+                <div class="slide-content-card">
+                    <div class="layout-container">
+                        <div class="left-column">
+                            <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.642 19.425 15 17.783m-6 0 1.642 1.642M12 6.217V12m0 0v5.783m0-5.783-4.243 4.243M12 12l4.243 4.243" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M21.121 14.121A8.962 8.962 0 0 1 12 21a8.962 8.962 0 0 1-9.121-6.879M2.879 9.879A8.962 8.962 0 0 1 12 3a8.962 8.962 0 0 1 9.121 6.879" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <h2>Bảo mật JWT</h2>
+                            <p style="font-size: 0.8em; color: #666;">(JWT Security Measures)</p>
+                        </div>
+                        <div class="right-column">
+                            <p style="margin-bottom: 20px;">Trang web áp dụng <strong>4 lớp bảo vệ</strong> cho JWT để đảm bảo an toàn tối đa</p>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div class="fragment" style="background: #575757; padding: 15px; border-radius: 8px; border-left: 4px solid #4CAF50;">
+                                    <h4 style="margin: 0 0 8px 0; color: #4CAF50;">🔄 Xoay vòng Token</h4>
+                                    <p style="margin: 0; font-size: 0.85em;">Ngăn chặn tấn công chiếm dụng lại token</p>
+                                </div>
+                                <div class="fragment" style="background: #575757; padding: 15px; border-radius: 8px; border-left: 4px solid #2196F3;">
+                                    <h4 style="margin: 0 0 8px 0; color: #2196F3;">⛔ Thu hồi Token</h4>
+                                    <p style="margin: 0; font-size: 0.85em;">Lập tức vô hiệu mọi token, ngăn chặn truy cập trái phép</p>
+                                </div>
+                                <div class="fragment" style="background: #575757; padding: 15px; border-radius: 8px; border-left: 4px solid #FF9800;">
+                                    <h4 style="margin: 0 0 8px 0; color: #FF9800;">🔢 Giới hạn Phiên</h4>
+                                    <p style="margin: 0; font-size: 0.85em;">Giảm thiểu rủi ro lạm dụng tài khoản</p>
+                                </div>
+                                <div class="fragment" style="background: #575757; padding: 15px; border-radius: 8px; border-left: 4px solid #9C27B0;">
+                                    <h4 style="margin: 0 0 8px 0; color: #9C27B0;">🧹 Dọn dẹp Tự động</h4>
+                                    <p style="margin: 0; font-size: 0.85em;">Duy trì hiệu suất và vệ sinh hệ thống</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <aside class="notes">
+                    Chúng ta áp dụng 4 lớp bảo vệ chính cho JWT:
+                    1. XOAY VÒNG TOKEN (Rotation): Mỗi khi refresh token được sử dụng, nó bị vô hiệu hóa và một token mới được cấp. Điều này đảm bảo rằng nếu một token bị rò rỉ, nó chỉ có thể được sử dụng một lần.
+                    2. THU HỒI TOKEN (Revocation): Sử dụng trường tokensValidFrom để vô hiệu hóa ngay lập tức tất cả tokens được cấp trước một thời điểm nhất định, hữu ích khi đổi mật khẩu hoặc đăng xuất tất cả thiết bị.
+                    3. GIỚI HẠN PHIÊN (Session Limiting): Mỗi người dùng chỉ được phép có tối đa 5 phiên đăng nhập đồng thời, ngăn chặn việc chia sẻ tài khoản không kiểm soát.
+                    4. DỌN DẸP TỰ ĐỘNG (Cleanup): Cron job chạy hàng ngày để xóa các token hết hạn, giữ cho database sạch sẽ và tối ưu.
+                </aside>
+            </section>
+            
+            <!-- Slide: Xoay vòng Refresh Token -->
+            <section>
+                <div class="slide-content-card">
+                    <div class="layout-container">
+                        <div class="left-column">
+                            <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21.168 8A10.003 10.003 0 0 0 12 2C6.815 2 2.55 5.947 2.05 11M2.832 16A10.003 10.003 0 0 0 12 22c5.185 0 9.45-3.947 9.95-9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 12V7h5M22 12v5h-5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <h2>Xoay vòng Token</h2>
+                            <p style="font-size: 0.8em; color: #666;">(Token Rotation)</p>
+                        </div>
+                        <div class="right-column">
+                            <h3 style="margin-bottom: 15px;">Cơ chế hoạt động</h3>
+                            <p style="font-size: 0.9em; margin-bottom: 20px;">Mỗi khi một <strong>refresh token</strong> được sử dụng để lấy access token mới, token đó sẽ <strong>bị xóa khỏi database</strong> và một refresh token hoàn toàn mới được cấp.</p>
+                            
+                            <div style="background: #575757; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                                <h4 style="color: #4CAF50; margin-bottom: 10px;">✅ Lợi ích Cơ bản</h4>
+                                <ul style="font-size: 0.85em; line-height: 1.8;">
+                                    <li>Mỗi refresh token <strong>chỉ có thể được sử dụng một lần</strong></li>
+                                    <li>Giảm thiểu thời gian token bị đánh cắp có thể gây hại</li>
+                                </ul>
+                            </div>
+            
+                            <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.05) 100%); padding: 20px; border-radius: 8px; border: 2px solid rgba(239, 68, 68, 0.3); margin-bottom: 15px;">
+                                <h4 style="color: #ef4444; margin-bottom: 10px;">🚨 Phát hiện Tấn công (Replay Attack Detection)</h4>
+                                <p style="font-size: 0.85em; margin-bottom: 10px;">Khi kẻ tấn công cố gắng sử dụng một token <strong>đã được dùng trước đó</strong>:</p>
+                                <ul style="font-size: 0.85em; line-height: 1.8;">
+                                    <li>Hệ thống kiểm tra database → <strong>Không tìm thấy token</strong></li>
+                                    <li>Nhận diện đây là <strong>dấu hiệu tấn công</strong></li>
+                                    <li>Kích hoạt <code>logoutAll()</code> → <strong>Vô hiệu hóa TOÀN BỘ phiên</strong> của user</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <aside class="notes">
+                    XOAY VÒNG REFRESH TOKEN - Cơ chế bảo mật với khả năng phát hiện tấn công tự động:
+                    
+                    CƠ CHẾ CƠ BẢN: Khi client gửi request để refresh access token, server sẽ:
+                    1. Xác thực refresh token
+                    2. TÌM VÀ XÓA token đó khỏi database
+                    3. Tạo một cặp access + refresh token hoàn toàn mới
+                    4. Lưu refresh token MỚI vào database
+                    5. Trả về cặp token mới cho client
+                    
+                    TÍNH NĂNG PHÁT HIỆN TẤN CÔNG (QUAN TRỌNG NHẤT):
+                    
+                    KỊCH BẢN: Một kẻ tấn công đánh cắp được refresh token của bạn SAU KHI bạn đã dùng nó.
+                    
+                    ĐIỀU GÌ XẢY RA KHI KẺ TẤN CÔNG CỐ DÙNG TOKEN ĐÃ CŨ?
+                    
+                    1. Kẻ tấn công gửi request với token đã bị đánh cắp
+                    2. Server kiểm tra database để tìm token này
+                    3. KHÔNG TÌM THẤY - vì token này đã bị XÓA trong lần rotation trước đó
+                    4. Server NHẬN BIẾT: Đây là dấu hiệu của một cuộc tấn công "replay attack"
+                       - Nếu là người dùng hợp pháp, họ sẽ có token MỚI NHẤT
+                       - Việc ai đó dùng token CŨ chứng tỏ có người đã đánh cắp nó
+                    
+                    5. KÍCH HOẠT PHẢN ÁNH BẢO MẬT:
+                       - Server gọi hàm logoutAll() cho user đó
+                       - XÓA TẤT CẢ refresh tokens của user khỏi database
+                       - Vô hiệu hóa TOÀN BỘ phiên đăng nhập trên MỌI thiết bị
+                       - Cập nhật tokensValidFrom để invalidate cả access tokens
+                    
+                    6. KẾT QUẢ:
+                       - Kẻ tấn công: Bị chặn ngay lập tức, không thể tiếp tục
+                       - Người dùng hợp pháp: Bị đăng xuất khỏi tất cả thiết bị
+                       - Người dùng phải đăng nhập lại để khôi phục quyền truy cập
+                       - Tài khoản được bảo vệ khỏi truy cập trái phép
+                    
+                    ĐÂY LÀ SỰ KHÁC BIỆT LỚN:
+                    - Thay vì chỉ từ chối một request đơn lẻ
+                    - Hệ thống CHỦ ĐỘNG phát hiện và phản ứng với mối đe dọa
+                    - Tự động bảo vệ toàn bộ tài khoản, không cần can thiệp thủ công
+                    
+                    So với việc để refresh token tồn tại suốt 30 ngày mà không có cơ chế này, token rotation với threat detection cung cấp một lớp bảo vệ chủ động và tự động chống lại các cuộc tấn công.
+                </aside>
+            </section>            
+            <!-- Slide: Thu hồi Token -->
+            <section>
+                <div class="slide-content-card">
+                    <div class="layout-container">
+                        <div class="left-column">
+                            <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke-width="1.5"/><path d="M15 9l-6 6M9 9l6 6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <h2>Thu hồi Token</h2>
+                            <p style="font-size: 0.8em; color: #666;">(Token Revocation)</p>
+                        </div>
+                        <div class="right-column">
+                            <h3 style="margin-bottom: 15px;">Sử dụng trường <code>tokensValidFrom</code></h3>
+                            <p style="font-size: 0.9em; margin-bottom: 20px;">Khi người dùng <strong>đổi mật khẩu</strong> hoặc <strong>"đăng xuất khỏi tất cả thiết bị"</strong>, trang web cập nhật trường <code>tokensValidFrom</code> trong database.</p>
+                            
+                            <div style="background: #575757; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                                <h4 style="color: #FF9800; margin-bottom: 10px;">⚙️ Cách hoạt động</h4>
+                                <p style="font-size: 0.85em; margin-bottom: 10px;">Trong quá trình xác thực token, hệ thống so sánh:</p>
+                                <pre style="margin: 0;"><code class="typescript" data-trim data-noescape>
+            // Kiểm tra trong JwtAuthGuard
+            if (payload.iat < user.tokensValidFrom) {
+              throw new UnauthorizedException(
+                "Token đã bị thu hồi."
+              );
+            }
+                                </code></pre>
+                            </div>
+            
+                            <div style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-left: 4px solid #ef4444; border-radius: 4px;">
+                                <p style="margin: 0; font-size: 0.85em;"><strong>🎯 Kết quả:</strong> Mọi token được cấp TRƯỚC thời điểm này sẽ không hợp lệ, kể cả access token chưa hết hạn</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <aside class="notes">
+                    THU HỒI TOKEN qua tokensValidFrom là cơ chế để vô hiệu hóa ngay lập tức TẤT CẢ các token của một người dùng:
+                    
+                    CƠ CHẾ:
+                    - Mỗi user có một trường tokensValidFrom (kiểu timestamp) trong database
+                    - Mặc định, giá trị này là thời điểm tạo tài khoản
+                    - Mỗi JWT có trường iat (issued at) - thời điểm token được cấp
+                    
+                    KHI NÀO SỬ DỤNG:
+                    1. ĐỔI MẬT KHẨU: Khi user đổi password, ta cập nhật tokensValidFrom = NOW(). Tất cả token cũ (cả access và refresh) đều có iat < tokensValidFrom nên sẽ bị từ chối.
+                    2. ĐĂNG XUẤT TẤT CẢ: Khi user chọn "Log out from all devices", ta cũng cập nhật tokensValidFrom = NOW().
+                    
+                    KIỂM TRA:
+                    - JwtAuthGuard (hoặc WsJwtAuthGuard cho WebSocket) sẽ load user từ DB
+                    - So sánh payload.iat với user.tokensValidFrom
+                    - Nếu iat < tokensValidFrom → Token bị thu hồi → Reject
+                    
+                    ƯU ĐIỂM:
+                    - Không cần lưu blacklist tokens (tiết kiệm bộ nhớ)
+                    - Hiệu quả ngay lập tức
+                    - Đơn giản và dễ triển khai
+                    
+                    NHƯỢC ĐIỂM:
+                    - Phải query database mỗi request (nhưng đã làm vậy để lấy thông tin user)
+                </aside>
+            </section>
+            
+            <!-- Slide: Giới hạn Phiên & Dọn dẹp -->
+            <section>
+                <div class="slide-content-card">
+                    <div class="layout-container">
+                        <div class="left-column">
+                            <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <h2>Giới hạn & Dọn dẹp</h2>
+                            <p style="font-size: 0.8em; color: #666;">(Session Limiting & Cleanup)</p>
+                        </div>
+                        <div class="right-column">
+                            <div style="display: flex; flex-direction: column; gap: 20px;">
+                                <div style="background: #575757; padding: 20px; border-radius: 8px; border-left: 4px solid #FF9800;">
+                                    <h4 style="color: #FF9800; margin: 0 0 10px 0;">🔢 Giới hạn Phiên đăng nhập</h4>
+                                    <p style="font-size: 0.85em; margin-bottom: 10px;">Hệ thống giới hạn mỗi người dùng chỉ có tối đa <strong style="color: #FF9800;">5 phiên đăng nhập</strong> (5 refresh token) hoạt động cùng lúc.</p>
+                                    <ul style="font-size: 0.8em; line-height: 1.8; margin: 10px 0 0 20px;">
+                                        <li>Khi đăng nhập từ thiết bị thứ 6 → Phiên cũ nhất tự động bị hủy</li>
+                                        <li>Ngăn chặn việc lạm dụng tài khoản trên nhiều thiết bị</li>
+                                        <li>User vẫn có thể sử dụng 5 thiết bị thường xuyên</li>
+                                    </ul>
+                                </div>
+            
+                                <div style="background: #575757; padding: 20px; border-radius: 8px; border-left: 4px solid #9C27B0;">
+                                    <h4 style="color: #9C27B0; margin: 0 0 10px 0;">🧹 Dọn dẹp Token hết hạn</h4>
+                                    <p style="font-size: 0.85em; margin-bottom: 10px;">Một <strong>tác vụ tự động (cron job)</strong> chạy hàng ngày vào lúc <strong style="color: #9C27B0;">3:00 AM</strong> để xóa tất cả refresh token đã hết hạn.</p>
+                                    <ul style="font-size: 0.8em; line-height: 1.8; margin: 10px 0 0 20px;">
+                                        <li>Giữ bảng <code>refresh_tokens</code> luôn sạch sẽ</li>
+                                        <li>Tối ưu hóa hiệu suất truy vấn database</li>
+                                        <li>Đảm bảo vệ sinh và bảo mật hệ thống</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <aside class="notes">
+                    HAI CƠ CHẾ BỔ SUNG để tăng cường bảo mật và hiệu suất:
+                    
+                    1. GIỚI HẠN PHIÊN ĐĂNG NHẬP (Session Limiting):
+                    
+                    VẤN ĐỀ: Nếu không giới hạn, một user có thể có hàng trăm refresh token hoạt động cùng lúc (ví dụ: đăng nhập từ nhiều thiết bị, nhiều trình duyệt). Điều này:
+                    - Tăng rủi ro nếu một trong số đó bị đánh cắp
+                    - Cho phép chia sẻ tài khoản không kiểm soát
+                    - Tốn tài nguyên database
+                    
+                    GIẢI PHÁP: Giới hạn tối đa 5 phiên đồng thời
+                    - Khi tạo refresh token mới, kiểm tra số lượng token hiện có
+                    - Nếu đã có 5 token → Xóa token CŨ NHẤT (dựa trên createdAt)
+                    - Cho phép token mới được tạo
+                    
+                    KẾT QUẢ:
+                    - User thông thường (dùng điện thoại, laptop, tablet, desktop công ty, desktop nhà) vẫn OK
+                    - Ngăn chặn việc chia sẻ tài khoản trên quy mô lớn
+                    - Giảm thiểu rủi ro bảo mật
+                    
+                    2. DỌN DẸP TỰ ĐỘNG (Automatic Cleanup):
+                    
+                    VẤN ĐỀ: Refresh token có TTL 30 ngày, nhưng sau khi hết hạn, bản ghi vẫn nằm trong database. Theo thời gian, có thể có hàng triệu bản ghi token hết hạn.
+                    
+                    GIẢI PHÁP: Cron job chạy hàng ngày
+                    - Sử dụng @nestjs/schedule
+                    - Schedule: Mỗi ngày lúc 3:00 AM (thời điểm ít traffic)
+                    - Query: DELETE FROM refresh_tokens WHERE expiresAt < NOW()
+                    
+                    LỢI ÍCH:
+                    - Database luôn gọn gàng
+                    - Query nhanh hơn (ít records hơn)
+                    - Tuân thủ data retention policy
+                    - Không cần manual intervention
+                    
+                    Cả hai cơ chế này đều chạy tự động và trong suốt với người dùng.
+                </aside>
+            </section>
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke-width="1.5"/><path d="M12 11.5v5M12 7.5v1" stroke-width="1.5" stroke-linecap="round"/><path d="M16.5 14.5c-.5-1-1.5-1.5-2.5-1.5s-2 .5-2.5 1.5" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <h2>Google OAuth 2.0</h2>
+                        <p style="font-size: 0.8em; color: #666; margin-top: 10px;">Đăng nhập xã hội an toàn</p>
+                    </div>
+                    <div class="right-column">
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(76, 175, 80, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #4CAF50;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">1️⃣</span>
+                                    <h4 style="margin: 0; color: #4CAF50;">Chuyển hướng đến Google</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Người dùng được chuyển đến trang đăng nhập Google để xác thực</p>
+                            </div>
+        
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(33, 150, 243, 0.15) 0%, rgba(33, 150, 243, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #2196F3;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">2️⃣</span>
+                                    <h4 style="margin: 0; color: #2196F3;">Nhận mã ủy quyền</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Google chuyển hướng trở lại với một mã ủy quyền (<code>authorization code</code>)</p>
+                            </div>
+        
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(255, 152, 0, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #FF9800;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">3️⃣</span>
+                                    <h4 style="margin: 0; color: #FF9800;">Tạo/Tìm người dùng</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Backend đổi mã để lấy hồ sơ, sau đó tìm hoặc tạo người dùng trong DB</p>
+                            </div>
+        
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(156, 39, 176, 0.15) 0%, rgba(156, 39, 176, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #9C27B0;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">4️⃣</span>
+                                    <h4 style="margin: 0; color: #9C27B0;">Cấp JWT an toàn</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Backend tạo mã dùng một lần, chuyển về frontend để đổi lấy JWT</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.5 14.5c-.5-1-1.5-1.5-2.5-1.5s-2 .5-2.5 1.5" stroke-width="1.5" stroke-linecap="round"/><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke-width="1.5"/><path d="M12 11.5v5M12 7.5v1" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <h2>Luồng Google OAuth 2.0</h2>
+                    </div>
+                    <div class="right-column">
+                        <div class="mermaid">
+                            sequenceDiagram
+                                actor User as Người dùng
+                                participant Browser as Trình duyệt
+                                participant Backend
+                                participant Google
+                                User->>Browser: Nhấp "Đăng nhập bằng Google"
+                                Browser->>Backend: GET /auth/google
+                                Backend->>Browser: 302 Chuyển hướng đến Google OAuth
+                                Browser->>Google: Người dùng xác thực & cấp quyền
+                                Google->>Browser: 302 Chuyển hướng đến /auth/google/callback?code=...
+                                Browser->>Backend: GET /auth/google/callback?code=...
+                                Backend->>Google: Trao đổi mã ủy quyền để lấy access token
+                                Google-->>Backend: Trả về Google Access Token & Hồ sơ
+                                Backend->>Backend: Xác thực hồ sơ, tìm hoặc tạo người dùng trong DB
+                                Backend->>Backend: Tạo mã dùng một lần (cho frontend)
+                                Backend->>Browser: 302 Chuyển hướng đến frontend_url?code=...
+                                Browser->>Backend: POST /auth/exchange-code với mã dùng một lần
+                                Backend->>Backend: Xác thực mã, tạo JWTs
+                                Backend-->>Browser: Trả về Access Token & đặt cookie Refresh Token
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              - Điểm mấu chốt ở đây là tách biệt luồng callback từ Google và luồng cấp token cho client.
+              - Sau khi backend nhận callback từ Google và xác thực người dùng, nó không trả về JWT ngay lập tức.
+              - Thay vào đó, nó tạo một mã dùng một lần (one-time code) và chuyển hướng người dùng về frontend với mã này.
+              - Frontend sau đó dùng mã này để gọi một endpoint khác, và lúc đó backend mới chính thức cấp JWT.
+              - Cách này an toàn hơn, tránh lộ token trên URL và tuân thủ chuẩn OAuth2.
+            </aside>
+        </section>
+
+        
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 10a1 1 0 1 0-2 0 1 1 0 0 0 2 0Z" stroke-width="1.5"/><path d="M2.48 13.5h19.04M12 2.5v19" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <h2>Bảo mật Liên kết Tài khoản</h2>
+                    </div>
+                    <div class="right-column">
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(76, 175, 80, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #4CAF50;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">🔗</span>
+                                    <h4 style="margin: 0; color: #4CAF50;">Liên kết Tài khoản</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Người dùng đã xác thực có thể liên kết tài khoản Google trong phần cài đặt</p>
+                            </div>
+        
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #ef4444;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">🛡️</span>
+                                    <h4 style="margin: 0; color: #ef4444;">Kiểm tra Bảo mật</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Hệ thống từ chối nếu tài khoản Google đã được liên kết với người dùng khác</p>
+                            </div>
+        
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(255, 152, 0, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #FF9800;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">⚠️</span>
+                                    <h4 style="margin: 0; color: #FF9800;">Yêu cầu Hủy liên kết</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Để tránh bị khóa tài khoản, người dùng phải đặt mật khẩu <strong>trước khi</strong> hủy liên kết Google</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 13V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 16H4m0 0 3-3m-3 3 3 3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Xác thực hai yếu tố (2FA)</h2>
+                        <p style="font-size: 0.8em; color: #666; margin-top: 10px;">Lớp bảo mật bổ sung</p>
+                    </div>
+                    <div class="right-column">
+                        <p style="margin-bottom: 20px;">Thêm một lớp bảo vệ dựa trên <strong>TOTP</strong> (Time-based One-Time Password)</p>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 15px;">
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(76, 175, 80, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #4CAF50;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">📱</span>
+                                    <h4 style="margin: 0; color: #4CAF50;">Liên kết Ứng dụng</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Người dùng liên kết tài khoản với ứng dụng xác thực (Google Authenticator, Authy...)</p>
+                            </div>
+        
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(33, 150, 243, 0.15) 0%, rgba(33, 150, 243, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #2196F3;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">🔢</span>
+                                    <h4 style="margin: 0; color: #2196F3;">Mã Xác thực</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Sau khi đăng nhập bằng mật khẩu, cung cấp mã 6 chữ số thay đổi theo thời gian</p>
+                            </div>
+        
+                            <div class="fragment" style="background: linear-gradient(135deg, rgba(156, 39, 176, 0.15) 0%, rgba(156, 39, 176, 0.05) 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #9C27B0;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                    <span style="font-size: 2em;">🔐</span>
+                                    <h4 style="margin: 0; color: #9C27B0;">Mã Khôi phục</h4>
+                                </div>
+                                <p style="margin: 0; font-size: 0.85em; padding-left: 50px;">Cung cấp 10 mã khôi phục dùng một lần (đã băm) phòng trường hợp mất thiết bị</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 13V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 16H4m0 0 3-3m-3 3 3 3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Luồng Thiết lập 2FA</h2>
+                    </div>
+                    <div class="right-column">
+                        <div class="mermaid">
+                            sequenceDiagram
+                                actor User
+                                participant Client
+                                participant Backend
+                                User->>Client: Yêu cầu bật 2FA
+                                Client->>Backend: POST /2fa/generate
+                                Backend->>Backend: Tạo secret, trả về QR code
+                                Backend-->>Client: Gửi QR code URL
+                                User->>Client: Quét QR, nhập mã 6 số
+                                Client->>Backend: POST /2fa/turn-on
+                                Backend->>Backend: Xác thực mã
+                                alt Mã hợp lệ
+                                    Backend->>Backend: Lưu secret & mã khôi phục
+                                    Backend-->>Client: 200 OK (2FA đã bật)
+                                else Mã không hợp lệ
+                                    Backend-->>Client: 400 Bad Request
+                                end
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              - Khi người dùng yêu cầu bật 2FA, backend sẽ tạo một secret duy nhất.
+              - Secret này được lưu tạm thời trong một cookie `HttpOnly` được mã hóa, chỉ có hiệu lực 5 phút, và gửi về cho client dưới dạng QR code. Việc này đảm bảo secret chỉ tồn tại trong một thời gian ngắn và an toàn.
+              - Người dùng quét mã, nhập mã 6 số. Backend sẽ xác thực mã này với secret đã lưu tạm thời.
+              - Nếu thành công, secret sẽ được mã hóa vĩnh viễn và lưu vào DB, đồng thời tạo ra 10 mã khôi phục đã được băm để người dùng lưu lại.
+            </aside>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 13V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 16H4m0 0 3-3m-3 3 3 3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Luồng Đăng nhập với 2FA</h2>
+                    </div>
+                    <div class="right-column">
+                        <div class="mermaid">
+                            sequenceDiagram
+                                actor User
+                                participant Client
+                                participant Backend
+                                User->>Client: Nhập email & mật khẩu
+                                Client->>Backend: POST /auth/login
+                                Backend->>Backend: Xác thực thành công, thấy 2FA bật
+                                Backend-->>Client: 200 OK (yêu cầu 2FA), cấp `2fa_partial_token`
+                                User->>Client: Nhập mã 2FA (6 số)
+                                Client->>Backend: POST /2fa/authenticate
+                                Backend->>Backend: Xác thực mã 2FA
+                                alt Mã hợp lệ
+                                    Backend->>Backend: Cấp Access & Refresh Token đầy đủ
+                                    Backend-->>Client: 200 OK
+                                else Mã không hợp lệ
+                                    Backend-->>Client: 401 Unauthorized
+                                end
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              - Sau khi đăng nhập bằng mật khẩu thành công, hệ thống không cấp token đầy đủ ngay.
+              - Thay vào đó, nó cấp một `2fa_partial_token` đặc biệt, có thời hạn ngắn (5 phút) và được lưu trong cookie `HttpOnly`.
+              - Token này không đủ quyền để truy cập các API quan trọng, nó chỉ có quyền gọi đến endpoint `/2fa/authenticate`.
+              - Chỉ sau khi người dùng cung cấp mã 2FA (hoặc mã khôi phục) hợp lệ, hệ thống mới cấp Access và Refresh token đầy đủ.
+            </aside>
+        </section>
+
+        <section>
+          <h2 class="chapter-title" style="font-size: 2.5em; color: var(--text-color);">Quản lý Tài khoản An toàn</h2>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke-width="1.5"/><path d="M15 12H9" stroke-width="1.5" stroke-linecap="round"/><path d="M3 12h2m14 0h2" stroke-width="1.5" stroke-linecap="round"/><path d="M12 3v2m0 14v2" stroke-width="1.5" stroke-linecap="round"/><path d="m4.929 4.929 1.414 1.414m11.314 11.314 1.414 1.414" stroke-width="1.5" stroke-linecap="round"/><path d="m17.657 4.929-1.414 1.414m-8.485 11.314-1.414 1.414" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <h2>Luồng Quên Mật khẩu</h2>
+                    </div>
+                    <div class="right-column">
+                        <div class="mermaid">
+                            sequenceDiagram
+                                actor User
+                                participant Client
+                                participant Backend
+                                participant Redis
+                                participant MailService
+                                User->>Client: Nhấp "Quên mật khẩu"
+                                Client->>Backend: POST /auth/forgot-password
+                                Backend->>Backend: Tạo token (lưu vào Redis, TTL 15 phút)
+                                Backend->>MailService: Gửi email chứa link đặt lại
+                                Backend-->>Client: 200 OK
+                                User->>Client: Nhấp link, nhập mật khẩu mới
+                                Client->>Backend: POST /auth/reset-password
+                                Backend->>Redis: Xác thực token
+                                alt Token hợp lệ
+                                    Backend->>Backend: Cập nhật mật khẩu & Vô hiệu hóa tất cả phiên
+                                    Backend-->>Client: 200 OK
+                                else Token không hợp lệ
+                                    Backend-->>Client: 400 Bad Request
+                                end
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              - Luồng này cũng dựa trên token dùng một lần được lưu trong Redis với TTL ngắn (15 phút). Token sẽ bị xóa ngay sau khi sử dụng.
+              - Quan trọng nhất: Sau khi đặt lại mật khẩu thành công, chúng ta phải vô hiệu hóa tất cả các phiên đăng nhập đang hoạt động của người dùng đó (`logoutAll`). Điều này để ngăn chặn trường hợp kẻ tấn công đã chiếm được phiên cũ và vẫn có thể truy cập ngay cả khi người dùng đã đổi mật khẩu.
+            </aside>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 16V8a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v8a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4Z" stroke-width="1.5"/><path d="m8 10 4 2 4-2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Luồng Thay đổi Email</h2>
+                    </div>
+                    <div class="right-column">
+                        <div class="mermaid">
+                            sequenceDiagram
+                                actor User
+                                participant Client
+                                participant Backend
+                                participant MailService
+                                User->>Client: Yêu cầu đổi email (nhập mật khẩu)
+                                Client->>Backend: POST /user/request-email-change
+                                alt Mật khẩu đúng
+                                    Backend->>MailService: Gửi link xác minh đến email MỚI
+                                    Backend->>MailService: Gửi thông báo đến email CŨ
+                                    Backend-->>Client: 200 OK
+                                else Mật khẩu sai
+                                    Backend-->>Client: 401 Unauthorized
+                                end
+                                User->>Client: Nhấp link xác minh trong email mới
+                                Client->>Backend: GET /user/verify-email-change
+                                alt Token hợp lệ
+                                    Backend->>Backend: Cập nhật email & Vô hiệu hóa tất cả phiên
+                                    Backend-->>Client: 200 OK
+                                else Token không hợp lệ
+                                    Backend-->>Client: 400 Bad Request
+                                end
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              - Để tăng cường bảo mật, người dùng phải nhập mật khẩu hiện tại của họ.
+              - Hệ thống sẽ gửi email đến cả hai địa chỉ: một email xác minh đến địa chỉ mới (để xác nhận quyền sở hữu) và một email thông báo đến địa chỉ cũ (để cảnh báo về hoạt động thay đổi).
+              - Tương tự như đổi mật khẩu, sau khi đổi email thành công, tất cả các phiên cũng bị vô hiệu hóa để đảm bảo an toàn.
+            </aside>
+        </section>
+
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 3H9a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 17H9.5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Các Cơ chế Đăng xuất</h2>
+                    </div>
+                    <div class="right-column" style="display: flex; gap: 20px;">
+                        <div style="flex: 1;">
+                            <p style="text-align: center;"><strong>Đăng xuất Thiết bị Hiện tại</strong></p>
+                            <div class="mermaid">
+                                sequenceDiagram
+                                    Client->>Backend: POST /auth/logout
+                                    Backend->>DB: Xóa Refresh Token
+                                    DB-->>Backend: OK
+                                    Backend-->>Client: 200 OK
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              - Chúng ta có 2 cơ chế.
+              - **Đăng xuất thông thường:** Chỉ xóa refresh token của phiên hiện tại khỏi DB. Các phiên trên thiết bị khác không bị ảnh hưởng.
+              - **"Đăng xuất tất cả":** Đây là một tính năng bảo mật mạnh hơn. Nó cập nhật trường `tokensValidFrom` của người dùng thành thời gian hiện tại, làm cho TẤT CẢ các token đã cấp trước đó (cả access và refresh) trở nên vô hiệu, đồng thời xóa sạch các refresh token trong DB.
+            </aside>
+        </section>
+      </section>
+
+      <!-- Phần 2: Phân quyền -->
+      <section>
+        <!-- Slide 1: Tiêu đề -->
+        <section>
+          <h1 class="chapter-title">Phần 2: Phân quyền</h1>
+          <p class="subtitle">(Authorization)</p>
+          <aside class="notes">
+            Phần này tập trung vào cơ chế phân quyền (Authorization) trong dự án. Chúng ta sẽ đi từ khái niệm cơ bản đến triển khai cụ thể với NestJS Guards.
+          </aside>
+        </section>
+
+        <!-- Slide 3: Xác thực vs. Phân quyền -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 12h12M6 12l4-4m-4 4 4 4M18 12l-4-4m4 4-4 4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Hai khái niệm Cốt lõi</h2>
+                    </div>
+                    <div class="right-column">
+                        <div style="display: flex; gap: 30px; align-items: stretch;">
+                            <div style="flex: 1; border: 2px solid #4CAF50; border-radius: 10px; padding: 20px; text-align: center;">
+                                <p style="font-size: 3em; margin: 0;">🛂</p>
+                                <h3 style="color: #4CAF50; margin: 15px 0;">Xác thực</h3>
+                                <p style="font-size: 1.1em; font-weight: bold; margin: 10px 0;">Bạn là ai?</p>
+                                <p style="font-size: 0.85em; color: #666; font-style: italic;">Xuất trình CMND/CCCD để vào cửa tòa nhà</p>
+                                <p style="font-size: 0.8em; margin-top: 15px;">Ví dụ: Đăng nhập bằng email/mật khẩu, hoặc qua Google</p>
+                            </div>
+                            <div style="flex: 1; border: 2px solid #2196F3; border-radius: 10px; padding: 20px; text-align: center;">
+                                <p style="font-size: 3em; margin: 0;">🔑</p>
+                                <h3 style="color: #2196F3; margin: 15px 0;">Phân quyền</h3>
+                                <p style="font-size: 1.1em; font-weight: bold; margin: 10px 0;">Bạn được phép làm gì?</p>
+                                <p style="font-size: 0.85em; color: #666; font-style: italic;">Thẻ thang máy chỉ cho phép đi đến một số tầng</p>
+                                <p style="font-size: 0.8em; margin-top: 15px;">Ví dụ: Chỉ MANAGER mới xóa được dự án</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              Hai khái niệm cốt lõi của bảo mật:
+              - AUTHENTICATION (Xác thực): Xác minh danh tính - "Bạn là ai?". Đây là quá trình kiểm tra xem người dùng có đúng là người mà họ khai báo hay không. Ví dụ: đăng nhập bằng email và mật khẩu, hoặc qua Google.
+              - AUTHORIZATION (Phân quyền): Xác định quyền truy cập - "Bạn được phép làm gì?". Sau khi danh tính đã được xác thực, đây là quá trình xác định những hành động, tài nguyên, hoặc khu vực nào mà người dùng đó được phép truy cập. Ví dụ: Chỉ có MANAGER mới được phép xóa một dự án.
+              
+              Phép ẩn dụ: Xác thực là việc xuất trình CMND/CCCD để vào cửa tòa nhà. Phân quyền là chiếc thẻ thang máy chỉ cho phép bạn đi đến một số tầng nhất định.
+            </aside>
+        </section>
+
+        <!-- Slide 4: Mô hình RBAC -->
+          <section>
+              <div class="slide-content-card">
+                  <div class="layout-container">
+                      <div class="left-column">
+                          <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17 20v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M23 20v-2a4 4 0 0 0-3-3.87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 3.13a4 4 0 0 1 0 7.75" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                          <h2>Mô hình RBAC</h2>
+                          <p style="font-size: 0.8em; color: #666;">(Role-Based Access Control)</p>
+                      </div>
+                      <div class="right-column">
+                          <h3 style="margin-bottom: 20px;">3 khái niệm chính</h3>
+                          <div style="display: flex; flex-direction: column; gap: 15px;">
+                              <div class="fragment" style="background: #575757; padding: 15px; border-radius: 8px; border-left: 4px solid #4CAF50;">
+                                  <h4 style="margin: 0 0 8px 0; color: #4CAF50;">👤 User (Người dùng)</h4>
+                                  <p style="margin: 0; font-size: 0.85em;">Chủ thể thực hiện các hành động trong hệ thống</p>
+                              </div>
+                              <div class="fragment" style="background: #575757; padding: 15px; border-radius: 8px; border-left: 4px solid #2196F3;">
+                                  <h4 style="margin: 0 0 8px 0; color: #2196F3;">🎭 Role (Vai trò)</h4>
+                                  <p style="margin: 0; font-size: 0.85em;">Tập hợp quyền hạn được định nghĩa trước (ADMIN, MANAGER, AGENT)</p>
+                              </div>
+                              <div class="fragment" style="background: #575757; padding: 15px; border-radius: 8px; border-left: 4px solid #FF9800;">
+                                  <h4 style="margin: 0 0 8px 0; color: #FF9800;">🎯 Scope (Phạm vi)</h4>
+                                  <p style="margin: 0; font-size: 0.85em;">Ngữ cảnh vai trò có hiệu lực: <strong>Toàn cục</strong> hoặc <strong>Dự án</strong></p>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+              <aside class="notes">
+                Hệ thống sử dụng mô hình RBAC (Role-Based Access Control) - một phương pháp tiêu chuẩn để quản lý quyền hạn.
+                
+                3 khái niệm chính:
+                1. USER (Người dùng): Chủ thể (actor) trong hệ thống, là người thực hiện các hành động.
+                2. ROLE (Vai trò): Một tập hợp các quyền hạn được định nghĩa trước (ví dụ: ADMIN, MANAGER, AGENT). Người dùng được gán vào các vai trò này.
+                3. SCOPE (Phạm vi): Ngữ cảnh mà vai trò có hiệu lực. Có 2 phạm vi chính:
+                   - Toàn cục (Global): Áp dụng trên toàn bộ ứng dụng
+                   - Dự án (Project): Chỉ áp dụng trong một dự án cụ thể
+                   
+                Quyền không được gán trực tiếp cho người dùng, mà được gán cho các vai trò.
+              </aside>
+          </section>
+          
+          <section>
+              <div class="slide-content-card">
+                  <div class="layout-container">
+                      <div class="left-column">
+                          <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17 20v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M23 20v-2a4 4 0 0 0-3-3.87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 3.13a4 4 0 0 1 0 7.75" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                          <h2>Phạm vi vai trò</h2>
+                      </div>
+                      <div class="right-column">
+                          <div class="mermaid">
+                            graph TD
+                                subgraph "Phạm vi: Toàn cục"
+                                    User1(User: Alice) --> Role1(Global Role: ADMIN);
+                                end
+
+                                subgraph "Phạm vi: Dự án A"
+                                    User2(User: Bob) --> Role2(Project Role: MANAGER);
+                                end
+
+                                subgraph "Phạm vi: Dự án B"
+                                    User2 --> Role3(Project Role: AGENT);
+                                end
+
+                                AdminDashboard("Admin Dashboard")
+                                ProjectA("Quản lý Dự án A")
+                                ProjectB("Chat trong Dự án B")
+
+                                Role1 -- "có thể truy cập" --> AdminDashboard;
+                                Role2 -- "cho phép" --> ProjectA;
+                                Role3 -- "cho phép" --> ProjectB;
+                            </div>
+                      </div>
+                  </div>
+              </div>
+              <aside class="notes">
+                Sơ đồ minh họa cách vai trò hoạt động trong 2 phạm vi:
+                
+                1. PHẠM VI TOÀN CỤC: Alice có vai trò ADMIN ở cấp toàn hệ thống. Cô ấy có thể truy cập Admin Dashboard và quản lý toàn bộ ứng dụng.
+                
+                2. PHẠM VI DỰ ÁN: Bob có vai trò khác nhau trong các dự án khác nhau:
+                   - Trong Dự án A: Bob là MANAGER, có quyền quản lý dự án, thành viên và cuộc trò chuyện
+                   - Trong Dự án B: Bob chỉ là AGENT, chỉ có quyền xử lý các cuộc trò chuyện
+                   
+                Điều này cho thấy sự linh hoạt của hệ thống: một người dùng có thể có vai trò và quyền hạn khác nhau tùy theo ngữ cảnh.
+              </aside>
+          </section>
+          <!-- Slide 5: Định nghĩa Vai trò -->
+          <section>
+              <div class="slide-content-card">
+                  <div class="layout-container">
+                      <div class="left-column">
+                          <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.625 6.125a3.5 3.5 0 1 0 0-4.25 3.5 3.5 0 0 0 0 4.25Z" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/><path d="m21.375 11.125-5.913 5.913a3.5 3.5 0 0 1-4.95 0l-5.912-5.913a3.5 3.5 0 0 1 0-4.95l5.913-5.912a3.5 3.5 0 0 1 4.95 0l5.912 5.912a3.5 3.5 0 0 1 0 4.95Z" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.625 22.125a3.5 3.5 0 1 0 0-4.25 3.5 3.5 0 0 0 0 4.25Z" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                          <h2>Định nghĩa Vai trò</h2>
+                      </div>
+                      <div class="right-column">
+                          <p style="margin-bottom: 20px;">Các vai trò được định nghĩa bằng <strong>Enum</strong> để đảm bảo tính nhất quán</p>
+                          <div style="display: flex; gap: 25px;">
+                              <div style="flex: 1;">
+                                  <h4 style="color: #4CAF50; margin-bottom: 10px;">🌐 Vai trò Toàn cục</h4>
+                                  <p style="font-size: 0.75em; color: #666; margin-bottom: 10px;">Lưu trong bảng <code>users</code></p>
+                                  <pre style="margin: 0;"><code class="typescript" data-trim data-noescape>
+// packages/shared/src/
+// global-roles.enum.ts
+
+export enum GlobalRole {
+  ADMIN = "admin",
+  USER = "user",
+}
+                                  </code></pre>
+                              </div>
+                              <div style="flex: 1;">
+                                  <h4 style="color: #2196F3; margin-bottom: 10px;">📁 Vai trò Dự án</h4>
+                                  <p style="font-size: 0.75em; color: #666; margin-bottom: 10px;">Lưu trong bảng <code>project_members</code></p>
+                                  <pre style="margin: 0;"><code class="typescript" data-trim data-noescape>
+// packages/shared/src/
+// project-roles.enum.ts
+
+export enum ProjectRole {
+  MANAGER = "manager",
+  AGENT = "agent",
+}
+                                  </code></pre>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+              <aside class="notes">
+                Các vai trò được định nghĩa thông qua Enum trong TypeScript để đảm bảo tính nhất quán xuyên suốt ứng dụng.
+                
+                VAI TRÒ TOÀN CỤC (Global Roles):
+                - Áp dụng cho toàn bộ hệ thống
+                - Được lưu trực tiếp trong bảng 'users'
+                - Có 2 vai trò: ADMIN (toàn quyền truy cập hệ thống) và USER (người dùng thông thường)
+                - File: packages/shared/src/global-roles.enum.ts
+                
+                VAI TRÒ DỰ ÁN (Project Roles):
+                - Chỉ có hiệu lực trong phạm vi một dự án cụ thể
+                - Được lưu trong bảng 'project_members' (quan hệ many-to-many giữa users và projects)
+                - Có 2 vai trò: MANAGER (quản lý dự án, thành viên và cuộc trò chuyện) và AGENT (chỉ xử lý các cuộc trò chuyện)
+                - File: packages/shared/src/project-roles.enum.ts
+                
+                Việc sử dụng Enum giúp tránh lỗi đánh máy và dễ dàng refactor code.
+              </aside>
+          </section>
+
+        <!-- Slide 6: Triển khai với RolesGuard -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke-width="1.5"/><path d="m9 12 2 2 4-4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Triển khai: RolesGuard</h2>
+                    </div>
+                    <div class="right-column">
+                        <p style="margin-bottom: 15px;">Logic phân quyền được <strong>tập trung</strong> tại một Guard duy nhất</p>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="fragment" style="background: linear-gradient(90deg, #4CAF50 0%, transparent 100%); padding: 12px 15px; border-radius: 6px;">
+                                <strong style="color: #fff;">1. Đọc Decorator</strong>
+                                <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #fff;">Lấy vai trò yêu cầu từ <code>@Roles()</code></p>
+                            </div>
+                            <div class="fragment" style="background: linear-gradient(90deg, #2196F3 0%, transparent 100%); padding: 12px 15px; border-radius: 6px;">
+                                <strong style="color: #fff;">2. Xác định Phạm vi</strong>
+                                <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #fff;">Tự động nhận diện <code>GlobalRole</code> hay <code>ProjectRole</code></p>
+                            </div>
+                            <div class="fragment" style="background: linear-gradient(90deg, #FF9800 0%, transparent 100%); padding: 12px 15px; border-radius: 6px;">
+                                <strong style="color: #fff;">3. Kiểm tra Quyền</strong>
+                                <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #fff;">Global: So sánh <code>user.role</code> | Project: Truy vấn DB + So sánh</p>
+                            </div>
+                            <div class="fragment" style="background: linear-gradient(90deg, #9C27B0 0%, transparent 100%); padding: 12px 15px; border-radius: 6px;">
+                                <strong style="color: #fff;">4. Áp dụng Kế thừa</strong>
+                                <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #fff;">Ví dụ: <code>MANAGER</code> có tất cả quyền của <code>AGENT</code></p>
+                            </div>
+                            <div class="fragment" style="background: linear-gradient(90deg, #f44336 0%, transparent 100%); padding: 12px 15px; border-radius: 6px;">
+                                <strong style="color: #fff;">5. Trả về Quyết định</strong>
+                                <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #fff;"><code>true</code> (cho phép) hoặc <code>false</code> (403 Forbidden)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              Toàn bộ logic phân quyền của hệ thống được xử lý bởi RolesGuard. Guard này được kích hoạt trên các endpoint được đánh dấu bởi decorator @Roles().
+              
+              LUỒNG HOẠT ĐỘNG CỦA ROLESGUARD:
+              
+              1. KIỂM TRA DECORATOR: Guard đọc các vai trò yêu cầu từ decorator @Roles(ProjectRole.MANAGER, ...). Decorator này được đặt trên controller method.
+              
+              2. XÁC ĐỊNH PHẠM VI: Guard tự động phát hiện vai trò yêu cầu là GlobalRole hay ProjectRole bằng cách kiểm tra xem giá trị có nằm trong enum nào.
+              
+              3. KIỂM TRA QUYỀN:
+                 - Nếu là GlobalRole: So sánh vai trò trong object user (đã được gắn bởi JwtAuthGuard) với vai trò yêu cầu.
+                 - Nếu là ProjectRole:
+                   a. Lấy projectId từ request.params (ví dụ: /projects/:id)
+                   b. Truy vấn bảng project_members để tìm vai trò của người dùng trong dự án đó
+                   c. So sánh vai trò thực tế với vai trò yêu cầu
+              
+              4. ÁP DỤNG KẾ THỪA: Logic kiểm tra có tính đến sự kế thừa vai trò. Ví dụ, MANAGER có tất cả quyền của AGENT, nên nếu endpoint yêu cầu AGENT, người dùng có vai trò MANAGER cũng được phép truy cập.
+              
+              5. TRẢ VỀ QUYẾT ĐỊNH: Guard trả về true (cho phép truy cập) hoặc false (ném ra lỗi 403 Forbidden).
+              
+              Cách tiếp cận này giúp logic phân quyền được tập trung, nhất quán, và dễ bảo trì. Chỉ cần thay đổi ở một nơi, toàn bộ hệ thống sẽ được cập nhật.
+            </aside>
+        </section>
+
+        <!-- Slide 7: Luồng ví dụ -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke-width="1.5"/><path d="M14.5 9.5 9.5 14.5M9.5 9.5l5 5" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <h2>Ví dụ thực tế</h2>
+                        <p style="font-size: 0.85em; color: #666;">AGENT cố gắng thực hiện hành động của MANAGER</p>
+                    </div>
+                    <div class="right-column">
+                        <div class="mermaid" style="font-size: 0.65em;">
+                            sequenceDiagram
+                                actor Agent as "👤 User<br/>(Role: AGENT)"
+                                participant Client as "🖥️ Client"
+                                participant Backend as "⚙️ Backend"
+                                participant RolesGuard as "🛡️ RolesGuard"
+                                participant DB as "🗄️ Database"
+                                
+                                Agent->>Client: Gửi request cập nhật dự án
+                                Note over Agent,Client: Hành động của MANAGER
+                                Client->>Backend: PATCH /projects/{id}
+                                activate Backend
+                                
+                                Backend->>RolesGuard: JwtAuthGuard OK<br/>→ canActivate()?
+                                activate RolesGuard
+                                Note over RolesGuard: Vai trò yêu cầu:<br/>ProjectRole.MANAGER
+                                RolesGuard->>DB: Lấy vai trò user<br/>trong dự án {id}
+                                DB-->>RolesGuard: Trả về: 'agent'
+                                Note over RolesGuard: So sánh:<br/>'agent' ≠ 'manager'<br/>❌ KHÔNG KHỚP
+                                RolesGuard-->>Backend: return false
+                                deactivate RolesGuard
+                                
+                                Backend-->>Client: 403 Forbidden
+                                Note over Backend,Client: Bạn không có quyền<br/>thực hiện hành động này
+                                deactivate Backend
+                                
+                                Note over Agent,DB: ✅ TRUY CẬP BỊ TỪ CHỐI<br/>Hệ thống hoạt động chính xác
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+              Đây là sơ đồ minh họa cách hệ thống ngăn chặn một AGENT thực hiện hành động của MANAGER.
+              
+              KỊCH BẢN: Một user có vai trò AGENT cố gắng cập nhật thông tin dự án - một hành động chỉ dành cho MANAGER.
+              
+              LUỒNG XỬ LÝ:
+              
+              1. User (AGENT) gửi request cập nhật dự án từ Client
+              2. Client gửi request: PATCH /projects/{id}
+              3. Backend nhận request, JwtAuthGuard xác thực thành công (user đã đăng nhập)
+              4. RolesGuard được kích hoạt:
+                 - Đọc decorator: Endpoint này yêu cầu vai trò ProjectRole.MANAGER
+                 - Nhận diện đây là ProjectRole, nên cần kiểm tra trong dự án cụ thể
+                 - Truy vấn Database: Lấy vai trò của user trong dự án {id}
+                 - Database trả về: 'agent'
+                 - So sánh: 'agent' vs 'manager' → KHÔNG KHỚP
+                 - RolesGuard trả về false
+              5. Backend ném ra lỗi 403 Forbidden
+              6. Client nhận được response với thông báo: "Bạn không có quyền thực hiện hành động này"
+              
+              KẾT QUẢ: Truy cập bị từ chối. Hệ thống hoạt động chính xác, bảo vệ tài nguyên khỏi truy cập trái phép.
+              
+              Đây là một ví dụ điển hình về cách phân quyền theo dự án hoạt động, đảm bảo người dùng chỉ có thể thực hiện các hành động phù hợp với vai trò của họ trong từng dự án cụ thể.
+            </aside>
+        </section>
+        </section>
+
+      <!-- Phần 3: Mã hóa Dữ liệu -->
+      <section>
+        <section>
+          <h1 class="chapter-title">Phần 3: Mã Hóa Dữ Liệu</h1>
+          <p class="subtitle">(Data Encryption)</p>
+        </section>
+
+        <!-- Slide 1: Hashing vs. Encryption -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 12.07V21.93a.07.07 0 0 0 .07.07h6.86a.07.07 0 0 0 .07-.07V12.07a.07.07 0 0 0-.07-.07H9.07a.07.07 0 0 0-.07.07Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.5 2h-2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.5 5.5H16a2 2 0 0 1 2 2v4.5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.5 5.5H8a2 2 0 0 0-2 2v4.5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Hashing vs. Encryption</h2>
+                    </div>
+                    <div class="right-column">
+                        <div style="display: flex; justify-content: space-around; gap: 20px;">
+                            <div style="flex: 1; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                                <h4>🔒 Hashing (Bcrypt)</h4>
+                                <p style="margin-top: 10px;"><strong>Một chiều</strong> - Không thể đảo ngược</p>
+                                <p style="font-size: 0.85em; opacity: 0.8;">Xác minh mật khẩu, tokens</p>
+                            </div>
+                            <div style="flex: 1; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                                <h4>🔐 Encryption (AES-256-GCM)</h4>
+                                <p style="margin-top: 10px;"><strong>Hai chiều</strong> - Mã hóa & Giải mã</p>
+                                <p style="font-size: 0.85em; opacity: 0.8;">Lưu trữ OAuth tokens, 2FA secrets</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                Hai kỹ thuật chính để bảo vệ dữ liệu trong database. Hashing với bcrypt cho mật khẩu - một chiều, không thể đảo ngược, dùng salt rounds = 12. Encryption với AES-256-GCM cho dữ liệu cần đọc lại như OAuth tokens và 2FA secrets.
+            </aside>
+        </section>
+
+        <!-- Slide 2: Data at Rest - Bcrypt Hashing -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke-width="1.5"/><path d="M12 8v8" stroke-width="1.5" stroke-linecap="round"/><path d="M15 11h-3M12 15h3" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <h2>Data at Rest: Bcrypt Hashing</h2>
+                    </div>
+                    <div class="right-column">
+                        <p>Bảo vệ dữ liệu bằng băm một chiều - <strong>không thể đảo ngược</strong>.</p>
+                        <table style="font-size: 0.8em; margin-top: 15px;">
+                            <thead><tr><th>Dữ liệu</th><th>Vị trí</th><th>Lý do</th></tr></thead>
+                            <tbody>
+                                <tr><td>Mật khẩu</td><td><code>users.passwordHash</code></td><td>Chỉ cần xác minh, không đọc lại</td></tr>
+                                <tr><td>Refresh Token</td><td><code>refresh_tokens.hashedToken</code></td><td>Ngăn chặn session hijacking</td></tr>
+                                <tr><td>2FA Recovery Codes</td><td><code>two_factor_recovery_codes.hashedCode</code></td><td>Dùng một lần, chỉ so sánh</td></tr>
+                            </tbody>
+                        </table>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(100,200,255,0.1); border-left: 3px solid #64c8ff; border-radius: 4px;">
+                            <p style="font-size: 0.85em; margin: 0;">⚙️ <strong>Salt Rounds = 12</strong> → 2<sup>12</sup> iterations (chống brute-force)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                Bcrypt hashing được dùng cho tất cả dữ liệu chỉ cần xác minh. Mật khẩu được hash với salt rounds = 12 - nghĩa là 4096 iterations, đủ chậm để chống brute-force nhưng không ảnh hưởng user experience. Refresh tokens cũng được hash trước khi lưu DB - nếu DB bị breach, attacker không thể dùng tokens. Recovery codes tương tự - hash và chỉ so sánh khi cần.
+            </aside>
+        </section>
+
+        <!-- Slide 3: Data at Rest - AES-256-GCM Encryption -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Data at Rest: AES-256-GCM</h2>
+                    </div>
+                    <div class="right-column">
+                        <p>Mã hóa đối xứng cho dữ liệu cần <strong>đọc lại</strong>.</p>
+                        <table style="font-size: 0.8em; margin-top: 15px;">
+                            <thead><tr><th>Dữ liệu</th><th>Vị trí</th><th>Lý do</th></tr></thead>
+                            <tbody>
+                                <tr><td><strong>2FA Secret</strong></td><td><code>users.twoFactorAuthenticationSecret</code></td><td>Cần giải mã để xác minh TOTP</td></tr>
+                                <tr><td><strong>OAuth Tokens</strong></td><td><code>user_identities.accessToken</code></td><td>Cần giải mã để gọi Google API</td></tr>
+                            </tbody>
+                        </table>
+                        <div style="margin-top: 15px; padding: 12px; background: rgba(255,200,100,0.1); border-left: 3px solid #ffc864; border-radius: 4px;">
+                            <p style="font-size: 0.85em; margin: 0;"><strong>EncryptionService</strong></p>
+                            <ul style="font-size: 0.8em; margin: 5px 0 0 20px; line-height: 1.6;">
+                                <li>256-bit key từ <code>ENCRYPTION_KEY</code></li>
+                                <li>Random IV (16 bytes) cho mỗi lần mã hóa</li>
+                                <li>Auth Tag (16 bytes) - đảm bảo tính toàn vẹn</li>
+                                <li>Format: <code>IV:AuthTag:Encrypted</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                AES-256-GCM được dùng cho dữ liệu cần giải mã. 2FA Secret - khi user nhập TOTP code, ta cần giải mã secret để verify. OAuth tokens - khi cần gọi Google API thay mặt user, ta giải mã access token. GCM mode rất quan trọng - nó cung cấp Authenticated Encryption, nghĩa là vừa bảo mật vừa đảm bảo dữ liệu không bị thay đổi. Mỗi lần mã hóa dùng IV ngẫu nhiên mới - cùng plaintext sẽ tạo ra ciphertext khác nhau.
+            </aside>
+        </section>
+
+        <!-- Slide 4: EncryptionService Detail -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 12h6M9 16h6M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>EncryptionService</h2>
+                    </div>
+                    <div class="right-column">
+                        <p>Dịch vụ mã hóa trung tâm của hệ thống.</p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+                            <div style="padding: 12px; background: rgba(100,200,255,0.1); border-radius: 6px;">
+                                <h4 style="margin: 0 0 8px 0;">🔐 Encrypt</h4>
+                                <ol style="font-size: 0.8em; margin: 0; padding-left: 20px; line-height: 1.6;">
+                                    <li>Generate random IV</li>
+                                    <li>Create cipher với key + IV</li>
+                                    <li>Encrypt plaintext</li>
+                                    <li>Get auth tag từ cipher</li>
+                                    <li>Return <code>IV:Tag:Encrypted</code></li>
+                                </ol>
+                            </div>
+                            <div style="padding: 12px; background: rgba(255,200,100,0.1); border-radius: 6px;">
+                                <h4 style="margin: 0 0 8px 0;">🔓 Decrypt</h4>
+                                <ol style="font-size: 0.8em; margin: 0; padding-left: 20px; line-height: 1.6;">
+                                    <li>Parse <code>IV:Tag:Encrypted</code></li>
+                                    <li>Create decipher với key + IV</li>
+                                    <li>Set auth tag</li>
+                                    <li>Decrypt ciphertext</li>
+                                    <li>Return plaintext</li>
+                                </ol>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(255,100,100,0.1); border-left: 3px solid #ff6464; border-radius: 4px;">
+                            <p style="font-size: 0.85em; margin: 0;">⚠️ <strong>Key Management:</strong> <code>ENCRYPTION_KEY</code> phải 32 ký tự, không commit vào Git</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                EncryptionService là core service xử lý mã hóa/giải mã. Constructor validates ENCRYPTION_KEY phải đúng 32 characters - nếu không đúng, app không start. Encrypt flow: tạo random IV mới cho mỗi lần encrypt, tạo cipher với algorithm aes-256-gcm, encrypt data, lấy auth tag, combine thành format IV:Tag:Encrypted. Decrypt ngược lại: parse chuỗi, tạo decipher, set auth tag để verify integrity, decrypt. Nếu data bị tamper, auth tag validation sẽ fail.
+            </aside>
+        </section>
+
+        <!-- Slide 5: Random Tokens -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke-width="1.5"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Random Tokens</h2>
+                    </div>
+                    <div class="right-column">
+                        <p>Tokens ngẫu nhiên cho các hành động tạm thời.</p>
+                        <table style="font-size: 0.8em; margin-top: 15px;">
+                            <thead><tr><th>Token Type</th><th>Storage</th><th>TTL</th></tr></thead>
+                            <tbody>
+                                <tr><td>Email Verification</td><td>Redis</td><td>15 phút</td></tr>
+                                <tr><td>Password Reset</td><td>Redis</td><td>15 phút</td></tr>
+                                <tr><td>Email Change</td><td>Redis</td><td>15 phút</td></tr>
+                            </tbody>
+                        </table>
+                        <div style="margin-top: 15px; padding: 12px; background: rgba(100,255,200,0.1); border-left: 3px solid #64ffc8; border-radius: 4px;">
+                            <p style="font-size: 0.85em; margin: 0;"><strong>Đặc điểm:</strong></p>
+                            <ul style="font-size: 0.8em; margin: 5px 0 0 20px; line-height: 1.6;">
+                                <li><code>crypto.randomBytes(32).toString('hex')</code> → 64 chars</li>
+                                <li>256 bits entropy - không thể brute-force</li>
+                                <li>Dùng một lần - xóa sau khi verify</li>
+                                <li>Tự động hết hạn với Redis TTL</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                Random tokens được dùng cho các hành động tạm thời. Generate bằng crypto.randomBytes - cryptographically random, 256 bits entropy. Lưu trong Redis với TTL tự động - không pollution main database. Email verification, password reset, email change - tất cả đều dùng pattern này. One-time use - sau khi verify, token bị xóa ngay. Hết 15 phút, Redis tự động xóa. Safe cho URLs vì dùng hex encoding.
+            </aside>
+        </section>
+
+        <!-- Slide 6: Data in Transit -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.5 16H4.5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h15a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2Z" stroke-width="1.5"/><path d="M12 16v2a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-2m10 0v2a2 2 0 0 1-2 2h-2" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <h2>Data in Transit</h2>
+                    </div>
+                    <div class="right-column">
+                        <p>Bảo vệ dữ liệu khi truyền qua mạng.</p>
+                        <div class="mermaid">
+                            graph LR
+                                User[👤 User] -->|HTTPS/WSS| LB[Load Balancer]
+                                LB -->|TLS Termination| LB
+                                LB -->|HTTP| App[🖥️ NestJS App]
+                                
+                                style User fill:#64c8ff,stroke:#333,stroke-width:2px
+                                style LB fill:#ffc864,stroke:#333,stroke-width:2px
+                                style App fill:#64ffc8,stroke:#333,stroke-width:2px
+                        </div>
+                        <div style="margin-top: 15px; display: flex; gap: 10px;">
+                            <div style="flex: 1; padding: 10px; background: rgba(100,200,255,0.1); border-radius: 6px;">
+                                <p style="font-size: 0.85em; margin: 0;"><strong>HTTPS:</strong> REST API</p>
+                            </div>
+                            <div style="flex: 1; padding: 10px; background: rgba(255,200,100,0.1); border-radius: 6px;">
+                                <p style="font-size: 0.85em; margin: 0;"><strong>WSS:</strong> WebSocket</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                Data in transit được bảo vệ bằng TLS/SSL. HTTPS cho REST API, WSS cho WebSocket. Trong production, TLS termination xảy ra ở Load Balancer hoặc reverse proxy - Nginx, CloudFlare. User kết nối qua HTTPS/WSS, load balancer decrypt và forward qua HTTP trong mạng nội bộ an toàn. NestJS app chỉ cần chạy HTTP và trust infrastructure đã handle encryption. TLS 1.2 hoặc 1.3, strong ciphers, valid certificates.
+            </aside>
+        </section>
+
+        <!-- Slide 7: Cookie Security -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" stroke-width="1.5"/><path d="M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 8h.01M16 16h.01" stroke-width="2" stroke-linecap="round"/></svg>
+                        <h2>Cookie Security</h2>
+                    </div>
+                    <div class="right-column">
+                        <p>Bảo vệ tokens trong HttpOnly cookies.</p>
+                        <table style="font-size: 0.8em; margin-top: 15px;">
+                            <thead><tr><th>Attribute</th><th>Value</th><th>Purpose</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>httpOnly</code></td><td><code>true</code></td><td>Chống XSS - không access từ JS</td></tr>
+                                <tr><td><code>secure</code></td><td><code>true</code></td><td>Chỉ gửi qua HTTPS</td></tr>
+                                <tr><td><code>sameSite</code></td><td><code>none/lax</code></td><td>Chống CSRF attacks</td></tr>
+                            </tbody>
+                        </table>
+                        <div style="margin-top: 15px; padding: 12px; background: rgba(100,200,255,0.1); border-left: 3px solid #64c8ff; border-radius: 4px;">
+                            <p style="font-size: 0.85em; margin: 0;"><strong>Cookies được bảo vệ:</strong></p>
+                            <ul style="font-size: 0.8em; margin: 5px 0 0 20px; line-height: 1.6;">
+                                <li><code>refresh_token</code> - 30 ngày</li>
+                                <li><code>2fa_partial_token</code> - 5 phút</li>
+                                <li><code>2fa_secret</code> - 5 phút (tạm thời)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                HttpOnly cookies là layer bảo vệ quan trọng cho tokens. HttpOnly true nghĩa là JavaScript không thể access - chống XSS. Secure true nghĩa là chỉ gửi qua HTTPS - chống man-in-the-middle. SameSite none cho cross-origin requests nhưng phải có secure, lax cho same-site. Refresh token lưu 30 ngày - long-lived. 2FA partial token chỉ 5 phút - chỉ dùng để verify OTP. 2FA secret temporary cookie - chỉ trong quá trình setup 2FA.
+            </aside>
+        </section>
+      </section>
+
+      <!-- Phần 4: Bảo mật API & WebSocket -->
+      <section>
+        <!-- Slide 1: Tiêu đề -->
+        <section>
+          <h1 class="chapter-title">Phần 4: Bảo Mật API & WebSocket</h1>
+            <p class="subtitle">(API & WebSocket Security)</p>
+          <aside class="notes">
+            <p><strong>Chương trình:</strong></p>
+            <ol>
+              <li>Tổng quan về Bảo mật Endpoint</li>
+              <li>Bảo mật REST API (Tóm tắt)</li>
+              <li>Thách thức của Bảo mật WebSocket</li>
+              <li>Kiến trúc Bảo mật WebSocket 3 Lớp</li>
+              <li>Luồng kết nối ví dụ (Agent vs. Widget)</li>
+            </ol>
+          </aside>
+        </section>
+
+        <!-- Slide 2: Bảo mật REST API -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 20v-2a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 20v-2a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Bảo mật REST API</h2>
+                        <p style="font-size: 0.7em; margin-top: 1em; opacity: 0.8;">Phòng thủ theo chiều sâu</p>
+                    </div>
+                    <div class="right-column">
+                        <table style="font-size: 0.75em; width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align: left;">Biện pháp</th>
+                                    <th style="text-align: left;">Công cụ</th>
+                                    <th style="text-align: left;">Chức năng</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Authentication</strong></td>
+                                    <td><code>jwt.guard.ts</code></td>
+                                    <td>Xác thực JWT cho mọi request</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Authorization</strong></td>
+                                    <td><code>roles.guard.ts</code></td>
+                                    <td>Phân quyền theo vai trò</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Input Validation</strong></td>
+                                    <td><code>ValidationPipe</code></td>
+                                    <td>Xác thực & làm sạch DTOs</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>CORS</strong></td>
+                                    <td><code>app.enableCors()</code></td>
+                                    <td>Kiểm soát domain nguồn</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                <p>Bảo mật cho các API RESTful của chúng ta được xây dựng trên bốn trụ cột chính, tạo thành một hệ thống phòng thủ theo chiều sâu:</p>
+                <ul>
+                    <li><strong>Authentication (jwt.guard.ts):</strong> Đảm bảo mọi request (trừ các endpoint được đánh dấu @Public) phải có một JWT hợp lệ trong header Authorization.</li>
+                    <li><strong>Authorization (roles.guard.ts):</strong> Sau khi xác thực, guard này sẽ thực thi việc phân quyền dựa trên vai trò (cả GlobalRole và ProjectRole) cho các endpoint được đánh dấu @Roles().</li>
+                    <li><strong>Input Validation (ValidationPipe):</strong> Được áp dụng toàn cục, ValidationPipe tự động xác thực và làm sạch dữ liệu DTOs đến, bảo vệ hệ thống khỏi dữ liệu không hợp lệ và các cuộc tấn công injection cơ bản.</li>
+                    <li><strong>CORS (app.enableCors()):</strong> Kiểm soát chặt chẽ các domain nào từ phía trình duyệt được phép gửi request đến API, ngăn chặn các cuộc tấn công Cross-Site Request Forgery (CSRF) đơn giản.</li>
+                </ul>
+            </aside>
+        </section>
+
+        <!-- Slide 3: Thách thức WebSocket -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 22v-2M14 22v-2M10 22h4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 20a4.002 4.002 0 0 0 4-4V8a4 4 0 1 0-8 0v8a4.002 4.002 0 0 0 4 4Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 8v8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Thách thức WebSocket</h2>
+                    </div>
+                    <div class="right-column">
+                        <div style="margin-bottom: 1.5em;">
+                            <h4 style="color: #3b82f6; margin-bottom: 0.5em;">REST API: Stateless</h4>
+                            <p style="font-size: 0.75em;">Mỗi request là giao dịch độc lập. Xác thực trên từng request với JWT trong header.</p>
+                        </div>
+                        <div style="margin-bottom: 1.5em;">
+                            <h4 style="color: #ef4444; margin-bottom: 0.5em;">WebSocket: Stateful</h4>
+                            <p style="font-size: 0.75em;">Kết nối bền vững, xác thực <strong>một lần</strong> lúc handshake. Toàn bộ phiên phải được bảo vệ.</p>
+                        </div>
+                        <div style="background: rgba(59, 130, 246, 0.1); padding: 1em; border-radius: 8px;">
+                            <h5 style="margin-bottom: 0.5em;">Hai loại Client:</h5>
+                            <ul style="font-size: 0.75em; margin: 0;">
+                                <li><strong>Đã xác thực:</strong> Agent/Manager (có JWT)</li>
+                                <li><strong>Ẩn danh:</strong> Widget Khách hàng (không có JWT)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                <p><strong>Tại sao WebSocket cần một mô hình bảo mật riêng?</strong></p>
+                <p>Không giống như REST API, WebSocket có những đặc thù riêng đòi hỏi một phương pháp tiếp cận bảo mật khác biệt.</p>
+                <ul>
+                    <li><strong>REST API: Stateless (Phi trạng thái)</strong> - Mỗi request HTTP là một giao dịch độc lập, tự chứa. Client gửi một request, server xử lý và trả về một response, sau đó kết nối đóng lại. Việc xác thực được thực hiện trên từng request bằng cách gửi JWT trong header.</li>
+                    <li><strong>WebSocket: Stateful (Có trạng thái)</strong> - Client và server thiết lập một kết nối bền vững (persistent connection). Kết nối này được duy trì để cho phép giao tiếp hai chiều bất cứ lúc nào. Do đó, việc xác thực chỉ cần thực hiện MỘT LẦN vào lúc bắt đầu kết nối (handshake). Toàn bộ phiên kết nối sau đó phải được bảo vệ.</li>
+                </ul>
+                <p><strong>Hai loại Client của Hệ thống:</strong></p>
+                <p>Kiến trúc của chúng ta phải hỗ trợ đồng thời hai loại client có nhu cầu bảo mật hoàn toàn khác nhau:</p>
+                <ol>
+                    <li><strong>Người dùng đã xác thực (Authenticated Users):</strong> Là các Agent hoặc Manager sử dụng ứng dụng web chính của chúng ta. Họ CÓ JWT sau khi đăng nhập và cần được phân quyền để truy cập dữ liệu của các dự án cụ thể.</li>
+                    <li><strong>Khách truy cập ẩn danh (Anonymous Visitors):</strong> Là những người dùng cuối tương tác với widget trò chuyện được nhúng trên các trang web của khách hàng. Họ KHÔNG CÓ JWT và phải được phép kết nối để bắt đầu một cuộc trò chuyện.</li>
+                </ol>
+            </aside>
+        </section>
+
+        <!-- Slide 4: Kiến trúc 3 Lớp -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke-width="1.5"/><path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke-width="1.5"/><path d="M12 12c-2.5 0-2.5-4-2.5-4M12 12c2.5 0 2.5-4 2.5-4M12 12c-2.5 0-2.5 4-2.5 4M12 12c2.5 0 2.5 4 2.5 4" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <h2>Kiến trúc 3 Lớp</h2>
+                        <p style="font-size: 0.7em; margin-top: 1em; opacity: 0.8;">Phòng thủ theo chiều sâu cho WebSocket</p>
+                        <div style="margin-top: 2em; font-size: 0.7em; text-align: left;">
+                            <div style="margin-bottom: 0.8em; padding: 0.5em; background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6;">
+                                <strong>1. Domain Whitelist</strong><br/>
+                                <span style="opacity: 0.8;">Chặn domain lạ</span>
+                            </div>
+                            <div style="margin-bottom: 0.8em; padding: 0.5em; background: rgba(16, 185, 129, 0.1); border-left: 3px solid #10b981;">
+                                <strong>2. User Authentication</strong><br/>
+                                <span style="opacity: 0.8;">Xác định danh tính</span>
+                            </div>
+                            <div style="padding: 0.5em; background: rgba(245, 158, 11, 0.1); border-left: 3px solid #f59e0b;">
+                                <strong>3. Room Authorization</strong><br/>
+                                <span style="opacity: 0.8;">Cô lập dữ liệu dự án</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="right-column">
+                        <div class="mermaid" style="font-size: 0.8em;">
+                            graph TD
+                                A[Kết nối WebSocket đến] --> B{Lớp 1: Whitelisting Domain};
+                                B -- "Origin hợp lệ" --> C{Lớp 2: User Authentication};
+                                C -- "Đã xác thực hoặc Ẩn danh" --> D{Lớp 3: Room Authorization};
+                                D -- "Đã tham gia Room" --> E[Kết nối thành công và an toàn];
+                                B -- "Origin KHÔNG hợp lệ" --> F[Từ chối kết nối];
+                                C -- "Token KHÔNG hợp lệ" --> F;
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                <p><strong>Một mô hình phòng thủ theo chiều sâu cho giao tiếp thời gian thực</strong></p>
+                <p>Để giải quyết các thách thức trên, chúng ta đã xây dựng một mô hình bảo mật gồm 3 lớp riêng biệt. Mọi kết nối WebSocket đều phải đi qua cả 3 lớp này.</p>
+                <ol>
+                    <li>
+                        <strong>Lớp 1: Whitelisting Domain (RedisIoAdapter)</strong>
+                        <ul>
+                            <li><strong>Mục tiêu:</strong> Ngăn chặn các trang web lạ kết nối.</li>
+                            <li><strong>Cơ chế:</strong> Kiểm tra header 'origin' của kết nối. Chỉ cho phép các kết nối từ frontend chính của chúng ta, hoặc từ một domain đã được chủ dự án thêm vào "danh sách trắng" (whitelisted domains) trong cài đặt.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Lớp 2: User Authentication (WsJwtAuthGuard)</strong>
+                        <ul>
+                            <li><strong>Mục tiêu:</strong> Xác định danh tính của người dùng (nếu có).</li>
+                            <li><strong>Cơ chế:</strong> Kiểm tra sự tồn tại của JWT trong handshake.auth.token.
+                                <ul>
+                                    <li>Nếu có token (Agent/Manager), guard sẽ xác thực nó và gắn thông tin 'user' vào socket.</li>
+                                    <li>Nếu không có token (Widget ẩn danh), guard cho phép kết nối đi tiếp.</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Lớp 3: Room-Based Authorization (EventsGateway)</strong>
+                        <ul>
+                            <li><strong>Mục tiêu:</strong> Đảm bảo người dùng chỉ nhận được dữ liệu họ được phép xem.</li>
+                            <li><strong>Cơ chế:</strong> Một kết nối sau khi được xác thực vẫn chưa có quyền truy cập dữ liệu nào. Client phải gửi một event 'joinProjectRoom' để tham gia vào một "room" cụ thể của dự án (ví dụ: 'project:123'). Server chỉ phát các sự kiện và tin nhắn tới các thành viên trong room đó, đảm bảo dữ liệu được cô lập hoàn toàn giữa các dự án.</li>
+                        </ul>
+                    </li>
+                </ol>
+            </aside>
+        </section>
+
+        <!-- Slide 5: Luồng kết nối ví dụ -->
+        <section>
+            <div class="slide-content-card">
+                <div class="layout-container">
+                    <div class="left-column">
+                        <svg class="slide-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 16.99v-1.5a3.5 3.5 0 0 0-3.5-3.5H3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 7.01v1.5a3.5 3.5 0 0 0 3.5 3.5H21" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="m6 12 3-3-3-3M18 12l-3 3 3 3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h2>Luồng kết nối ví dụ</h2>
+                        <p style="font-size: 0.7em; margin-top: 1em; opacity: 0.8;">So sánh Agent vs Widget</p>
+                    </div>
+                    <div class="right-column">
+                        <div style="display: flex; justify-content: space-around; gap: 1em;">
+                            <div style="flex: 1; text-align: center; background: rgba(59, 130, 246, 0.05); padding: 1em; border-radius: 8px;">
+                                <h5 style="color: #3b82f6; margin-bottom: 0.8em;">🔐 Agent Đăng nhập</h5>
+                                <div class="mermaid" style="font-size: 0.65em;">
+                                    sequenceDiagram
+                                        participant Client as Agent App
+                                        participant L1 as Lớp 1
+                                        participant L2 as Lớp 2
+                                        participant L3 as Lớp 3
+                                        
+                                        Client->>L1: Kết nối (có JWT)
+                                        activate L1
+                                        L1-->>Client: ✓ Origin OK
+                                        deactivate L1
+                                        
+                                        Client->>L2: Handshake + JWT
+                                        activate L2
+                                        L2-->>Client: ✓ User attached
+                                        deactivate L2
+                                        
+                                        Client->>L3: joinProjectRoom(123)
+                                        activate L3
+                                        L3-->>Client: ✓ Joined room
+                                        deactivate L3
+                                </div>
+                            </div>
+                            <div style="flex: 1; text-align: center; background: rgba(16, 185, 129, 0.05); padding: 1em; border-radius: 8px;">
+                                <h5 style="color: #10b981; margin-bottom: 0.8em;">🌐 Widget Khách hàng</h5>
+                                <div class="mermaid" style="font-size: 0.65em;">
+                                    sequenceDiagram
+                                        participant Client as Widget
+                                        participant L1 as Lớp 1
+                                        participant L2 as Lớp 2
+                                        participant L3 as Lớp 3
+                                        
+                                        Client->>L1: Kết nối (ẩn danh)
+                                        activate L1
+                                        L1-->>Client: ✓ Domain whitelisted
+                                        deactivate L1
+                                        
+                                        Client->>L2: Handshake (no JWT)
+                                        activate L2
+                                        L2-->>Client: ✓ Anonymous OK
+                                        deactivate L2
+                                        
+                                        Client->>L3: identify(visitorUid)
+                                        activate L3
+                                        L3-->>Client: ✓ Session created
+                                        deactivate L3
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="notes">
+                <p><strong>Minh họa hoạt động của kiến trúc 3 lớp</strong></p>
+                
+                <p><strong>Kịch bản 1: Agent Đăng nhập</strong></p>
+                <ol>
+                    <li>Agent App gửi yêu cầu kết nối từ app.our-domain.com với JWT trong handshake.</li>
+                    <li>Lớp 1 (Adapter) kiểm tra origin và xác nhận OK vì đây là domain chính.</li>
+                    <li>Lớp 2 (Guard) xác thực JWT, nếu hợp lệ sẽ gắn thông tin user vào socket.</li>
+                    <li>Agent gửi event "joinProjectRoom" với projectId: 123.</li>
+                    <li>Lớp 3 (Gateway) thêm socket vào room "project:123", kết nối thành công và Agent có thể nhận/gửi dữ liệu của dự án này.</li>
+                </ol>
+                
+                <p><strong>Kịch bản 2: Widget của Khách hàng</strong></p>
+                <ol>
+                    <li>Widget được nhúng trên customer.com gửi yêu cầu kết nối với projectId: 456.</li>
+                    <li>Lớp 1 (Adapter) kiểm tra xem domain "customer.com" có trong danh sách whitelist của project 456 không. Nếu có → OK.</li>
+                    <li>Lớp 2 (Guard) phát hiện không có JWT trong handshake, nhưng cho phép vì đây là kết nối ẩn danh hợp lệ.</li>
+                    <li>Widget gửi event "identify" với visitorUid: "abc-123".</li>
+                    <li>Lớp 3 (Gateway) tạo session cho visitor này và kết nối thành công. Visitor có thể bắt đầu trò chuyện.</li>
+                </ol>
+            </aside>
+        </section>
+      </section>
+
+      <section>
+          <section><h1 class="chapter-title">Demo</h1></section>
+          <section>
+            <h2>Authentication Demo</h2>
+            <video
+              controls
+              src="./demo_video/authentication_demo.mkv"
+              style="width: 80%"
+            ></video>
+          </section>
+          <section>
+            <h2>Authorization Demo</h2>
+            <video
+              controls
+              src="./demo_video/authorization_demo.mkv"
+              style="width: 80%"
+            ></video>
+          </section>
+          <section>
+            <h2>Web Function Demo</h2>
+            <video
+              controls
+              src="./demo_video/web_function_demo.mkv"
+              style="width: 80%"
+            ></video>
+          </section>
+        </section>
+
+      <!-- Kết luận -->
+      <section>
+        <h1 class="chapter-title">Hỏi & Đáp</h1>
+        <h3 class="r-mt-4 accent">Cảm ơn!</h3>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="dist/reveal.js"></script>
+  <script src="plugin/notes/notes.js"></script>
+  <script src="plugin/markdown/markdown.js"></script>
+  <script src="plugin/highlight/highlight.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11.10.0/dist/mermaid.min.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1920,
+      height: 1080,
+      hash: true,
+      slideNumber: true,
+      plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ],
+      backgroundTransition: 'fade',
+      transition: 'slide'
+    });
+    mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+    const renderMermaid = async () => {
+      const graphs = document.querySelectorAll(".mermaid:not([data-processed])");
+      
+      for (let i = 0; i < graphs.length; i++) {
+        const item = graphs[i];
+        const graphId = `mermaid-graph-${Date.now()}-${i}`;
+        const graphDefinition = item.textContent.trim();
+        
+        try {
+          // API mới của Mermaid (v10+)
+          const { svg } = await mermaid.render(graphId, graphDefinition);
+          item.innerHTML = svg;
+          item.setAttribute('data-processed', 'true');
+        } catch (error) {
+          console.error('Mermaid render error:', error);
+          item.innerHTML = `<pre style="color: red;">Mermaid Error: ${error.message}</pre>`;
+        }
+      }
+    };
+
+    // Render khi Reveal.js sẵn sàng
+    Reveal.on('ready', async () => {
+      await renderMermaid();
+    });
+
+    // Render lại khi chuyển slide
+    Reveal.on('slidechanged', async () => {
+      setTimeout(async () => {
+        await renderMermaid();
+      }, 100);
+    });
+
+  </script>
+</body>
+</html>
