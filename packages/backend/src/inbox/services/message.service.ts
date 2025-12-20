@@ -3,6 +3,7 @@
 import { EntityManager } from 'typeorm';
 import {
   Conversation,
+  CreateMessageDto,
   ListMessagesDto,
   Message,
   MessageStatus,
@@ -17,17 +18,6 @@ import {
 } from '@nestjs/common';
 import { RealtimeSessionService } from '../../realtime-session/realtime-session.service';
 import { ProjectService } from '../../projects/project.service';
-
-// DTO for message creation
-interface CreateMessagePayload {
-  conversationId: number;
-  content: string;
-  attachments?: any;
-  senderId: string;
-  recipientId: string;
-  fromCustomer: boolean;
-  status?: MessageStatus;
-}
 
 @Injectable()
 export class MessageService {
@@ -49,7 +39,7 @@ export class MessageService {
   async createMessageAndVerifySent(
     tempId: string,
     visitorUid: string,
-    data: CreateMessagePayload,
+    data: CreateMessageDto,
     manager: EntityManager
   ): Promise<Message> {
     const message = manager.create(Message, data);

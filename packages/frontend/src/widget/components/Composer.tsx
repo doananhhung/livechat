@@ -1,4 +1,3 @@
-// src/widget/components/Composer.tsx
 import { useState, useRef, useEffect } from "preact/hooks";
 import type { FormEvent, KeyboardEvent } from "react";
 import { type ConnectionStatus } from "../types";
@@ -7,6 +6,8 @@ interface ComposerProps {
   onSendMessage: (content: string) => void;
   onTypingChange: (isTyping: boolean) => void;
   connectionStatus: ConnectionStatus;
+  offlineMessage?: string;
+  theme: 'light' | 'dark';
 }
 
 // Constants
@@ -15,17 +16,17 @@ const TYPING_TIMEOUT = 1500; // ms
 const RATE_LIMIT_COUNT = 10; // Max messages
 const RATE_LIMIT_WINDOW = 60000; // Per 60 seconds
 
-// Styles are written directly to avoid dependency on parent page's classes
-const styles = {
+// Dynamic styles based on theme
+const getStyles = (theme: 'light' | 'dark') => ({
   form: {
     padding: "0.75rem",
-    borderTop: "1px solid #e5e7eb",
-    backgroundColor: "#ffffff",
+    borderTop: `1px solid ${theme === 'light' ? '#e5e7eb' : '#374151'}`,
+    backgroundColor: theme === 'light' ? '#ffffff' : '#1f2937',
   },
   container: {
     display: "flex",
     alignItems: "center",
-    backgroundColor: "#f3f4f6",
+    backgroundColor: theme === 'light' ? '#f3f4f6' : '#374151',
     borderRadius: "9999px",
     padding: "0.25rem",
   },
@@ -35,13 +36,13 @@ const styles = {
     resize: "none" as const,
     border: "none",
     padding: "0.5rem 0.75rem",
-    color: "#111827",
+    color: theme === 'light' ? '#111827' : '#f9fafb',
     outline: "none",
   },
   button: {
     padding: "0.5rem",
     color: "#ffffff",
-    backgroundColor: "#2563eb",
+    backgroundColor: "#2563eb", // Primary color, remains the same
     borderRadius: "9999px",
     border: "none",
     cursor: "pointer",
@@ -51,7 +52,17 @@ const styles = {
     backgroundColor: "#d1d5db",
     cursor: "not-allowed",
   },
-};
+  charCount: {
+    fontSize: "11px",
+    color: theme === 'light' ? '#9ca3af' : '#6b7280',
+    textAlign: "right" as const,
+    marginTop: "4px",
+  },
+  offlineText: {
+    textAlign: 'center' as const,
+    color: theme === 'light' ? '#6b7280' : '#9ca3af',
+  }
+});
 
 const SendIcon = () => (
   <svg
@@ -74,12 +85,16 @@ export const Composer = ({
   onSendMessage,
   onTypingChange,
   connectionStatus,
+  offlineMessage,
+  theme,
 }: ComposerProps) => {
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
   const typingTimeoutRef = useRef<number | null>(null);
   const messageTimes = useRef<number[]>([]); // Track message timestamps for rate limiting
   const isDisabled = connectionStatus !== "connected";
+
+  const styles = getStyles(theme);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -172,6 +187,14 @@ export const Composer = ({
     ...((!content.trim() || isDisabled) && styles.buttonDisabled),
   };
 
+  if (isDisabled) {
+    return (
+      <div style={{...styles.form, ...styles.offlineText}}>
+        {offlineMessage || "The chat is currently offline."}
+      </div>
+    )
+  }
+
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
       {error && (
@@ -192,7 +215,7 @@ export const Composer = ({
           onInput={handleTyping}
           onKeyDown={handleKeyDown}
           disabled={isDisabled}
-          placeholder={isDisabled ? "Đang kết nối..." : "Nhập tin nhắn..."}
+          placeholder={isDisabled ? "Connecting..." : "Type a message..."}
           style={styles.textarea}
           rows={1}
           maxLength={MAX_MESSAGE_LENGTH}
@@ -208,12 +231,7 @@ export const Composer = ({
         </button>
       </div>
       <div
-        style={{
-          fontSize: "11px",
-          color: "#9ca3af",
-          textAlign: "right",
-          marginTop: "4px",
-        }}
+        style={styles.charCount}
       >
         {content.length}/{MAX_MESSAGE_LENGTH}
       </div>

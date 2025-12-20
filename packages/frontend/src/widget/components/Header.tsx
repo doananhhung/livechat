@@ -1,7 +1,10 @@
 // src/widget/components/Header.tsx
 interface HeaderProps {
   onClose: () => void;
-  primaryColor: string;
+  primaryColor?: string;
+  companyLogoUrl?: string;
+  agentDisplayName?: string;
+  headerText?: string;
 }
 
 const CloseIcon = () => (
@@ -21,45 +24,38 @@ const CloseIcon = () => (
   </svg>
 );
 
-// Helper function to calculate a darker shade of a hex color
-function shadeColor(color: string, percent: number): string {
-  // Ensure color is a valid hex
-  if (!color.startsWith("#") || (color.length !== 4 && color.length !== 7)) {
-    return color; // Return original color if not a valid hex
-  }
+// This function is problematic with HSL values and will be removed.
+// We will rely on CSS for gradients if possible, or simplify.
 
-  let R = parseInt(color.substring(1, 3), 16);
-  let G = parseInt(color.substring(3, 5), 16);
-  let B = parseInt(color.substring(5, 7), 16);
+export const Header = ({ 
+  onClose, 
+  primaryColor,
+  companyLogoUrl, 
+  agentDisplayName, 
+  headerText 
+}: HeaderProps) => {
 
-  R = Math.round((R * (100 + percent)) / 100);
-  G = Math.round((G * (100 + percent)) / 100);
-  B = Math.round((B * (100 + percent)) / 100);
+  const headerStyle = {
+    background: primaryColor || 'hsl(262 83% 58%)',
+  };
 
-  R = R < 255 ? R : 255;
-  G = G < 255 ? G : 255;
-  B = B < 255 ? B : 255;
-
-  const RR = R.toString(16).padStart(2, "0");
-  const GG = G.toString(16).padStart(2, "0");
-  const BB = B.toString(16).padStart(2, "0");
-
-  return `#${RR}${GG}${BB}`;
-}
-
-export const Header = ({ onClose, primaryColor }: HeaderProps) => {
   return (
     <div
-      style={{
-        background: `linear-gradient(135deg, ${primaryColor} 0%, ${shadeColor(
-          primaryColor,
-          -20
-        )} 100%)`,
-      }}
-      className="p-4 text-white flex justify-between items-center rounded-t-xl shadow-sm"
+      style={headerStyle}
+      className="p-4 text-[var(--widget-text-header)] flex justify-between items-center rounded-t-xl shadow-sm bg-[var(--widget-header-background)]"
       role="banner"
     >
-      <h3 className="font-semibold text-lg">Chat with us</h3>
+      <div className="flex items-center gap-3">
+        {companyLogoUrl && (
+          <img src={companyLogoUrl} alt="Company Logo" className="h-10 w-10 rounded-full object-cover" />
+        )}
+        <div>
+          <h3 className="font-semibold text-lg">{headerText || "Chat with us"}</h3>
+          {agentDisplayName && (
+            <p className="text-xs opacity-80">{agentDisplayName}</p>
+          )}
+        </div>
+      </div>
       <button
         onClick={onClose}
         className="p-1 rounded-full transition-colors hover:bg-white/20"

@@ -24,7 +24,8 @@
     "typeorm": "ts-node -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/database/data-source.ts",
     "migration:generate": "ts-node -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/database/data-source.ts migration:generate",
     "migration:run": "npm run typeorm -- migration:run",
-    "migration:revert": "npm run typeorm -- migration:revert"
+    "migration:revert": "npm run typeorm -- migration:revert",
+    "check-types": "tsc --noEmit" 
   },
   "dependencies": {
     "@aws-sdk/client-sqs": "^3.888.0",

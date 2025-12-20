@@ -1,14 +1,15 @@
 {
   "name": "@live-chat/frontend",
   "private": true,
-  "version": "0.0.2",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "build:widget": "vite build --config vite.config.widget.ts"
+    "build:widget": "vite build --config vite.config.widget.ts",
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",

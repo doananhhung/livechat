@@ -15,6 +15,7 @@ import type {
   ProjectWithRole,
   WidgetSettingsDto,
 } from "@live-chat/shared";
+import { WidgetTheme } from "@live-chat/shared";
 
 interface ProjectWidgetSettingsDialogProps {
   project: ProjectWithRole;
@@ -30,16 +31,19 @@ export const ProjectWidgetSettingsDialog = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [settings, setSettings] = useState<WidgetSettingsDto>({
+  const [settings, setSettings] = useState<Partial<WidgetSettingsDto>>({
+    theme: WidgetTheme.LIGHT,
     headerText: "",
     primaryColor: "#1a73e8",
     welcomeMessage: "",
     position: "bottom-right" as any,
+    fontFamily: "sans-serif",
   });
 
   useEffect(() => {
     if (project.widgetSettings) {
       setSettings({
+        theme: project.widgetSettings.theme || WidgetTheme.LIGHT,
         headerText: project.widgetSettings.headerText || "",
         primaryColor: project.widgetSettings.primaryColor || "#1a73e8",
         welcomeMessage: project.widgetSettings.welcomeMessage || "",
@@ -50,13 +54,14 @@ export const ProjectWidgetSettingsDialog = ({
         autoOpenDelay: project.widgetSettings.autoOpenDelay,
         backgroundImageUrl: project.widgetSettings.backgroundImageUrl,
         backgroundOpacity: project.widgetSettings.backgroundOpacity,
+        fontFamily: project.widgetSettings.fontFamily || "sans-serif",
       });
     }
   }, [project]);
 
   const updateSettingsMutation = useMutation({
-    mutationFn: (data: WidgetSettingsDto) =>
-      updateProjectSettings(project.id, data),
+    mutationFn: (data: Partial<WidgetSettingsDto>) =>
+      updateProjectSettings(project.id, data as WidgetSettingsDto),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast({
@@ -93,6 +98,23 @@ export const ProjectWidgetSettingsDialog = ({
           onSubmit={handleSubmit}
           className="space-y-4 max-h-96 overflow-y-auto"
         >
+          {/* Theme */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Giao diện
+            </label>
+            <select
+              className="w-full px-3 py-2 text-sm border rounded-md bg-background"
+              value={settings.theme}
+              onChange={(e) =>
+                setSettings({ ...settings, theme: e.target.value as WidgetTheme })
+              }
+            >
+              <option value={WidgetTheme.LIGHT}>Sáng</option>
+              <option value={WidgetTheme.DARK}>Tối</option>
+            </select>
+          </div>
+
           {/* Header Text */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
@@ -136,6 +158,24 @@ export const ProjectWidgetSettingsDialog = ({
                 className="flex-1"
               />
             </div>
+          </div>
+
+          {/* Font Family */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Font chữ
+            </label>
+            <Input
+              type="text"
+              placeholder="sans-serif"
+              value={settings.fontFamily}
+              onChange={(e) =>
+                setSettings({ ...settings, fontFamily: e.target.value })
+              }
+            />
+             <p className="text-xs text-muted-foreground mt-1">
+              Sử dụng tên font an toàn cho web (vd: Arial, Verdana, sans-serif)
+            </p>
           </div>
 
           {/* Welcome Message */}

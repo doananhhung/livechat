@@ -106,7 +106,7 @@ export class ProjectService {
   public async getWidgetSettings(
     id: number,
     origin: string | undefined
-  ): Promise<{ primaryColor: string; welcomeMessage: string } | null> {
+  ): Promise<WidgetSettingsDto | null> {
     const project = await this.entityManager.findOneBy(Project, { id });
 
     if (!project) {
@@ -144,17 +144,7 @@ export class ProjectService {
       return null;
     }
 
-    const settings = project.widgetSettings as {
-      primaryColor?: string;
-      welcomeMessage?: string;
-    };
-
-    return {
-      primaryColor: settings?.primaryColor || '#1a73e8',
-      welcomeMessage:
-        settings?.welcomeMessage ||
-        'Chào bạn, chúng tôi có thể giúp gì cho bạn?',
-    };
+    return project.widgetSettings as WidgetSettingsDto;
   }
 
   async updateWidgetSettings(

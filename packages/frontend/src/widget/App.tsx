@@ -1,9 +1,11 @@
-// src/widget/App.tsx
 import { useChatStore } from "./store/useChatStore";
 import { Launcher } from "./components/Launcher";
 import { ChatWindow } from "./components/ChatWindow";
 import { socketService } from "./services/socketService";
-import { type Message } from "./types";
+import {
+  MessageStatus,
+  type WidgetMessageDto as Message,
+} from "@live-chat/shared";
 import { useEffect, useRef, useCallback } from "preact/hooks";
 
 // Utility function for timestamped logging
@@ -26,56 +28,73 @@ const App = () => {
     unreadCount,
     connectionStatus,
     isAgentTyping,
+    isSessionReady,
     toggleWindow,
     addMessage,
     resetUnreadCount,
   } = useChatStore();
 
   const lastUrl = useRef(window.location.href);
+
+  // Effect to handle URL changes for live context updates
   useEffect(() => {
-    // This is the function that will run on ANY url change
     const handleUrlChange = () => {
       const currentUrl = window.location.href;
-      if (currentUrl !== lastUrl.current) {
-        logWithTime(
-          "App",
-          `🔗 URL CHANGED lmao: ${lastUrl.current} → ${currentUrl}`
-        );
-        lastUrl.current = currentUrl;
+      if (currentUrl === lastUrl.current) {
+        return; // URL hasn't changed
+      }
+
+      logWithTime("App", `🔗 URL CHANGED: ${lastUrl.current} → ${currentUrl}`);
+      lastUrl.current = currentUrl;
+
+      // Only send update if the session is confirmed ready by the backend
+      if (useChatStore.getState().isSessionReady) {
         socketService.emitUpdateContext(currentUrl);
       } else {
-        console.log("URL did not change");
+        logWithTime(
+          "App",
+          "Skipping context update because session is not ready."
+        );
       }
     };
 
-    // Send initial context
-    const initialContextTimeout = setTimeout(() => {
-      logWithTime("App", `📍 Sending initial context: ${window.location.href}`);
-      socketService.emitUpdateContext(window.location.href);
-    }, 1000);
-
-    // Listen to ALL navigation events
+    // Listen to navigation events
     window.addEventListener("popstate", handleUrlChange);
     window.addEventListener("hashchange", handleUrlChange);
-    window.addEventListener("urlchange", handleUrlChange); // Our custom event
+    window.addEventListener("urlchange", handleUrlChange); // Custom event
 
-    // Cleanup
+    // Cleanup listeners
     return () => {
-      clearTimeout(initialContextTimeout);
       window.removeEventListener("popstate", handleUrlChange);
       window.removeEventListener("hashchange", handleUrlChange);
       window.removeEventListener("urlchange", handleUrlChange);
     };
-  }, []); // Empty array, runs only on mount and unmount
+  }, []); // Empty dependency array, runs only on mount
+
+  // Effect to send initial context only when the session is ready
+  useEffect(() => {
+    if (isSessionReady) {
+      logWithTime(
+        "App",
+        `✅ Session is ready, sending initial context: ${window.location.href}`
+      );
+      socketService.emitUpdateContext(window.location.href);
+    }
+  }, [isSessionReady]);
 
   useEffect(() => {
-    if (isWindowOpen && widgetConfig) {
+    if (isWindowOpen && widgetConfig && connectionStatus === 'connected') {
+      logWithTime(
+        "App",
+        `🟢 Widget opened and socket connected, identifying visitor for projectId: ${widgetConfig.projectId}`
+      );
       const visitorUid = localStorage.getItem("visitor_uid");
       if (visitorUid) {
         socketService.emitIdentify(widgetConfig.projectId, visitorUid);
+        socketService.emitUpdateContext(window.location.href);
       }
     }
-  }, [isWindowOpen, widgetConfig]);
+  }, [isWindowOpen, widgetConfig, connectionStatus]);
 
   const handleToggleWindow = useCallback(() => {
     toggleWindow();
@@ -91,7 +110,7 @@ const App = () => {
         id: tempId,
         content,
         sender: { type: "visitor" },
-        status: "sending",
+        status: MessageStatus.SENDING,
         timestamp: new Date().toISOString(),
       };
 
@@ -126,6 +145,7 @@ const App = () => {
           onClick={handleToggleWindow}
           unreadCount={unreadCount}
           primaryColor={widgetConfig.primaryColor}
+          position={widgetConfig.position}
         />
       </div>
     </>

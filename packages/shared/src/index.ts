@@ -38,3 +38,5 @@ export * from "./visitor.entity";
 export * from "./widget-settings.dto";
 export * from "./create-user-dto";
 export * from "./update-user-dto";
+export * from "./widget-message.dto";
+export * from "./create-message.dto";

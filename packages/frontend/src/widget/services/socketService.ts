@@ -1,8 +1,10 @@
 // src/widget/services/socketService.ts
 import { io, Socket } from "socket.io-client";
 import { useChatStore } from "../store/useChatStore";
-import { type Message } from "../types";
-
+import {
+  MessageStatus,
+  type WidgetMessageDto as Message,
+} from "@live-chat/shared";
 // Socket.IO runs on the root domain, not /api/v1
 const SOCKET_URL = import.meta.env.VITE_API_BASE_URL?.replace("/api/v1", "");
 
@@ -86,6 +88,7 @@ class SocketService {
       setAgentIsTyping,
       incrementUnreadCount,
       finalizeMessage,
+      setSessionReady,
     } = useChatStore.getState();
     setConnectionStatus("connecting");
 
@@ -113,6 +116,7 @@ class SocketService {
       this.isConnecting = false;
       this.disconnectionCount++;
       setConnectionStatus("disconnected");
+      setSessionReady(false); // Reset session readiness
       logWithTime(
         this.instanceId,
         `🔌 Socket DISCONNECTED | Socket ID was: ${this.socket?.id} | Total disconnections: ${this.disconnectionCount}`
@@ -122,12 +126,14 @@ class SocketService {
     const connectErrorHandler = (error: Error) => {
       this.isConnecting = false;
       setConnectionStatus("disconnected");
+      setSessionReady(false); // Reset session readiness
       errorWithTime(this.instanceId, `❌ Connection ERROR:`, error);
     };
 
     const reconnectFailedHandler = () => {
       this.isConnecting = false;
       setConnectionStatus("disconnected");
+      setSessionReady(false); // Reset session readiness
       errorWithTime(
         this.instanceId,
         `❌ Socket reconnection FAILED after all attempts`
@@ -137,6 +143,7 @@ class SocketService {
     const conversationHistoryHandler = (data: { messages: Message[] }) => {
       logWithTime(this.instanceId, `📜 Conversation history received:`, data);
       loadConversationHistory(data.messages);
+      setSessionReady(true); // Session is now ready
     };
 
     const messageSentHandler = (data: {
@@ -163,7 +170,7 @@ class SocketService {
         sender: {
           type: data.fromCustomer ? "visitor" : "agent",
         },
-        status: "sent", // Assuming the message is sent successfully
+        status: MessageStatus.SENT, // Assuming the message is sent successfully
         timestamp: data.createdAt,
       };
 
@@ -238,13 +245,27 @@ class SocketService {
   // --- Methods to send events to the Server ---
 
   public emitSendMessage(content: string, tempId: string): void {
-    logWithTime(this.instanceId, `📤 Emitting sendMessage`);
-    this.socket?.emit("sendMessage", { content, tempId });
+    if (this.socket?.connected) {
+      logWithTime(this.instanceId, `📤 Emitting sendMessage`);
+      this.socket.emit("sendMessage", { content, tempId });
+    } else {
+      errorWithTime(
+        this.instanceId,
+        `⚠️ Cannot emit sendMessage: socket not connected`
+      );
+    }
   }
 
   public emitVisitorIsTyping(isTyping: boolean): void {
-    logWithTime(this.instanceId, `📤 Emitting visitorIsTyping`);
-    this.socket?.emit("visitorIsTyping", { isTyping });
+    if (this.socket?.connected) {
+      logWithTime(this.instanceId, `📤 Emitting visitorIsTyping`);
+      this.socket.emit("visitorIsTyping", { isTyping });
+    } else {
+      errorWithTime(
+        this.instanceId,
+        `⚠️ Cannot emit visitorIsTyping: socket not connected`
+      );
+    }
   }
 
   public emitIdentify(projectId: string, visitorUid: string): void {

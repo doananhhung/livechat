@@ -20,24 +20,9 @@ import {
   VisitorIdentifiedEvent,
   VisitorMessageReceivedEvent,
 } from '../inbox/events';
-import { Conversation, Visitor } from '@live-chat/shared';
+import { Conversation, Visitor, MessageStatus, WidgetMessageDto } from '@live-chat/shared';
 
 const NEW_MESSAGE_CHANNEL = 'new_message_channel';
-
-type MessageStatus = 'sending' | 'sent' | 'failed';
-
-type MessageSender = {
-  type: 'visitor' | 'agent';
-  name?: string;
-};
-
-type MessageFrontend = {
-  id: string | number;
-  content: string;
-  sender: MessageSender;
-  status: MessageStatus;
-  timestamp: string;
-};
 
 @UseGuards(WsJwtAuthGuard)
 @WebSocketGateway()
@@ -117,7 +102,7 @@ export class EventsGateway
       socket.data.visitorId = visitor.id;
     }
 
-    let messagesForFrontend: MessageFrontend[] = [];
+    let messagesForFrontend: WidgetMessageDto[] = [];
 
     if (conversation && conversation.messages) {
       messagesForFrontend = conversation.messages.map((msg) => ({
@@ -199,6 +184,9 @@ export class EventsGateway
     @MessageBody() payload: { currentUrl: string }
   ): Promise<void> {
     const { projectId, conversationId, visitorUid } = client.data;
+    this.logger.debug(
+      `updateContext event from client ${client.id} for visitorUid: ${visitorUid} in projectId: ${projectId}`
+    );
 
     let missingData = false;
     if (!projectId) {

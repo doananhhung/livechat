@@ -8,7 +8,7 @@ import { Spinner } from "../../components/ui/Spinner";
 import { useToast } from "../../components/ui/use-toast";
 import { ChevronRight, ArrowLeft, Info, Palette, Code } from "lucide-react";
 import { PermissionGate } from "../../components/PermissionGate";
-import { ProjectRole, WidgetPosition } from "@live-chat/shared";
+import { ProjectRole, WidgetPosition, WidgetTheme } from "@live-chat/shared";
 import { ProjectBasicSettingsForm } from "../../components/projects/ProjectBasicSettingsForm";
 import type { WidgetSettingsDto } from "@live-chat/shared";
 import { getWidgetSnippet } from "../../lib/widget";
@@ -30,6 +30,7 @@ export const ProjectSettingsPage = () => {
   });
 
   // Widget settings form state
+  const [theme, setTheme] = useState<WidgetTheme>(WidgetTheme.LIGHT);
   const [headerText, setHeaderText] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#0066FF");
   const [welcomeMessage, setWelcomeMessage] = useState("");
@@ -38,6 +39,7 @@ export const ProjectSettingsPage = () => {
   );
   const [companyLogoUrl, setCompanyLogoUrl] = useState("");
   const [agentDisplayName, setAgentDisplayName] = useState("");
+  const [fontFamily, setFontFamily] = useState("sans-serif");
 
   const { data: projects, isLoading } = useQuery({
     queryKey: ["projects"],
@@ -50,12 +52,14 @@ export const ProjectSettingsPage = () => {
   useEffect(() => {
     if (currentProject?.widgetSettings) {
       const settings = currentProject.widgetSettings;
+      setTheme(settings.theme || WidgetTheme.LIGHT);
       setHeaderText(settings.headerText || "");
       setPrimaryColor(settings.primaryColor || "#0066FF");
       setWelcomeMessage(settings.welcomeMessage || "");
       setPosition(settings.position || WidgetPosition.BOTTOM_RIGHT);
       setCompanyLogoUrl(settings.companyLogoUrl || "");
       setAgentDisplayName(settings.agentDisplayName || "");
+      setFontFamily(settings.fontFamily || "sans-serif");
     }
   }, [currentProject]);
 
@@ -88,12 +92,14 @@ export const ProjectSettingsPage = () => {
   const handleWidgetSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateWidgetMutation.mutate({
+      theme,
       headerText: headerText.trim() || undefined,
       primaryColor: primaryColor || undefined,
       welcomeMessage: welcomeMessage.trim() || undefined,
       position,
       companyLogoUrl: companyLogoUrl.trim() || undefined,
       agentDisplayName: agentDisplayName.trim() || undefined,
+      fontFamily: fontFamily.trim() || undefined,
     });
   };
 
@@ -215,6 +221,23 @@ export const ProjectSettingsPage = () => {
                 <form onSubmit={handleWidgetSubmit} className="space-y-6 pt-6">
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
+                      Giao diện Widget
+                    </label>
+                    <select
+                      value={theme}
+                      onChange={(e) =>
+                        setTheme(e.target.value as WidgetTheme)
+                      }
+                      disabled={updateWidgetMutation.isPending}
+                      className="w-full px-3 py-2 border border-input bg-background rounded-md"
+                    >
+                      <option value={WidgetTheme.LIGHT}>Sáng</option>
+                      <option value={WidgetTheme.DARK}>Tối</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Tiêu đề Widget
                     </label>
                     <Input
@@ -247,6 +270,19 @@ export const ProjectSettingsPage = () => {
                         placeholder="#0066FF"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Font chữ
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="sans-serif"
+                      value={fontFamily}
+                      onChange={(e) => setFontFamily(e.target.value)}
+                      disabled={updateWidgetMutation.isPending}
+                    />
                   </div>
 
                   <div>

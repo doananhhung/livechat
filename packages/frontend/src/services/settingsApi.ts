@@ -7,6 +7,7 @@ import type {
   EmailChangeDto,
   UpdateUserDto,
   User,
+  UserIdentity,
 } from "@live-chat/shared";
 
 // === TYPES ===
@@ -33,16 +34,6 @@ interface ConnectedPage {
 interface ChangePasswordResponse {
   message: string;
   accessToken: string;
-}
-
-// Linked OAuth accounts types
-interface LinkedAccount {
-  id: string;
-  provider: string;
-  providerId: string;
-  userId: string;
-  createdAt: string;
-  updatedAt?: string;
 }
 
 interface LinkGoogleAccountResponse {
@@ -148,7 +139,7 @@ export const unlinkOAuthAccount = async (
   return response.data;
 };
 
-export const fetchLinkedAccounts = async (): Promise<LinkedAccount[]> => {
+export const fetchLinkedAccounts = async (): Promise<UserIdentity[]> => {
   const response = await api.get("/auth/linked-accounts");
   return response.data;
 };
@@ -264,7 +255,7 @@ export const useDisconnectPageMutation = () => {
 
 // Linked Accounts hooks
 export const useLinkedAccountsQuery = () => {
-  return useQuery<LinkedAccount[]>({
+  return useQuery<UserIdentity[]>({
     queryKey: settingsKeys.linkedAccounts,
     queryFn: fetchLinkedAccounts,
   });

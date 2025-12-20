@@ -5,6 +5,7 @@ import { getWidgetSettings } from "./services/widgetApi";
 import { useChatStore } from "./store/useChatStore";
 import { socketService } from "./services/socketService";
 import widgetStyles from "./styles/widget.css?inline";
+import type { WidgetSettingsDto } from "@live-chat/shared";
 
 const WIDGET_SCRIPT_ID = "live-chat-widget";
 const INIT_TIMEOUT = 500; // ms - Configurable constant instead of magic number
@@ -112,41 +113,6 @@ async function initializeWidget(config: {
       "Widget",
       `📡 Fetching widget settings for projectId: ${config.projectId}`
     );
-    // 1. Fetch settings from the backend with retry logic
-    const settings = await retryWithBackoff(() =>
-      getWidgetSettings(config.projectId)
-    );
-    logWithTime("Widget", `✅ Widget settings received:`, settings);
-
-    // 2. Identify the visitor
-    let visitorUid = localStorage.getItem("visitor_uid");
-    if (!visitorUid) {
-      visitorUid = crypto.randomUUID();
-      localStorage.setItem("visitor_uid", visitorUid);
-      logWithTime("Widget", `🆕 Generated NEW visitor UID: ${visitorUid}`);
-    } else {
-      logWithTime("Widget", `♻️ Using EXISTING visitor UID: ${visitorUid}`);
-    }
-
-    // 3. Update the central state store
-    useChatStore
-      .getState()
-      .setWidgetConfig({ ...settings, projectId: config.projectId });
-    logWithTime("Widget", `✅ Widget config set in store`);
-
-    logWithTime(
-      "Widget",
-      `🔌 Calling socketService.connect() with visitorUid: ${visitorUid}`
-    );
-    socketService.connect(config.projectId, visitorUid);
-
-    // 4. Create the DOM host and render the app
-    logWithTime("Widget", `🎨 Creating shadow DOM and rendering app`);
-    const shadowRoot = createHostElement();
-    const appContainer = document.createElement("div");
-    shadowRoot.appendChild(appContainer);
-
-    // Do this once before the App renders
 
     // 1. Store the original functions
     const originalPushState = history.pushState;
@@ -184,6 +150,40 @@ async function initializeWidget(config: {
       // Dispatch our custom event
       window.dispatchEvent(createUrlChangeEvent());
     };
+
+    // 1. Fetch settings from the backend with retry logic
+    const settings: WidgetSettingsDto = await retryWithBackoff(() =>
+      getWidgetSettings(config.projectId)
+    );
+    logWithTime("Widget", `✅ Widget settings received:`, settings);
+
+    // 2. Identify the visitor
+    let visitorUid = localStorage.getItem("visitor_uid");
+    if (!visitorUid) {
+      visitorUid = crypto.randomUUID();
+      localStorage.setItem("visitor_uid", visitorUid);
+      logWithTime("Widget", `🆕 Generated NEW visitor UID: ${visitorUid}`);
+    } else {
+      logWithTime("Widget", `♻️ Using EXISTING visitor UID: ${visitorUid}`);
+    }
+
+    // 3. Update the central state store
+    const fullConfig = { ...settings, projectId: config.projectId };
+    useChatStore.getState().setWidgetConfig(fullConfig);
+    logWithTime("Widget", `✅ Widget config set in store`);
+
+    logWithTime(
+      "Widget",
+      `🔌 Calling socketService.connect() with visitorUid: ${visitorUid}`
+    );
+    socketService.connect(config.projectId, visitorUid);
+
+    // 4. Create the DOM host and render the app
+    logWithTime("Widget", `🎨 Creating shadow DOM and rendering app`);
+    const shadowRoot = createHostElement();
+    const appContainer = document.createElement("div");
+    shadowRoot.appendChild(appContainer);
+
     render(
       <ErrorBoundary>
         <App />
@@ -194,6 +194,19 @@ async function initializeWidget(config: {
       "Widget",
       `✅ Widget initialized successfully | Total initializations: ${initializationCount}`
     );
+
+    // 5. Handle auto-open delay
+    if (fullConfig.autoOpenDelay && fullConfig.autoOpenDelay > 0) {
+      logWithTime("Widget", `⏳ Scheduling auto-open in ${fullConfig.autoOpenDelay}ms`);
+      const autoOpenTimeout = setTimeout(() => {
+        if (!useChatStore.getState().isWindowOpen) {
+          useChatStore.getState().toggleWindow();
+          logWithTime("Widget", `⏰ Auto-opening widget`);
+        }
+      }, fullConfig.autoOpenDelay);
+      cleanupFunctions.push(() => clearTimeout(autoOpenTimeout));
+    }
+
   } catch (error) {
     errorWithTime("Widget", `❌ Widget initialization FAILED:`, error);
     isInitialized = false; // Reset flag on failure to allow re-initialization

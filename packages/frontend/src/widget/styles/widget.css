@@ -5,8 +5,7 @@
 /* src/widget/styles/widget.css */
 :host {
   /* Main color palette */
-  --widget-primary-color: #3b82f6;
-  /* blue-500 */
+  --widget-primary-color: hsl(262 83% 58%);
   --widget-text-on-primary: #ffffff;
 
   /* Background color palette */
@@ -23,11 +22,10 @@
   --widget-text-header: var(--widget-text-on-primary);
 
   /* Message color palette */
-  --widget-bubble-visitor-background: #e5e7eb;
-  /* gray-200 */
-  --widget-bubble-visitor-text: var(--widget-text-primary);
-  --widget-bubble-agent-background: var(--widget-primary-color);
-  --widget-bubble-agent-text: var(--widget-text-on-primary);
+  --widget-bubble-visitor-background: var(--widget-primary-color);
+  --widget-bubble-visitor-text: var(--widget-text-on-primary);
+  --widget-bubble-agent-background: #e5e7eb; /* gray-200 */
+  --widget-bubble-agent-text: var(--widget-text-primary);
 
   /* Other colors */
   --widget-border-color: #e5e7eb;

@@ -1,9 +1,10 @@
-// src/widget/components/Launcher.tsx
+import { WidgetPosition } from "@live-chat/shared";
 
 interface LauncherProps {
   onClick: () => void;
   unreadCount: number;
-  primaryColor: string;
+  primaryColor?: string; // Make prop optional
+  position?: WidgetPosition;
 }
 
 const ChatIcon = () => (
@@ -26,12 +27,20 @@ export const Launcher = ({
   onClick,
   unreadCount,
   primaryColor,
+  position,
 }: LauncherProps) => {
+  const positionClasses = 
+    position === WidgetPosition.BOTTOM_LEFT 
+      ? "bottom-5 left-5" 
+      : "bottom-5 right-5";
+
+  const style = primaryColor ? { backgroundColor: primaryColor } : {};
+
   return (
     <button
       onClick={onClick}
-      style={{ backgroundColor: primaryColor }}
-      className="fixed bottom-5 right-5 w-16 h-16 rounded-full text-white flex items-center justify-center shadow-lg transition-all duration-300 ease-in-out transform hover:scale-110 z-[9999]"
+      style={style}
+      className={`fixed w-16 h-16 rounded-full text-[var(--widget-text-on-primary)] bg-[var(--widget-primary-color)] flex items-center justify-center shadow-lg transition-all duration-300 ease-in-out transform hover:scale-110 z-[9999] ${positionClasses}`}
       aria-label={`Open chat${
         unreadCount > 0 ? ` (${unreadCount} unread messages)` : ""
       }`}

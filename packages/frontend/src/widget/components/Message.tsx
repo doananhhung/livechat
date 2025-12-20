@@ -1,9 +1,11 @@
-// src/widget/components/Message.tsx
-import { type Message as MessageType } from "../types";
+import { type WidgetMessageDto as MessageType } from "@live-chat/shared";
 import { useMemo } from "preact/hooks";
+import { isColorLight } from "../utils/color";
 
 interface MessageProps {
   message: MessageType;
+  primaryColor?: string;
+  theme: 'light' | 'dark';
 }
 
 /**
@@ -55,7 +57,7 @@ const ErrorIcon = () => (
   </svg>
 );
 
-export const Message = ({ message }: MessageProps) => {
+export const Message = ({ message, primaryColor, theme }: MessageProps) => {
   const isVisitor = message.sender.type === "visitor";
 
   // Memoize sanitized content to avoid recalculating on every render
@@ -64,20 +66,33 @@ export const Message = ({ message }: MessageProps) => {
     [message.content]
   );
 
+  const bubbleClass = isVisitor
+    ? "rounded-l-xl rounded-t-xl"
+    : "rounded-r-xl rounded-t-xl";
+
+  const bubbleStyle = useMemo(() => {
+    if (isVisitor) {
+      return {
+        backgroundColor: primaryColor || '#2563eb',
+        color: isColorLight(primaryColor) ? '#111827' : '#ffffff',
+      };
+    } else {
+      return {
+        backgroundColor: theme === 'light' ? '#e5e7eb' : '#374151',
+        color: theme === 'light' ? '#1f2937' : '#e5e7eb',
+      };
+    }
+  }, [isVisitor, primaryColor, theme]);
+
   return (
     <div
-      className={`flex items-end my-1 gap-2 ${
-        isVisitor ? "justify-end" : "justify-start"
-      }`}
+      className={`flex items-end my-1 gap-2 ${isVisitor ? "justify-end" : "justify-start"}`}
       role="article"
       aria-label={`${isVisitor ? "Your" : "Agent"} message`}
     >
       <div
-        className={`py-2 px-3 max-w-xs shadow-sm ${
-          isVisitor
-            ? "bg-blue-600 text-white rounded-l-xl rounded-t-xl"
-            : "bg-gray-200 text-gray-800 rounded-r-xl rounded-t-xl"
-        }`}
+        className={`py-2 px-3 max-w-xs shadow-sm ${bubbleClass}`}
+        style={bubbleStyle}
       >
         <p
           className="break-words"

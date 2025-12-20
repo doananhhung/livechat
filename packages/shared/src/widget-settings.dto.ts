@@ -1,4 +1,3 @@
-// src/projects/dto/widget-settings.dto.ts
 import {
   IsString,
   IsHexColor,
@@ -16,7 +15,26 @@ export enum WidgetPosition {
   BOTTOM_LEFT = 'bottom-left',
 }
 
+export enum WidgetTheme {
+  LIGHT = 'light',
+  DARK = 'dark',
+}
+
 export class WidgetSettingsDto {
+  @IsOptional()
+  @IsEnum(WidgetTheme, { message: 'Invalid widget theme.' })
+  theme?: WidgetTheme;
+
+  @IsOptional()
+  @IsUrl({}, { message: 'Background image must be a valid URL.' })
+  backgroundImageUrl?: string;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'Background opacity must be a number.' })
+  @Min(0)
+  @Max(1)
+  backgroundOpacity?: number;
+
   @IsOptional()
   @IsString({ message: 'Header text must be a string.' })
   @MaxLength(50)
@@ -31,14 +49,8 @@ export class WidgetSettingsDto {
   position?: WidgetPosition;
 
   @IsOptional()
-  @IsUrl({}, { message: 'Background image must be a valid URL.' })
-  backgroundImageUrl?: string;
-
-  @IsOptional()
-  @IsNumber({}, { message: 'Background opacity must be a number.' })
-  @Min(0)
-  @Max(1)
-  backgroundOpacity?: number;
+  @IsString({ message: 'Font family must be a valid string.' })
+  fontFamily?: string;
 
   @IsOptional()
   @IsUrl({}, { message: 'Company logo must be a valid URL.' })

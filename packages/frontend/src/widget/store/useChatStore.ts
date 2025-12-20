@@ -1,15 +1,13 @@
-// src/widget/store/useChatStore.ts
 import { create } from "zustand";
-import type {
-  Message,
-  WidgetConfig,
-  ConnectionStatus,
-  MessageStatus,
-} from "../types";
+import type { ConnectionStatus } from "../types";
+import type { WidgetMessageDto as Message, WidgetSettingsDto } from "@live-chat/shared";
+import { MessageStatus } from "@live-chat/shared";
 
 // Constants for memory management
 const MAX_MESSAGES = 500; // Keep only last 500 messages to prevent memory leak
 const MESSAGE_CLEANUP_THRESHOLD = 600; // Start cleanup when reaching this
+
+export type WidgetConfig = WidgetSettingsDto & { projectId: string };
 
 interface ChatState {
   widgetConfig: WidgetConfig | null;
@@ -18,6 +16,7 @@ interface ChatState {
   connectionStatus: ConnectionStatus;
   unreadCount: number;
   isAgentTyping: boolean;
+  isSessionReady: boolean;
 
   // Actions
   setWidgetConfig: (config: WidgetConfig) => void;
@@ -33,6 +32,7 @@ interface ChatState {
   resetUnreadCount: () => void;
   setAgentIsTyping: (isTyping: boolean) => void;
   loadConversationHistory: (history: Message[]) => void;
+  setSessionReady: (isReady: boolean) => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -43,6 +43,7 @@ export const useChatStore = create<ChatState>((set) => ({
   connectionStatus: "disconnected",
   unreadCount: 0,
   isAgentTyping: false,
+  isSessionReady: false,
 
   // Actions Implementation
   setWidgetConfig: (config) => set({ widgetConfig: config }),
@@ -87,4 +88,6 @@ export const useChatStore = create<ChatState>((set) => ({
     const limitedHistory = history.slice(-MAX_MESSAGES);
     set({ messages: limitedHistory });
   },
+
+  setSessionReady: (isReady) => set({ isSessionReady: isReady }),
 }));
