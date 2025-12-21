@@ -28,6 +28,12 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { type Cache } from 'cache-manager';
 import { MailService } from '../mail/mail.service';
 
+/**
+ * Service responsible for all authentication-related business logic.
+ * This includes user registration, email verification, login, token management,
+ * password changes, 2FA partial token generation, OAuth user validation,
+ * and account linking/unlinking.
+ */
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -41,6 +47,15 @@ export class AuthService {
     private readonly mailService: MailService
   ) {}
 
+  /**
+   * Registers a new user with the provided credentials.
+   * Handles password hashing, email verification token generation,
+   * sending confirmation email, and optionally storing an invitation token.
+   *
+   * @param registerDto - Data transfer object containing user registration details (email, password, fullName, invitationToken).
+   * @returns A promise that resolves to an object with a success message.
+   * @throws ConflictException if the email is already in use.
+   */
   async register(registerDto: RegisterDto): Promise<{ message: string }> {
     this.logger.log(
       `🔵 [Register] Starting registration for email: ${registerDto.email}`
@@ -114,6 +129,15 @@ export class AuthService {
     });
   }
 
+  /**
+   * Verifies a user's email address using a provided token.
+   * Marks the email as verified and deletes the verification token.
+   * If a pending invitation token exists for the user, it is returned.
+   *
+   * @param token - The email verification token received via email.
+   * @returns A promise that resolves to an object with a success message and an optional invitation token.
+   * @throws NotFoundException if the token is invalid or expired.
+   */
   async verifyEmail(
     token: string
   ): Promise<{ message: string; invitationToken?: string }> {
@@ -161,6 +185,14 @@ export class AuthService {
     return { message: 'Xác thực email thành công.' };
   }
 
+  /**
+   * Resends an email verification link to the specified email address.
+   * Generates a new verification token and sends a new confirmation email.
+   *
+   * @param resendVerificationDto - Data transfer object containing the email to resend verification to.
+   * @returns A promise that resolves to an object with a success message.
+   * @throws ConflictException if the email is already verified.
+   */
   async resendVerificationEmail(
     resendVerificationDto: ResendVerificationDto
   ): Promise<{ message: string }> {
@@ -192,6 +224,15 @@ export class AuthService {
     };
   }
 
+  /**
+   * Validates user credentials (email and password).
+   * Checks if the user exists, if the password is correct, and if the user's status allows login.
+   *
+   * @param email - The user's email address.
+   * @param pass - The user's plain text password.
+   * @returns A promise that resolves to the User object if credentials are valid, otherwise null.
+   * @throws ForbiddenException if email/password is incorrect or user is suspended.
+   */
   async validateUser(email: string, pass: string): Promise<User | null> {
     const user = await this.userService.findOneByEmail(email);
 
@@ -213,6 +254,19 @@ export class AuthService {
     return null;
   }
 
+  /**
+   * Allows an authenticated user to change their password.
+   * Requires the current password for verification if one is set.
+   * Logs out all sessions after a successful password change for security.
+   *
+   * @param userId - The ID of the authenticated user.
+   * @param currentPassword - The user's current password (optional for OAuth users setting a password for the first time).
+   * @param newPassword - The new password for the user.
+   * @returns A promise that resolves when the password has been successfully changed.
+   * @throws UnauthorizedException if the user does not exist.
+   * @throws BadRequestException if current password is required but not provided.
+   * @throws ForbiddenException if the current password is incorrect.
+   */
   async changePassword(
     userId: string,
     currentPassword: string | undefined,
@@ -259,6 +313,15 @@ export class AuthService {
     });
   }
 
+  /**
+   * Allows an authenticated user to set a password for their account if they don't already have one (e.g., OAuth-only users).
+   *
+   * @param userId - The ID of the authenticated user.
+   * @param newPassword - The new password to set for the user.
+   * @returns A promise that resolves when the password has been successfully set.
+   * @throws UnauthorizedException if the user does not exist.
+   * @throws BadRequestException if the user already has a password.
+   */
   async setPassword(userId: string, newPassword: string): Promise<void> {
     return await this.entityManager.transaction(async (entityManager) => {
       const user = await this.userService.findOneById(userId);
@@ -286,10 +349,11 @@ export class AuthService {
   /**
    * Log in a user by generating access and refresh tokens.
    * The refresh token is stored in the database and the access token is returned to the client.
-   * @param user the user entity
-   * @param ipAddress the IP address of the user (optional)
-   * @param userAgent the user agent string of the user's device (optional)
-   * @returns Promise<{ accessToken: string, refreshToken: string, user: User }> the generated tokens and user info
+   *
+   * @param user - The user entity for whom to generate tokens.
+   * @param ipAddress - The IP address of the user (optional).
+   * @param userAgent - The user agent string of the user's device (optional).
+   * @returns A promise that resolves to an object containing the access token, refresh token, and user information (without password hash).
    */
   async loginAndReturnTokens(
     user: User,
@@ -331,6 +395,13 @@ export class AuthService {
     };
   }
 
+  /**
+   * Generates a partial JWT token for 2FA authentication flow.
+   * This token indicates that 2FA is required but not yet completed.
+   *
+   * @param userId - The ID of the user requiring 2FA.
+   * @returns A promise that resolves to an object containing the partial access token.
+   */
   async generate2FAPartialToken(userId: string) {
     const payload = {
       sub: userId,
@@ -347,6 +418,14 @@ export class AuthService {
     return { accessToken };
   }
 
+  /**
+   * Logs out a user by invalidating a specific refresh token.
+   * Iterates through all refresh tokens for the user and deletes any that match the provided raw refresh token.
+   *
+   * @param userId - The ID of the user to log out.
+   * @param rawRefreshToken - The raw refresh token to invalidate.
+   * @returns A promise that resolves when the refresh token(s) have been deleted.
+   */
   async logout(userId: string, rawRefreshToken: string): Promise<void> {
     const userTokens = await this.entityManager.find(RefreshToken, {
       where: { userId },
@@ -363,23 +442,31 @@ export class AuthService {
       const isMatch = await bcrypt.compare(rawRefreshToken, token.hashedToken);
       if (isMatch) {
         await this.entityManager.delete(RefreshToken, token.id);
-        break;
       }
     }
   }
 
+  /**
+   * Logs out a user from all sessions by removing all their refresh tokens.
+   * Also invalidates all JWTs issued to the user.
+   *
+   * @param userId - The ID of the user to log out from all sessions.
+   * @returns A promise that resolves when all refresh tokens and JWTs are invalidated.
+   */
   async logoutAll(userId: string): Promise<void> {
     await this.userService.removeAllRefreshTokensForUser(userId);
     await this.userService.invalidateAllTokens(userId);
   }
 
   /**
-   * Refresh access tokens of user determined by userId, using a valid refresh token.
-   * remove old refresh token and add a new one to the database.
+   * Refreshes access and refresh tokens for a user using a valid refresh token.
+   * Verifies the provided refresh token, generates new tokens, and updates the stored refresh token in the database.
    *
-   * @param userId the unique identifier of the user
-   * @param refreshToken the refresh token to verify
-   * @returns Promise<{ accessToken: string, refreshToken: string }> new access and refresh tokens
+   * @param userId - The unique identifier of the user.
+   * @param refreshToken - The refresh token to verify.
+   * @returns A promise that resolves to an object containing the new access and refresh tokens.
+   * @throws ForbiddenException if access is denied (e.g., user not active, token invalid).
+   * @throws UnauthorizedException if the login session has expired.
    */
   async refreshTokens(userId: string, refreshToken: string) {
     const user = await this.userService.findOneById(userId);
@@ -428,6 +515,13 @@ export class AuthService {
     return tokens;
   }
 
+  /**
+   * Private helper method to generate a new pair of access and refresh tokens.
+   *
+   * @param userId - The ID of the user.
+   * @param email - The email of the user.
+   * @returns A promise that resolves to an object containing the generated access and refresh tokens.
+   */
   private async _generateTokens(userId: string, email: string) {
     const accessTokenPayload = { sub: userId, email };
     const [accessToken, refreshToken] = await Promise.all([
@@ -446,10 +540,12 @@ export class AuthService {
   }
 
   /**
-   * Validates a user from an OAuth provider.
-   * 1. Finds an existing identity.
-   * 2. If not found, tries to link to an existing user by email.
-   * 3. If no user found, creates a new user and identity.
+   * Validates a user from an OAuth provider (e.g., Google).
+   * This method handles linking existing identities, linking to existing users by email,
+   * or creating new users and identities if none exist.
+   *
+   * @param profile - The OAuth profile data containing provider, providerId, email, name, and avatarUrl.
+   * @returns A promise that resolves to the User object after validation or creation.
    */
   async validateOAuthUser(profile: {
     provider: string;
@@ -507,7 +603,9 @@ export class AuthService {
         if (needsUpdate) {
           await entityManager.save(user);
         }
-      } else {
+      }
+      // If no user found with the email, create a new user
+      else {
         // 3. Create a completely new user with verified email
         // since Google has already verified this email
         user = entityManager.create(User, {
@@ -531,6 +629,13 @@ export class AuthService {
     });
   }
 
+  /**
+   * Generates a one-time code for temporary use, typically for OAuth callbacks or state management.
+   * The code is stored in Redis with an expiration time.
+   *
+   * @param userId - The ID of the user associated with the one-time code.
+   * @returns A promise that resolves to the generated one-time code.
+   */
   async generateOneTimeCode(userId: string): Promise<string> {
     const code = crypto.randomBytes(32).toString('hex');
     const key = `one-time-code:${code}`;
@@ -545,7 +650,16 @@ export class AuthService {
     return code;
   }
 
-  // [B] Modify exchangeCodeForTokens function
+  /**
+   * Exchanges a one-time code (e.g., from an OAuth callback) for full access and refresh tokens.
+   * Invalidates the one-time code after use.
+   *
+   * @param code - The one-time code to exchange.
+   * @param ip - The IP address of the client.
+   * @param userAgent - The user agent string of the client.
+   * @returns A promise that resolves to an object containing the access token, refresh token, and user information.
+   * @throws UnauthorizedException if the code is invalid or expired, or if the user is not found.
+   */
   async exchangeCodeForTokens(
     code: string,
     ip: string,
@@ -582,8 +696,10 @@ export class AuthService {
   /**
    * Handle forgot password request.
    * Sends a password reset email with a token.
-   * @param email the email address of the user
-   * @returns Promise<{ message: string; isOAuthUser?: boolean }> success message and OAuth status
+   * Generates a reset token and stores it in Redis.
+   *
+   * @param email - The email address of the user who forgot their password.
+   * @returns A promise that resolves to a success message, indicating if an email was sent or if an email was sent or if the user is OAuth-only.
    */
   async forgotPassword(
     email: string
@@ -635,10 +751,14 @@ export class AuthService {
   }
 
   /**
-   * Reset password using a valid reset token.
-   * @param token the reset token from email
-   * @param newPassword the new password
-   * @returns Promise<{ message: string }> success message
+   * Resets a user's password using a valid reset token.
+   * Hashes the new password, updates the user record, deletes the reset token, and logs out all sessions for security.
+   *
+   * @param token - The password reset token received via email.
+   * @param newPassword - The new password for the user.
+   * @returns A promise that resolves to a success message.
+   * @throws BadRequestException if the token is invalid or expired.
+   * @throws NotFoundException if the user associated with the token does not exist.
    */
   async resetPassword(
     token: string,
@@ -693,11 +813,15 @@ export class AuthService {
   }
 
   /**
-   * Link a Google account to an existing user account.
-   * This is used when a logged-in user wants to connect their Google account.
-   * @param userId the ID of the currently logged-in user
-   * @param profile the Google OAuth profile
-   * @returns Promise<{ message: string; user: User }> success message and updated user info
+   * Links a Google account to an existing user account.
+   * Performs checks for existing links, email mismatches, and updates user profile information.
+   *
+   * @param userId - The ID of the currently logged-in user.
+   * @param profile - The Google OAuth profile data.
+   * @returns A promise that resolves to a success message and updated user information.
+   * @throws UnauthorizedException if the user does not exist.
+   * @throws ConflictException if the Google account is already linked to this or another user.
+   * @throws BadRequestException if the Google account email does not match the user's current email.
    */
   async linkGoogleAccount(
     userId: string,
@@ -803,10 +927,15 @@ export class AuthService {
   }
 
   /**
-   * Unlink a Google account from a user.
-   * @param userId the ID of the user
-   * @param provider the OAuth provider (e.g., 'google')
-   * @returns Promise<{ message: string }> success message
+   * Unlinks an OAuth account (e.g., Google) from a user's profile.
+   * Prevents unlinking if it's the user's only authentication method and they don't have a password set.
+   *
+   * @param userId - The ID of the user.
+   * @param provider - The OAuth provider to unlink (e.g., 'google').
+   * @returns A promise that resolves to a success message.
+   * @throws UnauthorizedException if the user does not exist.
+   * @throws BadRequestException if the user tries to unlink their only login method without a password.
+   * @throws NotFoundException if the specified OAuth account is not linked.
    */
   async unlinkOAuthAccount(
     userId: string,
@@ -852,9 +981,10 @@ export class AuthService {
   }
 
   /**
-   * Get linked OAuth accounts for a user.
-   * @param userId the ID of the user
-   * @returns Promise<UserIdentity[]> list of linked OAuth accounts
+   * Retrieves a list of all OAuth accounts linked to a specific user.
+   *
+   * @param userId - The ID of the user.
+   * @returns A promise that resolves to an array of UserIdentity objects.
    */
   async getLinkedAccounts(userId: string): Promise<UserIdentity[]> {
     return this.entityManager.find(UserIdentity, {
@@ -863,9 +993,10 @@ export class AuthService {
   }
 
   /**
-   * Proxy method to verify email change
-   * @param token Verification token
-   * @returns Result from UserService
+   * Proxies the email change verification request to the UserService.
+   *
+   * @param token - The verification token for the email change.
+   * @returns A promise that resolves to an object containing a success message and the new email.
    */
   async verifyEmailChange(
     token: string

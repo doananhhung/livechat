@@ -5,6 +5,13 @@ import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../../user/user.service';
 
+/**
+ * Passport strategy for validating refresh tokens.
+ * This strategy extracts the refresh token from an HttpOnly cookie named 'refresh_token'.
+ * It verifies the token's signature and expiration, and then validates the associated user.
+ * It also checks if the token has been revoked by comparing its 'issued at' (iat) timestamp
+ * with the user's `tokensValidFrom` timestamp.
+ */
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(
   Strategy,

@@ -7,6 +7,7 @@ import { json } from 'body-parser';
 import { RedisIoAdapter } from './gateway/redis-io.adapter';
 import { ConfigService } from '@nestjs/config';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -34,6 +35,17 @@ async function bootstrap() {
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe());
   app.setGlobalPrefix('api/v1');
+
+  // Swagger/OpenAPI Setup
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Live Chat API')
+    .setDescription('API documentation for the Live Chat application')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api', app, document);
+
   await app.listen(3000);
 }
 

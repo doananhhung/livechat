@@ -25,7 +25,7 @@
     "migration:generate": "ts-node -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/database/data-source.ts migration:generate",
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
-    "check-types": "tsc --noEmit" 
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "@aws-sdk/client-sqs": "^3.888.0",
@@ -41,6 +41,7 @@
     "@nestjs/platform-express": "^11.1.7",
     "@nestjs/platform-socket.io": "^11.1.7",
     "@nestjs/serve-static": "^5.0.3",
+    "@nestjs/swagger": "^11.2.1",
     "@nestjs/throttler": "^6.4.0",
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^11.1.6",

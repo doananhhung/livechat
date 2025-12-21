@@ -11,6 +11,12 @@ interface JwtPayload {
   iat: number; // Issued at timestamp (automatically added by jwtService.sign)
 }
 
+/**
+ * Passport strategy for authenticating users using JSON Web Tokens (JWT).
+ * This strategy extracts the JWT from the Authorization header (Bearer token)
+ * and validates it against the configured secret.
+ * It also performs checks to ensure the user exists and the token has not been revoked.
+ */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(

@@ -4,6 +4,13 @@ import { Request } from 'express';
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+/**
+ * Passport strategy for handling partial 2FA (Two-Factor Authentication) tokens.
+ * This strategy is used when a user has successfully logged in but 2FA is enabled,
+ * requiring an additional step to verify the 2FA code.
+ * It extracts a JWT from the '2fa_partial_token' cookie and validates it.
+ * The token payload should indicate that 2FA is required but not yet completed.
+ */
 @Injectable()
 export class TwoFactorAuthenticationStrategy extends PassportStrategy(
   Strategy,

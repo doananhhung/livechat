@@ -22,6 +22,7 @@ import {
   User,
   ForgotPasswordDto,
   ResetPasswordDto,
+  LoginDto, // <-- ADDED for Swagger @ApiBody
 } from '@live-chat/shared';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -30,7 +31,14 @@ import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'; // <-- ADDED for Swagger
 
+/**
+ * Controller for handling all authentication-related HTTP requests.
+ * Provides endpoints for user registration, login, password management,
+ * email verification, and Google OAuth flows.
+ */
+@ApiTags('Auth') // <-- ADDED for Swagger
 @Controller('auth')
 export class AuthController {
   private readonly refreshTokenExpiresIn: number;
@@ -48,22 +56,53 @@ export class AuthController {
     );
   }
 
-  // @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 request per 60 seconds - DISABLED FOR TESTING
+  /**
+   * Registers a new user.
+   *
+   * @param registerDto - The registration data (email, password, fullName, invitationToken).
+   * @returns A success message upon successful registration.
+   * @status 201 - Created.
+   * @throws ConflictException - If the email is already in use.
+   */
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Register a new user' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 201, description: 'User successfully registered.' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 409, description: 'Email already in use.' }) // <-- ADDED for Swagger
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
 
+  /**
+   * Verifies a user's email address using a token received via email.
+   *
+   * @param token - The verification token from the query parameters.
+   * @returns A success message upon successful email verification.
+   * @status 200 - OK.
+   * @throws NotFoundException - If the token is invalid or expired.
+   */
   @Get('verify-email')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify user email with token' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 200, description: 'Email successfully verified.' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 404, description: 'Invalid or expired token.' }) // <-- ADDED for Swagger
   async verifyEmail(@Query('token') token: string) {
     return this.authService.verifyEmail(token);
   }
 
-  // @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 requests per 5 minutes - DISABLED FOR TESTING
+  /**
+   * Resends the email verification link to a user.
+   *
+   * @param resendVerificationDto - The email address to resend verification to.
+   * @returns A success message indicating the email has been sent.
+   * @status 200 - OK.
+   * @throws ConflictException - If the email is already verified.
+   */
   @Post('resend-verification')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Resend email verification link' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 200, description: 'Verification email sent.' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 409, description: 'Email already verified.' }) // <-- ADDED for Swagger
   async resendVerificationEmail(
     @Body() resendVerificationDto: ResendVerificationDto
   ) {
@@ -71,20 +110,30 @@ export class AuthController {
   }
 
   /**
-   * Log in a user and set refresh token in HTTP-only cookie.
-   * The access token is returned in the response body.
-   * @param req the request object containing user information
-   * @param response the response object to set cookies
-   * @returns Promise<{ accessToken: string }> the access token
-   * add refresh_token into cookies
+   * Logs in a user with email and password.
+   * Sets a secure, HttpOnly refresh token cookie and returns an access token.
+   * Handles 2FA-enabled accounts by returning a partial token and requiring 2FA authentication.
+   *
+   * @param req - The request object containing user information (populated by LocalAuthGuard).
+   * @param response - The response object to set cookies.
+   * @param loginDto - The login credentials (email, password).
+   * @returns An object containing the access token and user details, or throws UnauthorizedException for 2FA.
+   * @status 200 - OK.
+   * @status 401 - Unauthorized (e.g., wrong credentials, 2FA required).
+   * @status 403 - Forbidden (e.g., suspended account, unverified email).
    */
   @UseGuards(LocalAuthGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiBody({ type: LoginDto }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 200, description: 'User successfully logged in.' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 401, description: 'Unauthorized (wrong credentials or 2FA required).' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 403, description: 'Forbidden (e.g., suspended account).' }) // <-- ADDED for Swagger
   async login(
     @Request()
     req: { user: User; ip: string; headers: { 'user-agent': string } },
-    @Res({ passthrough: true }) response: Response
+    @Res({ passthrough: true }) response: Response,
+    @Body() loginDto: LoginDto // <-- ADDED for Swagger
   ) {
     const ipAddress = req.ip;
     const userAgent = req.headers['user-agent'] || '';
@@ -124,16 +173,23 @@ export class AuthController {
   }
 
   /**
-   * Refresh access tokens using a valid refresh token.
+   * Refreshes the user's access token using a valid refresh token stored in an HttpOnly cookie.
+   * Issues a new access token and a new refresh token (rotated).
    *
-   * @param req the request object containing user information
-   * @param response the response object to set cookies
-   * @returns Promise<{ accessToken: string }> new access token
-   * add refresh_token into cookies
+   * @param req - The request object containing user information (populated by RefreshTokenGuard).
+   * @param response - The response object to set cookies.
+   * @returns An object containing the new access token.
+   * @status 200 - OK.
+   * @status 401 - Unauthorized (e.g., invalid or expired refresh token).
+   * @status 403 - Forbidden (e.g., user not active, token revoked).
    */
   @UseGuards(RefreshTokenGuard)
   @Get('refresh')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Refresh access token using refresh token' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 200, description: 'Access token successfully refreshed.' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 401, description: 'Unauthorized (invalid or expired refresh token).' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 403, description: 'Forbidden (e.g., user not active, token revoked).' }) // <-- ADDED for Swagger
   async refreshTokens(
     @Request() req,
     @Res({ passthrough: true }) response: Response
@@ -154,9 +210,28 @@ export class AuthController {
     return { accessToken: tokens.accessToken };
   }
 
+  /**
+   * Allows an authenticated user to change their password.
+   * Requires the current password for verification if one is set.
+   * Logs out all sessions after a successful password change for security.
+   *
+   * @param req - The request object containing user information (populated by JwtAuthGuard).
+   * @param body - The ChangePasswordDto containing current and new passwords.
+   * @param response - The response object to set cookies.
+   * @returns An object containing a success message and a new access token.
+   * @status 200 - OK.
+   * @status 400 - Bad Request (e.g., current password required but not provided).
+   * @status 401 - Unauthorized (e.g., invalid access token).
+   * @status 403 - Forbidden (e.g., incorrect current password).
+   */
   @UseGuards(JwtAuthGuard)
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Change user password' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 200, description: 'Password successfully changed.' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 400, description: 'Bad Request (e.g., current password missing).' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 401, description: 'Unauthorized (invalid access token).' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 403, description: 'Forbidden (e.g., incorrect current password).' }) // <-- ADDED for Swagger
   async changePassword(
     @Request() req,
     @Body() body: ChangePasswordDto,
@@ -191,9 +266,26 @@ export class AuthController {
     };
   }
 
+  /**
+   * Allows an authenticated user to set a password for their account if they don't already have one.
+   * This is typically used for users who initially registered via OAuth and want to add an email/password login.
+   * Logs out all sessions after a successful password set for security.
+   *
+   * @param req - The request object containing user information (populated by JwtAuthGuard).
+   * @param body - The SetPasswordDto containing the new password.
+   * @param response - The response object to set cookies.
+   * @returns An object containing a success message and a new access token.
+   * @status 200 - OK.
+   * @status 400 - Bad Request (e.g., user already has a password).
+   * @status 401 - Unauthorized (e.g., invalid access token).
+   */
   @UseGuards(JwtAuthGuard)
   @Post('set-password')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Set password for a user (e.g., OAuth users)' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 200, description: 'Password successfully set.' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 400, description: 'Bad Request (user already has a password).' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 401, description: 'Unauthorized (invalid access token).' }) // <-- ADDED for Swagger
   async setPassword(
     @Request() req,
     @Body() body: SetPasswordDto,
@@ -219,9 +311,22 @@ export class AuthController {
     };
   }
 
+  /**
+   * Logs out the current user by invalidating their refresh token.
+   * Clears relevant authentication cookies.
+   *
+   * @param req - The request object containing user information and cookies.
+   * @param response - The response object to clear cookies.
+   * @returns A success message upon successful logout.
+   * @status 200 - OK.
+   * @status 401 - Unauthorized (e.g., invalid refresh token).
+   */
   @UseGuards(RefreshTokenGuard)
   @Post('logout')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Log out the current user' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 200, description: 'User successfully logged out.' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 401, description: 'Unauthorized (invalid refresh token).' }) // <-- ADDED for Swagger
   async logout(@Request() req, @Res({ passthrough: true }) response: Response) {
     const refreshToken = req.cookies['refresh_token'];
     if (refreshToken) {
@@ -233,9 +338,22 @@ export class AuthController {
     return { message: 'Đăng xuất thành công.' };
   }
 
+  /**
+   * Logs out the current user from all active sessions by invalidating all their refresh tokens.
+   * Clears relevant authentication cookies.
+   *
+   * @param req - The request object containing user information.
+   * @param response - The response object to clear cookies.
+   * @returns A success message upon successful logout from all devices.
+   * @status 200 - OK.
+   * @status 401 - Unauthorized (e.g., invalid refresh token).
+   */
   @UseGuards(RefreshTokenGuard)
   @Post('logout-all')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Log out user from all devices' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 200, description: 'User successfully logged out from all devices.' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 401, description: 'Unauthorized (invalid refresh token).' }) // <-- ADDED for Swagger
   async logoutAll(
     @Request() req,
     @Res({ passthrough: true }) response: Response
@@ -247,24 +365,37 @@ export class AuthController {
     return { message: 'Đã đăng xuất khỏi tất cả các thiết bị.' };
   }
 
+  /**
+   * Initiates the Google OAuth login flow.
+   * Redirects the user to Google's authentication page.
+   *
+   * @returns HTTP Status OK (redirection handled by Passport.js).
+   * @status 200 - OK (redirect).
+   */
   @Get('google')
   @UseGuards(AuthGuard('google'))
+  @ApiOperation({ summary: 'Initiate Google OAuth login' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 302, description: 'Redirects to Google for authentication.' }) // <-- ADDED for Swagger
   async googleAuth() {
     return HttpStatus.OK;
   }
 
   /**
-   * Callback for Google login
-   * @param req the request object containing user information
-   * @param response the response object to set cookies or redirect
-   * @returns Promise<void>
-   * Handles both 2FA and non-2FA login flows
-   * If 2FA is enabled, sets a short-lived 2fa_partial_token cookie and redirects to FRONTEND_2FA_URL
-   * If 2FA is not enabled, generates a one-time code and redirects to FRONTEND_AUTH_CALLBACK_URL with the code as a query parameter
+   * Callback endpoint for Google OAuth login.
+   * Processes the Google authentication response, handles 2FA if enabled,
+   * and redirects the user to the appropriate frontend URL.
+   *
+   * @param req - The request object containing user information from Google OAuth.
+   * @param res - The response object to set cookies and perform redirects.
+   * @returns Redirects to frontend URL.
+   * @status 302 - Redirect.
+   * @throws UnauthorizedException - If Google authentication fails.
    */
-
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
+  @ApiOperation({ summary: 'Google OAuth callback' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 302, description: 'Redirects to frontend after Google authentication.' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 401, description: 'Unauthorized (Google authentication failed).' }) // <-- ADDED for Swagger
   async googleAuthRedirect(@Request() req, @Res() res: Response) {
     const user = req.user as User;
     if (!user) {
@@ -304,8 +435,22 @@ export class AuthController {
     }
   }
 
+  /**
+   * Exchanges a one-time code (received from OAuth callback) for full access and refresh tokens.
+   * Sets a secure, HttpOnly refresh token cookie.
+   *
+   * @param exchangeCodeDto - The ExchangeCodeDto containing the one-time code.
+   * @param response - The response object to set cookies.
+   * @param req - The request object containing client IP and user agent.
+   * @returns An object containing the access token and user details.
+   * @status 200 - OK.
+   * @status 401 - Unauthorized (e.g., invalid or expired code).
+   */
   @Post('exchange-code')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Exchange one-time code for tokens' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 200, description: 'Code successfully exchanged for tokens.' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 401, description: 'Unauthorized (invalid or expired code).' }) // <-- ADDED for Swagger
   async exchangeCode(
     @Body() exchangeCodeDto: ExchangeCodeDto,
     @Res({ passthrough: true }) response: Response,
@@ -334,14 +479,34 @@ export class AuthController {
     return { accessToken, user };
   }
 
+  /**
+   * Initiates the forgot password process by sending a reset email.
+   *
+   * @param forgotPasswordDto - The ForgotPasswordDto containing the user's email.
+   * @returns A success message.
+   * @status 200 - OK.
+   */
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Initiate forgot password process' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 200, description: 'Password reset email sent (if user exists).' }) // <-- ADDED for Swagger
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     return this.authService.forgotPassword(forgotPasswordDto.email);
   }
 
+  /**
+   * Resets the user's password using a valid reset token.
+   *
+   * @param resetPasswordDto - The ResetPasswordDto containing the token and new password.
+   * @returns A success message upon successful password reset.
+   * @status 200 - OK.
+   * @status 400 - Bad Request (e.g., invalid or expired token).
+   */
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset user password with token' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 200, description: 'Password successfully reset.' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 400, description: 'Bad Request (invalid or expired token).' }) // <-- ADDED for Swagger
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return this.authService.resetPassword(
       resetPasswordDto.token,
@@ -350,11 +515,19 @@ export class AuthController {
   }
 
   /**
-   * Initiate Google account linking for an authenticated user
-   * This endpoint requires the user to be authenticated
+   * Initiates the Google account linking process for an authenticated user.
+   * Returns a redirect URL to Google's OAuth page.
+   *
+   * @param req - The request object containing user information (populated by JwtAuthGuard).
+   * @returns An object containing the redirect URL.
+   * @status 200 - OK.
+   * @status 401 - Unauthorized (e.g., invalid access token).
    */
   @UseGuards(JwtAuthGuard)
   @Get('link-google')
+  @ApiOperation({ summary: 'Initiate Google account linking' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 200, description: 'Redirect URL for Google OAuth provided.' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 401, description: 'Unauthorized (invalid access token).' }) // <-- ADDED for Swagger
   async linkGoogleInit(@Req() req) {
     // Store user ID in a one-time state token
     const stateToken = await this.authService.generateOneTimeCode(req.user.id);
@@ -367,11 +540,18 @@ export class AuthController {
   }
 
   /**
-   * Google OAuth redirect for linking accounts
-   * This will redirect to Google's OAuth page with the state parameter
+   * Google OAuth redirect endpoint for account linking.
+   * This endpoint handles the redirection to Google's authentication page.
+   *
+   * @param req - The request object.
+   * @param state - The state token from query parameters.
+   * @returns HTTP Status OK (redirection handled by Passport.js).
+   * @status 302 - Redirects to Google for authentication.
    */
   @Get('link-google/redirect')
   @UseGuards(AuthGuard('google-link'))
+  @ApiOperation({ summary: 'Google OAuth redirect for account linking' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 302, description: 'Redirects to Google for authentication.' }) // <-- ADDED for Swagger
   async linkGoogleRedirect(@Req() req, @Query('state') state: string) {
     // The guard will automatically redirect to Google OAuth
     // The state parameter will be preserved by Passport
@@ -379,11 +559,24 @@ export class AuthController {
   }
 
   /**
-   * Callback for Google account linking
-   * This processes the OAuth callback and links the Google account
+   * Callback endpoint for Google account linking.
+   * Processes the OAuth callback and links the Google account to the authenticated user.
+   *
+   * @param req - The request object containing Google profile and state.
+   * @param res - The response object to perform redirects.
+   * @returns Redirects to the frontend with success or error messages.
+   * @status 302 - Redirect.
+   * @throws UnauthorizedException - If state token is missing, invalid, or expired.
+   * @throws BadRequestException - If Google email does not match user's email.
+   * @throws ConflictException - If Google account is already linked.
    */
   @Get('link-google/callback')
   @UseGuards(AuthGuard('google-link'))
+  @ApiOperation({ summary: 'Google OAuth callback for account linking' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 302, description: 'Redirects to frontend after account linking.' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 401, description: 'Unauthorized (invalid state token).' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 400, description: 'Bad Request (email mismatch).' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 409, description: 'Conflict (account already linked).' }) // <-- ADDED for Swagger
   async linkGoogleCallback(@Req() req, @Res() res: Response) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
 
@@ -431,31 +624,60 @@ export class AuthController {
   }
 
   /**
-   * Unlink an OAuth account (e.g., Google)
+   * Unlinks an OAuth account (e.g., Google) from the authenticated user's profile.
+   *
+   * @param req - The request object containing user information (populated by JwtAuthGuard).
+   * @param body - The body containing the provider to unlink (e.g., { provider: 'google' }).
+   * @returns A success message upon successful unlinking.
+   * @status 200 - OK.
+   * @status 400 - Bad Request (e.g., trying to unlink last login method without password).
+   * @status 401 - Unauthorized (e.g., invalid access token).
+   * @status 404 - Not Found (e.g., provider not linked).
    */
   @UseGuards(JwtAuthGuard)
   @Post('unlink-oauth')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Unlink an OAuth account (e.g., Google)' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 200, description: 'OAuth account successfully unlinked.' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 400, description: 'Bad Request (cannot unlink last login method).' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 401, description: 'Unauthorized (invalid access token).' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 404, description: 'Not Found (provider not linked).' }) // <-- ADDED for Swagger
   async unlinkOAuthAccount(@Req() req, @Body() body: { provider: string }) {
     return this.authService.unlinkOAuthAccount(req.user.id, body.provider);
   }
 
   /**
-   * Get list of linked OAuth accounts
+   * Retrieves a list of all OAuth accounts linked to the authenticated user's profile.
+   *
+   * @param req - The request object containing user information (populated by JwtAuthGuard).
+   * @returns An array of UserIdentity objects representing linked accounts.
+   * @status 200 - OK.
+   * @status 401 - Unauthorized (e.g., invalid access token).
    */
   @UseGuards(JwtAuthGuard)
   @Get('linked-accounts')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get linked OAuth accounts' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 200, description: 'List of linked OAuth accounts.' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 401, description: 'Unauthorized (invalid access token).' }) // <-- ADDED for Swagger
   async getLinkedAccounts(@Req() req) {
     return this.authService.getLinkedAccounts(req.user.id);
   }
 
   /**
-   * Verify email change using token from email
-   * Public endpoint - no authentication required
+   * Verifies an email change request using a token received via email.
+   *
+   * @param token - The verification token from the query parameters.
+   * @param res - The response object to perform redirects.
+   * @returns Redirects to the frontend with success or error messages.
+   * @status 302 - Redirect.
+   * @throws UnauthorizedException - If the token is not provided.
    */
   @Get('verify-email-change')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify email change with token' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 302, description: 'Redirects to frontend after email change verification.' }) // <-- ADDED for Swagger
+  @ApiResponse({ status: 401, description: 'Unauthorized (token not provided).' }) // <-- ADDED for Swagger
   async verifyEmailChange(@Query('token') token: string, @Res() res: Response) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
 

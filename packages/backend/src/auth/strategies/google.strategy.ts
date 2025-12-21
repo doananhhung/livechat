@@ -4,6 +4,12 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from '../auth.service';
 
+/**
+ * Passport strategy for authenticating users via Google OAuth 2.0.
+ * This strategy handles the initial Google login flow, validating the Google profile
+ * and either finding an existing user, linking to an existing user by email,
+ * or creating a new user and identity.
+ */
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(
