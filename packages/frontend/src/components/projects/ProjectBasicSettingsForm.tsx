@@ -5,10 +5,8 @@ import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { useToast } from "../ui/use-toast";
 import { updateProject } from "../../services/projectApi";
-import type {
-  ProjectWithRole,
-  UpdateProjectDto,
-} from "@live-chat/shared";
+import type { UpdateProjectDto } from "@live-chat/shared-dtos";
+import { type ProjectWithRole } from "@live-chat/shared-types";
 
 interface ProjectBasicSettingsFormProps {
   project: ProjectWithRole;

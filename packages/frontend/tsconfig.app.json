@@ -11,10 +11,7 @@
     "jsx": "react-jsx",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "paths": {
-      "@live-chat/shared": ["../shared/src"],
-      "@live-chat/shared/*": ["../shared/src/*"]
-    }
+    "paths": {}
   },
   "include": ["src"]
 }

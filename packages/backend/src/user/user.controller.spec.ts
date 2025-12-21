@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import { EmailChangeDto, UpdateUserDto, User } from '@live-chat/shared';
+import { EmailChangeDto, UpdateUserDto } from '@live-chat/shared-dtos';
+import { User } from '../database/entities';
 
 describe('UserController', () => {
   let controller: UserController;
@@ -86,7 +87,10 @@ describe('UserController', () => {
         newEmail: 'new@test.com',
         password: 'password',
       };
-      userService.requestEmailChange.mockResolvedValue(undefined as any);
+      userService.requestEmailChange.mockResolvedValue({
+        message: 'Yêu cầu thay đổi email đã được gửi đến email mới',
+        newEmail: emailChangeDto.newEmail,
+      });
 
       const result = await controller.requestEmailChange(req, emailChangeDto);
 

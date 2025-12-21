@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '@nestjs/cache-manager';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
-import { EmailChangeRequest, RefreshToken, User } from '@live-chat/shared';
+import { EmailChangeRequest, RefreshToken, User } from '../database/entities';
 import { EncryptionService } from '../common/services/encryption.service';
 import { MailModule } from '../mail/mail.module';
 

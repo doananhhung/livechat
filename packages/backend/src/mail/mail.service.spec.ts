@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MailService } from './mail.service';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
-import { User } from '@live-chat/shared';
+import { User } from '../database/entities';
 
 jest.mock('nodemailer');
 

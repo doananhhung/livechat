@@ -3,12 +3,16 @@ import { UserService } from './user.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   User,
-  UserStatus,
   RefreshToken,
   TwoFactorRecoveryCode,
-} from '@live-chat/shared';
+  EmailChangeRequest,
+} from '../database/entities';
+import { UserStatus } from '@live-chat/shared-types';
 import { EntityManager, Repository } from 'typeorm';
 import { EncryptionService } from '../common/services/encryption.service';
+import { MailService } from '../mail/mail.service';
+import { ConfigService } from '@nestjs/config';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { UnauthorizedException } from '@nestjs/common';
@@ -45,6 +49,15 @@ describe('UserService', () => {
           },
         },
         {
+          provide: getRepositoryToken(EmailChangeRequest),
+          useValue: {
+            findOne: jest.fn(),
+            save: jest.fn(),
+            delete: jest.fn(),
+            create: jest.fn(),
+          },
+        },
+        {
           provide: EntityManager,
           useValue: {
             transaction: jest.fn().mockImplementation((cb) => cb(entityManager)),
@@ -60,6 +73,27 @@ describe('UserService', () => {
           provide: EncryptionService,
           useValue: {
             encrypt: jest.fn(),
+          },
+        },
+        {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+          },
+        },
+        {
+          provide: MailService,
+          useValue: {
+            sendEmailChangeVerification: jest.fn(),
+            sendEmailChangeNotification: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockReturnValue('http://localhost:3000'),
           },
         },
       ],

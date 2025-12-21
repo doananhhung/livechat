@@ -11,7 +11,8 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserService } from './user.service';
-import { EmailChangeDto, UpdateUserDto, User } from '@live-chat/shared';
+import { EmailChangeDto, UpdateUserDto } from '@live-chat/shared-dtos';
+import { User } from '../database/entities';
 
 @Controller('user')
 @UseGuards(JwtAuthGuard)

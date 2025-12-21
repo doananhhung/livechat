@@ -10,9 +10,9 @@ import {
   ListMessagesDto,
   SendReplyDto,
   UpdateConversationDto,
-  User,
-  ConversationStatus,
-} from '@live-chat/shared';
+} from '@live-chat/shared-dtos';
+import { ConversationStatus } from '@live-chat/shared-types';
+import { User } from '../database/entities';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../rbac/roles.guard';
 
@@ -77,7 +77,7 @@ describe('InboxController', () => {
         page: 1,
         limit: 10,
       };
-      conversationService.listByProject.mockResolvedValue(response);
+      conversationService.listByProject.mockResolvedValue(response as any);
 
       const result = await controller.listConversations(mockUser, query);
 

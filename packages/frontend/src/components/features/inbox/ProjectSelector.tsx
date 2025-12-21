@@ -1,7 +1,7 @@
 // src/components/features/inbox/ProjectSelector.tsx
 
 import { useNavigate } from "react-router-dom";
-import { type ProjectWithRole, ProjectRole } from "@live-chat/shared";
+import { type ProjectWithRole, ProjectRole } from "@live-chat/shared-types";
 import { Select } from "../../../components/ui/Select";
 import { Badge } from "../../../components/ui/Badge";
 import { PermissionGate } from "../../PermissionGate";

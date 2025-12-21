@@ -1,4 +1,4 @@
-import { WidgetPosition } from "@live-chat/shared";
+import { WidgetPosition } from "@live-chat/shared-types";
 
 interface LauncherProps {
   onClick: () => void;

@@ -6,8 +6,8 @@ import {
   useGetVisitor,
   useUpdateConversationStatus,
 } from "../../../services/inboxApi";
-import type { Conversation, Message } from "@live-chat/shared";
-import { ConversationStatus } from "@live-chat/shared";
+import type { Conversation, Message } from "@live-chat/shared-types";
+import { ConversationStatus } from "@live-chat/shared-types";
 import MessageComposer from "./MessageComposer";
 import { Spinner } from "../../../components/ui/Spinner";
 import { Avatar } from "../../../components/ui/Avatar";
@@ -366,13 +366,13 @@ export const MessagePane = () => {
         <MessageList
           messages={messages || []}
           conversationId={convoId}
-          visitorName={conversation?.visitor?.displayName}
+          visitorName={conversation?.visitor?.displayName || 'Anonymous'}
         />
 
         <MessageComposer conversationId={convoId} />
       </div>
 
-      {conversation && (
+      {conversation && conversation.visitor?.id && (
         <VisitorContextPanel visitorId={conversation.visitor.id} />
       )}
     </div>

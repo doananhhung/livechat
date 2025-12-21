@@ -29,7 +29,6 @@ async function bootstrap() {
   Logger.log('WebSocket adapter (RedisIoAdapter) has been set.', 'main.ts');
 
   const logger = new LoggerMiddleware();
-
   app.use(logger.use.bind(logger));
   app.use(json());
   app.use(cookieParser());

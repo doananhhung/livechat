@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "declaration": true,
+    "outDir": "./dist",
+    "strict": true,
+    "strictPropertyInitialization": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "baseUrl": ".",
+    "paths": {
+      "@live-chat/shared-types": ["packages/shared-types/dist", "../../packages/shared-types/dist"],
+      "@live-chat/shared-types/*": ["packages/shared-types/dist/*", "../../packages/shared-types/dist/*"],
+    }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

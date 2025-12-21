@@ -40,9 +40,10 @@ import {
   User,
   UserIdentity,
   Visitor,
-} from '@live-chat/shared';
+} from './database/entities';
 
 import { ScheduleModule } from '@nestjs/schedule';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
@@ -50,6 +51,16 @@ import { ScheduleModule } from '@nestjs/schedule';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+    }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        connection: {
+          host: configService.get('REDIS_HOST') || 'localhost',
+          port: parseInt(configService.get('REDIS_PORT') || '6379', 10),
+        },
+      }),
+      inject: [ConfigService],
     }),
     CacheModule.registerAsync({
       isGlobal: true,

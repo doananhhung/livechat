@@ -118,7 +118,7 @@ export const ConversationList = () => {
               >
                 <div className="flex items-start gap-3">
                   <Avatar
-                    name={conversation.visitor.displayName}
+                    name={conversation.visitor?.displayName || 'Anonymous'}
                     size="md"
                     className="flex-shrink-0"
                   />
@@ -130,7 +130,7 @@ export const ConversationList = () => {
                           conversation.unreadCount > 0 && "text-foreground"
                         )}
                       >
-                        {conversation.visitor.displayName}
+                        {conversation.visitor?.displayName || 'Anonymous'}
                       </p>
                       <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
                         {conversation.updatedAt && (

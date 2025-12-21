@@ -1,15 +1,17 @@
 import api from "../lib/api";
 import type {
   CreateProjectDto,
+  CreateInvitationDto,
+  UpdateProjectDto,
+} from "@live-chat/shared-dtos";
+import type {
   Project,
   ProjectWithRole,
-  WidgetSettingsDto,
-  CreateInvitationDto,
   Invitation,
-  ProjectMemberDto,
   ProjectRole,
-  UpdateProjectDto,
-} from "@live-chat/shared";
+  ProjectMemberDto,
+  IWidgetSettingsDto,
+} from "@live-chat/shared-types";
 
 // --- Type Definitions ---
 // All type definitions are now imported from @live-chat/shared
@@ -61,7 +63,7 @@ export const updateProject = async (
  */
 export const updateProjectSettings = async (
   projectId: number,
-  settings: WidgetSettingsDto
+  settings: IWidgetSettingsDto
 ): Promise<Project> => {
   const response = await api.patch(`/projects/${projectId}`, {
     widgetSettings: settings,
@@ -100,7 +102,7 @@ export const getProjectInvitations = async (
  */
 export const cancelInvitation = async (
   projectId: number,
-  invitationId: string
+  invitationId: number
 ): Promise<void> => {
   await api.delete(`/projects/${projectId}/invitations/${invitationId}`);
 };

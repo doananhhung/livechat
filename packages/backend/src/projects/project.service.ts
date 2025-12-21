@@ -1,14 +1,16 @@
 import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import {
+  UpdateProjectDto,
   CreateProjectDto,
+  WidgetSettingsDto,
+} from '@live-chat/shared-dtos';
+import {
   Project,
   ProjectMember,
-  ProjectRole,
-  ProjectWithRole,
-  UpdateProjectDto,
-  WidgetSettingsDto,
-} from '@live-chat/shared';
+} from '../database/entities';
+
+import { ProjectRole, ProjectWithRole } from '@live-chat/shared-types';
 
 @Injectable()
 export class ProjectService {
@@ -66,12 +68,26 @@ export class ProjectService {
   async findAllForUser(userId: string): Promise<ProjectWithRole[]> {
     const memberships = await this.entityManager.find(ProjectMember, {
       where: { userId },
-      relations: ['project'],
+      relations: ['project', 'project.members', 'project.members.user'],
     });
 
     // Map to include the user's role in each project
     return memberships.map((membership) => ({
-      ...membership.project,
+      id: membership.project.id,
+      name: membership.project.name,
+      widgetSettings: membership.project.widgetSettings,
+      whitelistedDomains: membership.project.whitelistedDomains,
+      createdAt: membership.project.createdAt,
+      members: membership.project.members.map((member) => ({
+        userId: member.userId,
+        role: member.role,
+        createdAt: member.createdAt,
+        user: {
+          id: member.user.id,
+          fullName: member.user.fullName,
+          email: member.user.email,
+        },
+      })),
       myRole: membership.role, // Add user's role in this project
     }));
   }
@@ -177,7 +193,7 @@ export class ProjectService {
     return members.map((member) => ({
       userId: member.userId,
       role: member.role,
-      joinedAt: member.createdAt,
+      createdAt: member.createdAt,
       user: {
         id: member.user.id,
         fullName: member.user.fullName,

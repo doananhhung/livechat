@@ -1,120 +1,26 @@
-name: backend
+name: live-chat-dev
 
 services:
-  core:
-    build:
-      context: ../..
-      dockerfile: Dockerfile
-      target: development
-    network_mode: host
-
-    user: '${UID:-1000}:${GID:-1000}'
-    ports:
-      - '3000:3000'
-      - '9229:9229'
-    depends_on:
-      - db
-      - redis
-      - localstack
-    volumes:
-      - ../../:/usr/src/app
-      - /usr/src/app/packages/backend/node_modules
-      - /usr/src/app/packages/shared/node_modules
-    environment:
-      PSQL_HOST: localhost
-      PSQL_PORT: 5433
-      PSQL_PASSWORD: ${PSQL_PASSWORD}
-      PSQL_USER: ${PSQL_USER}
-      PSQL_DATABASE: ${PSQL_DATABASE}
-      REDIS_HOST: localhost
-      REDIS_PORT: 6379
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
-      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN}
-      TWO_FACTOR_AUTH_JWT_SECRET: ${TWO_FACTOR_AUTH_JWT_SECRET}
-      TWO_FACTOR_AUTH_JWT_EXPIRES_IN: ${TWO_FACTOR_AUTH_JWT_EXPIRES_IN}
-      TWO_FACTOR_APP_NAME: ${TWO_FACTOR_APP_NAME}
-      API_BASE_URL: ${API_BASE_URL}
-      NODE_ENV: development
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
-      FRONTEND_URL: ${FRONTEND_URL}
-      FRONTEND_AUTH_CALLBACK_URL: ${FRONTEND_AUTH_CALLBACK_URL}
-      FRONTEND_2FA_URL: ${FRONTEND_2FA_URL}
-      AWS_REGION: ${AWS_REGION}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      AWS_SQS_ENDPOINT: http://localstack:4566
-      AWS_SQS_QUEUE_URL: ${AWS_SQS_QUEUE_URL}
-      AWS_SQS_QUEUE_NAME: ${AWS_SQS_QUEUE_NAME}
-      MAIL_APP_PASSWORD: ${MAIL_APP_PASSWORD}
-      MAIL_USER: ${MAIL_USER}
-    # The command is already set in the 'development' stage of the Dockerfile
-    # command: ['npm', 'run', 'dev:start']
-
-  worker:
-    build:
-      context: ../..
-      dockerfile: Dockerfile
-      target: development
-    user: '${UID:-1000}:${GID:-1000}'
-    command: ['npm', 'run', 'dev:worker']
-    environment:
-      PSQL_HOST: db
-      PSQL_USER: ${PSQL_USER}
-      PSQL_PASSWORD: ${PSQL_PASSWORD}
-      PSQL_DATABASE: ${PSQL_DATABASE}
-      PSQL_PORT: 5432
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      AWS_REGION: ${AWS_REGION}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      AWS_SQS_ENDPOINT: http://localstack:4566
-      AWS_SQS_QUEUE_URL: ${AWS_SQS_QUEUE_URL}
-      AWS_SQS_QUEUE_NAME: ${AWS_SQS_QUEUE_NAME}
-    volumes:
-      - ../..:/usr/src/app
-      - /usr/src/app/packages/backend/node_modules
-      - /usr/src/app/packages/shared/node_modules
-    depends_on:
-      - db
-      - localstack
-      - redis
-    restart: unless-stopped
-
   db:
-    image: 'postgres:13-alpine'
+    image: postgres:16-alpine
     ports:
-      - '5433:5432'
+      - '5434:5432'
     environment:
-      POSTGRES_USER: ${PSQL_USER}
-      POSTGRES_PASSWORD: ${PSQL_PASSWORD}
-      POSTGRES_DB: ${PSQL_DATABASE}
+      POSTGRES_USER: ${PSQL_USER:-postgres}
+      POSTGRES_PASSWORD: ${PSQL_PASSWORD:-postgres}
+      POSTGRES_DB: ${PSQL_DATABASE:-live_chat}
     volumes:
       - db_data:/var/lib/postgresql/data
+    restart: unless-stopped
 
   redis:
-    image: 'redis:alpine'
+    image: redis:7-alpine
     ports:
-      - '6379:6379'
+      - '6380:6379'
     volumes:
       - redis_data:/data
-
-  localstack:
-    image: localstack/localstack:latest
-    ports:
-      - '4566:4566'
-    environment:
-      - SERVICES=sqs
-      - DEBUG=1
-      - LOCALSTACK_HOST=localstack
-    volumes:
-      - ./localstack-init:/etc/localstack/init/ready.d
-      - '/var/run/docker.sock:/var/run/docker.sock'
+    restart: unless-stopped
 
 volumes:
-  redis_data:
   db_data:
+  redis_data:

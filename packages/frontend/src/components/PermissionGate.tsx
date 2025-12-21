@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ProjectRole } from "@live-chat/shared";
+import { ProjectRole } from "@live-chat/shared-types";
 import { useProjectRole } from "../hooks/useProjectRole";
 
 interface PermissionGateProps {

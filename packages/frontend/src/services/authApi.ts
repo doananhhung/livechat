@@ -6,9 +6,10 @@ import type {
   LoginDto,
   RegisterDto,
   RegisterResponseDto,
-  ResendVerificationDto,
-  User,
-} from "@live-chat/shared";
+  ResetPasswordDto,
+  ForgotPasswordDto,
+} from "@live-chat/shared-dtos";
+import type { User } from "@live-chat/shared-types";
 
 // ========================================================================
 // API FUNCTIONS

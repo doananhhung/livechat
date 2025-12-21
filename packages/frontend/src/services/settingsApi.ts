@@ -6,9 +6,8 @@ import type {
   SetPasswordDto,
   EmailChangeDto,
   UpdateUserDto,
-  User,
-  UserIdentity,
-} from "@live-chat/shared";
+} from "@live-chat/shared-dtos";
+import type { User, UserIdentity } from "@live-chat/shared-types";
 
 // === TYPES ===
 // Define data types for request and response

@@ -8,9 +8,9 @@ import { Spinner } from "../../components/ui/Spinner";
 import { useToast } from "../../components/ui/use-toast";
 import { ChevronRight, ArrowLeft, Info, Palette, Code } from "lucide-react";
 import { PermissionGate } from "../../components/PermissionGate";
-import { ProjectRole, WidgetPosition, WidgetTheme } from "@live-chat/shared";
+import { ProjectRole, WidgetPosition, WidgetTheme } from "@live-chat/shared-types";
 import { ProjectBasicSettingsForm } from "../../components/projects/ProjectBasicSettingsForm";
-import type { WidgetSettingsDto } from "@live-chat/shared";
+import type { WidgetSettingsDto } from "@live-chat/shared-dtos";
 import { getWidgetSnippet } from "../../lib/widget";
 
 export const ProjectSettingsPage = () => {

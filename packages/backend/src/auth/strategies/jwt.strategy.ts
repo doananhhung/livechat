@@ -3,7 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../../user/user.service';
-import { GlobalRole } from '@live-chat/shared';
+import { GlobalRole } from '@live-chat/shared-types';
 
 interface JwtPayload {
   sub: string;

@@ -1,6 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Conversation, Message, Visitor } from '@live-chat/shared';
+import { Conversation, Message, Visitor } from '../database/entities';
 import { ConversationService } from './services/conversation.service';
 import { MessageService } from './services/message.service';
 import { InboxController } from './inbox.controller';

@@ -1,8 +1,14 @@
 import { Module } from '@nestjs/common';
-import { SqsService } from './sqs.service';
+import { BullMqProducerService } from './bullmq-producer.service';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
-  providers: [SqsService],
-  exports: [SqsService],
+  imports: [
+    BullModule.registerQueue({
+      name: 'live-chat-events-queue',
+    }),
+  ],
+  providers: [BullMqProducerService],
+  exports: [BullMqProducerService],
 })
 export class EventProducerModule {}

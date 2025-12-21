@@ -122,3 +122,5 @@ $RECYCLE.BIN/
 *.swo
 *.swn
 .*.sw?
+
+test.md

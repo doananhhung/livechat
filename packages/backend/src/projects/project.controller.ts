@@ -13,13 +13,13 @@ import {
 import { ProjectService } from './project.service';
 import {
   CreateProjectDto,
-  ProjectRole,
   UpdateProjectDto,
-  User,
   WidgetSettingsDto,
   CreateInvitationDto,
   AcceptInvitationDto,
-} from '@live-chat/shared';
+} from '@live-chat/shared-dtos';
+import { User } from '../database/entities';
+import { ProjectRole } from '@live-chat/shared-types';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetCurrentUser } from '../common/decorators/get-current-user.decorator';
 import { RolesGuard } from '../rbac/roles.guard';

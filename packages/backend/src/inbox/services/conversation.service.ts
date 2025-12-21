@@ -8,11 +8,16 @@ import {
 } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import {
-  Conversation,
-  ConversationStatus,
   ListConversationsDto,
+  UpdateConversationDto,
+} from '@live-chat/shared-dtos';
+import { ConversationStatus } from '@live-chat/shared-types';
+import {
+  Conversation,
   User,
-} from '@live-chat/shared';
+  Message,
+  Visitor,
+} from '../../database/entities';
 import { RealtimeSessionService } from '../../realtime-session/realtime-session.service';
 import { EventsGateway } from '../../gateway/events.gateway';
 import { ProjectService } from '../../projects/project.service';

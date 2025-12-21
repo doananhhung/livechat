@@ -61,14 +61,14 @@ describe('EncryptionService', () => {
     it('should throw an error if encryption key is not configured', () => {
       configService.get.mockReturnValue(null);
       expect(() => new EncryptionService(configService)).toThrow(
-        'ENCRYPTION_KEY must be defined in .env and be 32 characters long.'
+        'ENCRYPTION_KEY must be defined in .env '
       );
     });
 
     it('should throw an error if encryption key is not 32 characters long', () => {
       configService.get.mockReturnValue('short-key');
       expect(() => new EncryptionService(configService)).toThrow(
-        'ENCRYPTION_KEY must be defined in .env and be 32 characters long.'
+        'ENCRYPTION_KEY must be 32 characters long.'
       );
     });
   });

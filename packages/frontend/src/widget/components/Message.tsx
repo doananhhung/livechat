@@ -1,4 +1,4 @@
-import { type WidgetMessageDto as MessageType } from "@live-chat/shared";
+import { type WidgetMessageDto as MessageType } from "@live-chat/shared-types";
 import { useMemo } from "preact/hooks";
 import { isColorLight } from "../utils/color";
 

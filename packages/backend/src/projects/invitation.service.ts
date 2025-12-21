@@ -8,15 +8,9 @@ import {
 } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import * as crypto from 'crypto';
-import {
-  Invitation,
-  InvitationStatus,
-  CreateInvitationDto,
-  ProjectMember,
-  ProjectRole,
-  Project,
-  User,
-} from '@live-chat/shared';
+import { CreateInvitationDto } from '@live-chat/shared-dtos';
+import { Invitation, Project, User, ProjectMember } from '../database/entities';
+import { InvitationStatus, ProjectRole } from '@live-chat/shared-types';
 import { MailService } from '../mail/mail.service';
 import { ConfigService } from '@nestjs/config';
 

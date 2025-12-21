@@ -15,13 +15,16 @@ import * as crypto from 'crypto';
 import {
   RegisterDto,
   ResendVerificationDto,
-  User,
-  UserStatus,
-  RefreshToken,
-  UserIdentity,
   ForgotPasswordDto,
   ResetPasswordDto,
-} from '@live-chat/shared';
+} from '@live-chat/shared-dtos';
+import {
+  User,
+  RefreshToken,
+  UserIdentity,
+} from '../database/entities';
+
+import { UserStatus } from '@live-chat/shared-types';
 import { ConfigService } from '@nestjs/config';
 import { EntityManager } from 'typeorm';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';

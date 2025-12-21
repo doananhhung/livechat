@@ -7,8 +7,10 @@ import { InboxModule } from '../inbox/inbox.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { SQSClient } from '@aws-sdk/client-sqs';
+
 import { GatewayModule } from '../gateway/gateway.module';
+import { BullModule } from '@nestjs/bullmq';
+import { EventProcessor } from './event.processor';
 import {
   Conversation,
   EmailChangeRequest,
@@ -21,7 +23,10 @@ import {
   User,
   UserIdentity,
   Visitor,
-} from '@live-chat/shared';
+  OutboxEvent,
+} from '../database/entities';
+import { OutboxListenerService } from './outbox-listener.service';
+import { RedisModule } from '../redis/redis.module';
 
 export const LIVE_CHAT_EVENTS_QUEUE = 'live-chat-events-queue';
 
@@ -33,6 +38,7 @@ export const LIVE_CHAT_EVENTS_QUEUE = 'live-chat-events-queue';
       envFilePath: '.env',
     }),
     GatewayModule,
+    TypeOrmModule.forFeature([OutboxEvent]),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
@@ -54,35 +60,33 @@ export const LIVE_CHAT_EVENTS_QUEUE = 'live-chat-events-queue';
           User,
           UserIdentity,
           Visitor,
+          OutboxEvent,
         ],
         namingStrategy: new SnakeNamingStrategy(),
         synchronize: false,
       }),
     }),
     InboxModule,
+    RedisModule,
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        connection: {
+          host: configService.get('REDIS_HOST') || 'localhost',
+          port: parseInt(configService.get('REDIS_PORT') || '6379', 10),
+        },
+      }),
+      inject: [ConfigService],
+    }),
+    BullModule.registerQueue({
+      name: 'live-chat-events-queue',
+    }),
   ],
   providers: [
     EventConsumerService,
+    EventProcessor,
     Logger,
-    {
-      provide: SQSClient,
-      useFactory: (configService: ConfigService) => {
-        const endpoint = configService.get<string>('AWS_SQS_ENDPOINT');
-        return new SQSClient({
-          region: configService.get<string>('AWS_REGION') as string,
-          credentials: {
-            accessKeyId: configService.get<string>(
-              'AWS_ACCESS_KEY_ID'
-            ) as string,
-            secretAccessKey: configService.get<string>(
-              'AWS_SECRET_ACCESS_KEY'
-            ) as string,
-          },
-          ...(endpoint && { endpoint }),
-        });
-      },
-      inject: [ConfigService],
-    },
+    OutboxListenerService,
   ],
 })
 export class EventConsumerModule {}

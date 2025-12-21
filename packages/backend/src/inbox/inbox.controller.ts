@@ -20,11 +20,11 @@ import {
   ConversationListResponseDto,
   ListConversationsDto,
   ListMessagesDto,
-  ProjectRole,
   SendReplyDto,
   UpdateConversationDto,
-  User,
-} from '@live-chat/shared';
+} from '@live-chat/shared-dtos';
+import { User } from '../database/entities';
+import { ProjectRole } from '@live-chat/shared-types';
 import { GetCurrentUser } from '../common/decorators/get-current-user.decorator';
 import { RolesGuard } from '../rbac/roles.guard';
 import { Roles } from '../rbac/roles.decorator';

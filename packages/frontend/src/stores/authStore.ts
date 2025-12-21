@@ -4,7 +4,7 @@ import { persist } from "zustand/middleware";
 import api from "../lib/api";
 import { AxiosError } from "axios";
 import { queryClient } from "../main";
-import type { User, UserResponse } from "@live-chat/shared";
+import type { User, UserResponse } from "@live-chat/shared-types";
 
 interface AuthState {
   user: UserResponse | null;

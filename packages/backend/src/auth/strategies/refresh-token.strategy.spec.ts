@@ -3,7 +3,7 @@ import { RefreshTokenStrategy } from './refresh-token.strategy';
 import { UserService } from '../../user/user.service';
 import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException, Logger } from '@nestjs/common';
-import { User } from '@live-chat/shared';
+import { User } from '../../database/entities';
 import { Request } from 'express';
 
 describe('RefreshTokenStrategy', () => {

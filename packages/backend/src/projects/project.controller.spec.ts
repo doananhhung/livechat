@@ -7,9 +7,9 @@ import {
   UpdateProjectDto,
   WidgetSettingsDto,
   CreateInvitationDto,
-  User,
-  ProjectRole,
-} from '@live-chat/shared';
+} from '@live-chat/shared-dtos';
+import { ProjectRole } from '@live-chat/shared-types';
+import { User } from '../database/entities';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../rbac/roles.guard';
 
@@ -125,7 +125,7 @@ describe('ProjectController', () => {
 
   describe('cancelInvitation', () => {
     it('should call invitationService.cancelInvitation', async () => {
-      await controller.cancelInvitation('invite-id', mockUser);
+      await controller.cancelInvitation(1, 'invite-id', mockUser);
       expect(invitationService.cancelInvitation).toHaveBeenCalledWith(
         'invite-id',
         mockUser.id

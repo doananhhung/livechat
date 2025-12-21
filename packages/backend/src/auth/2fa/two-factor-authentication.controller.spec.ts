@@ -10,7 +10,8 @@ import {
   ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { TurnOn2faDto, User } from '@live-chat/shared';
+import { TurnOn2faDto } from '@live-chat/shared-dtos';
+import { User } from '../../database/entities';
 
 describe('TwoFactorAuthenticationController', () => {
   let controller: TwoFactorAuthenticationController;
@@ -103,7 +104,8 @@ describe('TwoFactorAuthenticationController', () => {
 
     it('should throw BadRequestException if cookie is missing', async () => {
       const req = { cookies: {} };
-      await expect(controller.turnOn(req as any, turnOnDto)).rejects.toThrow(
+      const res = { clearCookie: jest.fn() };
+      await expect(controller.turnOn(req as any, turnOnDto, res as any)).rejects.toThrow(
         BadRequestException
       );
     });
@@ -113,7 +115,8 @@ describe('TwoFactorAuthenticationController', () => {
       encryptionService.decrypt.mockReturnValue('decrypted-secret');
       twoFactorAuthService.isCodeValid.mockReturnValue(false);
 
-      await expect(controller.turnOn(req as any, turnOnDto)).rejects.toThrow(
+      const res = { clearCookie: jest.fn() };
+      await expect(controller.turnOn(req as any, turnOnDto, res as any)).rejects.toThrow(
         UnauthorizedException
       );
     });
@@ -128,7 +131,8 @@ describe('TwoFactorAuthenticationController', () => {
         recoveryCodes,
       });
 
-      const result = await controller.turnOn(req as any, turnOnDto);
+      const res = { clearCookie: jest.fn() };
+      const result = await controller.turnOn(req as any, turnOnDto, res as any);
 
       expect(result.recoveryCodes).toEqual(recoveryCodes);
     });
@@ -172,7 +176,7 @@ describe('TwoFactorAuthenticationController', () => {
       const tokens = {
         accessToken: 'access',
         refreshToken: 'refresh',
-        user,
+        user: { ...user, hasPassword: true } as any,
       };
       userService.findOneById.mockResolvedValue(user);
       encryptionService.decrypt.mockReturnValue('decrypted-secret');
@@ -188,7 +192,7 @@ describe('TwoFactorAuthenticationController', () => {
         expect.any(Object)
       );
       expect(res.clearCookie).toHaveBeenCalledWith('2fa_partial_token');
-      expect(res.json).toHaveBeenCalledWith({ accessToken: 'access', user });
+      expect(res.json).toHaveBeenCalledWith({ accessToken: 'access', user: tokens.user });
     });
   });
 

@@ -2,13 +2,15 @@
 
 import { EntityManager } from 'typeorm';
 import {
-  Conversation,
   CreateMessageDto,
   ListMessagesDto,
+} from '@live-chat/shared-dtos';
+import {
+  Conversation,
   Message,
-  MessageStatus,
   User,
-} from '@live-chat/shared';
+} from '../../database/entities';
+import { MessageStatus } from '@live-chat/shared-types';
 import { EventsGateway } from '../../gateway/events.gateway';
 import {
   Injectable,

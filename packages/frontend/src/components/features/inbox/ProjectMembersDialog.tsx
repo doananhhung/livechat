@@ -31,9 +31,9 @@ import {
   updateMemberRole,
   removeMember,
 } from "../../../services/projectApi";
-import type { ProjectMemberDto, ProjectRole } from "@live-chat/shared";
+import type { ProjectMemberDto, ProjectRole } from "@live-chat/shared-types";
 import { Spinner } from "../../ui/Spinner";
-import { ProjectRole as ProjectRoleEnum } from "@live-chat/shared";
+import { ProjectRole as ProjectRoleEnum } from "@live-chat/shared-types";
 
 interface ProjectMembersDialogProps {
   projectId: number;
@@ -186,7 +186,7 @@ export const ProjectMembersDialog = ({
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
                             Tham gia:{" "}
-                            {new Date(member.joinedAt).toLocaleDateString(
+                            {new Date(member.createdAt).toLocaleDateString(
                               "vi-VN"
                             )}
                           </p>

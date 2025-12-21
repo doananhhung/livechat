@@ -20,7 +20,9 @@ import {
   VisitorIdentifiedEvent,
   VisitorMessageReceivedEvent,
 } from '../inbox/events';
-import { Conversation, Visitor, MessageStatus, WidgetMessageDto } from '@live-chat/shared';
+import { AgentTypingDto } from '@live-chat/shared-dtos';
+import { Conversation, Visitor, Message } from '../database/entities';
+import { MessageStatus, WidgetMessageDto } from '@live-chat/shared-types';
 
 const NEW_MESSAGE_CHANNEL = 'new_message_channel';
 

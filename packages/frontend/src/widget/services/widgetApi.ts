@@ -1,5 +1,6 @@
 // src/widget/services/widgetApi.ts
-import type { WidgetSettingsDto } from "@live-chat/shared";
+import type { IWidgetSettingsDto } from "@live-chat/shared-types";
+import type { WidgetConfig } from "../store/useChatStore";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const REQUEST_TIMEOUT = 10000; // 10 seconds
@@ -34,9 +35,9 @@ async function fetchWithTimeout(
  * @returns A promise that resolves to the widget configuration.
  * @throws An error if the request fails.
  */
-export async function getWidgetSettings(
+export const getWidgetSettings = async (
   projectId: string
-): Promise<WidgetSettingsDto> {
+): Promise<IWidgetSettingsDto> => {
   const url = `${API_BASE_URL}/public/projects/${projectId}/settings`;
 
   // Only log in development
@@ -71,7 +72,7 @@ export async function getWidgetSettings(
       throw new Error("Could not retrieve widget configuration.");
     }
 
-    const data: WidgetSettingsDto = await response.json();
+    const data: IWidgetSettingsDto = await response.json();
     return data;
   } catch (error) {
     if (error instanceof Error) {

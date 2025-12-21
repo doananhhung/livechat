@@ -7,8 +7,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { User, ProjectMember } from '@live-chat/shared';
-import { GlobalRole, ProjectRole } from '@live-chat/shared';
+import { User, ProjectMember } from '../database/entities';
+import { GlobalRole, ProjectRole } from '@live-chat/shared-types';
 import { ROLES_KEY } from './roles.decorator';
 import { EntityManager } from 'typeorm';
 

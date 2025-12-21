@@ -4,10 +4,9 @@ import { EntityManager } from 'typeorm';
 import {
   Project,
   ProjectMember,
-  ProjectRole,
-  UpdateProjectDto,
-  WidgetSettingsDto,
-} from '@live-chat/shared';
+} from '../database/entities';
+import { UpdateProjectDto, WidgetSettingsDto } from '@live-chat/shared-dtos';
+import { ProjectRole } from '@live-chat/shared-types';
 import { ForbiddenException } from '@nestjs/common';
 
 describe('ProjectService', () => {

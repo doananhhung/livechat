@@ -7,8 +7,8 @@ import {
   ExchangeCodeDto,
   RegisterDto,
   ResendVerificationDto,
-  User,
-} from '@live-chat/shared';
+} from '@live-chat/shared-dtos';
+import { User } from '../database/entities';
 import { HttpStatus, UnauthorizedException } from '@nestjs/common';
 import { Response } from 'express';
 
@@ -120,11 +120,11 @@ describe('AuthController', () => {
       const tokens = {
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
-        user,
+        user: { ...user, hasPassword: true } as any,
       };
       authService.loginAndReturnTokens.mockResolvedValue(tokens);
 
-      await controller.login(req, res);
+      await controller.login(req, res, { email: 'e', password: 'p' });
 
       expect(authService.loginAndReturnTokens).toHaveBeenCalledWith(
         req.user,
@@ -150,7 +150,7 @@ describe('AuthController', () => {
       const partialToken = { accessToken: 'partial-token' };
       authService.generate2FAPartialToken.mockResolvedValue(partialToken);
 
-      await expect(controller.login(twoFaReq, res)).rejects.toThrow(
+      await expect(controller.login(twoFaReq, res, { email: 'e', password: 'p' })).rejects.toThrow(
         new UnauthorizedException({
           message: '2FA required',
           errorCode: '2FA_REQUIRED',
@@ -209,7 +209,7 @@ describe('AuthController', () => {
       const tokens = {
         accessToken: 'new-access-token',
         refreshToken: 'new-refresh-token',
-        user,
+        user: { ...user, hasPassword: true } as any,
       };
       authService.loginAndReturnTokens.mockResolvedValue(tokens);
 

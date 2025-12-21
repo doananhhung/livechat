@@ -4,7 +4,7 @@ import { VisitorIdentifiedEvent, VisitorMessageReceivedEvent } from './events';
 import { ConversationService } from './services/conversation.service';
 import { VisitorService } from './services/visitor.service';
 import { RealtimeSessionService } from '../realtime-session/realtime-session.service';
-import { SqsService } from '../event-producer/sqs.service';
+import { BullMqProducerService } from '../event-producer/bullmq-producer.service';
 import { EventsGateway } from '../gateway/events.gateway';
 import { EntityManager } from 'typeorm';
 
@@ -16,7 +16,7 @@ export class InboxEventHandlerService {
     private readonly conversationService: ConversationService,
     private readonly visitorService: VisitorService,
     private readonly realtimeSessionService: RealtimeSessionService,
-    private readonly sqsService: SqsService,
+    private readonly bullMqProducerService: BullMqProducerService,
     private readonly eventsGateway: EventsGateway,
     private readonly entityManager: EntityManager
   ) {}
@@ -85,7 +85,7 @@ export class InboxEventHandlerService {
       timestamp: new Date().toISOString(),
     };
 
-    await this.sqsService.sendMessage(eventPayload);
+    await this.bullMqProducerService.sendMessage(eventPayload);
   }
 
   @OnEvent('redis.message.received')

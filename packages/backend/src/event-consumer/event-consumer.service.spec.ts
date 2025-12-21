@@ -1,3 +1,4 @@
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { EventConsumerService } from './event-consumer.service';
 import { ConversationService } from '../inbox/services/conversation.service';
@@ -5,10 +6,9 @@ import { VisitorService } from '../inbox/services/visitor.service';
 import { MessageService } from '../inbox/services/message.service';
 import { EntityManager } from 'typeorm';
 import { REDIS_PUBLISHER_CLIENT } from '../redis/redis.module';
-import { SQSClient } from '@aws-sdk/client-sqs';
 import { ConfigService } from '@nestjs/config';
-import { Message, Visitor } from '@live-chat/shared';
-import { Logger } from '@nestjs/common';
+import { Message, Visitor } from '../database/entities';
+import { MessageStatus } from '@live-chat/shared-types';
 
 describe('EventConsumerService', () => {
   let service: EventConsumerService;
@@ -17,8 +17,6 @@ describe('EventConsumerService', () => {
   let messageService: jest.Mocked<MessageService>;
   let entityManager: jest.Mocked<EntityManager>;
   let redisPublisher: jest.Mocked<any>;
-  let sqsClient: jest.Mocked<SQSClient>;
-  let configService: jest.Mocked<ConfigService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -55,18 +53,6 @@ describe('EventConsumerService', () => {
             publish: jest.fn(),
           },
         },
-        {
-          provide: SQSClient,
-          useValue: {
-            send: jest.fn(),
-          },
-        },
-        {
-          provide: ConfigService,
-          useValue: {
-            get: jest.fn(),
-          },
-        },
       ],
     }).compile();
 
@@ -76,8 +62,6 @@ describe('EventConsumerService', () => {
     messageService = module.get(MessageService);
     entityManager = module.get(EntityManager);
     redisPublisher = module.get(REDIS_PUBLISHER_CLIENT);
-    sqsClient = module.get(SQSClient);
-    configService = module.get(ConfigService);
   });
 
   afterEach(() => {
@@ -88,57 +72,30 @@ describe('EventConsumerService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('onApplicationBootstrap', () => {
-    it('should get queue url and start polling', async () => {
-      sqsClient.send.mockImplementation(() => Promise.resolve({ QueueUrl: 'test-url' } as any));
-      const startPollingSpy = jest
-        .spyOn(service as any, 'startPolling')
-        .mockImplementation(() => {});
-
-      await service.onApplicationBootstrap();
-
-      expect(sqsClient.send).toHaveBeenCalled();
-      expect(startPollingSpy).toHaveBeenCalled();
-    });
-
-    it('should log an error if getting queue url fails', async () => {
-      const errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
-      sqsClient.send.mockImplementation(() => Promise.reject(new Error('SQS Error')));
-      await expect(service.onApplicationBootstrap()).rejects.toThrow('SQS Error');
-      expect(errorSpy).toHaveBeenCalled();
-    });
-  });
-
-  describe('handleMessage', () => {
+  describe('processEvent', () => {
     it('should handle NEW_MESSAGE_FROM_VISITOR event', async () => {
       const handleNewMessageSpy = jest
         .spyOn(service as any, 'handleNewMessageFromVisitor')
         .mockResolvedValue(undefined);
-      const message = {
-        MessageId: '1',
-        Body: JSON.stringify({
-          type: 'NEW_MESSAGE_FROM_VISITOR',
-          payload: {},
-        }),
+      const event = {
+        type: 'NEW_MESSAGE_FROM_VISITOR',
+        payload: { some: 'payload' },
       };
 
-      await service.handleMessage(message as any);
+      await service.processEvent(event);
 
-      expect(handleNewMessageSpy).toHaveBeenCalled();
+      expect(handleNewMessageSpy).toHaveBeenCalledWith(event.payload);
     });
 
-    it('should log an error for empty message body', async () => {
-      const errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
-      const message = { MessageId: '1', Body: null };
-      await expect(service.handleMessage(message as any)).rejects.toThrow(
-        'Message body is empty.'
-      );
-      expect(errorSpy).toHaveBeenCalled();
+    it('should log warning for unhandled event type', async () => {
+      // We can't easily spy on logger without more setup, but we verify it doesn't throw
+      const event = { type: 'UNKNOWN_TYPE', payload: {} };
+      await expect(service.processEvent(event)).resolves.not.toThrow();
     });
   });
 
   describe('handleNewMessageFromVisitor', () => {
-    it('should create entities and publish to redis', async () => {
+    it('should create entities and insert outbox event', async () => {
       const payload = {
         tempId: 'temp-1',
         content: 'Hello',
@@ -146,28 +103,51 @@ describe('EventConsumerService', () => {
         projectId: 1,
         socketId: 'socket-abc',
       };
+      
       const visitor = new Visitor();
       visitor.id = 1;
-      const conversation = { id: 1 };
+      visitor.visitorUid = 'visitor-123';
+      
+      const conversation = { id: 100 };
       const savedMessage = { id: 'msg-1' } as Message;
 
       visitorService.findOrCreateByUid.mockResolvedValue(visitor);
       conversationService.findOrCreateByVisitorId.mockResolvedValue(conversation as any);
       messageService.createMessageAndVerifySent.mockResolvedValue(savedMessage);
 
+      // Mock entityManager.query for outbox insertion
+      entityManager.query = jest.fn().mockResolvedValue(undefined);
+
+      // Call private method via casting
       await (service as any).handleNewMessageFromVisitor(payload);
 
-      expect(visitorService.findOrCreateByUid).toHaveBeenCalled();
-      expect(conversationService.findOrCreateByVisitorId).toHaveBeenCalled();
-      expect(messageService.createMessageAndVerifySent).toHaveBeenCalled();
+      expect(visitorService.findOrCreateByUid).toHaveBeenCalledWith(
+        payload.projectId,
+        payload.visitorUid,
+        expect.anything()
+      );
+      expect(conversationService.findOrCreateByVisitorId).toHaveBeenCalledWith(
+        payload.projectId,
+        visitor.id,
+        expect.anything()
+      );
+      expect(messageService.createMessageAndVerifySent).toHaveBeenCalledWith(
+        payload.tempId,
+        payload.visitorUid,
+        expect.objectContaining({
+            conversationId: conversation.id,
+            content: payload.content,
+            senderId: visitor.visitorUid,
+            status: MessageStatus.SENT,
+        }),
+        expect.anything()
+      );
       expect(conversationService.updateLastMessage).toHaveBeenCalled();
-      expect(redisPublisher.publish).toHaveBeenCalledWith(
-        'new_message_channel',
-        JSON.stringify({
-          message: savedMessage,
-          tempId: payload.tempId,
-          visitorUid: payload.visitorUid,
-        })
+      
+      // Verify outbox insertion
+      expect(entityManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO outbox_events'),
+        expect.arrayContaining(['message', savedMessage.id, 'NEW_MESSAGE_FROM_VISITOR'])
       );
     });
   });

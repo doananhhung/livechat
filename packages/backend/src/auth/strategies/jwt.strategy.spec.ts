@@ -3,7 +3,8 @@ import { JwtStrategy } from './jwt.strategy';
 import { UserService } from '../../user/user.service';
 import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException } from '@nestjs/common';
-import { User, GlobalRole } from '@live-chat/shared';
+import { GlobalRole } from '@live-chat/shared-types';
+import { User } from '../../database/entities';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;

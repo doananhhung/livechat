@@ -13,9 +13,9 @@ import { useToast } from "../../ui/use-toast";
 import { updateProjectSettings } from "../../../services/projectApi";
 import type {
   ProjectWithRole,
-  WidgetSettingsDto,
-} from "@live-chat/shared";
-import { WidgetTheme } from "@live-chat/shared";
+  IWidgetSettingsDto,
+} from "@live-chat/shared-types";
+import { WidgetTheme } from "@live-chat/shared-types";
 
 interface ProjectWidgetSettingsDialogProps {
   project: ProjectWithRole;
@@ -31,7 +31,7 @@ export const ProjectWidgetSettingsDialog = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [settings, setSettings] = useState<Partial<WidgetSettingsDto>>({
+  const [settings, setSettings] = useState<Partial<IWidgetSettingsDto>>({
     theme: WidgetTheme.LIGHT,
     headerText: "",
     primaryColor: "#1a73e8",
@@ -60,8 +60,8 @@ export const ProjectWidgetSettingsDialog = ({
   }, [project]);
 
   const updateSettingsMutation = useMutation({
-    mutationFn: (data: Partial<WidgetSettingsDto>) =>
-      updateProjectSettings(project.id, data as WidgetSettingsDto),
+    mutationFn: (data: Partial<IWidgetSettingsDto>) =>
+      updateProjectSettings(project.id, data as IWidgetSettingsDto),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast({

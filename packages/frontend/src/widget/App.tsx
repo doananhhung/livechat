@@ -5,7 +5,7 @@ import { socketService } from "./services/socketService";
 import {
   MessageStatus,
   type WidgetMessageDto as Message,
-} from "@live-chat/shared";
+} from "@live-chat/shared-types";
 import { useEffect, useRef, useCallback } from "preact/hooks";
 
 // Utility function for timestamped logging

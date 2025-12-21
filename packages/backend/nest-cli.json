@@ -10,7 +10,7 @@
     "watchAssets": false
   },
   "projects": {
-    "social-conmmerce-management": {
+    "live-chat-app": {
       "type": "application",
       "root": ".",
       "entryFile": "main",

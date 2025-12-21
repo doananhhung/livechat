@@ -4,7 +4,7 @@ import { useChatStore } from "../store/useChatStore";
 import {
   MessageStatus,
   type WidgetMessageDto as Message,
-} from "@live-chat/shared";
+} from "@live-chat/shared-types";
 // Socket.IO runs on the root domain, not /api/v1
 const SOCKET_URL = import.meta.env.VITE_API_BASE_URL?.replace("/api/v1", "");
 

@@ -1,7 +1,7 @@
 // src/rbac/roles.decorator.ts
 
 import { SetMetadata } from '@nestjs/common';
-import { GlobalRole, ProjectRole } from '@live-chat/shared';
+import { GlobalRole, ProjectRole } from '@live-chat/shared-types';
 
 export const ROLES_KEY = 'roles';
 export const Roles = (...roles: (GlobalRole | ProjectRole)[]) =>

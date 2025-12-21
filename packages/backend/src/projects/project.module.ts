@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Invitation, Project, ProjectMember } from '@live-chat/shared';
+import { Invitation, Project, ProjectMember } from '../database/entities';
 import { ProjectService } from './project.service';
 import { ProjectController } from './project.controller';
 import { AuthModule } from '../auth/auth.module';

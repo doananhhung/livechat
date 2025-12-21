@@ -8,7 +8,7 @@ import {
   type WidgetMessageDto as Message,
   WidgetPosition,
   WidgetTheme,
-} from "@live-chat/shared";
+} from "@live-chat/shared-types";
 
 interface ChatWindowProps {
   isOpen: boolean;

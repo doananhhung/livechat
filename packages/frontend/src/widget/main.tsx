@@ -5,7 +5,7 @@ import { getWidgetSettings } from "./services/widgetApi";
 import { useChatStore } from "./store/useChatStore";
 import { socketService } from "./services/socketService";
 import widgetStyles from "./styles/widget.css?inline";
-import type { WidgetSettingsDto } from "@live-chat/shared";
+import type { WidgetSettingsDto } from "@live-chat/shared-dtos";
 
 const WIDGET_SCRIPT_ID = "live-chat-widget";
 const INIT_TIMEOUT = 500; // ms - Configurable constant instead of magic number

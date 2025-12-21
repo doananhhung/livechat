@@ -20,9 +20,11 @@ import {
 } from "lucide-react";
 import type {
   CreateInvitationDto,
+} from "@live-chat/shared-dtos";
+import type {
   Invitation,
   ProjectRole,
-} from "@live-chat/shared";
+} from "@live-chat/shared-types";
 import { useIsProjectManager } from "../../hooks/useProjectRole";
 import { Spinner } from "../../components/ui/Spinner";
 
@@ -89,7 +91,7 @@ const InviteMembersPage = () => {
 
   // Mutation to cancel invitation
   const { mutate: cancelInvite } = useMutation({
-    mutationFn: (invitationId: string) =>
+    mutationFn: (invitationId: number) =>
       cancelInvitation(Number(projectId), invitationId),
     onSuccess: () => {
       toast({

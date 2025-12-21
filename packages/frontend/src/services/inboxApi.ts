@@ -9,14 +9,16 @@ import {
 import api from "../lib/api";
 import { v4 as uuidv4 } from "uuid";
 import type {
-  Conversation,
   ListConversationsDto,
-  Message,
-  PaginationDto,
   UpdateConversationDto,
+} from "@live-chat/shared-dtos";
+import type {
+  Conversation,
+  Message,
   Visitor,
-} from "@live-chat/shared";
-import { MessageStatus } from "@live-chat/shared";
+  PaginationDto,
+} from "@live-chat/shared-types";
+import { MessageStatus } from "@live-chat/shared-types";
 import type { rest } from "lodash";
 
 // --- Type Definitions ---
@@ -159,13 +161,12 @@ export const useSendAgentReply = () => {
         id: uuidv4(),
         conversationId: newMessagePayload.conversationId,
         content: newMessagePayload.text,
+        contentType: 'text',
         status: MessageStatus.SENDING,
         fromCustomer: false,
         createdAt: new Date(),
         attachments: [],
-        conversation: {} as Conversation,
-        recipientId: "",
-        senderId: "",
+
       };
 
       queryClient.setQueryData<Message[]>(queryKey, (oldData = []) => [

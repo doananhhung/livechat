@@ -6,9 +6,7 @@ import { version } from "./package.json";
 export default defineConfig({
   plugins: [preact()],
   resolve: {
-    alias: {
-      "@live-chat/shared": path.resolve(__dirname, "../shared/src"),
-    },
+    alias: {},
   },
   build: {
     lib: {

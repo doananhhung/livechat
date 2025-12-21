@@ -1,0 +1,17 @@
+{
+    "extends": "../tsconfig.json",
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es2019",
+        "noEmit": true,
+        "types": [
+            "jest",
+            "node"
+        ],
+        "rootDir": ".."
+    },
+    "include": [
+        ".",
+        "../src/**/*"
+    ]
+}

@@ -19,11 +19,11 @@ import {
   ExchangeCodeDto,
   RegisterDto,
   ResendVerificationDto,
-  User,
   ForgotPasswordDto,
   ResetPasswordDto,
   LoginDto, // <-- ADDED for Swagger @ApiBody
-} from '@live-chat/shared';
+} from '@live-chat/shared-dtos';
+import { User } from '../database/entities';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { type Response } from 'express';

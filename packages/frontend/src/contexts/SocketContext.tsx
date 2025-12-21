@@ -9,7 +9,7 @@ import {
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "../stores/authStore";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Message } from "@live-chat/shared";
+import type { Message } from "@live-chat/shared-types";
 import { useTypingStore } from "../stores/typingStore";
 import { useProjectStore } from "../stores/projectStore";
 import { useLocation } from "react-router-dom";

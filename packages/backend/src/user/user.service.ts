@@ -7,14 +7,16 @@ import {
 } from '@nestjs/common';
 import {
   CreateUserDto,
-  EmailChangeRequest,
+  UpdateUserDto,
+} from '@live-chat/shared-dtos';
+import {
+  User,
   RefreshToken,
   TwoFactorRecoveryCode,
-  UpdateUserDto,
-  User,
+  EmailChangeRequest,
   UserIdentity,
-  UserStatus,
-} from '@live-chat/shared';
+} from '../database/entities';
+import { UserStatus } from '@live-chat/shared-types';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository, MoreThan, LessThan } from 'typeorm';
 import * as bcrypt from 'bcrypt';

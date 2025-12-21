@@ -1,13 +1,14 @@
 import { create } from "zustand";
 import type { ConnectionStatus } from "../types";
-import type { WidgetMessageDto as Message, WidgetSettingsDto } from "@live-chat/shared";
-import { MessageStatus } from "@live-chat/shared";
+import type { WidgetMessageDto as Message } from "@live-chat/shared-types";
+import type { IWidgetSettingsDto } from "@live-chat/shared-types";
+import { MessageStatus } from "@live-chat/shared-types";
 
 // Constants for memory management
 const MAX_MESSAGES = 500; // Keep only last 500 messages to prevent memory leak
 const MESSAGE_CLEANUP_THRESHOLD = 600; // Start cleanup when reaching this
 
-export type WidgetConfig = WidgetSettingsDto & { projectId: string };
+export type WidgetConfig = IWidgetSettingsDto & { projectId: string };
 
 interface ChatState {
   widgetConfig: WidgetConfig | null;

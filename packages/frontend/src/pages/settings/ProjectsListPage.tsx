@@ -8,7 +8,7 @@ import { Spinner } from "../../components/ui/Spinner";
 import { useToast } from "../../components/ui/use-toast";
 import { UserPlus, Settings } from "lucide-react";
 import { PermissionGate } from "../../components/PermissionGate";
-import { ProjectRole } from "@live-chat/shared";
+import { ProjectRole } from "@live-chat/shared-types";
 import { getWidgetSnippet } from "../../lib/widget";
 
 export const ProjectsListPage = () => {

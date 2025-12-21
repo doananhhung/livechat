@@ -11,10 +11,26 @@
     "experimentalDecorators": true,
     "baseUrl": ".",
     "paths": {
-      // Use built output of shared to avoid cross-rootDir compilation
-      "@live-chat/shared": ["packages/shared/dist", "../../packages/shared/dist"],
-      "@live-chat/shared/*": ["packages/shared/dist/*", "../../packages/shared/dist/*"]
+      "@live-chat/shared-types": [
+        "packages/shared-types/dist",
+        "../../packages/shared-types/dist"
+      ],
+      "@live-chat/shared-types/*": [
+        "packages/shared-types/dist/*",
+        "../../packages/shared-types/dist/*"
+      ],
+      "@live-chat/shared-dtos": [
+        "packages/shared-dtos/dist",
+        "../../packages/shared-dtos/dist"
+      ],
+      "@live-chat/shared-dtos/*": [
+        "packages/shared-dtos/dist/*",
+        "../../packages/shared-dtos/dist/*"
+      ]
     }
   },
-  "exclude": ["node_modules", "dist"]
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

@@ -16,7 +16,7 @@ import { TwoFactorAuthenticationService } from './two-factor-authentication.serv
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request.interface';
 import { UserService } from '../../user/user.service';
-import { TurnOn2faDto } from '@live-chat/shared';
+import { TurnOn2faDto } from '@live-chat/shared-dtos';
 import { AuthService } from '../auth.service';
 import { EncryptionService } from '../../common/services/encryption.service';
 import * as bcrypt from 'bcrypt';

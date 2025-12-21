@@ -12,7 +12,7 @@ import {
   acceptInvitation,
   type InvitationWithProject,
 } from "../../services/projectApi";
-import { ProjectRole } from "@live-chat/shared";
+import { ProjectRole } from "@live-chat/shared-types";
 
 const RegisterPage = () => {
   const navigate = useNavigate();

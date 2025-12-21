@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { authenticator } from 'otplib';
-import { User } from '@live-chat/shared';
+import { User } from '../../database/entities';
 import { toDataURL } from 'qrcode';
 
 /**

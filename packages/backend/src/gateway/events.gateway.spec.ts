@@ -59,7 +59,7 @@ describe('EventsGateway', () => {
     redisSubscriber = module.get(REDIS_SUBSCRIBER_CLIENT);
     eventEmitter = module.get(EventEmitter2);
 
-    server = { to: jest.fn().mockReturnThis(), emit: jest.fn() } as unknown as jest.Mocked<Server>;
+    server = { to: jest.fn().mockReturnThis(), emit: jest.fn(), use: jest.fn() } as unknown as jest.Mocked<Server>;
     client = {
       id: 'socket-id',
       data: {},
