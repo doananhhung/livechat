@@ -17,6 +17,9 @@ import {
   UnauthorizedException,
   Logger,
 } from '@nestjs/common';
+import { TokenService } from './services/token.service';
+import { PasswordService } from './services/password.service';
+import { OAuthService } from './services/oauth.service';
 
 jest.mock('bcrypt');
 
@@ -27,6 +30,9 @@ describe('AuthService', () => {
   let cacheManager: jest.Mocked<Cache>;
   let mailService: jest.Mocked<MailService>;
   let entityManager: jest.Mocked<EntityManager>;
+  let tokenService: jest.Mocked<TokenService>;
+  let passwordService: jest.Mocked<PasswordService>;
+  let oauthService: jest.Mocked<OAuthService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -73,6 +79,38 @@ describe('AuthService', () => {
           provide: MailService,
           useValue: { sendUserConfirmation: jest.fn() },
         },
+        {
+          provide: TokenService,
+          useValue: {
+            generateTokens: jest.fn(),
+            generate2FAPartialToken: jest.fn(),
+            setCurrentRefreshToken: jest.fn(),
+            revokeRefreshToken: jest.fn(),
+            removeAllRefreshTokensForUser: jest.fn(),
+            invalidateAllTokens: jest.fn(),
+            refreshUserTokens: jest.fn(),
+          },
+        },
+        {
+          provide: PasswordService,
+          useValue: {
+            validateUser: jest.fn(),
+            changePassword: jest.fn(),
+            setPassword: jest.fn(),
+            forgotPassword: jest.fn(),
+            resetPassword: jest.fn(),
+          },
+        },
+        {
+          provide: OAuthService,
+          useValue: {
+            validateOneTimeCode: jest.fn(),
+            generateOneTimeCode: jest.fn(),
+            linkOAuthAccount: jest.fn(),
+            unlinkOAuthAccount: jest.fn(),
+            getLinkedAccounts: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -82,6 +120,9 @@ describe('AuthService', () => {
     cacheManager = module.get(CACHE_MANAGER);
     mailService = module.get(MailService);
     entityManager = module.get(EntityManager);
+    tokenService = module.get(TokenService);
+    passwordService = module.get(PasswordService);
+    oauthService = module.get(OAuthService);
   });
 
   afterEach(() => {
@@ -134,15 +175,11 @@ describe('AuthService', () => {
       expect(result.message).toContain('Xác thực email thành công');
     });
 
-    it('should throw NotFoundException and log error for invalid token', async () => {
-      const errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    it('should throw NotFoundException for invalid token', async () => {
       cacheManager.get.mockResolvedValue(null);
 
       await expect(service.verifyEmail('token')).rejects.toThrow(
         NotFoundException
-      );
-      expect(errorSpy).toHaveBeenCalledWith(
-        '❌ [VerifyEmail] Token not found or expired: token'
       );
     });
   });
@@ -150,21 +187,16 @@ describe('AuthService', () => {
   describe('validateUser', () => {
     it('should return user for valid credentials', async () => {
       const user = { passwordHash: 'hashed', status: UserStatus.ACTIVE } as User;
-      userService.findOneByEmail.mockResolvedValue(user);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      passwordService.validateUser.mockResolvedValue(user);
 
       const result = await service.validateUser('email', 'password');
 
+      expect(passwordService.validateUser).toHaveBeenCalledWith('email', 'password');
       expect(result).toEqual(user);
     });
 
     it('should throw ForbiddenException for suspended user', async () => {
-      const user = {
-        passwordHash: 'hashed',
-        status: UserStatus.SUSPENDED,
-      } as User;
-      userService.findOneByEmail.mockResolvedValue(user);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      passwordService.validateUser.mockRejectedValue(new ForbiddenException('User is suspended'));
 
       await expect(service.validateUser('email', 'password')).rejects.toThrow(
         ForbiddenException

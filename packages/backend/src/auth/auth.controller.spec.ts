@@ -27,7 +27,8 @@ describe('AuthController', () => {
             register: jest.fn(),
             verifyEmail: jest.fn(),
             resendVerificationEmail: jest.fn(),
-            loginAndReturnTokens: jest.fn(),
+            login: jest.fn(),
+            loginAfter2FA: jest.fn(),
             generate2FAPartialToken: jest.fn(),
             refreshTokens: jest.fn(),
             changePassword: jest.fn(),
@@ -35,6 +36,7 @@ describe('AuthController', () => {
             logoutAll: jest.fn(),
             generateOneTimeCode: jest.fn(),
             exchangeCodeForTokens: jest.fn(),
+            findUserById: jest.fn(),
           },
         },
         {
@@ -120,13 +122,17 @@ describe('AuthController', () => {
       const tokens = {
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
-        user: { ...user, hasPassword: true } as any,
       };
-      authService.loginAndReturnTokens.mockResolvedValue(tokens);
+      const loginResult = {
+        status: 'success' as const,
+        tokens,
+        user: { ...user, passwordHash: 'hashed' },
+      };
+      authService.login.mockResolvedValue(loginResult);
 
-      await controller.login(req, res, { email: 'e', password: 'p' });
+      const result = await controller.login(req, res, { email: 'e', password: 'p' });
 
-      expect(authService.loginAndReturnTokens).toHaveBeenCalledWith(
+      expect(authService.login).toHaveBeenCalledWith(
         req.user,
         req.ip,
         req.headers['user-agent']
@@ -136,9 +142,10 @@ describe('AuthController', () => {
         tokens.refreshToken,
         expect.any(Object)
       );
-      expect(res.json).toHaveBeenCalledWith({
+      expect(result).toEqual({
         accessToken: tokens.accessToken,
-        user: tokens.user,
+        refreshToken: tokens.refreshToken,
+        user: expect.objectContaining({ hasPassword: true }),
       });
     });
 
@@ -147,8 +154,11 @@ describe('AuthController', () => {
         ...req,
         user: { ...req.user, isTwoFactorAuthenticationEnabled: true },
       };
-      const partialToken = { accessToken: 'partial-token' };
-      authService.generate2FAPartialToken.mockResolvedValue(partialToken);
+      const loginResult = {
+        status: '2fa_required' as const,
+        partialToken: 'partial-token',
+      };
+      authService.login.mockResolvedValue(loginResult);
 
       await expect(controller.login(twoFaReq, res, { email: 'e', password: 'p' })).rejects.toThrow(
         new UnauthorizedException({
@@ -157,12 +167,14 @@ describe('AuthController', () => {
         })
       );
 
-      expect(authService.generate2FAPartialToken).toHaveBeenCalledWith(
-        twoFaReq.user.id
+      expect(authService.login).toHaveBeenCalledWith(
+        twoFaReq.user,
+        twoFaReq.ip,
+        twoFaReq.headers['user-agent']
       );
       expect(res.cookie).toHaveBeenCalledWith(
         '2fa_partial_token',
-        partialToken.accessToken,
+        loginResult.partialToken,
         expect.any(Object)
       );
     });
@@ -194,7 +206,7 @@ describe('AuthController', () => {
   });
 
   describe('changePassword', () => {
-    it('should change password and return new tokens', async () => {
+    it('should change user password and return new tokens', async () => {
       const user = { id: '1' } as User;
       const req = {
         user,
@@ -209,9 +221,14 @@ describe('AuthController', () => {
       const tokens = {
         accessToken: 'new-access-token',
         refreshToken: 'new-refresh-token',
-        user: { ...user, hasPassword: true } as any,
       };
-      authService.loginAndReturnTokens.mockResolvedValue(tokens);
+      const loginResult = {
+        status: 'success' as const,
+        tokens,
+        user: { ...user, passwordHash: 'hashed' },
+      };
+      authService.findUserById.mockResolvedValue(user);
+      authService.login.mockResolvedValue(loginResult);
 
       const result = await controller.changePassword(req, body, res);
 
@@ -318,7 +335,7 @@ describe('AuthController', () => {
       const tokens = {
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
-        user,
+        user: { ...user, hasPassword: false },
       };
       authService.exchangeCodeForTokens.mockResolvedValue(tokens);
 
@@ -334,7 +351,7 @@ describe('AuthController', () => {
         tokens.refreshToken,
         expect.any(Object)
       );
-      expect(result).toEqual({ accessToken: tokens.accessToken, user });
+      expect(result).toEqual({ accessToken: tokens.accessToken, user: tokens.user });
     });
   });
 });

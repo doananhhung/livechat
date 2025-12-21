@@ -1,3 +1,4 @@
+
 // src/gateway/events.gateway.ts
 import {
   WebSocketGateway,
@@ -23,6 +24,8 @@ import {
 import { AgentTypingDto } from '@live-chat/shared-dtos';
 import { Conversation, Visitor, Message } from '../database/entities';
 import { MessageStatus, WidgetMessageDto } from '@live-chat/shared-types';
+import { ProjectService } from '../projects/project.service';
+import { ConfigService } from '@nestjs/config';
 
 const NEW_MESSAGE_CHANNEL = 'new_message_channel';
 
@@ -39,11 +42,62 @@ export class EventsGateway
   constructor(
     private readonly realtimeSessionService: RealtimeSessionService,
     @Inject(REDIS_SUBSCRIBER_CLIENT) private readonly redisSubscriber: Redis,
-    private readonly eventEmitter: EventEmitter2
+    private readonly eventEmitter: EventEmitter2,
+    private readonly projectService: ProjectService,
+    private readonly configService: ConfigService
   ) {}
 
-  handleConnection(client: Socket) {
+  async handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
+
+    const origin = client.handshake.headers.origin;
+    const projectId = client.handshake.query.projectId;
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+
+    // Allow main frontend app without further checks
+    if (origin === frontendUrl) {
+      return;
+    }
+
+    if (projectId && typeof projectId === 'string') {
+      const project = await this.projectService.findByProjectId(+projectId);
+      if (!project) {
+        this.logger.warn(`Connection rejected: Project ${projectId} not found.`);
+        client.disconnect(true);
+        return;
+      }
+
+      if (
+        !project.whitelistedDomains ||
+        project.whitelistedDomains.length === 0
+      ) {
+        this.logger.warn(
+          `Project ${projectId} has no whitelisted domains configured. WS connection denied for origin ${origin}.`
+        );
+        client.disconnect(true);
+        return;
+      }
+
+      if (origin) {
+        const originUrl = new URL(origin);
+        const originDomain = originUrl.hostname;
+
+        if (!project.whitelistedDomains.includes(originDomain)) {
+          this.logger.warn(
+            `Connection rejected: Origin ${origin} not whitelisted for project ${projectId}`
+          );
+          client.disconnect(true);
+          return;
+        }
+      } else {
+        // No origin header provided for a widget connection
+        this.logger.warn(
+          `Connection rejected: Missing Origin header for project ${projectId}`
+        );
+        client.disconnect(true);
+        return;
+      }
+    }
   }
 
   handleDisconnect(client: Socket) {
@@ -74,7 +128,6 @@ export class EventsGateway
       socket.onAny((event, ...args) => {
         this.logger.log(`Socket event: ${event}`, {
           socketId: socket.id,
-          args,
         });
       });
       next();

@@ -22,13 +22,24 @@ dotenv.config();
 
 const configService = new ConfigService();
 
+// Validate required environment variables
+const requiredEnvVars = ['PSQL_HOST', 'PSQL_USER', 'PSQL_DATABASE'];
+for (const envVar of requiredEnvVars) {
+  if (!configService.get<string>(envVar)) {
+    throw new Error(
+      `Missing required environment variable: ${envVar}. ` +
+      'Ensure your .env file is configured correctly.'
+    );
+  }
+}
+
 export const AppDataSource = new DataSource({
   type: 'postgres',
-  host: configService.get<string>('PSQL_HOST') || 'localhost',
+  host: configService.get<string>('PSQL_HOST'),
   port: configService.get<number>('PSQL_PORT') || 5432,
-  username: configService.get<string>('PSQL_USER') || 'hoang',
+  username: configService.get<string>('PSQL_USER'),
   password: configService.get<string>('PSQL_PASSWORD') || '',
-  database: configService.get<string>('PSQL_DATABASE') || 'your_database',
+  database: configService.get<string>('PSQL_DATABASE'),
   synchronize: false,
   logging: false,
   entities: [

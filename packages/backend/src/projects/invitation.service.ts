@@ -1,3 +1,4 @@
+
 import {
   Injectable,
   BadRequestException,
@@ -12,7 +13,6 @@ import { CreateInvitationDto } from '@live-chat/shared-dtos';
 import { Invitation, Project, User, ProjectMember } from '../database/entities';
 import { InvitationStatus, ProjectRole } from '@live-chat/shared-types';
 import { MailService } from '../mail/mail.service';
-import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class InvitationService {
@@ -20,8 +20,7 @@ export class InvitationService {
 
   constructor(
     private readonly entityManager: EntityManager,
-    private readonly mailService: MailService,
-    private readonly configService: ConfigService
+    private readonly mailService: MailService
   ) {}
 
   /**
@@ -109,63 +108,13 @@ export class InvitationService {
     const savedInvitation = await this.entityManager.save(invitation);
 
     // 8. Send the invitation email
-    await this.sendInvitationEmail(
+    await this.mailService.sendInvitationEmail(
       savedInvitation,
       project,
       existingUser ?? undefined
     );
 
     return savedInvitation;
-  }
-
-  /**
-   * Sends the invitation email
-   */
-  private async sendInvitationEmail(
-    invitation: Invitation,
-    project: Project,
-    existingUser?: User
-  ): Promise<void> {
-    // Check if user already exists to determine which link to send
-    const isNewUser = !existingUser;
-
-    let invitationUrl: string;
-    let actionText: string;
-    let instructionText: string;
-
-    if (isNewUser) {
-      // User doesn't exist - send registration link with token
-      invitationUrl = `${this.configService.get<string>('FRONTEND_URL')}/register?invitation_token=${invitation.token}`;
-      actionText = 'Đăng ký và tham gia';
-      instructionText =
-        'Bạn cần đăng ký tài khoản để tham gia dự án này. Nhấp vào liên kết bên dưới để đăng ký:';
-      this.logger.log(
-        `Sending NEW USER invitation to ${invitation.email} - Link: ${invitationUrl}`
-      );
-    } else {
-      // User exists - send accept invitation link
-      invitationUrl = `${this.configService.get<string>('FRONTEND_URL')}/accept-invitation?token=${invitation.token}`;
-      actionText = 'Chấp nhận lời mời';
-      instructionText = 'Nhấp vào liên kết bên dưới để chấp nhận lời mời:';
-      this.logger.log(
-        `Sending EXISTING USER invitation to ${invitation.email} (userId: ${existingUser.id}) - Link: ${invitationUrl}`
-      );
-    }
-
-    const subject = `Lời mời tham gia dự án "${project.name}" với vai trò ${invitation.role === ProjectRole.AGENT ? 'Agent' : invitation.role}`;
-    const html = `
-      <p>Xin chào,</p>
-      <p>Bạn đã được mời tham gia dự án <strong>${project.name}</strong> với vai trò <strong>${invitation.role === ProjectRole.AGENT ? 'Agent' : invitation.role}</strong>.</p>
-      <p>${instructionText}</p>
-      <a href="${invitationUrl}" style="display: inline-block; padding: 10px 20px; background-color: #1a73e8; color: white; text-decoration: none; border-radius: 5px;">${actionText}</a>
-      <p>Hoặc sao chép và dán liên kết sau vào trình duyệt:</p>
-      <p>${invitationUrl}</p>
-      <p>Lời mời này sẽ hết hạn sau 7 ngày.</p>
-      <p>Nếu bạn không muốn tham gia dự án này, vui lòng bỏ qua email này.</p>
-      <p>Trân trọng,<br>Đội ngũ Live Chat</p>
-    `;
-
-    await this.mailService.sendMail(invitation.email, subject, html);
   }
 
   /**

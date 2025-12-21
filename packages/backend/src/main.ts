@@ -8,8 +8,30 @@ import { RedisIoAdapter } from './gateway/redis-io.adapter';
 import { ConfigService } from '@nestjs/config';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { execSync } from 'child_process';
+
+/**
+ * Kill any process currently using a specific port.
+ * This prevents EADDRINUSE errors during development restarts.
+ */
+function killPort(port: number): void {
+  try {
+    // Find and kill processes using the port (Linux/macOS)
+    execSync(`lsof -ti :${port} | xargs -r kill -9 2>/dev/null || true`, {
+      stdio: 'ignore',
+    });
+    Logger.log(`Cleared port ${port} if it was in use.`, 'Bootstrap');
+  } catch {
+    // Ignore errors - port might not be in use
+  }
+}
 
 async function bootstrap() {
+  const PORT = 3000;
+
+  // Kill any existing process on the port before starting
+  killPort(PORT);
+
   const app = await NestFactory.create(AppModule, {
     bodyParser: false,
   });
@@ -45,7 +67,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(3000);
+  await app.listen(PORT);
+  Logger.log(`Application listening on port ${PORT}`, 'Bootstrap');
 }
 
 bootstrap();

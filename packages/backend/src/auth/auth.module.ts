@@ -1,10 +1,11 @@
+
 import { Module } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
 import { PassportModule } from '@nestjs/passport';
-import { JwtModule, JwtService } from '@nestjs/jwt';
+import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -18,6 +19,9 @@ import { TwoFactorAuthenticationStrategy } from './strategies/2fa-partial-token.
 import { GoogleStrategy } from './strategies/google.strategy';
 import { GoogleLinkStrategy } from './strategies/google-link.strategy';
 import { MailModule } from '../mail/mail.module';
+import { TokenService } from './services/token.service';
+import { PasswordService } from './services/password.service';
+import { OAuthService } from './services/oauth.service';
 
 @Module({
   imports: [
@@ -41,6 +45,9 @@ import { MailModule } from '../mail/mail.module';
   controllers: [AuthController, TwoFactorAuthenticationController],
   providers: [
     AuthService,
+    TokenService,
+    PasswordService,
+    OAuthService,
     TwoFactorAuthenticationService,
     LocalStrategy,
     JwtStrategy,
@@ -51,6 +58,6 @@ import { MailModule } from '../mail/mail.module';
     EncryptionService,
     ConfigService,
   ],
-  exports: [JwtModule],
+  exports: [JwtModule, AuthService, TokenService],
 })
 export class AuthModule {}

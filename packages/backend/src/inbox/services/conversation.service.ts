@@ -162,23 +162,6 @@ export class ConversationService {
       })
     );
 
-    console.log('📊 Backend listByProject - Total:', total);
-    if (data.length > 0) {
-      console.log('📊 Sample conversation:', {
-        id: data[0].id,
-        status: data[0].status,
-        lastMessageSnippet: data[0].lastMessageSnippet,
-        unreadCount: data[0].unreadCount,
-        visitor: data[0].visitor
-          ? {
-              id: data[0].visitor.id,
-              displayName: data[0].visitor.displayName,
-              currentUrl: data[0].visitor.currentUrl,
-            }
-          : null,
-      });
-    }
-
     return { data, total, page, limit };
   }
   /**
@@ -332,9 +315,6 @@ export class ConversationService {
     // Step 2: Look up visitor's socket.id
     const visitorSocketId =
       await this.realtimeSessionService.getVisitorSession(visitorUid);
-
-    // Step 3: Send event IF visitor is online
-    console.log('agent is typing');
     if (visitorSocketId) {
       this.eventsGateway.sendAgentTypingToVisitor(
         visitorSocketId,

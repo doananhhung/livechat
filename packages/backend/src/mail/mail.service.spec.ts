@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MailService } from './mail.service';
 import { ConfigService } from '@nestjs/config';
+import { EmailTemplateService } from './email-template.service';
 import * as nodemailer from 'nodemailer';
 import { User } from '../database/entities';
 
@@ -9,6 +10,7 @@ jest.mock('nodemailer');
 describe('MailService', () => {
   let service: MailService;
   let configService: jest.Mocked<ConfigService>;
+  let emailTemplateService: jest.Mocked<EmailTemplateService>;
   let transporter: jest.Mocked<nodemailer.Transporter>;
 
   beforeEach(async () => {
@@ -25,7 +27,38 @@ describe('MailService', () => {
           useValue: {
             get: jest.fn((key: string) => {
               if (key === 'FRONTEND_URL') return 'http://localhost:3000';
+              if (key === 'MAIL_USER') return 'test@example.com';
               return key; // Return key for other mail config values
+            }),
+          },
+        },
+        {
+          provide: EmailTemplateService,
+          useValue: {
+            getUserConfirmationTemplate: jest.fn().mockReturnValue({
+              subject: 'Chào mừng - xác thực email',
+              html: '<p>Test HTML with confirm-token</p>',
+            }),
+            getPasswordResetTemplate: jest.fn().mockReturnValue({
+              subject: 'Đặt lại mật khẩu',
+              html: '<p>Test HTML with reset-token</p>',
+            }),
+            getEmailChangeVerificationTemplate: jest.fn().mockReturnValue({
+              subject: 'Xác nhận thay đổi email',
+              html: '<p>Email change verification</p>',
+            }),
+            getEmailChangeConfirmationTemplate: jest.fn().mockReturnValue({
+              subject: 'Email đã được thay đổi',
+              html: '<p>Email change confirmation</p>',
+            }),
+            getEmailChangeNotificationTemplate: jest.fn().mockReturnValue({
+              subject: 'Thông báo thay đổi email',
+              html: '<p>Email change notification</p>',
+            }),
+            getInvitationTemplate: jest.fn().mockReturnValue({
+              subject: 'Lời mời tham gia',
+              html: '<p>Invitation</p>',
+              invitationUrl: 'http://localhost:3000/invite',
             }),
           },
         },
@@ -34,6 +67,7 @@ describe('MailService', () => {
 
     service = module.get<MailService>(MailService);
     configService = module.get(ConfigService);
+    emailTemplateService = module.get(EmailTemplateService);
   });
 
   it('should be defined', () => {
@@ -66,14 +100,16 @@ describe('MailService', () => {
     it('should send a confirmation email', async () => {
       const user = { fullName: 'Tester', email: 'test@user.com' } as User;
       const token = 'confirm-token';
-      service.sendMail = jest.fn(); // Mock sendMail directly
+      transporter.sendMail.mockResolvedValue({ messageId: '123' });
 
       await service.sendUserConfirmation(user, token);
 
-      expect(service.sendMail).toHaveBeenCalledWith(
-        user.email,
-        expect.stringContaining('xác thực email'),
-        expect.stringContaining(token)
+      expect(emailTemplateService.getUserConfirmationTemplate).toHaveBeenCalledWith(user, token);
+      expect(transporter.sendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: user.email,
+          subject: 'Chào mừng - xác thực email',
+        })
       );
     });
   });
@@ -82,16 +118,17 @@ describe('MailService', () => {
     it('should send a password reset email', async () => {
       const user = { fullName: 'Tester', email: 'test@user.com' } as User;
       const token = 'reset-token';
-      service.sendMail = jest.fn(); // Mock sendMail directly
+      transporter.sendMail.mockResolvedValue({ messageId: '123' });
 
       await service.sendPasswordResetEmail(user, token);
 
-      expect(service.sendMail).toHaveBeenCalledWith(
-        user.email,
-        expect.stringContaining('Đặt lại mật khẩu'),
-        expect.stringContaining(token)
+      expect(emailTemplateService.getPasswordResetTemplate).toHaveBeenCalledWith(user, token);
+      expect(transporter.sendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: user.email,
+          subject: 'Đặt lại mật khẩu',
+        })
       );
     });
   });
 });
-

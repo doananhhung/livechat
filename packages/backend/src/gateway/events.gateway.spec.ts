@@ -6,6 +6,8 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
+import { ProjectService } from '../projects/project.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('EventsGateway', () => {
   let gateway: EventsGateway;
@@ -49,6 +51,21 @@ describe('EventsGateway', () => {
           provide: UserService,
           useValue: {
             findOneById: jest.fn(),
+          },
+        },
+        {
+          provide: ProjectService,
+          useValue: {
+            findByProjectId: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string) => {
+              if (key === 'FRONTEND_URL') return 'http://localhost:3000';
+              return null;
+            }),
           },
         },
       ],

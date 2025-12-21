@@ -44,7 +44,7 @@ describe('TwoFactorAuthenticationController', () => {
         {
           provide: AuthService,
           useValue: {
-            loginAndReturnTokens: jest.fn(),
+            loginAfter2FA: jest.fn(),
           },
         },
         {
@@ -181,7 +181,7 @@ describe('TwoFactorAuthenticationController', () => {
       userService.findOneById.mockResolvedValue(user);
       encryptionService.decrypt.mockReturnValue('decrypted-secret');
       twoFactorAuthService.isCodeValid.mockReturnValue(true);
-      authService.loginAndReturnTokens.mockResolvedValue(tokens);
+      authService.loginAfter2FA.mockResolvedValue(tokens);
       configService.get.mockReturnValue('30d');
 
       await controller.authenticate(req as any, authDto, res as any);

@@ -155,20 +155,14 @@ export class TwoFactorAuthenticationController {
     @Body() body: TurnOn2faDto,
     @Res() res
   ) {
-    console.log('Request user:', req.user);
-    console.log('Using user ID:', req.user.sub);
-
     const ipAddress = req.ip;
     const userAgent = req.headers['user-agent'] || 'unknown';
 
     const user = await this.userService.findOneById(req.user.sub);
 
     if (!user) {
-      console.error('User not found for ID:', req.user.sub);
       throw new UnauthorizedException('User not found');
     }
-
-    console.log('Found user:', user);
 
     if (!user.isTwoFactorAuthenticationEnabled) {
       throw new ForbiddenException('2FA is not enabled for this account.');
@@ -186,7 +180,7 @@ export class TwoFactorAuthenticationController {
       throw new UnauthorizedException('Wrong authentication code');
     }
 
-    const data = await this.authService.loginAndReturnTokens(
+    const data = await this.authService.loginAfter2FA(
       user,
       ipAddress,
       userAgent
@@ -213,8 +207,6 @@ export class TwoFactorAuthenticationController {
     // Clear the temporary cookies
     res.clearCookie('2fa_partial_token');
     res.clearCookie('2fa_secret');
-
-    console.log('User fully authenticated with 2FA:', userResult.email);
 
     // Return full tokens, setting the refresh token in the cookie
     res.json({ accessToken, user: userResult });

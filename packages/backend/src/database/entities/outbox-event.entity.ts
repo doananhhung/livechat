@@ -13,19 +13,19 @@ export class OutboxEvent {
   id: string;
 
   @Index()
-  @Column({ type: 'varchar', length: 255 })
-  aggregate_type: string;
+  @Column({ name: 'aggregate_type', type: 'varchar', length: 255 })
+  aggregateType: string;
 
   @Index()
-  @Column({ type: 'varchar', length: 255 })
-  aggregate_id: string;
+  @Column({ name: 'aggregate_id', type: 'varchar', length: 255 })
+  aggregateId: string;
 
-  @Column({ type: 'varchar', length: 255 })
-  event_type: string;
+  @Column({ name: 'event_type', type: 'varchar', length: 255 })
+  eventType: string;
 
   @Column({ type: 'jsonb' })
   payload: Record<string, unknown>;
 
-  @CreateDateColumn({ type: 'timestamptz' })
-  created_at: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  createdAt: Date;
 }

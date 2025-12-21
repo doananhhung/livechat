@@ -45,16 +45,6 @@ export class InboxController {
     @Query() query: ListConversationsDto
   ): Promise<ConversationListResponseDto> {
     const result = await this.conversationService.listByProject(user, query);
-    console.log('🔍 Controller response sample:', {
-      totalConversations: result.data.length,
-      firstConversation: result.data[0]
-        ? {
-            id: result.data[0].id,
-            status: result.data[0].status,
-            hasVisitor: !!result.data[0].visitor,
-          }
-        : null,
-    });
     return result;
   }
 

@@ -136,27 +136,8 @@ describe('UserService', () => {
     });
   });
 
-  describe('verifyRefreshToken', () => {
-    it('should return true for a valid token', async () => {
-      const token = { expiresAt: new Date(Date.now() + 1000) } as RefreshToken;
-      refreshTokenRepository.find.mockResolvedValue([token]);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
-      const result = await service.verifyRefreshToken('token', '1');
-      expect(result).toBe(true);
-    });
-
-    it('should throw UnauthorizedException for expired token', async () => {
-      const token = { expiresAt: new Date(Date.now() - 1000) } as RefreshToken;
-      refreshTokenRepository.find.mockResolvedValue([token]);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-
-      await expect(service.verifyRefreshToken('token', '1')).rejects.toThrow(
-        UnauthorizedException
-      );
-      expect(refreshTokenRepository.delete).toHaveBeenCalledWith(token.id);
-    });
-  });
+  // NOTE: verifyRefreshToken was moved to TokenService
 
   describe('turnOnTwoFactorAuthentication', () => {
     it('should turn on 2FA and return recovery codes', async () => {

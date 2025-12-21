@@ -1,0 +1,250 @@
+
+import { Injectable, Logger, UnauthorizedException, Inject } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, EntityManager, LessThan } from 'typeorm';
+import { RefreshToken, User } from '../../database/entities';
+import * as bcrypt from 'bcrypt';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { UserStatus } from '@live-chat/shared-types';
+import { UserService } from '../../user/user.service';
+
+interface SetRefreshTokenOptions {
+  refreshToken: string;
+  userId: string;
+  expiresAt: Date;
+  expiredRefreshToken?: string;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+@Injectable()
+export class TokenService {
+  private readonly logger = new Logger(TokenService.name);
+
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+    @InjectRepository(RefreshToken)
+    private readonly refreshTokenRepository: Repository<RefreshToken>,
+    private readonly userService: UserService,
+    private readonly entityManager: EntityManager,
+  ) {}
+
+  /**
+   * Generates a new pair of access and refresh tokens.
+   */
+  async generateTokens(userId: string, email: string) {
+    const accessTokenPayload = { sub: userId, email };
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(accessTokenPayload, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+        expiresIn: this.configService.get<string>('JWT_EXPIRES_IN'),
+      }),
+      this.jwtService.signAsync(accessTokenPayload, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN'),
+      }),
+    ]);
+    return { accessToken, refreshToken };
+  }
+
+  /**
+   * Generates a partial JWT token for 2FA authentication flow.
+   */
+  async generate2FAPartialToken(userId: string) {
+    const payload = {
+      sub: userId,
+      isTwoFactorAuthenticated: false,
+      is2FA: true,
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload, {
+      secret: this.configService.get<string>('TWO_FACTOR_AUTH_JWT_SECRET'),
+      expiresIn: this.configService.get<string>('TWO_FACTOR_AUTH_JWT_EXPIRES_IN'),
+    });
+    return { accessToken };
+  }
+
+  /**
+   * Verifies if a refresh token is valid for a user.
+   */
+  async verifyRefreshToken(refreshToken: string, userId: string): Promise<boolean> {
+    const storedTokens = await this.refreshTokenRepository.find({
+      where: { userId },
+    });
+
+    if (!storedTokens || storedTokens.length === 0) {
+      return false;
+    }
+
+    let matchingToken: RefreshToken | undefined;
+
+    for (const storedToken of storedTokens) {
+      const isMatch = await bcrypt.compare(refreshToken, storedToken.hashedToken);
+      if (isMatch) {
+        matchingToken = storedToken;
+        break;
+      }
+    }
+
+    if (matchingToken) {
+      if (matchingToken.expiresAt < new Date()) {
+        await this.refreshTokenRepository.delete(matchingToken.id);
+        throw new UnauthorizedException('Refresh token has expired');
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Stores a new refresh token in the database, enforcing session limits.
+   */
+  async setCurrentRefreshToken(options: SetRefreshTokenOptions): Promise<void> {
+    const { refreshToken, userId, expiresAt, expiredRefreshToken, ipAddress, userAgent } = options;
+
+    return this.entityManager.transaction(async (entityManager) => {
+      const sessionLimit = parseInt(this.configService.get<string>('SESSION_LIMIT') as string) || 5;
+
+      const userTokens = await entityManager.find(RefreshToken, {
+        where: { userId },
+        order: { createdAt: 'ASC' },
+      });
+
+      if (userTokens.length >= sessionLimit) {
+        const tokensToRemove = userTokens.slice(0, userTokens.length - sessionLimit + 1);
+        await entityManager.remove(tokensToRemove);
+        this.logger.log(`[SessionLimit] Removed ${tokensToRemove.length} oldest session(s) for user ${userId}`);
+      }
+
+      const hashedToken = await bcrypt.hash(refreshToken, 12);
+      let finalIpAddress = ipAddress;
+      let finalUserAgent = userAgent;
+
+      if (expiredRefreshToken) {
+        const oldToken = await this.findRefreshTokenByValue(userId, expiredRefreshToken, entityManager);
+        if (oldToken) {
+          finalIpAddress = ipAddress || oldToken.ipAddress;
+          finalUserAgent = userAgent || oldToken.userAgent;
+          await entityManager.remove(oldToken);
+        }
+      }
+
+      // Remove any existing token with exact same metadata to prevent duplicates
+      if (finalIpAddress && finalUserAgent) {
+        await entityManager.delete(RefreshToken, {
+          userId,
+          ipAddress: finalIpAddress,
+          userAgent: finalUserAgent,
+        });
+      }
+
+      const newRefreshToken = entityManager.create(RefreshToken, {
+        hashedToken,
+        userId,
+        expiresAt,
+        ipAddress: finalIpAddress,
+        userAgent: finalUserAgent,
+      });
+
+      await entityManager.save(newRefreshToken);
+    });
+  }
+
+  private async findRefreshTokenByValue(
+    userId: string,
+    refreshToken: string,
+    entityManager: EntityManager,
+  ): Promise<RefreshToken | null> {
+    const userTokens = await entityManager.find(RefreshToken, { where: { userId } });
+    for (const token of userTokens) {
+      const isMatch = await bcrypt.compare(refreshToken, token.hashedToken);
+      if (isMatch) {
+        return token;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Revokes a specific refresh token.
+   */
+  async revokeRefreshToken(userId: string, rawRefreshToken: string): Promise<void> {
+    const userTokens = await this.refreshTokenRepository.find({ where: { userId } });
+    for (const token of userTokens) {
+      const isMatch = await bcrypt.compare(rawRefreshToken, token.hashedToken);
+      if (isMatch) {
+        await this.refreshTokenRepository.delete(token.id);
+      }
+    }
+  }
+
+  /**
+   * Revokes all refresh tokens for a user.
+   */
+  async removeAllRefreshTokensForUser(userId: string): Promise<void> {
+    await this.refreshTokenRepository.delete({ userId });
+  }
+
+  /**
+   * Invalidates all tokens (Access & Refresh) by updating the user's `tokensValidFrom` timestamp.
+   */
+  async invalidateAllTokens(userId: string): Promise<void> {
+    await this.entityManager.update(User, userId, { tokensValidFrom: new Date() });
+  }
+
+  /**
+   * Refreshes access and refresh tokens.
+   */
+  async refreshUserTokens(userId: string, refreshToken: string) {
+    const user = await this.userService.findOneById(userId);
+    if (!user || user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('Access Denied');
+    }
+
+    try {
+      const isValidToken = await this.verifyRefreshToken(refreshToken, userId);
+      if (!isValidToken) {
+        // Security risk: Invalid token presented. Log out all sessions.
+        await this.removeAllRefreshTokensForUser(userId);
+        await this.invalidateAllTokens(userId);
+        throw new UnauthorizedException('Access Denied');
+      }
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw new UnauthorizedException('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.');
+      }
+      throw error;
+    }
+
+    const tokens = await this.generateTokens(userId, user.email);
+    const liveTime = this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '30d';
+    const refreshTokenExpiresIn = parseInt(liveTime.slice(0, -1), 10) || 30;
+    
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + refreshTokenExpiresIn);
+
+    await this.setCurrentRefreshToken({
+      refreshToken: tokens.refreshToken,
+      userId,
+      expiresAt,
+      expiredRefreshToken: refreshToken,
+    });
+
+    return tokens;
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_3AM)
+  async handleExpiredTokensCleanup() {
+    this.logger.log('[Cron] Running scheduled task to clean up expired refresh tokens...');
+    const result = await this.refreshTokenRepository.delete({
+      expiresAt: LessThan(new Date()),
+    });
+    if (result.affected && result.affected > 0) {
+      this.logger.log(`[Cron] Successfully deleted ${result.affected} expired refresh tokens.`);
+    }
+  }
+}

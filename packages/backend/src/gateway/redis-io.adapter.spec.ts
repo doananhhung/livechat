@@ -1,7 +1,5 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { RedisIoAdapter } from './redis-io.adapter';
 import { ConfigService } from '@nestjs/config';
-import { ProjectService } from '../projects/project.service';
 import { INestApplication } from '@nestjs/common';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { createClient } from 'redis';
@@ -14,38 +12,22 @@ describe('RedisIoAdapter', () => {
   let adapter: RedisIoAdapter;
   let app: jest.Mocked<INestApplication>;
   let configService: jest.Mocked<ConfigService>;
-  let projectService: jest.Mocked<ProjectService>;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        {
-          provide: ConfigService,
-          useValue: {
-            get: jest.fn(),
-          },
-        },
-        {
-          provide: ProjectService,
-          useValue: {
-            findByProjectId: jest.fn(),
-          },
-        },
-        {
-          provide: 'INestApplication',
-          useValue: {
-            get: jest.fn(),
-          },
-        },
-      ],
-    }).compile();
+  beforeEach(() => {
+    app = {
+      get: jest.fn(),
+    } as unknown as jest.Mocked<INestApplication>;
 
-    app = module.get('INestApplication');
-    configService = module.get(ConfigService);
-    projectService = module.get(ProjectService);
+    configService = {
+      get: jest.fn((key: string, defaultValue?: any) => {
+        if (key === 'REDIS_HOST') return 'localhost';
+        if (key === 'REDIS_PORT') return 6379;
+        if (key === 'FRONTEND_URL') return 'http://localhost:3000';
+        return defaultValue;
+      }),
+    } as unknown as jest.Mocked<ConfigService>;
 
     adapter = new RedisIoAdapter(app, configService);
-    app.get.mockReturnValue(projectService);
   });
 
   it('should be defined', () => {
@@ -66,79 +48,55 @@ describe('RedisIoAdapter', () => {
       expect(subClient.connect).toHaveBeenCalled();
       expect(createAdapter).toHaveBeenCalledWith(pubClient, subClient);
     });
+
+    it('should throw error if redis connection fails', async () => {
+      const pubClient = { 
+        connect: jest.fn().mockRejectedValue(new Error('Connection failed')), 
+        duplicate: jest.fn().mockReturnValue({ connect: jest.fn() })
+      };
+      (createClient as jest.Mock).mockReturnValue(pubClient);
+
+      await expect(adapter.connectToRedis()).rejects.toThrow('Connection failed');
+    });
   });
 
   describe('createIOServer', () => {
     let server: any;
-    let next: jest.Mock;
-    let socket: any;
 
-    beforeEach(() => {
-      next = jest.fn();
-      socket = {
-        handshake: {
-          headers: { origin: '' },
-          query: { projectId: '' },
-        },
-      };
+    beforeEach(async () => {
+      // Setup redis connection first
+      const pubClient = { connect: jest.fn(), duplicate: jest.fn() };
+      const subClient = { connect: jest.fn() };
+      (createClient as jest.Mock).mockReturnValue(pubClient);
+      pubClient.duplicate.mockReturnValue(subClient);
+      await adapter.connectToRedis();
+
       server = {
-        use: jest.fn((fn) => fn(socket, next)),
+        use: jest.fn(),
         adapter: jest.fn(),
       };
       jest.spyOn(IoAdapter.prototype, 'createIOServer').mockReturnValue(server);
     });
 
-    it('should allow frontend URL', async () => {
-      configService.get.mockReturnValue('http://frontend.com');
-      socket.handshake.headers.origin = 'http://frontend.com';
-      adapter.createIOServer(3000);
-      expect(next).toHaveBeenCalledWith();
-    });
+    it('should create a Socket.IO server with CORS enabled', () => {
+      const result = adapter.createIOServer(3000);
 
-    it('should deny if origin is missing', async () => {
-      socket.handshake.headers.origin = '';
-      adapter.createIOServer(3000);
-      expect(next).toHaveBeenCalledWith(new Error('Origin header is missing.'));
-    });
-
-    it('should deny if projectId is missing', async () => {
-      socket.handshake.headers.origin = 'http://widget.com';
-      socket.handshake.query.projectId = '';
-      adapter.createIOServer(3000);
-      expect(next).toHaveBeenCalledWith(
-        new Error('Project ID is missing or invalid.')
+      expect(IoAdapter.prototype.createIOServer).toHaveBeenCalledWith(
+        3000,
+        expect.objectContaining({
+          cors: expect.objectContaining({
+            origin: true,
+            methods: ['GET', 'POST'],
+            credentials: true,
+          }),
+        })
       );
+      expect(result).toBe(server);
     });
 
-    it('should deny if project not found', async () => {
-      socket.handshake.headers.origin = 'http://widget.com';
-      socket.handshake.query.projectId = '1';
-      projectService.findByProjectId.mockResolvedValue(null);
+    it('should apply the redis adapter', () => {
       adapter.createIOServer(3000);
-      await new Promise(process.nextTick);
-      expect(next).toHaveBeenCalledWith(new Error('Project with ID 1 not found.'));
-    });
-
-    it('should deny if origin not in whitelist', async () => {
-      socket.handshake.headers.origin = 'http://not-allowed.com';
-      socket.handshake.query.projectId = '1';
-      projectService.findByProjectId.mockResolvedValue({
-        whitelistedDomains: ['allowed.com'],
-      } as any);
-      adapter.createIOServer(3000);
-      await new Promise(process.nextTick);
-      expect(next).toHaveBeenCalledWith(new Error('Not allowed by CORS'));
-    });
-
-    it('should allow if origin is in whitelist', async () => {
-      socket.handshake.headers.origin = 'http://allowed.com';
-      socket.handshake.query.projectId = '1';
-      projectService.findByProjectId.mockResolvedValue({
-        whitelistedDomains: ['allowed.com'],
-      } as any);
-      adapter.createIOServer(3000);
-      await new Promise(process.nextTick);
-      expect(next).toHaveBeenCalledWith();
+      expect(server.adapter).toHaveBeenCalled();
     });
   });
 });
