@@ -1,8 +1,7 @@
 // src/realtime-session/realtime-session.service.ts
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { type RedisClientType } from 'redis';
 import { REDIS_PUBLISHER_CLIENT } from '../redis/redis.module';
-import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class RealtimeSessionService {
@@ -12,12 +11,11 @@ export class RealtimeSessionService {
   ) {}
 
   private getKey(visitorUid: string): string {
-    this.logger.log(`Generating key for visitorUid: ${visitorUid}`);
     return `session:visitor:${visitorUid}`;
   }
 
   async setVisitorSession(visitorUid: string, socketId: string): Promise<void> {
-    this.logger.log(
+    this.logger.debug(
       `Setting session for visitorUid: ${visitorUid} with socketId: ${socketId}`
     );
     const key = this.getKey(visitorUid);
@@ -26,13 +24,13 @@ export class RealtimeSessionService {
   }
 
   async getVisitorSession(visitorUid: string): Promise<string | null> {
-    this.logger.log(`Getting session for visitorUid: ${visitorUid}`);
+    this.logger.debug(`Getting session for visitorUid: ${visitorUid}`);
     const key = this.getKey(visitorUid);
     return this.redis.get(key);
   }
 
   async deleteVisitorSession(visitorUid: string): Promise<void> {
-    this.logger.log(`Deleting session for visitorUid: ${visitorUid}`);
+    this.logger.debug(`Deleting session for visitorUid: ${visitorUid}`);
     const key = this.getKey(visitorUid);
     await this.redis.del(key);
   }
@@ -45,7 +43,7 @@ export class RealtimeSessionService {
     visitorUid: string,
     currentUrl: string
   ): Promise<void> {
-    this.logger.log(
+    this.logger.debug(
       `Setting currentUrl for visitorUid: ${visitorUid} to ${currentUrl}`
     );
     const key = this.getCurrentUrlKey(visitorUid);
@@ -54,8 +52,32 @@ export class RealtimeSessionService {
   }
 
   async getVisitorCurrentUrl(visitorUid: string): Promise<string | null> {
-    this.logger.log(`Getting currentUrl for visitorUid: ${visitorUid}`);
     const key = this.getCurrentUrlKey(visitorUid);
     return this.redis.get(key);
+  }
+
+  /**
+   * Bulk retrieval of current URLs for multiple visitors.
+   * Uses Redis MGET for O(1) round-trip instead of O(N) individual calls.
+   *
+   * @param visitorUids - Array of visitor UIDs to fetch URLs for
+   * @returns Map of visitorUid to currentUrl (null if not found)
+   */
+  async getManyVisitorCurrentUrls(
+    visitorUids: string[]
+  ): Promise<Map<string, string | null>> {
+    if (visitorUids.length === 0) {
+      return new Map();
+    }
+
+    const keys = visitorUids.map((uid) => this.getCurrentUrlKey(uid));
+    const values = await this.redis.mGet(keys);
+
+    const result = new Map<string, string | null>();
+    visitorUids.forEach((uid, index) => {
+      result.set(uid, values[index] ?? null);
+    });
+
+    return result;
   }
 }

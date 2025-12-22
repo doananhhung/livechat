@@ -10,53 +10,53 @@ import {
 } from '@nestjs/common';
 import { ScreenshotService } from './screenshot.service';
 import { URL } from 'url';
-import * as net from 'net';
+import * as ipaddr from 'ipaddr.js';
 
 /**
- * Blocklist of hostnames and IP ranges that should never be accessed.
+ * Blocklist of hostnames that should never be accessed.
  * Prevents SSRF attacks targeting internal services and cloud metadata.
  */
 const BLOCKED_HOSTNAMES = new Set([
   'localhost',
-  '127.0.0.1',
-  '0.0.0.0',
-  '::1',
-  '[::1]',
   'metadata.google.internal', // GCP metadata
   'metadata.google.com',
+  '169.254.169.254', // AWS/Azure metadata
 ]);
 
 /**
- * Check if an IP address is in a private/reserved range.
- * Blocks RFC 1918 private IPs and link-local addresses.
+ * Check if an IP address (IPv4 or IPv6) is in a private/reserved range.
+ * Uses ipaddr.js for proper parsing of both IPv4 and IPv6.
+ *
+ * @param hostname - The hostname or IP address to check
+ * @returns true if the IP is private/reserved and should be blocked
  */
 function isPrivateOrReservedIP(hostname: string): boolean {
-  // Check if it's an IP address
-  if (!net.isIP(hostname)) {
+  // Try to parse as IP address
+  let addr: ipaddr.IPv4 | ipaddr.IPv6;
+  try {
+    // Handle bracketed IPv6 addresses like [::1]
+    const cleanHostname = hostname.replace(/^\[|\]$/g, '');
+    addr = ipaddr.parse(cleanHostname);
+  } catch {
+    // Not a valid IP address - could be a hostname, skip IP check
     return false;
   }
 
-  const parts = hostname.split('.').map(Number);
+  // Get the range type for this IP
+  const range = addr.range();
 
-  // 10.0.0.0/8 - Private
-  if (parts[0] === 10) return true;
+  // List of ranges that are considered private/reserved and should be blocked
+  const blockedRanges = new Set([
+    'unspecified', // 0.0.0.0, ::
+    'loopback', // 127.0.0.0/8, ::1
+    'private', // 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, fc00::/7
+    'linkLocal', // 169.254.0.0/16, fe80::/10
+    'reserved', // Various reserved ranges
+    'carrierGradeNat', // 100.64.0.0/10
+    'uniqueLocal', // fc00::/7 (IPv6 private)
+  ]);
 
-  // 172.16.0.0/12 - Private
-  if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
-
-  // 192.168.0.0/16 - Private
-  if (parts[0] === 192 && parts[1] === 168) return true;
-
-  // 169.254.0.0/16 - Link-local (AWS/cloud metadata!)
-  if (parts[0] === 169 && parts[1] === 254) return true;
-
-  // 127.0.0.0/8 - Loopback
-  if (parts[0] === 127) return true;
-
-  // 0.0.0.0/8 - Current network
-  if (parts[0] === 0) return true;
-
-  return false;
+  return blockedRanges.has(range);
 }
 
 @Controller('utils')
@@ -106,7 +106,9 @@ export class ScreenshotController {
     }
 
     if (isPrivateOrReservedIP(hostname)) {
-      this.logger.warn(`SSRF attempt blocked - private/reserved IP: ${hostname}`);
+      this.logger.warn(
+        `SSRF attempt blocked - private/reserved IP: ${hostname}`
+      );
       throw new HttpException(
         'Access to private or reserved IP addresses is not allowed',
         HttpStatus.FORBIDDEN

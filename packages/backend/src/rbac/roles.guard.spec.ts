@@ -148,22 +148,26 @@ describe('RolesGuard', () => {
       await expect(guard.canActivate(context)).resolves.toBe(true);
     });
 
-    it('should find projectId from different request sources (params, query, body)', async () => {
+    it('should only accept projectId from route params (security fix)', async () => {
       const requiredRoles = [ProjectRole.AGENT];
       reflector.getAllAndOverride.mockReturnValue(requiredRoles);
       entityManager.findOne.mockResolvedValue({ role: ProjectRole.AGENT });
 
-      // Test with params.id
+      // Test with params.id - should work
       let context = createMockContext(user, { id: '1' });
       await expect(guard.canActivate(context)).resolves.toBe(true);
 
-      // Test with query.projectId
-      context = createMockContext(user, {}, { projectId: '2' });
+      // Test with params.projectId - should work
+      context = createMockContext(user, { projectId: '1' });
       await expect(guard.canActivate(context)).resolves.toBe(true);
 
-      // Test with body.projectId
+      // Test with query.projectId only (no params) - should be REJECTED for security
+      context = createMockContext(user, {}, { projectId: '2' });
+      await expect(guard.canActivate(context)).resolves.toBe(false);
+
+      // Test with body.projectId only (no params) - should be REJECTED for security
       context = createMockContext(user, {}, {}, { projectId: '3' });
-      await expect(guard.canActivate(context)).resolves.toBe(true);
+      await expect(guard.canActivate(context)).resolves.toBe(false);
     });
   });
 });

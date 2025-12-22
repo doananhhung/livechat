@@ -5,13 +5,17 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-} from "typeorm";
-import { ProjectRole } from "@live-chat/shared-types";
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { ProjectRole } from '@live-chat/shared-types';
+import { Project } from './project.entity';
+import { User } from './user.entity';
 
 export enum InvitationStatus {
-  PENDING = "pending",
-  ACCEPTED = "accepted",
-  EXPIRED = "expired",
+  PENDING = 'pending',
+  ACCEPTED = 'accepted',
+  EXPIRED = 'expired',
 }
 
 /**
@@ -19,30 +23,44 @@ export enum InvitationStatus {
  * This entity stores pending invitations for users to join a project.
  * It contains a unique token that will be sent via email.
  */
-@Entity("invitations")
+@Entity('invitations')
 export class Invitation {
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: "varchar" })
+  @Column({ type: 'varchar' })
   email: string;
 
   /**
    * @description
    * A secure, unique, and non-guessable token for the invitation link.
    */
-  @Column({ type: "varchar", unique: true })
+  @Column({ type: 'varchar', unique: true })
   token: string;
 
-  @Column({ type: "int" })
+  @Column({ type: 'int' })
   projectId: number;
+
+  /**
+   * The project this invitation is for.
+   */
+  @ManyToOne(() => Project, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'project_id' })
+  project: Project;
 
   /**
    * @description
    * The ID of the manager who sent the invitation.
    */
-  @Column("uuid")
+  @Column('uuid')
   inviterId: string;
+
+  /**
+   * The user who created this invitation.
+   */
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'inviter_id' })
+  inviter: User;
 
   /**
    * @description
@@ -50,13 +68,13 @@ export class Invitation {
    * Can be either MANAGER or AGENT.
    */
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: ProjectRole,
   })
   role: ProjectRole;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: InvitationStatus,
     default: InvitationStatus.PENDING,
   })
@@ -66,9 +84,9 @@ export class Invitation {
    * @description
    * The timestamp when this invitation will expire and become invalid.
    */
-  @Column({ type: "timestamptz" })
+  @Column({ type: 'timestamptz' })
   expiresAt: Date;
 
-  @CreateDateColumn({ type: "timestamptz" })
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }

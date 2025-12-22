@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MailController } from './mail.controller';
 import { MailService } from './mail.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../rbac/roles.guard';
 
 describe('MailController', () => {
   let controller: MailController;
@@ -17,7 +19,13 @@ describe('MailController', () => {
           },
         },
       ],
-    }).compile();
+    })
+      // Override guards - they are tested separately
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<MailController>(MailController);
     mailService = module.get(MailService);

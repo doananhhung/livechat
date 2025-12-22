@@ -1,4 +1,3 @@
-
 // src/rbac/roles.guard.ts
 
 import {
@@ -93,15 +92,14 @@ export class RolesGuard implements CanActivate {
     }
 
     // --- Logic for Project Roles ---
-    const projectId =
-      request.params.id ||
-      request.params.projectId ||
-      request.query.projectId ||
-      request.body?.projectId;
+    // SECURITY FIX: Only accept projectId from route params to prevent parameter pollution attacks.
+    // Do NOT fall back to query or body to avoid injection via conflicting parameters.
+    const projectId = request.params.projectId || request.params.id;
 
     if (!projectId) {
       this.logger.error(
-        `Access denied for user ${user.id}. No projectId found in request for a route that requires a project role.`
+        `Access denied for user ${user.id}. No projectId found in route params for a route that requires a project role. ` +
+          `Ensure projectId is passed as a route parameter, not in query or body.`
       );
       return false;
     }

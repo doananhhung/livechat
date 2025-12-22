@@ -9,6 +9,58 @@ import { EventsGateway } from '../gateway/events.gateway';
 import { EntityManager } from 'typeorm';
 import { WorkerEventTypes } from '@live-chat/shared-types';
 
+/**
+ * Expected payload structure from Redis pub/sub channel.
+ * Used as a type guard to validate incoming messages.
+ */
+interface RedisMessagePayload {
+  message: {
+    id: string | number;
+    content: string;
+    conversationId: number;
+    fromCustomer: boolean;
+    status: string;
+    createdAt: string;
+  };
+  tempId: string;
+  visitorUid: string;
+}
+
+/**
+ * Type guard to validate Redis message payload structure.
+ * Returns true if the payload has all required fields with correct types.
+ */
+function isValidRedisMessagePayload(data: unknown): data is RedisMessagePayload {
+  if (typeof data !== 'object' || data === null) {
+    return false;
+  }
+
+  const payload = data as Record<string, unknown>;
+
+  // Check required top-level fields
+  if (
+    typeof payload.tempId !== 'string' ||
+    typeof payload.visitorUid !== 'string' ||
+    typeof payload.message !== 'object' ||
+    payload.message === null
+  ) {
+    return false;
+  }
+
+  const message = payload.message as Record<string, unknown>;
+
+  // Check required message fields
+  if (
+    (typeof message.id !== 'string' && typeof message.id !== 'number') ||
+    typeof message.content !== 'string' ||
+    typeof message.conversationId !== 'number'
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 @Injectable()
 export class InboxEventHandlerService {
   private readonly logger = new Logger(InboxEventHandlerService.name);
@@ -92,8 +144,16 @@ export class InboxEventHandlerService {
   @OnEvent('redis.message.received')
   async handleRedisMessageReceived(messageData: string) {
     try {
-      this.logger.log(messageData);
-      const data = JSON.parse(messageData);
+      const data: unknown = JSON.parse(messageData);
+
+      // Validate payload structure before processing
+      if (!isValidRedisMessagePayload(data)) {
+        this.logger.error(
+          `Invalid Redis message payload structure: ${messageData.substring(0, 200)}`
+        );
+        return;
+      }
+
       const { message, tempId, visitorUid } = data;
       this.logger.log(
         `Received new message from Redis channel: ${JSON.stringify(message)}`

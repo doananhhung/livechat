@@ -133,17 +133,22 @@ export class ConversationService {
     // This executes the query built above.
     const [data, total] = await qb.getManyAndCount();
 
-    // Populate currentUrl for each visitor from Redis
-    await Promise.all(
-      data.map(async (conversation) => {
+    // Populate currentUrl for each visitor from Redis using bulk MGET
+    const visitorUids = data
+      .filter((c) => c.visitor?.visitorUid)
+      .map((c) => c.visitor.visitorUid);
+
+    if (visitorUids.length > 0) {
+      const urlMap =
+        await this.realtimeSessionService.getManyVisitorCurrentUrls(visitorUids);
+
+      data.forEach((conversation) => {
         if (conversation.visitor) {
           conversation.visitor.currentUrl =
-            await this.realtimeSessionService.getVisitorCurrentUrl(
-              conversation.visitor.visitorUid
-            );
+            urlMap.get(conversation.visitor.visitorUid) ?? null;
         }
-      })
-    );
+      });
+    }
 
     return { data, total, page, limit };
   }
