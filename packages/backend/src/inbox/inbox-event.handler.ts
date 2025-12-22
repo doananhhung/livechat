@@ -7,6 +7,7 @@ import { RealtimeSessionService } from '../realtime-session/realtime-session.ser
 import { BullMqProducerService } from '../event-producer/bullmq-producer.service';
 import { EventsGateway } from '../gateway/events.gateway';
 import { EntityManager } from 'typeorm';
+import { WorkerEventTypes } from '@live-chat/shared-types';
 
 @Injectable()
 export class InboxEventHandlerService {
@@ -74,7 +75,7 @@ export class InboxEventHandlerService {
     );
 
     const eventPayload = {
-      type: 'NEW_MESSAGE_FROM_VISITOR',
+      type: WorkerEventTypes.NEW_MESSAGE_FROM_VISITOR,
       payload: {
         tempId: payload.tempId,
         content: payload.content,

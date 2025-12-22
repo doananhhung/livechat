@@ -1,3 +1,4 @@
+
 // src/inbox/services/message.service.ts
 
 import { EntityManager } from 'typeorm';
@@ -20,6 +21,7 @@ import {
 } from '@nestjs/common';
 import { RealtimeSessionService } from '../../realtime-session/realtime-session.service';
 import { ProjectService } from '../../projects/project.service';
+import { MessagePersistenceService } from './persistence/message.persistence.service';
 
 @Injectable()
 export class MessageService {
@@ -29,7 +31,8 @@ export class MessageService {
     private readonly entityManager: EntityManager,
     private readonly realtimeSessionService: RealtimeSessionService,
     private readonly eventsGateway: EventsGateway,
-    private readonly projectService: ProjectService
+    private readonly projectService: ProjectService,
+    private readonly messagePersistenceService: MessagePersistenceService
   ) {
     this.logger.log(`EventGateWay server: ${this.eventsGateway.server}`);
   }
@@ -44,8 +47,12 @@ export class MessageService {
     data: CreateMessageDto,
     manager: EntityManager
   ): Promise<Message> {
-    const message = manager.create(Message, data);
-    const savedMessage = await manager.save(message);
+    const savedMessage = await this.messagePersistenceService.createMessage(
+      tempId,
+      visitorUid,
+      data,
+      manager
+    );
 
     this.logger.log(
       `Message ${savedMessage.id} created for visitor ${visitorUid}. It will be sent via Redis pub/sub.`

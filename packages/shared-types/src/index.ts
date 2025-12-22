@@ -14,3 +14,5 @@ export * from "./invitation.types";
 export * from "./conversation.types";
 export * from "./visitor.types";
 export * from "./user-identity.types";
+export * from "./worker-events.types";
+

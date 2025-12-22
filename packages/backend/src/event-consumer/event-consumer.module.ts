@@ -3,30 +3,17 @@
 import { Module, Logger } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventConsumerService } from './event-consumer.service';
-import { InboxModule } from '../inbox/inbox.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
-import { GatewayModule } from '../gateway/gateway.module';
 import { BullModule } from '@nestjs/bullmq';
 import { EventProcessor } from './event.processor';
-import {
-  Conversation,
-  EmailChangeRequest,
-  Invitation,
-  Message,
-  Project,
-  ProjectMember,
-  RefreshToken,
-  TwoFactorRecoveryCode,
-  User,
-  UserIdentity,
-  Visitor,
-  OutboxEvent,
-} from '../database/entities';
+import { OutboxEvent } from '../database/entities';
 import { OutboxListenerService } from './outbox-listener.service';
 import { RedisModule } from '../redis/redis.module';
+import { InboxPersistenceModule } from '../inbox/inbox.persistence.module';
+import { OutboxPersistenceService } from './outbox.persistence.service';
+import { TYPEORM_CONFIG } from '../database/database.config';
 
 export const LIVE_CHAT_EVENTS_QUEUE = 'live-chat-events-queue';
 
@@ -37,36 +24,10 @@ export const LIVE_CHAT_EVENTS_QUEUE = 'live-chat-events-queue';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    GatewayModule,
     TypeOrmModule.forFeature([OutboxEvent]),
-    TypeOrmModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('PSQL_HOST'),
-        port: configService.get<number>('PSQL_PORT'),
-        username: configService.get<string>('PSQL_USER'),
-        password: configService.get<string>('PSQL_PASSWORD'),
-        database: configService.get<string>('PSQL_DATABASE'),
-        entities: [
-          Conversation,
-          EmailChangeRequest,
-          Invitation,
-          Message,
-          Project,
-          ProjectMember,
-          RefreshToken,
-          TwoFactorRecoveryCode,
-          User,
-          UserIdentity,
-          Visitor,
-          OutboxEvent,
-        ],
-        namingStrategy: new SnakeNamingStrategy(),
-        synchronize: false,
-      }),
-    }),
-    InboxModule,
+    // Use shared database configuration
+    TypeOrmModule.forRootAsync(TYPEORM_CONFIG),
+    InboxPersistenceModule,
     RedisModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
@@ -79,12 +40,13 @@ export const LIVE_CHAT_EVENTS_QUEUE = 'live-chat-events-queue';
       inject: [ConfigService],
     }),
     BullModule.registerQueue({
-      name: 'live-chat-events-queue',
+      name: LIVE_CHAT_EVENTS_QUEUE,
     }),
   ],
   providers: [
     EventConsumerService,
     EventProcessor,
+    OutboxPersistenceService,
     Logger,
     OutboxListenerService,
   ],

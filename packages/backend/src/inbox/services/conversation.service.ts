@@ -1,3 +1,4 @@
+
 import {
   ForbiddenException,
   Injectable,
@@ -21,6 +22,7 @@ import {
 import { RealtimeSessionService } from '../../realtime-session/realtime-session.service';
 import { EventsGateway } from '../../gateway/events.gateway';
 import { ProjectService } from '../../projects/project.service';
+import { ConversationPersistenceService } from './persistence/conversation.persistence.service';
 
 @Injectable()
 export class ConversationService {
@@ -29,7 +31,8 @@ export class ConversationService {
     private readonly realtimeSessionService: RealtimeSessionService,
     @Inject(forwardRef(() => EventsGateway))
     private readonly eventsGateway: EventsGateway,
-    private readonly projectService: ProjectService
+    private readonly projectService: ProjectService,
+    private readonly conversationPersistenceService: ConversationPersistenceService
   ) {}
 
   async findById(id: number): Promise<Conversation> {
@@ -55,25 +58,11 @@ export class ConversationService {
     visitorId: number,
     manager: EntityManager
   ): Promise<Conversation> {
-    const conversationRepo = manager.getRepository(Conversation);
-
-    let conversation = await conversationRepo.findOne({
-      where: {
-        project: { id: projectId },
-        visitor: { id: visitorId },
-      },
-    });
-
-    if (!conversation) {
-      conversation = conversationRepo.create({
-        project: { id: projectId },
-        visitor: { id: visitorId },
-        status: ConversationStatus.OPEN,
-      });
-      await conversationRepo.save(conversation);
-    }
-
-    return conversation;
+    return this.conversationPersistenceService.findOrCreateByVisitorId(
+      projectId,
+      visitorId,
+      manager
+    );
   }
 
   /**
@@ -90,17 +79,11 @@ export class ConversationService {
     lastMessageTimestamp: Date,
     manager: EntityManager
   ): Promise<void> {
-    const conversationRepo = manager.getRepository(Conversation);
-    // Increment unread count by 1 for new incoming messages
-    await conversationRepo.increment({ id: conversationId }, 'unreadCount', 1);
-
-    await conversationRepo.update(
-      { id: conversationId },
-      {
-        lastMessageSnippet: lastMessageSnippet.substring(0, 100),
-        lastMessageTimestamp,
-        status: ConversationStatus.OPEN, // Re-open conversation on new message
-      }
+    return this.conversationPersistenceService.updateLastMessage(
+      conversationId,
+      lastMessageSnippet,
+      lastMessageTimestamp,
+      manager
     );
   }
 

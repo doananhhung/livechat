@@ -1,67 +1,73 @@
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { EventConsumerService } from './event-consumer.service';
-import { ConversationService } from '../inbox/services/conversation.service';
-import { VisitorService } from '../inbox/services/visitor.service';
-import { MessageService } from '../inbox/services/message.service';
 import { EntityManager } from 'typeorm';
-import { REDIS_PUBLISHER_CLIENT } from '../redis/redis.module';
-import { ConfigService } from '@nestjs/config';
 import { Message, Visitor } from '../database/entities';
-import { MessageStatus } from '@live-chat/shared-types';
+import {
+  MessageStatus,
+  WorkerEventTypes,
+  WorkerEvent,
+  NewMessageFromVisitorPayload,
+} from '@live-chat/shared-types';
+import { VisitorPersistenceService } from '../inbox/services/persistence/visitor.persistence.service';
+import { ConversationPersistenceService } from '../inbox/services/persistence/conversation.persistence.service';
+import { MessagePersistenceService } from '../inbox/services/persistence/message.persistence.service';
+import { OutboxPersistenceService } from './outbox.persistence.service';
 
 describe('EventConsumerService', () => {
   let service: EventConsumerService;
-  let conversationService: jest.Mocked<ConversationService>;
-  let visitorService: jest.Mocked<VisitorService>;
-  let messageService: jest.Mocked<MessageService>;
+  let visitorPersistenceService: jest.Mocked<VisitorPersistenceService>;
+  let conversationPersistenceService: jest.Mocked<ConversationPersistenceService>;
+  let messagePersistenceService: jest.Mocked<MessagePersistenceService>;
+  let outboxPersistenceService: jest.Mocked<OutboxPersistenceService>;
   let entityManager: jest.Mocked<EntityManager>;
-  let redisPublisher: jest.Mocked<any>;
 
   beforeEach(async () => {
+    const mockEntityManager = {
+      transaction: jest.fn().mockImplementation((cb) => cb(mockEntityManager)),
+      query: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EventConsumerService,
         {
-          provide: ConversationService,
+          provide: VisitorPersistenceService,
+          useValue: {
+            findOrCreateByUid: jest.fn(),
+          },
+        },
+        {
+          provide: ConversationPersistenceService,
           useValue: {
             findOrCreateByVisitorId: jest.fn(),
             updateLastMessage: jest.fn(),
           },
         },
         {
-          provide: VisitorService,
+          provide: MessagePersistenceService,
           useValue: {
-            findOrCreateByUid: jest.fn(),
+            createMessage: jest.fn(),
           },
         },
         {
-          provide: MessageService,
+          provide: OutboxPersistenceService,
           useValue: {
-            createMessageAndVerifySent: jest.fn(),
+            createEvent: jest.fn(),
           },
         },
         {
           provide: EntityManager,
-          useValue: {
-            transaction: jest.fn().mockImplementation((cb) => cb(entityManager)),
-          },
-        },
-        {
-          provide: REDIS_PUBLISHER_CLIENT,
-          useValue: {
-            publish: jest.fn(),
-          },
+          useValue: mockEntityManager,
         },
       ],
     }).compile();
 
     service = module.get<EventConsumerService>(EventConsumerService);
-    conversationService = module.get(ConversationService);
-    visitorService = module.get(VisitorService);
-    messageService = module.get(MessageService);
+    visitorPersistenceService = module.get(VisitorPersistenceService);
+    conversationPersistenceService = module.get(ConversationPersistenceService);
+    messagePersistenceService = module.get(MessagePersistenceService);
+    outboxPersistenceService = module.get(OutboxPersistenceService);
     entityManager = module.get(EntityManager);
-    redisPublisher = module.get(REDIS_PUBLISHER_CLIENT);
   });
 
   afterEach(() => {
@@ -77,9 +83,16 @@ describe('EventConsumerService', () => {
       const handleNewMessageSpy = jest
         .spyOn(service as any, 'handleNewMessageFromVisitor')
         .mockResolvedValue(undefined);
-      const event = {
-        type: 'NEW_MESSAGE_FROM_VISITOR',
-        payload: { some: 'payload' },
+
+      const event: WorkerEvent<NewMessageFromVisitorPayload> = {
+        type: WorkerEventTypes.NEW_MESSAGE_FROM_VISITOR,
+        payload: {
+          tempId: 'temp-1',
+          content: 'Hello',
+          visitorUid: 'visitor-123',
+          projectId: 1,
+          socketId: 'socket-abc',
+        },
       };
 
       await service.processEvent(event);
@@ -88,66 +101,77 @@ describe('EventConsumerService', () => {
     });
 
     it('should log warning for unhandled event type', async () => {
-      // We can't easily spy on logger without more setup, but we verify it doesn't throw
-      const event = { type: 'UNKNOWN_TYPE', payload: {} };
+      // Cast to WorkerEvent to test unhandled type scenario
+      const event = {
+        type: 'UNKNOWN_TYPE',
+        payload: {},
+      } as unknown as WorkerEvent;
+
       await expect(service.processEvent(event)).resolves.not.toThrow();
     });
   });
 
   describe('handleNewMessageFromVisitor', () => {
     it('should create entities and insert outbox event', async () => {
-      const payload = {
+      const payload: NewMessageFromVisitorPayload = {
         tempId: 'temp-1',
         content: 'Hello',
         visitorUid: 'visitor-123',
         projectId: 1,
         socketId: 'socket-abc',
       };
-      
+
       const visitor = new Visitor();
       visitor.id = 1;
       visitor.visitorUid = 'visitor-123';
-      
+
       const conversation = { id: 100 };
       const savedMessage = { id: 'msg-1' } as Message;
 
-      visitorService.findOrCreateByUid.mockResolvedValue(visitor);
-      conversationService.findOrCreateByVisitorId.mockResolvedValue(conversation as any);
-      messageService.createMessageAndVerifySent.mockResolvedValue(savedMessage);
-
-      // Mock entityManager.query for outbox insertion
-      entityManager.query = jest.fn().mockResolvedValue(undefined);
+      visitorPersistenceService.findOrCreateByUid.mockResolvedValue(visitor);
+      conversationPersistenceService.findOrCreateByVisitorId.mockResolvedValue(
+        conversation as any
+      );
+      messagePersistenceService.createMessage.mockResolvedValue(savedMessage);
+      outboxPersistenceService.createEvent.mockResolvedValue({} as any);
 
       // Call private method via casting
       await (service as any).handleNewMessageFromVisitor(payload);
 
-      expect(visitorService.findOrCreateByUid).toHaveBeenCalledWith(
+      expect(visitorPersistenceService.findOrCreateByUid).toHaveBeenCalledWith(
         payload.projectId,
         payload.visitorUid,
         expect.anything()
       );
-      expect(conversationService.findOrCreateByVisitorId).toHaveBeenCalledWith(
-        payload.projectId,
-        visitor.id,
-        expect.anything()
-      );
-      expect(messageService.createMessageAndVerifySent).toHaveBeenCalledWith(
+      expect(
+        conversationPersistenceService.findOrCreateByVisitorId
+      ).toHaveBeenCalledWith(payload.projectId, visitor.id, expect.anything());
+      expect(messagePersistenceService.createMessage).toHaveBeenCalledWith(
         payload.tempId,
         payload.visitorUid,
         expect.objectContaining({
-            conversationId: conversation.id,
-            content: payload.content,
-            senderId: visitor.visitorUid,
-            status: MessageStatus.SENT,
+          conversationId: conversation.id,
+          content: payload.content,
+          senderId: visitor.visitorUid,
+          status: MessageStatus.SENT,
         }),
         expect.anything()
       );
-      expect(conversationService.updateLastMessage).toHaveBeenCalled();
-      
-      // Verify outbox insertion
-      expect(entityManager.query).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO outbox_events'),
-        expect.arrayContaining(['message', savedMessage.id, 'NEW_MESSAGE_FROM_VISITOR'])
+      expect(
+        conversationPersistenceService.updateLastMessage
+      ).toHaveBeenCalled();
+
+      // Verify outbox persistence service was called
+      expect(outboxPersistenceService.createEvent).toHaveBeenCalledWith(
+        'message',
+        savedMessage.id,
+        WorkerEventTypes.NEW_MESSAGE_FROM_VISITOR,
+        expect.objectContaining({
+          message: savedMessage,
+          tempId: payload.tempId,
+          visitorUid: payload.visitorUid,
+        }),
+        expect.anything()
       );
     });
   });

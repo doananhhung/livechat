@@ -1,7 +1,4 @@
-import {
-  Module,
-  NestModule,
-} from '@nestjs/common';
+import { Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -12,7 +9,6 @@ import { GatewayModule } from './gateway/gateway.module';
 import { RbacModule } from './rbac/rbac.module';
 import { ProjectModule } from './projects/project.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { HttpModule } from '@nestjs/axios';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { CommonModule } from './common/common.module';
@@ -22,22 +18,9 @@ import { REDIS_PUBLISHER_CLIENT, RedisModule } from './redis/redis.module';
 import { ScreenshotModule } from './screenshot/screenshot.module';
 import { RedisClientType } from 'redis';
 import { MailModule } from './mail/mail.module';
-import {
-  Conversation,
-  EmailChangeRequest,
-  Invitation,
-  Message,
-  Project,
-  ProjectMember,
-  RefreshToken,
-  TwoFactorRecoveryCode,
-  User,
-  UserIdentity,
-  Visitor,
-} from './database/entities';
-
 import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bullmq';
+import { TYPEORM_CONFIG } from './database/database.config';
 
 @Module({
   imports: [
@@ -68,44 +51,8 @@ import { BullModule } from '@nestjs/bullmq';
       inject: [REDIS_PUBLISHER_CLIENT],
     }),
     EventEmitterModule.forRoot(),
-    TypeOrmModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const host = configService.get<string>('PSQL_HOST');
-        const username = configService.get<string>('PSQL_USER');
-        const database = configService.get<string>('PSQL_DATABASE');
-
-        if (!host || !username || !database) {
-          throw new Error(
-            'Missing required database environment variables: PSQL_HOST, PSQL_USER, or PSQL_DATABASE'
-          );
-        }
-
-        return {
-          type: 'postgres',
-          host,
-          port: configService.get<number>('PSQL_PORT') || 5432,
-          username,
-          password: configService.get<string>('PSQL_PASSWORD') || '',
-          database,
-          entities: [
-            Conversation,
-            EmailChangeRequest,
-            Invitation,
-            Message,
-            Project,
-            ProjectMember,
-            RefreshToken,
-            TwoFactorRecoveryCode,
-            User,
-            UserIdentity,
-            Visitor,
-          ],
-          namingStrategy: new SnakeNamingStrategy(),
-          synchronize: false,
-        };
-      },
-    }),
+    // Use shared database configuration
+    TypeOrmModule.forRootAsync(TYPEORM_CONFIG),
     HttpModule.register({
       timeout: 5000,
       maxRedirects: 5,

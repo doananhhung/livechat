@@ -1,59 +1,64 @@
 // src/event-consumer/event-consumer.service.ts
-import {
-  Inject,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
-import { ConversationService } from '../inbox/services/conversation.service';
-import { VisitorService } from '../inbox/services/visitor.service';
-import { MessageService } from '../inbox/services/message.service';
-import { MessageStatus } from '@live-chat/shared-types';
-import { type Redis } from 'ioredis';
-import { REDIS_PUBLISHER_CLIENT } from '../redis/redis.module';
+import {
+  MessageStatus,
+  WorkerEventTypes,
+  WorkerEvent,
+  NewMessageFromVisitorPayload,
+} from '@live-chat/shared-types';
+import { VisitorPersistenceService } from '../inbox/services/persistence/visitor.persistence.service';
+import { ConversationPersistenceService } from '../inbox/services/persistence/conversation.persistence.service';
+import { MessagePersistenceService } from '../inbox/services/persistence/message.persistence.service';
+import { OutboxPersistenceService } from './outbox.persistence.service';
 
 @Injectable()
 export class EventConsumerService {
   private readonly logger = new Logger(EventConsumerService.name);
 
   constructor(
-    private readonly conversationService: ConversationService,
-    private readonly visitorService: VisitorService,
-    private readonly messageService: MessageService,
-    private readonly entityManager: EntityManager,
-    @Inject(REDIS_PUBLISHER_CLIENT) private readonly redisPublisher: Redis
+    private readonly conversationPersistenceService: ConversationPersistenceService,
+    private readonly visitorPersistenceService: VisitorPersistenceService,
+    private readonly messagePersistenceService: MessagePersistenceService,
+    private readonly outboxPersistenceService: OutboxPersistenceService,
+    private readonly entityManager: EntityManager
   ) {}
 
-  public async processEvent(event: any) {
+  /**
+   * Process an incoming worker event.
+   * Uses typed events from @live-chat/shared-types for type safety.
+   */
+  public async processEvent(event: WorkerEvent): Promise<void> {
     const { type, payload } = event;
 
     this.logger.log(`Processing event type: ${type}`);
 
     try {
-        if (type === 'NEW_MESSAGE_FROM_VISITOR') {
-            await this.handleNewMessageFromVisitor(payload);
-        } else {
-            this.logger.warn(`Unhandled event type: ${type}`);
-        }
+      switch (type) {
+        case WorkerEventTypes.NEW_MESSAGE_FROM_VISITOR:
+          await this.handleNewMessageFromVisitor(
+            payload as NewMessageFromVisitorPayload
+          );
+          break;
+        default:
+          this.logger.warn(`Unhandled event type: ${type}`);
+      }
     } catch (error) {
-        this.logger.error(`Error processing event ${type}`, error);
-        throw error;
+      this.logger.error(`Error processing event ${type}`, error);
+      throw error;
     }
   }
 
-  private async handleNewMessageFromVisitor(payload: {
-    tempId: string;
-    content: string;
-    visitorUid: string;
-    projectId: number;
-    socketId: string;
-  }) {
+  private async handleNewMessageFromVisitor(
+    payload: NewMessageFromVisitorPayload
+  ): Promise<void> {
     this.logger.log(`Handling new message from visitor: ${payload.visitorUid}`);
     const { tempId, visitorUid, projectId, content } = payload;
 
     await this.entityManager.transaction(async (manager) => {
       this.logger.log(`[Transaction] Started for visitor: ${visitorUid}`);
-      const visitor = await this.visitorService.findOrCreateByUid(
+
+      const visitor = await this.visitorPersistenceService.findOrCreateByUid(
         projectId,
         visitorUid,
         manager
@@ -61,7 +66,7 @@ export class EventConsumerService {
       this.logger.log(`[Transaction] Found or created visitor: ${visitor.id}`);
 
       const conversation =
-        await this.conversationService.findOrCreateByVisitorId(
+        await this.conversationPersistenceService.findOrCreateByVisitorId(
           projectId,
           visitor.id,
           manager
@@ -70,7 +75,7 @@ export class EventConsumerService {
         `[Transaction] Found or created conversation: ${conversation.id}`
       );
 
-      const savedMessage = await this.messageService.createMessageAndVerifySent(
+      const savedMessage = await this.messagePersistenceService.createMessage(
         tempId,
         visitorUid,
         {
@@ -85,7 +90,7 @@ export class EventConsumerService {
       );
       this.logger.log(`[Transaction] Created message: ${savedMessage.id}`);
 
-      await this.conversationService.updateLastMessage(
+      await this.conversationPersistenceService.updateLastMessage(
         conversation.id,
         content,
         new Date(),
@@ -95,21 +100,17 @@ export class EventConsumerService {
         `[Transaction] Updated last message for conversation: ${conversation.id}`
       );
 
-      const eventPayloadForOutbox = {
-        message: savedMessage,
-        tempId: tempId,
-        visitorUid: visitorUid,
-      };
-
-      await manager.query(
-        `INSERT INTO outbox_events (aggregate_type, aggregate_id, event_type, payload)
-         VALUES ($1, $2, $3, $4)`,
-        [
-          'message',
-          savedMessage.id,
-          'NEW_MESSAGE_FROM_VISITOR',
-          eventPayloadForOutbox,
-        ]
+      // Use OutboxPersistenceService instead of raw SQL
+      await this.outboxPersistenceService.createEvent(
+        'message',
+        savedMessage.id,
+        WorkerEventTypes.NEW_MESSAGE_FROM_VISITOR,
+        {
+          message: savedMessage,
+          tempId,
+          visitorUid,
+        },
+        manager
       );
       this.logger.log(
         `[Transaction] Inserted event for message ${savedMessage.id} into outbox.`

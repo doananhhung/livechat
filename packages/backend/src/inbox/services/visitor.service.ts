@@ -1,15 +1,18 @@
+
 // src/inbox/services/visitor.service.ts
 
 import { Injectable } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { Visitor } from '../../database/entities';
 import { RealtimeSessionService } from '../../realtime-session/realtime-session.service';
+import { VisitorPersistenceService } from './persistence/visitor.persistence.service';
 
 @Injectable()
 export class VisitorService {
   constructor(
     private readonly entityManager: EntityManager,
-    private readonly realtimeSessionService: RealtimeSessionService
+    private readonly realtimeSessionService: RealtimeSessionService,
+    private readonly visitorPersistenceService: VisitorPersistenceService
   ) {}
 
   /**
@@ -25,28 +28,11 @@ export class VisitorService {
     visitorUid: string,
     manager: EntityManager
   ): Promise<Visitor> {
-    let visitor = await manager.findOne(Visitor, {
-      where: { visitorUid },
-    });
-
-    if (!visitor) {
-      // Generate a user-friendly display name for new visitors
-      const displayName = `Visitor #${visitorUid.substring(0, 6)}`;
-
-      visitor = manager.create(Visitor, {
-        projectId,
-        visitorUid,
-        displayName,
-        lastSeenAt: new Date(),
-      });
-      await manager.save(visitor);
-    } else {
-      // Update last seen timestamp for returning visitors
-      visitor.lastSeenAt = new Date();
-      await manager.save(visitor);
-    }
-
-    return visitor;
+    return this.visitorPersistenceService.findOrCreateByUid(
+      projectId,
+      visitorUid,
+      manager
+    );
   }
 
   /**

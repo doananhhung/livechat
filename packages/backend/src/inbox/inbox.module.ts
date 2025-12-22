@@ -1,3 +1,4 @@
+
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Conversation, Message, Visitor } from '../database/entities';
@@ -11,6 +12,7 @@ import { RealtimeSessionModule } from '../realtime-session/realtime-session.modu
 import { ProjectModule } from '../projects/project.module';
 import { InboxEventHandlerService } from './inbox-event.handler';
 import { EventProducerModule } from '../event-producer/event-producer.module';
+import { InboxPersistenceModule } from './inbox.persistence.module';
 
 @Module({
   imports: [
@@ -19,6 +21,7 @@ import { EventProducerModule } from '../event-producer/event-producer.module';
     RealtimeSessionModule,
     ProjectModule,
     EventProducerModule,
+    InboxPersistenceModule,
   ],
   providers: [
     ConversationService,
