@@ -1,3 +1,4 @@
+
 import { Strategy } from 'passport-local';
 import { PassportStrategy } from '@nestjs/passport';
 import {
@@ -5,12 +6,12 @@ import {
   UnauthorizedException,
   ForbiddenException,
 } from '@nestjs/common';
-import { AuthService } from '../auth.service';
+import { PasswordService } from '../services/password.service';
 import { User } from '../../database/entities';
 
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly authService: AuthService) {
+  constructor(private readonly passwordService: PasswordService) {
     // Configuration for Passport-local.
     // By default, it will look for 'username' and 'password' fields in the request body.
     // Here, we explicitly specify that our username field is 'email'.
@@ -25,10 +26,10 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
    * @throws UnauthorizedException if authentication fails.
    */
   async validate(email: string, password: string): Promise<User> {
-    // Delegate email and password checking to AuthService.
-    const user = await this.authService.validateUser(email, password);
+    // Delegate email and password checking to PasswordService.
+    const user = await this.passwordService.validateUser(email, password);
 
-    // If AuthService returns null, it means the information is invalid.
+    // If PasswordService returns null, it means the information is invalid.
     if (!user) {
       throw new UnauthorizedException('Email hoặc mật khẩu không chính xác.');
     }

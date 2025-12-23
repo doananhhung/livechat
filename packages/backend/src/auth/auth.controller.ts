@@ -13,7 +13,6 @@ import {
   Req,
   Query,
 } from '@nestjs/common';
-import { AuthService } from './auth.service';
 import {
   ChangePasswordDto,
   SetPasswordDto,
@@ -32,6 +31,16 @@ import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { RegistrationService } from './services/registration.service';
+import { LoginService } from './services/login.service';
+import { PasswordService } from './services/password.service';
+import { OAuthService } from './services/oauth.service';
+import { TokenService } from './services/token.service';
+import { EmailChangeService } from '../user/services/email-change.service';
+import { UserService } from '../user/user.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Inject } from '@nestjs/common';
+import { Cache } from 'cache-manager';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -39,8 +48,15 @@ export class AuthController {
   private readonly refreshTokenExpiresIn: number;
 
   constructor(
-    private readonly authService: AuthService,
-    private readonly configService: ConfigService
+    private readonly registrationService: RegistrationService,
+    private readonly loginService: LoginService,
+    private readonly passwordService: PasswordService,
+    private readonly oauthService: OAuthService,
+    private readonly tokenService: TokenService,
+    private readonly emailChangeService: EmailChangeService,
+    private readonly userService: UserService,
+    private readonly configService: ConfigService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {
     const refreshTokenExpiresInString = this.configService.get<string>(
       'JWT_REFRESH_EXPIRES_IN'
@@ -57,7 +73,7 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'User successfully registered.' })
   @ApiResponse({ status: 409, description: 'Email already in use.' })
   async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+    return this.registrationService.register(registerDto);
   }
 
   @Get('verify-email')
@@ -66,7 +82,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Email successfully verified.' })
   @ApiResponse({ status: 404, description: 'Invalid or expired token.' })
   async verifyEmail(@Query('token') token: string) {
-    return this.authService.verifyEmail(token);
+    return this.registrationService.verifyEmail(token);
   }
 
   @Post('resend-verification')
@@ -77,7 +93,7 @@ export class AuthController {
   async resendVerificationEmail(
     @Body() resendVerificationDto: ResendVerificationDto
   ) {
-    return this.authService.resendVerificationEmail(resendVerificationDto);
+    return this.registrationService.resendVerificationEmail(resendVerificationDto);
   }
 
   @UseGuards(LocalAuthGuard)
@@ -97,7 +113,7 @@ export class AuthController {
     const userAgent = req.headers['user-agent'] || '';
     const user = req.user as User;
 
-    const result = await this.authService.login(user, ipAddress, userAgent);
+    const result = await this.loginService.login(user, ipAddress, userAgent);
 
     if (result.status === '2fa_required') {
       response.cookie('2fa_partial_token', result.partialToken, {
@@ -149,7 +165,7 @@ export class AuthController {
   ) {
     const userId = req.user.sub;
     const refreshToken = req.user.refreshToken;
-    const tokens = await this.authService.refreshTokens(userId, refreshToken);
+    const tokens = await this.tokenService.refreshUserTokens(userId, refreshToken);
 
     response.cookie('refresh_token', tokens.refreshToken, {
       httpOnly: true,
@@ -176,15 +192,15 @@ export class AuthController {
     @Body() body: ChangePasswordDto,
     @Res({ passthrough: true }) response: Response
   ) {
-    await this.authService.changePassword(
+    await this.passwordService.changePassword(
       req.user.id,
       body.currentPassword,
       body.newPassword
     );
     
     // Re-login to get new tokens after password change (which invalidates old ones)
-    const user = await this.authService.findUserById(req.user.id);
-    const result = await this.authService.login(
+    const user = await this.userService.findOneById(req.user.id);
+    const result = await this.loginService.login(
       user,
       req.ip,
       req.headers['user-agent'] || ''
@@ -226,10 +242,10 @@ export class AuthController {
     @Body() body: SetPasswordDto,
     @Res({ passthrough: true }) response: Response
   ) {
-    await this.authService.setPassword(req.user.id, body.newPassword);
+    await this.passwordService.setPassword(req.user.id, body.newPassword);
     
-    const user = await this.authService.findUserById(req.user.id);
-    const result = await this.authService.login(
+    const user = await this.userService.findOneById(req.user.id);
+    const result = await this.loginService.login(
       user,
       req.ip,
       req.headers['user-agent'] || ''
@@ -262,7 +278,7 @@ export class AuthController {
   async logout(@Request() req, @Res({ passthrough: true }) response: Response) {
     const refreshToken = req.cookies['refresh_token'];
     if (refreshToken) {
-      await this.authService.logout(req.user.sub, refreshToken);
+      await this.tokenService.revokeRefreshToken(req.user.sub, refreshToken);
     }
     response.clearCookie('refresh_token');
     response.clearCookie('2fa_secret');
@@ -280,7 +296,8 @@ export class AuthController {
     @Request() req,
     @Res({ passthrough: true }) response: Response
   ) {
-    await this.authService.logoutAll(req.user.sub);
+    await this.tokenService.removeAllRefreshTokensForUser(req.user.sub);
+    await this.tokenService.invalidateAllTokens(req.user.sub);
     response.clearCookie('refresh_token');
     response.clearCookie('2fa_secret');
     response.clearCookie('2fa_partial_token');
@@ -307,7 +324,7 @@ export class AuthController {
     }
 
     if (user.isTwoFactorAuthenticationEnabled) {
-      const { accessToken } = await this.authService.generate2FAPartialToken(
+      const { accessToken } = await this.tokenService.generate2FAPartialToken(
         user.id
       );
       res.cookie('2fa_partial_token', accessToken, {
@@ -323,7 +340,7 @@ export class AuthController {
       }
       return res.redirect(twoFactorUrl);
     } else {
-      const code = await this.authService.generateOneTimeCode(user.id);
+      const code = await this.oauthService.generateOneTimeCode(user.id);
       const frontendCallbackUrl = this.configService.get<string>(
         'FRONTEND_AUTH_CALLBACK_URL'
       );
@@ -347,7 +364,7 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
     @Request() req: { ip: string; headers: { 'user-agent': string } }
   ) {
-    const result = await this.authService.exchangeCodeForTokens(
+    const result = await this.loginService.exchangeCodeForTokens(
         exchangeCodeDto.code,
         req.ip,
         req.headers['user-agent']
@@ -370,7 +387,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Initiate forgot password process' })
   @ApiResponse({ status: 200, description: 'Password reset email sent (if user exists).' })
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
-    return this.authService.forgotPassword(forgotPasswordDto.email);
+    return this.passwordService.forgotPassword(forgotPasswordDto.email);
   }
 
   @Post('reset-password')
@@ -379,7 +396,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Password successfully reset.' })
   @ApiResponse({ status: 400, description: 'Bad Request (invalid or expired token).' })
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
-    return this.authService.resetPassword(
+    return this.passwordService.resetPassword(
       resetPasswordDto.token,
       resetPasswordDto.newPassword
     );
@@ -391,7 +408,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Redirect URL for Google OAuth provided.' })
   @ApiResponse({ status: 401, description: 'Unauthorized (invalid access token).' })
   async linkGoogleInit(@Req() req) {
-    const stateToken = await this.authService.generateOneTimeCode(req.user.id);
+    const stateToken = await this.oauthService.generateOneTimeCode(req.user.id);
     const apiBaseUrl = this.configService.get('API_BASE_URL');
     const googleAuthUrl = `${apiBaseUrl}/auth/link-google/redirect?state=${stateToken}`;
     return { redirectUrl: googleAuthUrl };
@@ -424,15 +441,15 @@ export class AuthController {
       }
 
       const key = `one-time-code:${state}`;
-      const userId = await this.authService['cacheManager'].get<string>(key);
+      const userId = await this.cacheManager.get<string>(key);
 
       if (!userId) {
         throw new UnauthorizedException('Invalid or expired state token.');
       }
 
-      await this.authService['cacheManager'].del(key);
+      await this.cacheManager.del(key);
 
-      await this.authService.linkGoogleAccount(userId, {
+      await this.oauthService.linkGoogleAccount(userId, {
         provider: googleProfile.provider,
         providerId: googleProfile.providerId,
         email: googleProfile.email,
@@ -462,7 +479,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Unauthorized (invalid access token).' })
   @ApiResponse({ status: 404, description: 'Not Found (provider not linked).' })
   async unlinkOAuthAccount(@Req() req, @Body() body: { provider: string }) {
-    return this.authService.unlinkOAuthAccount(req.user.id, body.provider);
+    return this.oauthService.unlinkOAuthAccount(req.user.id, body.provider);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -472,7 +489,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'List of linked OAuth accounts.' })
   @ApiResponse({ status: 401, description: 'Unauthorized (invalid access token).' })
   async getLinkedAccounts(@Req() req) {
-    return this.authService.getLinkedAccounts(req.user.id);
+    return this.oauthService.getLinkedAccounts(req.user.id);
   }
 
   @Get('verify-email-change')
@@ -488,7 +505,7 @@ export class AuthController {
         throw new UnauthorizedException('Token không được cung cấp.');
       }
 
-      const result = await this.authService.verifyEmailChange(token);
+      const result = await this.emailChangeService.verifyEmailChange(token);
 
       return res.redirect(
         `${frontendUrl}/login?emailChanged=true&newEmail=${encodeURIComponent(result.newEmail)}`

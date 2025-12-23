@@ -1,3 +1,4 @@
+
 import {
   Controller,
   Get,
@@ -13,11 +14,15 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserService } from './user.service';
 import { EmailChangeDto, UpdateUserDto } from '@live-chat/shared-dtos';
 import { User } from '../database/entities';
+import { EmailChangeService } from './services/email-change.service';
 
 @Controller('user')
 @UseGuards(JwtAuthGuard)
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly emailChangeService: EmailChangeService,
+  ) {}
 
   @Get('me')
   async getProfile(
@@ -62,7 +67,7 @@ export class UserController {
   @Post('request-email-change')
   async requestEmailChange(@Request() req, @Body() body: EmailChangeDto) {
     const userId = req.user.id;
-    return await this.userService.requestEmailChange(
+    return await this.emailChangeService.requestEmailChange(
       userId,
       body.newEmail,
       body.password
@@ -72,7 +77,7 @@ export class UserController {
   @Get('pending-email-change')
   async getPendingEmailChange(@Request() req) {
     const userId = req.user.id;
-    const pendingRequest = await this.userService.getPendingEmailChange(userId);
+    const pendingRequest = await this.emailChangeService.getPendingEmailChange(userId);
     return pendingRequest
       ? {
           newEmail: pendingRequest.newEmail,
@@ -84,6 +89,6 @@ export class UserController {
   @Post('cancel-email-change')
   async cancelEmailChange(@Request() req) {
     const userId = req.user.id;
-    return await this.userService.cancelEmailChange(userId);
+    return await this.emailChangeService.cancelEmailChange(userId);
   }
 }

@@ -2,7 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TwoFactorAuthenticationController } from './two-factor-authentication.controller';
 import { TwoFactorAuthenticationService } from './two-factor-authentication.service';
 import { UserService } from '../../user/user.service';
-import { AuthService } from '../auth.service';
+import { UserSecurityService } from '../../user/services/user-security.service';
+import { LoginService } from '../services/login.service';
 import { EncryptionService } from '../../common/services/encryption.service';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -17,7 +18,8 @@ describe('TwoFactorAuthenticationController', () => {
   let controller: TwoFactorAuthenticationController;
   let twoFactorAuthService: jest.Mocked<TwoFactorAuthenticationService>;
   let userService: jest.Mocked<UserService>;
-  let authService: jest.Mocked<AuthService>;
+  let userSecurityService: jest.Mocked<UserSecurityService>;
+  let loginService: jest.Mocked<LoginService>;
   let encryptionService: jest.Mocked<EncryptionService>;
   let configService: jest.Mocked<ConfigService>;
 
@@ -36,13 +38,18 @@ describe('TwoFactorAuthenticationController', () => {
         {
           provide: UserService,
           useValue: {
-            turnOnTwoFactorAuthentication: jest.fn(),
             findOneById: jest.fn(),
+          },
+        },
+        {
+          provide: UserSecurityService,
+          useValue: {
+            turnOnTwoFactorAuthentication: jest.fn(),
             turnOffTwoFactorAuthentication: jest.fn(),
           },
         },
         {
-          provide: AuthService,
+          provide: LoginService,
           useValue: {
             loginAfter2FA: jest.fn(),
           },
@@ -68,7 +75,8 @@ describe('TwoFactorAuthenticationController', () => {
     );
     twoFactorAuthService = module.get(TwoFactorAuthenticationService);
     userService = module.get(UserService);
-    authService = module.get(AuthService);
+    userSecurityService = module.get(UserSecurityService);
+    loginService = module.get(LoginService);
     encryptionService = module.get(EncryptionService);
     configService = module.get(ConfigService);
   });
@@ -126,7 +134,7 @@ describe('TwoFactorAuthenticationController', () => {
       const recoveryCodes = ['code1'];
       encryptionService.decrypt.mockReturnValue('decrypted-secret');
       twoFactorAuthService.isCodeValid.mockReturnValue(true);
-      userService.turnOnTwoFactorAuthentication.mockResolvedValue({
+      userSecurityService.turnOnTwoFactorAuthentication.mockResolvedValue({
         user: {} as User,
         recoveryCodes,
       });
@@ -181,7 +189,7 @@ describe('TwoFactorAuthenticationController', () => {
       userService.findOneById.mockResolvedValue(user);
       encryptionService.decrypt.mockReturnValue('decrypted-secret');
       twoFactorAuthService.isCodeValid.mockReturnValue(true);
-      authService.loginAfter2FA.mockResolvedValue(tokens);
+      loginService.loginAfter2FA.mockResolvedValue(tokens);
       configService.get.mockReturnValue('30d');
 
       await controller.authenticate(req as any, authDto, res as any);
@@ -236,7 +244,7 @@ describe('TwoFactorAuthenticationController', () => {
 
       const result = await controller.turnOff(req as any, turnOffDto);
 
-      expect(userService.turnOffTwoFactorAuthentication).toHaveBeenCalledWith('1');
+      expect(userSecurityService.turnOffTwoFactorAuthentication).toHaveBeenCalledWith('1');
       expect(result.message).toContain('disabled');
     });
   });

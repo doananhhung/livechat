@@ -1,7 +1,6 @@
 
 import { Module } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
-import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
 import { PassportModule } from '@nestjs/passport';
@@ -22,6 +21,8 @@ import { MailModule } from '../mail/mail.module';
 import { TokenService } from './services/token.service';
 import { PasswordService } from './services/password.service';
 import { OAuthService } from './services/oauth.service';
+import { RegistrationService } from './services/registration.service';
+import { LoginService } from './services/login.service';
 
 @Module({
   imports: [
@@ -44,7 +45,8 @@ import { OAuthService } from './services/oauth.service';
   ],
   controllers: [AuthController, TwoFactorAuthenticationController],
   providers: [
-    AuthService,
+    RegistrationService,
+    LoginService,
     TokenService,
     PasswordService,
     OAuthService,
@@ -58,6 +60,6 @@ import { OAuthService } from './services/oauth.service';
     EncryptionService,
     ConfigService,
   ],
-  exports: [JwtModule, AuthService, TokenService],
+  exports: [JwtModule, TokenService, RegistrationService, LoginService],
 })
 export class AuthModule {}

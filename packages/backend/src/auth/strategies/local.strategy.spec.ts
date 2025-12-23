@@ -1,19 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LocalStrategy } from './local.strategy';
-import { AuthService } from '../auth.service';
+import { PasswordService } from '../services/password.service';
 import { UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { User } from '../../database/entities';
 
 describe('LocalStrategy', () => {
   let strategy: LocalStrategy;
-  let authService: jest.Mocked<AuthService>;
+  let passwordService: jest.Mocked<PasswordService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LocalStrategy,
         {
-          provide: AuthService,
+          provide: PasswordService,
           useValue: {
             validateUser: jest.fn(),
           },
@@ -22,7 +22,7 @@ describe('LocalStrategy', () => {
     }).compile();
 
     strategy = module.get<LocalStrategy>(LocalStrategy);
-    authService = module.get(AuthService);
+    passwordService = module.get(PasswordService);
   });
 
   it('should be defined', () => {
@@ -32,11 +32,11 @@ describe('LocalStrategy', () => {
   describe('validate', () => {
     it('should return user object if validation is successful', async () => {
       const user = { isEmailVerified: true } as User;
-      authService.validateUser.mockResolvedValue(user);
+      passwordService.validateUser.mockResolvedValue(user);
 
       const result = await strategy.validate('test@example.com', 'password');
 
-      expect(authService.validateUser).toHaveBeenCalledWith(
+      expect(passwordService.validateUser).toHaveBeenCalledWith(
         'test@example.com',
         'password'
       );
@@ -44,7 +44,7 @@ describe('LocalStrategy', () => {
     });
 
     it('should throw UnauthorizedException if validation fails', async () => {
-      authService.validateUser.mockResolvedValue(null);
+      passwordService.validateUser.mockResolvedValue(null);
 
       await expect(
         strategy.validate('test@example.com', 'password')
@@ -53,7 +53,7 @@ describe('LocalStrategy', () => {
 
     it('should throw ForbiddenException if email is not verified', async () => {
       const user = { isEmailVerified: false } as User;
-      authService.validateUser.mockResolvedValue(user);
+      passwordService.validateUser.mockResolvedValue(user);
 
       await expect(
         strategy.validate('test@example.com', 'password')

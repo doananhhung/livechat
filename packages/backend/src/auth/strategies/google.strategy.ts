@@ -1,8 +1,9 @@
+
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, VerifyCallback, Profile } from 'passport-google-oauth20';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AuthService } from '../auth.service';
+import { OAuthService } from '../services/oauth.service';
 
 /**
  * Passport strategy for authenticating users via Google OAuth 2.0.
@@ -14,7 +15,7 @@ import { AuthService } from '../auth.service';
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(
     private readonly configService: ConfigService,
-    private readonly authService: AuthService
+    private readonly oauthService: OAuthService
   ) {
     super({
       clientID: configService.get<string>('GOOGLE_CLIENT_ID') as string,
@@ -50,7 +51,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       avatarUrl: photos[0].value,
     };
 
-    const user = await this.authService.validateOAuthUser(googleProfile);
+    const user = await this.oauthService.validateOAuthUser(googleProfile);
     done(null, user);
   }
 }

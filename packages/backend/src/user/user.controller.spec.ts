@@ -1,12 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
+import { EmailChangeService } from './services/email-change.service';
 import { EmailChangeDto, UpdateUserDto } from '@live-chat/shared-dtos';
 import { User } from '../database/entities';
 
 describe('UserController', () => {
   let controller: UserController;
   let userService: jest.Mocked<UserService>;
+  let emailChangeService: jest.Mocked<EmailChangeService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -18,7 +20,14 @@ describe('UserController', () => {
             findOneById: jest.fn(),
             updateProfile: jest.fn(),
             deactivate: jest.fn(),
+          },
+        },
+        {
+          provide: EmailChangeService,
+          useValue: {
             requestEmailChange: jest.fn(),
+            getPendingEmailChange: jest.fn(),
+            cancelEmailChange: jest.fn(),
           },
         },
       ],
@@ -26,6 +35,7 @@ describe('UserController', () => {
 
     controller = module.get<UserController>(UserController);
     userService = module.get(UserService);
+    emailChangeService = module.get(EmailChangeService);
   });
 
   it('should be defined', () => {
@@ -87,14 +97,14 @@ describe('UserController', () => {
         newEmail: 'new@test.com',
         password: 'password',
       };
-      userService.requestEmailChange.mockResolvedValue({
+      emailChangeService.requestEmailChange.mockResolvedValue({
         message: 'Yêu cầu thay đổi email đã được gửi đến email mới',
         newEmail: emailChangeDto.newEmail,
       });
 
       const result = await controller.requestEmailChange(req, emailChangeDto);
 
-      expect(userService.requestEmailChange).toHaveBeenCalledWith(
+      expect(emailChangeService.requestEmailChange).toHaveBeenCalledWith(
         '1',
         emailChangeDto.newEmail,
         emailChangeDto.password
