@@ -1,12 +1,15 @@
+
 import {
   IsString,
   IsOptional,
-  IsObject,
   IsArray,
-  IsUrl,
+  IsFQDN,
   ArrayMinSize,
+  ValidateNested,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
+import { Type } from "class-transformer";
+import { WidgetSettingsDto } from "./widget-settings.dto";
 
 export class UpdateProjectDto {
   @ApiProperty({
@@ -24,17 +27,18 @@ export class UpdateProjectDto {
     required: false,
   })
   @IsOptional()
-  @IsObject()
-  widgetSettings?: object;
+  @ValidateNested()
+  @Type(() => WidgetSettingsDto)
+  widgetSettings?: WidgetSettingsDto;
 
   @ApiProperty({
     example: ["newdomain.com", "anothernew.com"],
-    description: "Updated list of whitelisted domains",
+    description: "Updated list of whitelisted domains (FQDNs only, no protocol)",
     required: false,
   })
   @IsOptional()
   @IsArray()
   @ArrayMinSize(1)
-  @IsUrl({}, { each: true })
+  @IsFQDN({}, { each: true, message: "Domains must be valid hostnames (e.g., example.com) without protocols (http://)." })
   whitelistedDomains?: string[];
 }

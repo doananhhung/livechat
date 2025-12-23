@@ -5,6 +5,8 @@ import { Client } from 'pg';
 import { ConfigService } from '@nestjs/config';
 import { REDIS_PUBLISHER_CLIENT } from '../redis/redis.module';
 import { Redis } from 'ioredis';
+import { OUTBOX_CHANNEL, NEW_MESSAGE_CHANNEL } from '../common/constants';
+import { OutboxPersistenceService } from './outbox.persistence.service';
 
 @Injectable()
 export class OutboxListenerService implements OnModuleInit, OnModuleDestroy {
@@ -14,7 +16,8 @@ export class OutboxListenerService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
-    @Inject(REDIS_PUBLISHER_CLIENT) private readonly redisPublisher: Redis
+    @Inject(REDIS_PUBLISHER_CLIENT) private readonly redisPublisher: Redis,
+    private readonly outboxPersistenceService: OutboxPersistenceService
   ) {}
 
   async onModuleInit() {
@@ -34,13 +37,13 @@ export class OutboxListenerService implements OnModuleInit, OnModuleDestroy {
 
       this.pgClient.on('notification', async (msg) => {
         this.logger.debug(`Received notification on channel: ${msg.channel}`);
-        if (msg.channel === 'outbox_channel') {
+        if (msg.channel === OUTBOX_CHANNEL) {
           await this.processOutboxEvents();
         }
       });
 
-      await this.pgClient.query('LISTEN outbox_channel');
-      this.logger.log('Successfully listening on "outbox_channel".');
+      await this.pgClient.query(`LISTEN ${OUTBOX_CHANNEL}`);
+      this.logger.log(`Successfully listening on "${OUTBOX_CHANNEL}".`);
 
       // Optional: Add a fallback poller for added robustness
       setInterval(() => this.processOutboxEvents(), 60000); // every 60 seconds
@@ -64,9 +67,10 @@ export class OutboxListenerService implements OnModuleInit, OnModuleDestroy {
     try {
       await queryRunner.startTransaction();
 
-      // Select and lock rows to prevent race conditions if you run multiple listeners
-      const events = await queryRunner.manager.query(
-        `SELECT * FROM outbox_events ORDER BY created_at ASC LIMIT 100 FOR UPDATE SKIP LOCKED`
+      // Use persistence service for data access
+      const events = await this.outboxPersistenceService.fetchAndLockUnprocessedEvents(
+        queryRunner.manager,
+        100
       );
 
       if (events.length === 0) {
@@ -78,17 +82,13 @@ export class OutboxListenerService implements OnModuleInit, OnModuleDestroy {
 
       for (const event of events) {
         await this.redisPublisher.publish(
-          'new_message_channel',
+          NEW_MESSAGE_CHANNEL,
           JSON.stringify(event.payload)
         );
       }
 
       const eventIds = events.map((e) => e.id);
-      // Use parameterized query for array inclusion
-      await queryRunner.manager.query(
-        `DELETE FROM outbox_events WHERE id = ANY($1)`,
-        [eventIds]
-      );
+      await this.outboxPersistenceService.deleteEvents(queryRunner.manager, eventIds);
 
       await queryRunner.commitTransaction();
       this.logger.log(

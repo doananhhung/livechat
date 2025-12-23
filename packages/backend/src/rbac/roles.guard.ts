@@ -1,3 +1,4 @@
+
 // src/rbac/roles.guard.ts
 
 import {
@@ -5,12 +6,15 @@ import {
   CanActivate,
   ExecutionContext,
   Logger,
+  Inject,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { User, ProjectMember } from '../database/entities';
 import { GlobalRole, ProjectRole } from '@live-chat/shared-types';
 import { ROLES_KEY } from './roles.decorator';
 import { EntityManager } from 'typeorm';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 // Defines the hierarchy of GLOBAL roles for system-level access
 // An Admin has all the permissions of a User
@@ -30,7 +34,8 @@ export class RolesGuard implements CanActivate {
 
   constructor(
     private reflector: Reflector,
-    private readonly entityManager: EntityManager
+    private readonly entityManager: EntityManager,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -104,9 +109,28 @@ export class RolesGuard implements CanActivate {
       return false;
     }
 
-    const membership = await this.entityManager.findOne(ProjectMember, {
-      where: { projectId: parseInt(projectId, 10), userId: user.id },
-    });
+    const cacheKey = `project_member:${projectId}:${user.id}`;
+    let membership = await this.cacheManager.get<ProjectMember>(cacheKey);
+
+    if (!membership) {
+      const parsedProjectId = parseInt(projectId, 10);
+      
+      // Validate that projectId is a valid number
+      if (isNaN(parsedProjectId)) {
+        this.logger.error(
+          `Access denied for user ${user.id}. Invalid projectId format: "${projectId}"`
+        );
+        return false;
+      }
+      
+      const found = await this.entityManager.findOne(ProjectMember, {
+        where: { projectId: parsedProjectId, userId: user.id },
+      });
+      membership = found ?? undefined;
+      if (membership) {
+        await this.cacheManager.set(cacheKey, membership, 60000); // Cache for 60 seconds
+      }
+    }
 
     if (!membership) {
       this.logger.warn(

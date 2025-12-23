@@ -1,10 +1,11 @@
+
 // src/projects/public-project.controller.ts
 import {
   Controller,
   Get,
   Param,
   Req,
-  ForbiddenException,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { type Request } from 'express';
@@ -14,12 +15,11 @@ export class PublicProjectController {
   constructor(private readonly projectService: ProjectService) {}
 
   @Get(':id/settings')
-  async getWidgetSettings(@Param('id') id: number, @Req() req: Request) {
+  async getWidgetSettings(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request
+  ) {
     const origin = req.headers.origin;
-    const settings = await this.projectService.getWidgetSettings(id, origin);
-    if (!settings) {
-      throw new ForbiddenException('Access from this origin is not allowed.');
-    }
-    return settings;
+    return this.projectService.getWidgetSettings(id, origin);
   }
 }

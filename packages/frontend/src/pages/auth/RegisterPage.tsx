@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useRegisterMutation } from "../../services/authApi";
@@ -13,6 +14,8 @@ import {
   type InvitationWithProject,
 } from "../../services/projectApi";
 import { ProjectRole } from "@live-chat/shared-types";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -133,6 +136,16 @@ const RegisterPage = () => {
       toast({
         title: "Lỗi",
         description: "Vui lòng điền đầy đủ thông tin.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Strict Email Validation
+    if (!EMAIL_REGEX.test(email.trim())) {
+      toast({
+        title: "Lỗi",
+        description: "Địa chỉ email không hợp lệ.",
         variant: "destructive",
       });
       return;

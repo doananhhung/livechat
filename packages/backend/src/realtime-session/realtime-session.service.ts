@@ -1,3 +1,4 @@
+
 // src/realtime-session/realtime-session.service.ts
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { type RedisClientType } from 'redis';
@@ -29,10 +30,23 @@ export class RealtimeSessionService {
     return this.redis.get(key);
   }
 
-  async deleteVisitorSession(visitorUid: string): Promise<void> {
-    this.logger.debug(`Deleting session for visitorUid: ${visitorUid}`);
+  /**
+   * Removes the session only if the stored socket ID matches the provided socket ID.
+   * This prevents a race condition where a new connection's session is accidentally
+   * deleted by the old connection's disconnect event.
+   */
+  async deleteVisitorSession(visitorUid: string, socketId: string): Promise<void> {
     const key = this.getKey(visitorUid);
-    await this.redis.del(key);
+    const currentSocketId = await this.redis.get(key);
+    
+    if (currentSocketId === socketId) {
+      this.logger.debug(`Deleting session for visitorUid: ${visitorUid} (Socket matched: ${socketId})`);
+      await this.redis.del(key);
+    } else {
+      this.logger.debug(
+        `Skipping session deletion for visitorUid: ${visitorUid}. Stored socket (${currentSocketId}) does not match disconnecting socket (${socketId}).`
+      );
+    }
   }
 
   private getCurrentUrlKey(visitorUid: string): string {

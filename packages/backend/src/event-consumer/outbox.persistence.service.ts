@@ -57,4 +57,36 @@ export class OutboxPersistenceService {
 
     return savedEvent;
   }
+
+  /**
+   * Fetches unprocessed outbox events with row-level locking to prevent race conditions.
+   * Uses `FOR UPDATE SKIP LOCKED` to allow concurrent processors.
+   *
+   * @param manager - The EntityManager from an active transaction
+   * @param limit - Maximum number of events to fetch
+   * @returns Array of unprocessed OutboxEvent entities
+   */
+  async fetchAndLockUnprocessedEvents(
+    manager: EntityManager,
+    limit: number = 100
+  ): Promise<OutboxEvent[]> {
+    return manager.query(
+      `SELECT * FROM outbox_events ORDER BY created_at ASC LIMIT $1 FOR UPDATE SKIP LOCKED`,
+      [limit]
+    );
+  }
+
+  /**
+   * Deletes outbox events by their IDs after successful processing.
+   *
+   * @param manager - The EntityManager from an active transaction
+   * @param eventIds - Array of event IDs to delete
+   */
+  async deleteEvents(manager: EntityManager, eventIds: string[]): Promise<void> {
+    if (eventIds.length === 0) return;
+
+    await manager.query(`DELETE FROM outbox_events WHERE id = ANY($1)`, [eventIds]);
+
+    this.logger.log(`Deleted ${eventIds.length} processed outbox events.`);
+  }
 }

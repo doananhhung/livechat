@@ -1,5 +1,5 @@
 import { IProject } from "./project.types";
-import { Visitor } from "./visitor.types"; // Need to create this too or define interface here
+import { Visitor } from "./visitor.types";
 
 export enum ConversationStatus {
   OPEN = "open",
@@ -8,15 +8,19 @@ export enum ConversationStatus {
 }
 
 export interface Conversation {
-  id: number;
+  /** Can be string when BigInt values are serialized from database */
+  id: number | string;
   projectId: number;
   project?: IProject;
   visitorId: number;
   visitor?: Visitor;
   lastMessageSnippet: string | null;
-  lastMessageTimestamp: Date | null;
+  /** Date on backend, string after JSON serialization on frontend */
+  lastMessageTimestamp: Date | string | null;
   status: ConversationStatus;
   unreadCount: number;
-  createdAt: Date;
-  updatedAt: Date;
+  /** Date on backend, string after JSON serialization on frontend */
+  createdAt: Date | string;
+  /** Date on backend, string after JSON serialization on frontend */
+  updatedAt: Date | string;
 }

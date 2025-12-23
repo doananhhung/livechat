@@ -51,7 +51,7 @@ export class InboxController {
   @Post('conversations/:id/messages')
   sendReply(
     @GetCurrentUser() user: User,
-    @Param('id', ParseIntPipe) conversationId: number,
+    @Param('id') conversationId: string,
     @Body() body: SendReplyDto
   ) {
     return this.messageService.sendAgentReply(user, conversationId, body.text);
@@ -60,7 +60,7 @@ export class InboxController {
   @Patch('conversations/:id')
   async updateConversation(
     @GetCurrentUser() user: User,
-    @Param('id', ParseIntPipe) conversationId: number,
+    @Param('id') conversationId: string,
     @Body() body: UpdateConversationDto
   ) {
     const userId = user.id;
@@ -81,7 +81,7 @@ export class InboxController {
   @Get('conversations/:id/messages')
   listMessages(
     @GetCurrentUser() user: User,
-    @Param('id', ParseIntPipe) conversationId: number,
+    @Param('id') conversationId: string,
     @Query() query: ListMessagesDto
   ) {
     return this.messageService.listByConversation(user, conversationId, query);
@@ -90,7 +90,7 @@ export class InboxController {
   @HttpCode(204) // No Content
   async handleAgentTyping(
     @GetCurrentUser() user: User,
-    @Param('id', ParseIntPipe) conversationId: number,
+    @Param('id') conversationId: string,
     @Body() body: AgentTypingDto
   ) {
     await this.conversationService.handleAgentTyping(

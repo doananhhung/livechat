@@ -26,6 +26,7 @@ export * from './reset-password.dto';
 export * from './send-reply.dto';
 export * from './set-password.dto';
 export * from './turn-on-2fa.dto';
+export * from './recovery-code.dto';
 
 export * from './update-conversation.dto';
 export * from './update-project.dto';

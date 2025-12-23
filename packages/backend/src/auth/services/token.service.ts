@@ -6,6 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager, LessThan } from 'typeorm';
 import { RefreshToken, User } from '../../database/entities';
 import * as bcrypt from 'bcrypt';
+import { BCRYPT_SALT_ROUNDS } from '../../common/constants/crypto.constants';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { UserStatus } from '@live-chat/shared-types';
 import { UserService } from '../../user/user.service';
@@ -120,7 +121,7 @@ export class TokenService {
         this.logger.log(`[SessionLimit] Removed ${tokensToRemove.length} oldest session(s) for user ${userId}`);
       }
 
-      const hashedToken = await bcrypt.hash(refreshToken, 12);
+      const hashedToken = await bcrypt.hash(refreshToken, BCRYPT_SALT_ROUNDS);
       let finalIpAddress = ipAddress;
       let finalUserAgent = userAgent;
 
@@ -129,17 +130,14 @@ export class TokenService {
         if (oldToken) {
           finalIpAddress = ipAddress || oldToken.ipAddress;
           finalUserAgent = userAgent || oldToken.userAgent;
-          await entityManager.remove(oldToken);
+          
+          // Grace Period Implementation:
+          // Instead of deleting the old token immediately, we set its expiration to 20 seconds from now.
+          // This allows concurrent requests (e.g., from multiple tabs or network retries) to still verify
+          // against this token before it disappears, preventing "infinite logout" loops.
+          oldToken.expiresAt = new Date(Date.now() + 20 * 1000);
+          await entityManager.save(oldToken);
         }
-      }
-
-      // Remove any existing token with exact same metadata to prevent duplicates
-      if (finalIpAddress && finalUserAgent) {
-        await entityManager.delete(RefreshToken, {
-          userId,
-          ipAddress: finalIpAddress,
-          userAgent: finalUserAgent,
-        });
       }
 
       const newRefreshToken = entityManager.create(RefreshToken, {

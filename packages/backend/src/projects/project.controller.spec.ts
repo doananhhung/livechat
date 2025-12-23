@@ -105,9 +105,9 @@ describe('ProjectController', () => {
         projectId: 1,
         role: ProjectRole.AGENT,
       };
-      await controller.createInvitation(createInvitationDto, mockUser);
+      await controller.createInvitation(1, createInvitationDto, mockUser);
       expect(invitationService.createInvitation).toHaveBeenCalledWith(
-        createInvitationDto,
+        { ...createInvitationDto, projectId: 1 },
         mockUser.id
       );
     });

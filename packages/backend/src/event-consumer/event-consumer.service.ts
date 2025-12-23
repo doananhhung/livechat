@@ -79,7 +79,7 @@ export class EventConsumerService {
         tempId,
         visitorUid,
         {
-          conversationId: conversation.id,
+          conversationId: Number(conversation.id),
           content: content,
           senderId: visitor.visitorUid,
           recipientId: `project_${projectId}`,

@@ -1,10 +1,19 @@
+
 // src/widget/services/socketService.ts
 import { io, Socket } from "socket.io-client";
 import { useChatStore } from "../store/useChatStore";
 import {
   MessageStatus,
   type WidgetMessageDto as Message,
+  WebSocketEvent,
+  type IdentifyPayload,
+  type SendMessagePayload,
+  type VisitorTypingPayload,
+  type UpdateContextPayload,
+  type AgentTypingPayload,
+  type MessageSentPayload
 } from "@live-chat/shared-types";
+
 // Socket.IO runs on the root domain, not /api/v1
 const SOCKET_URL = import.meta.env.VITE_API_BASE_URL?.replace("/api/v1", "");
 
@@ -146,10 +155,7 @@ class SocketService {
       setSessionReady(true); // Session is now ready
     };
 
-    const messageSentHandler = (data: {
-      tempId: string;
-      finalMessage: any;
-    }) => {
+    const messageSentHandler = (data: MessageSentPayload) => {
       logWithTime(this.instanceId, `📤 Message sent:`, data);
       const finalMessage = data.finalMessage;
       const correctedMessage: Message = {
@@ -188,10 +194,7 @@ class SocketService {
       }
     };
 
-    const agentIsTypingHandler = (data: {
-      agentName: string;
-      isTyping: boolean;
-    }) => {
+    const agentIsTypingHandler = (data: AgentTypingPayload) => {
       logWithTime(this.instanceId, `✍️ Agent isTyping event received:`, data);
       setAgentIsTyping(data.isTyping);
     };
@@ -201,20 +204,20 @@ class SocketService {
     this.socket.on("disconnect", disconnectHandler);
     this.socket.on("connect_error", connectErrorHandler);
     this.socket.on("reconnect_failed", reconnectFailedHandler);
-    this.socket.on("conversationHistory", conversationHistoryHandler);
-    this.socket.on("messageSent", messageSentHandler);
-    this.socket.on("agentReplied", agentRepliedHandler);
-    this.socket.on("agentIsTyping", agentIsTypingHandler);
+    this.socket.on(WebSocketEvent.CONVERSATION_HISTORY, conversationHistoryHandler);
+    this.socket.on(WebSocketEvent.MESSAGE_SENT, messageSentHandler);
+    this.socket.on(WebSocketEvent.AGENT_REPLIED, agentRepliedHandler);
+    this.socket.on(WebSocketEvent.AGENT_TYPING, agentIsTypingHandler);
 
     // Store handlers for cleanup
     this.eventHandlers.set("connect", connectHandler);
     this.eventHandlers.set("disconnect", disconnectHandler);
     this.eventHandlers.set("connect_error", connectErrorHandler);
     this.eventHandlers.set("reconnect_failed", reconnectFailedHandler);
-    this.eventHandlers.set("conversationHistory", conversationHistoryHandler);
-    this.eventHandlers.set("messageSent", messageSentHandler);
-    this.eventHandlers.set("agentReplied", agentRepliedHandler);
-    this.eventHandlers.set("agentIsTyping", agentIsTypingHandler);
+    this.eventHandlers.set(WebSocketEvent.CONVERSATION_HISTORY, conversationHistoryHandler);
+    this.eventHandlers.set(WebSocketEvent.MESSAGE_SENT, messageSentHandler);
+    this.eventHandlers.set(WebSocketEvent.AGENT_REPLIED, agentRepliedHandler);
+    this.eventHandlers.set(WebSocketEvent.AGENT_TYPING, agentIsTypingHandler);
   }
 
   // --- Helper to remove all listeners (prevent duplicates) ---
@@ -247,7 +250,8 @@ class SocketService {
   public emitSendMessage(content: string, tempId: string): void {
     if (this.socket?.connected) {
       logWithTime(this.instanceId, `📤 Emitting sendMessage`);
-      this.socket.emit("sendMessage", { content, tempId });
+      const payload: SendMessagePayload = { content, tempId };
+      this.socket.emit(WebSocketEvent.SEND_MESSAGE, payload);
     } else {
       errorWithTime(
         this.instanceId,
@@ -259,7 +263,8 @@ class SocketService {
   public emitVisitorIsTyping(isTyping: boolean): void {
     if (this.socket?.connected) {
       logWithTime(this.instanceId, `📤 Emitting visitorIsTyping`);
-      this.socket.emit("visitorIsTyping", { isTyping });
+      const payload: VisitorTypingPayload = { isTyping };
+      this.socket.emit(WebSocketEvent.VISITOR_TYPING, payload);
     } else {
       errorWithTime(
         this.instanceId,
@@ -271,7 +276,8 @@ class SocketService {
   public emitIdentify(projectId: string, visitorUid: string): void {
     if (this.socket?.connected) {
       logWithTime(this.instanceId, `📤 Emitting identify`);
-      this.socket.emit("identify", { projectId, visitorUid });
+      const payload: IdentifyPayload = { projectId: Number(projectId), visitorUid };
+      this.socket.emit(WebSocketEvent.IDENTIFY, payload);
     } else {
       errorWithTime(
         this.instanceId,
@@ -285,7 +291,8 @@ class SocketService {
     const now = Date.now();
     if (this.socket?.connected) {
       logWithTime(this.instanceId, `📤 Emitting updateContext`);
-      this.socket.emit("updateContext", { currentUrl });
+      const payload: UpdateContextPayload = { currentUrl };
+      this.socket.emit(WebSocketEvent.UPDATE_CONTEXT, payload);
       this.lastContextUpdate = now;
     } else {
       errorWithTime(

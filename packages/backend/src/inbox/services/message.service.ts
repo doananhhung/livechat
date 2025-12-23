@@ -67,7 +67,7 @@ export class MessageService {
    */
   async sendAgentReply(
     user: User,
-    conversationId: number,
+    conversationId: string,
     replyText: string
   ): Promise<Message> {
     const savedMessage = await this.entityManager.transaction(
@@ -132,7 +132,7 @@ export class MessageService {
 
   async listByConversation(
     user: User,
-    conversationId: number,
+    conversationId: string,
     query: ListMessagesDto
   ): Promise<any> {
     const { limit = 20, cursor } = query;

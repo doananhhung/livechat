@@ -92,10 +92,10 @@ describe('InboxController', () => {
   describe('sendReply', () => {
     it('should call messageService.sendAgentReply', async () => {
       const body: SendReplyDto = { text: 'Hello' };
-      await controller.sendReply(mockUser, 1, body);
+      await controller.sendReply(mockUser, '1', body);
       expect(messageService.sendAgentReply).toHaveBeenCalledWith(
         mockUser,
-        1,
+        '1',
         'Hello'
       );
     });
@@ -104,24 +104,24 @@ describe('InboxController', () => {
   describe('updateConversation', () => {
     it('should call conversationService.updateStatus', async () => {
       const body: UpdateConversationDto = { status: ConversationStatus.CLOSED };
-      await controller.updateConversation(mockUser, 1, body);
+      await controller.updateConversation(mockUser, '1', body);
       expect(conversationService.updateStatus).toHaveBeenCalledWith(
         mockUser.id,
-        1,
+        '1',
         ConversationStatus.CLOSED
       );
     });
 
     it('should call conversationService.markAsRead', async () => {
       const body: UpdateConversationDto = { read: true };
-      await controller.updateConversation(mockUser, 1, body);
-      expect(conversationService.markAsRead).toHaveBeenCalledWith(mockUser.id, 1);
+      await controller.updateConversation(mockUser, '1', body);
+      expect(conversationService.markAsRead).toHaveBeenCalledWith(mockUser.id, '1');
     });
 
     it('should throw an error if no valid body is provided', async () => {
       const body = {};
       await expect(
-        controller.updateConversation(mockUser, 1, body)
+        controller.updateConversation(mockUser, '1', body)
       ).rejects.toThrow();
     });
   });
@@ -129,10 +129,10 @@ describe('InboxController', () => {
   describe('listMessages', () => {
     it('should call messageService.listByConversation', async () => {
       const query: ListMessagesDto = {};
-      await controller.listMessages(mockUser, 1, query);
+      await controller.listMessages(mockUser, '1', query);
       expect(messageService.listByConversation).toHaveBeenCalledWith(
         mockUser,
-        1,
+        '1',
         query
       );
     });
@@ -141,10 +141,10 @@ describe('InboxController', () => {
   describe('handleAgentTyping', () => {
     it('should call conversationService.handleAgentTyping', async () => {
       const body: AgentTypingDto = { isTyping: true };
-      await controller.handleAgentTyping(mockUser, 1, body);
+      await controller.handleAgentTyping(mockUser, '1', body);
       expect(conversationService.handleAgentTyping).toHaveBeenCalledWith(
         mockUser,
-        1,
+        '1',
         true
       );
     });

@@ -1,4 +1,10 @@
-import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
+
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import {
   UpdateProjectDto,
@@ -122,12 +128,12 @@ export class ProjectService {
   public async getWidgetSettings(
     id: number,
     origin: string | undefined
-  ): Promise<WidgetSettingsDto | null> {
+  ): Promise<WidgetSettingsDto> {
     const project = await this.entityManager.findOneBy(Project, { id });
 
     if (!project) {
       this.logger.warn(`Project with ID ${id} not found.`);
-      return null;
+      throw new NotFoundException(`Project with ID ${id} not found.`);
     }
 
     // Start of new "fail-closed" logic
@@ -135,7 +141,7 @@ export class ProjectService {
       this.logger.warn(
         `Request for project ${id} is missing an Origin header. Access denied.`
       );
-      return null;
+      throw new ForbiddenException('Access from this origin is not allowed.');
     }
 
     if (
@@ -145,22 +151,29 @@ export class ProjectService {
       this.logger.warn(
         `Project ${id} has no whitelisted domains configured. Access denied for origin ${origin}.`
       );
-      return null;
+      throw new ForbiddenException('Access from this origin is not allowed.');
     }
     // End of new "fail-closed" logic
 
     this.logger.log(`Validating origin: ${origin} for project ${id}`);
-    const originUrl = new URL(origin);
-    const originDomain = originUrl.hostname;
+    
+    let originDomain: string;
+    try {
+      const originUrl = new URL(origin);
+      originDomain = originUrl.hostname;
+    } catch (error) {
+      this.logger.warn(`Failed to parse origin URL: ${origin}`);
+      throw new ForbiddenException('Invalid Origin header.');
+    }
 
     if (!project.whitelistedDomains.includes(originDomain)) {
       this.logger.warn(
         `Origin ${originDomain} is not whitelisted for project ${id}.`
       );
-      return null;
+      throw new ForbiddenException('Access from this origin is not allowed.');
     }
 
-    return project.widgetSettings as WidgetSettingsDto;
+    return (project.widgetSettings ?? {}) as WidgetSettingsDto;
   }
 
   async updateWidgetSettings(

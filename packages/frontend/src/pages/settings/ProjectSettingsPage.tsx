@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as projectApi from "../../services/projectApi";
 import { useState, useEffect } from "react";
@@ -246,7 +247,11 @@ export const ProjectSettingsPage = () => {
                       value={headerText}
                       onChange={(e) => setHeaderText(e.target.value)}
                       disabled={updateWidgetMutation.isPending}
+                      maxLength={50}
                     />
+                    <p className="text-xs text-muted-foreground mt-1 text-right">
+                      {headerText.length}/50
+                    </p>
                   </div>
 
                   <div>
@@ -268,6 +273,7 @@ export const ProjectSettingsPage = () => {
                         disabled={updateWidgetMutation.isPending}
                         className="flex-1"
                         placeholder="#0066FF"
+                        pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
                       />
                     </div>
                   </div>
@@ -295,7 +301,11 @@ export const ProjectSettingsPage = () => {
                       value={welcomeMessage}
                       onChange={(e) => setWelcomeMessage(e.target.value)}
                       disabled={updateWidgetMutation.isPending}
+                      maxLength={200}
                     />
+                    <p className="text-xs text-muted-foreground mt-1 text-right">
+                      {welcomeMessage.length}/200
+                    </p>
                   </div>
 
                   <div>
@@ -324,7 +334,7 @@ export const ProjectSettingsPage = () => {
                       URL Logo công ty
                     </label>
                     <Input
-                      type="text"
+                      type="url"
                       placeholder="https://example.com/logo.png"
                       value={companyLogoUrl}
                       onChange={(e) => setCompanyLogoUrl(e.target.value)}
@@ -342,7 +352,11 @@ export const ProjectSettingsPage = () => {
                       value={agentDisplayName}
                       onChange={(e) => setAgentDisplayName(e.target.value)}
                       disabled={updateWidgetMutation.isPending}
+                      maxLength={100}
                     />
+                    <p className="text-xs text-muted-foreground mt-1 text-right">
+                      {agentDisplayName.length}/100
+                    </p>
                   </div>
 
                   <div className="flex justify-end pt-4 border-t">

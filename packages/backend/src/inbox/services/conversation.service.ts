@@ -35,7 +35,7 @@ export class ConversationService {
     private readonly conversationPersistenceService: ConversationPersistenceService
   ) {}
 
-  async findById(id: number): Promise<Conversation> {
+  async findById(id: string): Promise<Conversation> {
     const conversation = await this.entityManager.findOne(Conversation, {
       where: { id },
     });
@@ -74,7 +74,7 @@ export class ConversationService {
    * @param manager - The EntityManager from the transaction.
    */
   async updateLastMessage(
-    conversationId: number,
+    conversationId: string,
     lastMessageSnippet: string,
     lastMessageTimestamp: Date,
     manager: EntityManager
@@ -161,7 +161,7 @@ export class ConversationService {
    */
   async updateStatus(
     userId: string,
-    conversationId: number,
+    conversationId: string,
     status: ConversationStatus
   ): Promise<Conversation> {
     return this.entityManager.transaction(
@@ -199,7 +199,7 @@ export class ConversationService {
    */
   async markAsRead(
     userId: string,
-    conversationId: number
+    conversationId: string
   ): Promise<Conversation> {
     return this.entityManager.transaction(
       async (transactionalEntityManager) => {
@@ -278,7 +278,7 @@ export class ConversationService {
    */
   async handleAgentTyping(
     user: User,
-    conversationId: number,
+    conversationId: string,
     isTyping: boolean
   ): Promise<void> {
     // Step 1: Check permissions and get visitor information

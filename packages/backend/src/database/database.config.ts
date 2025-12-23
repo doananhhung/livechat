@@ -44,6 +44,7 @@ export const createTypeOrmConfig = (configService: ConfigService) => {
   const host = configService.get<string>('PSQL_HOST');
   const username = configService.get<string>('PSQL_USER');
   const database = configService.get<string>('PSQL_DATABASE');
+  const nodeEnv = configService.get<string>('NODE_ENV');
 
   if (!host || !username || !database) {
     throw new Error(
@@ -60,7 +61,8 @@ export const createTypeOrmConfig = (configService: ConfigService) => {
     database,
     entities: DATABASE_ENTITIES,
     namingStrategy: new SnakeNamingStrategy(),
-    synchronize: false,
+    // Enable synchronize for test environment only (auto-creates schema)
+    synchronize: nodeEnv === 'test',
   };
 };
 

@@ -17,7 +17,7 @@ import { TwoFactorAuthenticationService } from './two-factor-authentication.serv
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request.interface';
 import { UserService } from '../../user/user.service';
-import { TurnOn2faDto } from '@live-chat/shared-dtos';
+import { TurnOn2faDto, RecoveryCodeDto } from '@live-chat/shared-dtos';
 import { EncryptionService } from '../../common/services/encryption.service';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
@@ -73,7 +73,7 @@ export class TwoFactorAuthenticationController {
     });
 
     const qrCodeDataURL = await this.twoFactorAuthService.generateQrCodeDataURL(otpAuthUrl);
-    return res.json({ qrCodeDataURL });
+    return res.json({ qrCodeDataURL, otpAuthUrl });
   }
 
   /**
@@ -212,6 +212,71 @@ export class TwoFactorAuthenticationController {
     res.clearCookie('2fa_secret');
 
     // Return full tokens, setting the refresh token in the cookie
+    res.json({ accessToken, user: userResult });
+  }
+
+  /**
+   * Authenticates a user using a recovery code (backup code).
+   * This is used when the user has lost access to their authenticator app.
+   *
+   * @param req - The request object containing partial user information.
+   * @param body - The DTO containing the recovery code.
+   * @param res - The response object to set cookies and return tokens.
+   */
+  @Post('recover')
+  @UseGuards(AuthGuard('2fa-partial'))
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Recover account using a backup code' })
+  @ApiBody({ type: TurnOn2faDto })
+  @ApiResponse({ status: 200, description: 'Recovery successful, tokens issued.' })
+  @ApiResponse({ status: 401, description: 'Invalid recovery code.' })
+  async recover(
+    @Req() req: TwoFactorRequest,
+    @Body() body: RecoveryCodeDto,
+    @Res() res
+  ) {
+    const ipAddress = req.ip;
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    const userId = req.user.sub;
+
+    const isValid = await this.userSecurityService.verifyAndConsumeRecoveryCode(userId, body.code);
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid recovery code');
+    }
+
+    const user = await this.userService.findOneById(userId);
+
+    const data = await this.loginService.loginAfter2FA(
+      user,
+      ipAddress,
+      userAgent
+    );
+    const { accessToken, refreshToken, user: userResult } = data;
+
+    const refreshTokenExpiresIn = this.configService.get<string>(
+      'JWT_REFRESH_EXPIRES_IN'
+    ) as string;
+    const refreshTokenExpiryDays = parseInt(
+      refreshTokenExpiresIn.slice(0, -1),
+      10
+    );
+
+    // Set the refresh token in an HttpOnly cookie
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      expires: new Date(
+        Date.now() + refreshTokenExpiryDays * 24 * 60 * 60 * 1000
+      ),
+    });
+
+    // Clear the temporary cookies
+    res.clearCookie('2fa_partial_token');
+    res.clearCookie('2fa_secret');
+
+    // Return full tokens
     res.json({ accessToken, user: userResult });
   }
 

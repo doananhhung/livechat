@@ -49,7 +49,7 @@ export class ConversationPersistenceService {
    * @param manager - The EntityManager from the transaction.
    */
   async updateLastMessage(
-    conversationId: number,
+    conversationId: string,
     lastMessageSnippet: string,
     lastMessageTimestamp: Date,
     manager: EntityManager

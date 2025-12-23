@@ -6,6 +6,7 @@ import { GlobalRole, ProjectRole } from '@live-chat/shared-types';
 import { User } from '../database/entities';
 import { ROLES_KEY } from './roles.decorator';
 import { EntityManager } from 'typeorm';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 describe('RolesGuard', () => {
   let guard: RolesGuard;
@@ -27,6 +28,13 @@ describe('RolesGuard', () => {
           provide: EntityManager,
           useValue: {
             findOne: jest.fn(),
+          },
+        },
+        {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn().mockResolvedValue(null),
+            set: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],

@@ -11,6 +11,7 @@ import {
 import { ScreenshotService } from './screenshot.service';
 import { URL } from 'url';
 import * as ipaddr from 'ipaddr.js';
+import * as dns from 'dns';
 
 /**
  * Blocklist of hostnames that should never be accessed.
@@ -27,18 +28,18 @@ const BLOCKED_HOSTNAMES = new Set([
  * Check if an IP address (IPv4 or IPv6) is in a private/reserved range.
  * Uses ipaddr.js for proper parsing of both IPv4 and IPv6.
  *
- * @param hostname - The hostname or IP address to check
+ * @param ip - The IP address to check
  * @returns true if the IP is private/reserved and should be blocked
  */
-function isPrivateOrReservedIP(hostname: string): boolean {
+function isPrivateOrReservedIP(ip: string): boolean {
   // Try to parse as IP address
   let addr: ipaddr.IPv4 | ipaddr.IPv6;
   try {
     // Handle bracketed IPv6 addresses like [::1]
-    const cleanHostname = hostname.replace(/^\[|\]$/g, '');
-    addr = ipaddr.parse(cleanHostname);
+    const cleanIP = ip.replace(/^\[|\]$/g, '');
+    addr = ipaddr.parse(cleanIP);
   } catch {
-    // Not a valid IP address - could be a hostname, skip IP check
+    // Not a valid IP address
     return false;
   }
 
@@ -57,6 +58,19 @@ function isPrivateOrReservedIP(hostname: string): boolean {
   ]);
 
   return blockedRanges.has(range);
+}
+
+/**
+ * Resolves a hostname to an IP address.
+ * Returns null if resolution fails.
+ */
+async function resolveHostname(hostname: string): Promise<string | null> {
+  try {
+    const { address } = await dns.promises.lookup(hostname);
+    return address;
+  } catch {
+    return null;
+  }
 }
 
 @Controller('utils')
@@ -94,20 +108,25 @@ export class ScreenshotController {
       );
     }
 
-    // --- 2. SSRF Protection: Block internal/private addresses ---
-    const hostname = targetUrl.hostname.toLowerCase();
+    // --- 2. SSRF Protection: Block known bad hostnames ---
+    const originalHostname = targetUrl.hostname.toLowerCase();
 
-    if (BLOCKED_HOSTNAMES.has(hostname)) {
-      this.logger.warn(`SSRF attempt blocked - blocked hostname: ${hostname}`);
+    if (BLOCKED_HOSTNAMES.has(originalHostname)) {
+      this.logger.warn(`SSRF attempt blocked - blocked hostname: ${originalHostname}`);
       throw new HttpException(
         'Access to this URL is not allowed',
         HttpStatus.FORBIDDEN
       );
     }
 
-    if (isPrivateOrReservedIP(hostname)) {
+    // --- 3. DNS Rebinding Protection ---
+    // Resolve hostname to IP BEFORE making the request, then validate the resolved IP.
+    // This prevents attackers from using domains like "evil.com" that resolve to 127.0.0.1
+    
+    // First check if hostname is already an IP address
+    if (isPrivateOrReservedIP(originalHostname)) {
       this.logger.warn(
-        `SSRF attempt blocked - private/reserved IP: ${hostname}`
+        `SSRF attempt blocked - private/reserved IP in URL: ${originalHostname}`
       );
       throw new HttpException(
         'Access to private or reserved IP addresses is not allowed',
@@ -115,12 +134,46 @@ export class ScreenshotController {
       );
     }
 
-    const finalUrl = targetUrl.toString();
-    this.logger.debug(`Processing screenshot for final URL: ${finalUrl}`);
+    // Resolve the hostname to an IP address
+    const resolvedIP = await resolveHostname(originalHostname);
+    
+    if (!resolvedIP) {
+      this.logger.warn(`DNS resolution failed for hostname: ${originalHostname}`);
+      throw new HttpException(
+        'Could not resolve the hostname. Please check the URL.',
+        HttpStatus.BAD_REQUEST
+      );
+    }
 
-    // --- 3. Screenshot Generation and Response ---
+    // Validate the resolved IP against our blocklist
+    if (isPrivateOrReservedIP(resolvedIP)) {
+      this.logger.warn(
+        `SSRF attempt blocked - hostname ${originalHostname} resolved to private/reserved IP: ${resolvedIP}`
+      );
+      throw new HttpException(
+        'Access to private or reserved IP addresses is not allowed',
+        HttpStatus.FORBIDDEN
+      );
+    }
+
+    // --- 4. Construct safe URL with IP and original Host header ---
+    // Rewrite URL to use the resolved IP instead of hostname
+    const safeUrl = new URL(targetUrl.toString());
+    safeUrl.hostname = resolvedIP;
+    const finalUrl = safeUrl.toString();
+
+    // Pass the original Host header so the target server responds correctly
+    const headers: Record<string, string> = {
+      Host: originalHostname,
+    };
+
+    this.logger.debug(
+      `Processing screenshot: original=${targetUrl.toString()}, resolved=${finalUrl}, Host=${originalHostname}`
+    );
+
+    // --- 5. Screenshot Generation and Response ---
     try {
-      const buffer = await this.screenshotService.getScreenshot(finalUrl);
+      const buffer = await this.screenshotService.getScreenshot(finalUrl, headers);
       return new StreamableFile(buffer);
     } catch (error) {
       this.logger.error(

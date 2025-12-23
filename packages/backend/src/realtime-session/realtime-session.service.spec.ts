@@ -57,12 +57,29 @@ describe('RealtimeSessionService', () => {
   });
 
   describe('deleteVisitorSession', () => {
-    it('should delete a visitor session from Redis', async () => {
+    it('should delete a visitor session from Redis if socketId matches', async () => {
       const visitorUid = 'visitor-123';
+      const socketId = 'socket-abc';
       const expectedKey = `session:visitor:${visitorUid}`;
-      await service.deleteVisitorSession(visitorUid);
+      redisClient.get.mockResolvedValue(socketId);
+      
+      await service.deleteVisitorSession(visitorUid, socketId);
 
+      expect(redisClient.get).toHaveBeenCalledWith(expectedKey);
       expect(redisClient.del).toHaveBeenCalledWith(expectedKey);
+    });
+
+    it('should NOT delete a visitor session if socketId does not match', async () => {
+      const visitorUid = 'visitor-123';
+      const oldSocketId = 'socket-abc';
+      const newSocketId = 'socket-xyz';
+      const expectedKey = `session:visitor:${visitorUid}`;
+      redisClient.get.mockResolvedValue(newSocketId);
+      
+      await service.deleteVisitorSession(visitorUid, oldSocketId);
+
+      expect(redisClient.get).toHaveBeenCalledWith(expectedKey);
+      expect(redisClient.del).not.toHaveBeenCalled();
     });
   });
 

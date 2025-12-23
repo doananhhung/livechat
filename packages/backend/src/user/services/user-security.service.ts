@@ -4,6 +4,7 @@ import { EntityManager } from 'typeorm';
 import { User, TwoFactorRecoveryCode } from '../../database/entities';
 import { EncryptionService } from '../../common/services/encryption.service';
 import * as bcrypt from 'bcrypt';
+import { BCRYPT_SALT_ROUNDS } from '../../common/constants/crypto.constants';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -32,7 +33,7 @@ export class UserSecurityService {
       const hashedCodes = await Promise.all(
         plaintextRecoveryCodes.map(async (code) => ({
           userId,
-          hashedCode: await bcrypt.hash(code, 12),
+          hashedCode: await bcrypt.hash(code, BCRYPT_SALT_ROUNDS),
           isUsed: false,
         }))
       );
@@ -64,6 +65,31 @@ export class UserSecurityService {
       }
 
       return user;
+    });
+  }
+
+  /**
+   * Verifies a recovery code and marks it as used if valid.
+   * This operation is atomic.
+   */
+  async verifyAndConsumeRecoveryCode(userId: string, code: string): Promise<boolean> {
+    return this.entityManager.transaction(async (manager) => {
+      // Fetch all unused codes for the user
+      const recoveryCodes = await manager.find(TwoFactorRecoveryCode, {
+        where: { userId, isUsed: false },
+      });
+
+      for (const recoveryCode of recoveryCodes) {
+        const isMatch = await bcrypt.compare(code, recoveryCode.hashedCode);
+        if (isMatch) {
+          // Burn the code
+          recoveryCode.isUsed = true;
+          await manager.save(recoveryCode);
+          return true;
+        }
+      }
+
+      return false;
     });
   }
 }

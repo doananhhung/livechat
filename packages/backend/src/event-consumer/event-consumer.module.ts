@@ -35,6 +35,7 @@ export const LIVE_CHAT_EVENTS_QUEUE = 'live-chat-events-queue';
         connection: {
           host: configService.get('REDIS_HOST') || 'localhost',
           port: parseInt(configService.get('REDIS_PORT') || '6379', 10),
+          db: parseInt(configService.get('REDIS_DB') || '0', 10),
         },
       }),
       inject: [ConfigService],

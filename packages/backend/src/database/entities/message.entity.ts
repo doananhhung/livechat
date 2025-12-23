@@ -8,12 +8,12 @@ import {
   Index,
 } from "typeorm";
 import { Conversation } from "./conversation.entity";
-import { MessageStatus } from "@live-chat/shared-types";
+import { MessageStatus, Attachment } from "@live-chat/shared-types";
 
 @Entity("messages")
 export class Message {
   @PrimaryGeneratedColumn("increment", { type: "bigint" })
-  id: number | string;
+  id: string;
 
   @Column({ type: "bigint", name: "conversation_id" })
   conversationId: number;
@@ -28,7 +28,7 @@ export class Message {
   content: string | null;
 
   @Column({ type: "jsonb", nullable: true })
-  attachments: any | null;
+  attachments: Attachment[] | null;
 
   @Column({ type: "varchar", name: "sender_id" })
   senderId: string;

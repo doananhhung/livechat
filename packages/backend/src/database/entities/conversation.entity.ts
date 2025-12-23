@@ -22,7 +22,7 @@ export enum ConversationStatus {
 @Entity("conversations")
 export class Conversation {
   @PrimaryGeneratedColumn("increment", { type: "bigint" })
-  id: number;
+  id: string;
 
   @ManyToOne(() => Project, (project) => project.conversations, {
     onDelete: "CASCADE",

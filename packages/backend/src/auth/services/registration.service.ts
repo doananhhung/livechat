@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { UserService } from '../../user/user.service';
 import * as bcrypt from 'bcrypt';
+import { BCRYPT_SALT_ROUNDS } from '../../common/constants/crypto.constants';
 import * as crypto from 'crypto';
 import {
   RegisterDto,
@@ -39,7 +40,7 @@ export class RegistrationService {
         throw new ConflictException('Email này đã được sử dụng.');
       }
 
-      const passwordHash = await bcrypt.hash(registerDto.password, 12);
+      const passwordHash = await bcrypt.hash(registerDto.password, BCRYPT_SALT_ROUNDS);
 
       const newUser = await entityManager.save(User, {
         email: registerDto.email,

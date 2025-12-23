@@ -14,10 +14,12 @@ export class CreateInvitationDto {
 
   @ApiProperty({
     example: 1,
-    description: "ID of the project to invite the user to",
+    description: "ID of the project to invite the user to (optional in body, used from route params)",
+    required: false,
   })
   @IsInt()
-  projectId: number;
+  @IsOptional()
+  projectId?: number;
 
   @ApiProperty({
     example: ProjectRole.AGENT,

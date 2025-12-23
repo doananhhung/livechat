@@ -57,6 +57,7 @@ describe('EventsGateway', () => {
           provide: ProjectService,
           useValue: {
             findByProjectId: jest.fn(),
+            validateProjectMembership: jest.fn().mockResolvedValue({}),
           },
         },
         {
@@ -97,7 +98,7 @@ describe('EventsGateway', () => {
       gateway.handleDisconnect(client);
       expect(
         realtimeSessionService.deleteVisitorSession
-      ).toHaveBeenCalledWith('visitor-123');
+      ).toHaveBeenCalledWith('visitor-123', 'socket-id');
     });
   });
 
@@ -173,8 +174,9 @@ describe('EventsGateway', () => {
   });
 
   describe('handleJoinProjectRoom', () => {
-    it('should make the client join the project room', () => {
-      gateway.handleJoinProjectRoom(client, { projectId: 1 });
+    it('should make the client join the project room', async () => {
+      client.data.user = { id: 'user-1', email: 'test@test.com' };
+      await gateway.handleJoinProjectRoom(client, { projectId: 1 });
       expect(client.join).toHaveBeenCalledWith('project:1');
     });
   });

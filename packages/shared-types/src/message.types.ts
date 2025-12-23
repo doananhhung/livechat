@@ -1,3 +1,5 @@
+import { Attachment } from "./attachment.types";
+
 export enum MessageStatus {
   SENDING = "sending",
   SENT = "sent",
@@ -13,8 +15,9 @@ export interface Message {
   userId?: string;
   content: string;
   contentType: string; // 'text' | 'image' etc
-  attachments?: any;
+  attachments?: Attachment[];
   fromCustomer: boolean;
-  createdAt: Date;
+  /** Date on backend, string after JSON serialization on frontend */
+  createdAt: Date | string;
   status: MessageStatus;
 }

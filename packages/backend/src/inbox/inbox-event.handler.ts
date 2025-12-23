@@ -1,3 +1,4 @@
+
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { VisitorIdentifiedEvent, VisitorMessageReceivedEvent } from './events';
@@ -7,7 +8,7 @@ import { RealtimeSessionService } from '../realtime-session/realtime-session.ser
 import { BullMqProducerService } from '../event-producer/bullmq-producer.service';
 import { EventsGateway } from '../gateway/events.gateway';
 import { EntityManager } from 'typeorm';
-import { WorkerEventTypes } from '@live-chat/shared-types';
+import { WorkerEventTypes, WebSocketEvent, MessageSentPayload } from '@live-chat/shared-types';
 
 /**
  * Expected payload structure from Redis pub/sub channel.
@@ -172,22 +173,25 @@ export class InboxEventHandlerService {
       this.logger.debug(
         `message for frontend: ${JSON.stringify(messageForFrontend)}`
       );
-      if (visitorSocketId)
+      
+      if (visitorSocketId) {
+        const payload: MessageSentPayload = { tempId, finalMessage: messageForFrontend };
         this.eventsGateway.server
           .to(visitorSocketId)
-          .emit('messageSent', { tempId, finalMessage: messageForFrontend });
+          .emit(WebSocketEvent.MESSAGE_SENT, payload);
+      }
 
       const conversation = await this.conversationService.findById(
-        message.conversationId
+        String(message.conversationId)
       );
 
       if (conversation && conversation.projectId) {
         const projectId = conversation.projectId;
         const roomName = `project:${projectId}`;
 
-        this.eventsGateway.server.to(roomName).emit('newMessage', message);
+        this.eventsGateway.server.to(roomName).emit(WebSocketEvent.NEW_MESSAGE, message);
 
-        this.logger.log(`Emitted 'newMessage' to room: ${roomName}`);
+        this.logger.log(`Emitted '${WebSocketEvent.NEW_MESSAGE}' to room: ${roomName}`);
       }
     } catch (error) {
       this.logger.error('Error processing message from Redis:', error);

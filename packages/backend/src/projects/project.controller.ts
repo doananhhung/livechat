@@ -76,13 +76,14 @@ export class ProjectController {
   // Invitation endpoints
   @Roles(ProjectRole.MANAGER)
   // @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 invitations per minute - DISABLED FOR TESTING
-  @Post('invitations')
+  @Post(':projectId/invitations')
   createInvitation(
+    @Param('projectId', ParseIntPipe) projectId: number,
     @Body() createInvitationDto: CreateInvitationDto,
     @GetCurrentUser() user: User
   ) {
     return this.invitationService.createInvitation(
-      createInvitationDto,
+      { ...createInvitationDto, projectId },
       user.id
     );
   }

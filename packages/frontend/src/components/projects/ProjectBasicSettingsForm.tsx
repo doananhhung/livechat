@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X, Plus } from "lucide-react";
@@ -11,6 +12,11 @@ import { type ProjectWithRole } from "@live-chat/shared-types";
 interface ProjectBasicSettingsFormProps {
   project: ProjectWithRole;
 }
+
+// Regex for FQDN (Fully Qualified Domain Name) validation
+// Allows: example.com, sub.example.com, localhost
+// Disallows: http://example.com, example.com/path
+const HOSTNAME_REGEX = /^(?!:\/\/)([a-zA-Z0-9-_]+\.)*[a-zA-Z0-9][a-zA-Z0-9-_]+\.[a-zA-Z]{2,11}?$/;
 
 export const ProjectBasicSettingsForm = ({
   project,
@@ -85,6 +91,22 @@ export const ProjectBasicSettingsForm = ({
       return;
     }
 
+    // Validate domains format
+    const invalidDomains = finalDomains.filter(
+      (domain) => !HOSTNAME_REGEX.test(domain)
+    );
+
+    if (invalidDomains.length > 0) {
+      toast({
+        title: "Lỗi định dạng tên miền",
+        description: `Các tên miền sau không hợp lệ (vui lòng xóa http:// hoặc https://): ${invalidDomains.join(
+          ", "
+        )}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     updateMutation.mutate({
       name: trimmedName,
       whitelistedDomains: finalDomains,
@@ -115,7 +137,7 @@ export const ProjectBasicSettingsForm = ({
           <span className="text-destructive">*</span>
         </label>
         <p className="text-xs text-muted-foreground mb-3">
-          Chỉ các trang web từ các tên miền này mới có thể sử dụng widget
+          Chỉ các trang web từ các tên miền này mới có thể sử dụng widget (VD: example.com)
         </p>
         <div className="space-y-2">
           {whitelistedDomains.map((domain, index) => (

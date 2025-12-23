@@ -1,3 +1,4 @@
+
 // src/contexts/SocketContext.tsx
 import {
   createContext,
@@ -9,7 +10,7 @@ import {
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "../stores/authStore";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Message } from "@live-chat/shared-types";
+import { type Message, WebSocketEvent, type VisitorContextUpdatedPayload, type VisitorTypingBroadcastPayload } from "@live-chat/shared-types";
 import { useTypingStore } from "../stores/typingStore";
 import { useProjectStore } from "../stores/projectStore";
 import { useLocation } from "react-router-dom";
@@ -80,17 +81,11 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       }
     };
 
-    const handleVisitorTyping = (payload: {
-      conversationId: number;
-      isTyping: boolean;
-    }) => {
+    const handleVisitorTyping = (payload: VisitorTypingBroadcastPayload) => {
       setTypingStatus(payload.conversationId, payload.isTyping);
     };
 
-    const handleVisitorContextUpdated = (payload: {
-      conversationId: number;
-      currentUrl: string;
-    }) => {
+    const handleVisitorContextUpdated = (payload: VisitorContextUpdatedPayload) => {
       // Update the visitor's currentUrl in the conversations cache
       queryClient.setQueriesData<any>(
         { queryKey: ["conversations"] },
@@ -147,17 +142,17 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       }
     };
 
-    socket.on("newMessage", handleNewMessage);
-    socket.on("agentReplied", handleNewMessage);
-    socket.on("visitorIsTyping", handleVisitorTyping);
-    socket.on("visitorContextUpdated", handleVisitorContextUpdated);
+    socket.on(WebSocketEvent.NEW_MESSAGE, handleNewMessage);
+    socket.on(WebSocketEvent.AGENT_REPLIED, handleNewMessage);
+    socket.on(WebSocketEvent.VISITOR_TYPING, handleVisitorTyping);
+    socket.on(WebSocketEvent.VISITOR_CONTEXT_UPDATED, handleVisitorContextUpdated);
 
     // CRITICAL: Always cleanup listeners on unmount or when dependencies change
     return () => {
-      socket.off("newMessage", handleNewMessage);
-      socket.off("agentReplied", handleNewMessage);
-      socket.off("visitorIsTyping", handleVisitorTyping);
-      socket.off("visitorContextUpdated", handleVisitorContextUpdated);
+      socket.off(WebSocketEvent.NEW_MESSAGE, handleNewMessage);
+      socket.off(WebSocketEvent.AGENT_REPLIED, handleNewMessage);
+      socket.off(WebSocketEvent.VISITOR_TYPING, handleVisitorTyping);
+      socket.off(WebSocketEvent.VISITOR_CONTEXT_UPDATED, handleVisitorContextUpdated);
     };
   }, [
     socket,

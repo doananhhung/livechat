@@ -2,7 +2,7 @@ import {
   IsString,
   IsNotEmpty,
   IsArray,
-  IsUrl,
+  IsFQDN,
   ArrayMinSize,
 } from 'class-validator';
 import { ApiProperty } from "@nestjs/swagger";
@@ -13,9 +13,9 @@ export class CreateProjectDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ example: ["https://example.com", "https://another.com"], description: "List of whitelisted domains for the project" })
+  @ApiProperty({ example: ["example.com", "another.com"], description: "List of whitelisted domains (FQDNs only, no protocol)" })
   @IsArray()
   @ArrayMinSize(1)
-  @IsUrl({}, { each: true })
+  @IsFQDN({}, { each: true, message: "Domains must be valid hostnames (e.g., example.com) without protocols (http://)." })
   whitelistedDomains: string[];
 }

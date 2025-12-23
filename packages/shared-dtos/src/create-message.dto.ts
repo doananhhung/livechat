@@ -5,9 +5,12 @@ import {
   IsBoolean,
   IsNumber,
   IsEnum,
+  IsArray,
+  ValidateNested,
 } from "class-validator";
-import { MessageStatus } from "@live-chat/shared-types";
+import { MessageStatus, Attachment } from "@live-chat/shared-types";
 import { ApiProperty } from "@nestjs/swagger";
+import { Type } from "class-transformer";
 
 export class CreateMessageDto {
   @ApiProperty({
@@ -26,8 +29,14 @@ export class CreateMessageDto {
   @IsNotEmpty()
   content: string;
 
+  @ApiProperty({
+    description: "Optional file attachments",
+    required: false,
+    type: "array",
+  })
   @IsOptional()
-  attachments?: any;
+  @IsArray()
+  attachments?: Attachment[];
 
   @ApiProperty({ example: "user-uuid-123", description: "ID of the sender" })
   @IsString()

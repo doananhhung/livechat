@@ -103,7 +103,7 @@ describe('TwoFactorAuthenticationController', () => {
         'encrypted-secret',
         expect.any(Object)
       );
-      expect(res.json).toHaveBeenCalledWith({ qrCodeDataURL: 'qr-code' });
+      expect(res.json).toHaveBeenCalledWith({ qrCodeDataURL: 'qr-code', otpAuthUrl: 'otp' });
     });
   });
 

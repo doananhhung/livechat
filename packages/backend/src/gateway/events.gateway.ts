@@ -9,9 +9,10 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
   OnGatewayInit,
+  WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, Inject, UseGuards } from '@nestjs/common';
+import { Logger, Inject, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { RealtimeSessionService } from '../realtime-session/realtime-session.service';
 import { type Redis } from 'ioredis';
 import { REDIS_SUBSCRIBER_CLIENT } from '../redis/redis.module';
@@ -21,15 +22,27 @@ import {
   VisitorIdentifiedEvent,
   VisitorMessageReceivedEvent,
 } from '../inbox/events';
-import { AgentTypingDto } from '@live-chat/shared-dtos';
-import { Conversation, Visitor, Message } from '../database/entities';
-import { MessageStatus, WidgetMessageDto } from '@live-chat/shared-types';
+import { Conversation, Visitor } from '../database/entities';
+import { MessageStatus, WidgetMessageDto, WebSocketEvent } from '@live-chat/shared-types';
 import { ProjectService } from '../projects/project.service';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { UserService } from '../user/user.service';
+import { 
+  IdentifyPayload, 
+  SendMessagePayload, 
+  VisitorTypingPayload, 
+  UpdateContextPayload, 
+  JoinRoomPayload,
+  AgentTypingPayload,
+  VisitorTypingBroadcastPayload,
+  VisitorContextUpdatedPayload
+} from '@live-chat/shared-types';
 
 const NEW_MESSAGE_CHANNEL = 'new_message_channel';
 
 @UseGuards(WsJwtAuthGuard)
+@UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 @WebSocketGateway()
 export class EventsGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
@@ -44,7 +57,9 @@ export class EventsGateway
     @Inject(REDIS_SUBSCRIBER_CLIENT) private readonly redisSubscriber: Redis,
     private readonly eventEmitter: EventEmitter2,
     private readonly projectService: ProjectService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly jwtService: JwtService,
+    private readonly userService: UserService
   ) {}
 
   async handleConnection(client: Socket) {
@@ -52,9 +67,44 @@ export class EventsGateway
 
     const origin = client.handshake.headers.origin;
     const projectId = client.handshake.query.projectId;
+    const authToken = client.handshake.auth?.token;
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
 
-    // Allow main frontend app without further checks
+    // 1. Agent Authentication (JWT)
+    if (authToken) {
+      try {
+        const payload = this.jwtService.verify(authToken, {
+          secret: this.configService.get<string>('JWT_SECRET'),
+        });
+        
+        const user = await this.userService.findOneById(payload.sub);
+        if (!user) {
+          this.logger.warn(`Connection rejected: User ${payload.sub} not found.`);
+          client.disconnect(true);
+          return;
+        }
+
+        // Check token revocation
+        const tokensValidFromSec = Math.floor(user.tokensValidFrom.getTime() / 1000);
+        if (payload.iat < tokensValidFromSec) {
+          this.logger.warn(`Connection rejected: Token revoked for user ${user.email}`);
+          client.disconnect(true);
+          return;
+        }
+
+        // Attach user to socket data for subsequent events
+        client.data.user = { id: user.id, email: user.email };
+        this.logger.log(`Agent authenticated: ${user.email}`);
+        return; // Authenticated agent, skip widget checks
+      } catch (error: any) {
+        this.logger.warn(`Connection rejected: Invalid JWT. ${error.message}`);
+        client.disconnect(true);
+        return;
+      }
+    }
+
+    // 2. Widget/Visitor Connection Checks
+    // Allow main frontend app without further checks (e.g. for dashboard access without auth yet)
     if (origin === frontendUrl) {
       return;
     }
@@ -79,13 +129,19 @@ export class EventsGateway
       }
 
       if (origin) {
-        const originUrl = new URL(origin);
-        const originDomain = originUrl.hostname;
+        try {
+          const originUrl = new URL(origin);
+          const originDomain = originUrl.hostname;
 
-        if (!project.whitelistedDomains.includes(originDomain)) {
-          this.logger.warn(
-            `Connection rejected: Origin ${origin} not whitelisted for project ${projectId}`
-          );
+          if (!project.whitelistedDomains.includes(originDomain)) {
+            this.logger.warn(
+              `Connection rejected: Origin ${origin} not whitelisted for project ${projectId}`
+            );
+            client.disconnect(true);
+            return;
+          }
+        } catch (error) {
+          this.logger.warn(`Connection rejected: Invalid Origin header ${origin}`);
           client.disconnect(true);
           return;
         }
@@ -103,7 +159,8 @@ export class EventsGateway
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
     if (client.data.visitorUid) {
-      this.realtimeSessionService.deleteVisitorSession(client.data.visitorUid);
+      // Pass the socket ID to ensure we only delete the session if it belongs to this specific connection
+      this.realtimeSessionService.deleteVisitorSession(client.data.visitorUid, client.id);
     }
   }
 
@@ -168,26 +225,25 @@ export class EventsGateway
           name: msg.senderId,
         },
         status: msg.status as MessageStatus,
-        timestamp: msg.createdAt.toISOString(),
+        timestamp: typeof msg.createdAt === 'string' ? msg.createdAt : msg.createdAt.toISOString(),
       }));
     } else {
       this.logger.log(
         `No messages found for conversationId ${conversation.id}`
       );
-      this.logger.log(`messages: ${JSON.stringify(conversation.messages)}`);
     }
 
     this.logger.log(`Emitting conversationHistory to ${socket.id}`);
     socket.data.conversationId = conversation.id;
-    socket.emit('conversationHistory', {
+    socket.emit(WebSocketEvent.CONVERSATION_HISTORY, {
       messages: messagesForFrontend,
     });
   }
 
-  @SubscribeMessage('identify')
+  @SubscribeMessage(WebSocketEvent.IDENTIFY)
   async handleIdentify(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { projectId: number; visitorUid: string }
+    @MessageBody() payload: IdentifyPayload
   ): Promise<void> {
     this.logger.debug(
       `Identify event from client ${client.id} for visitorUid: ${payload.visitorUid} in projectId: ${payload.projectId}`
@@ -200,9 +256,9 @@ export class EventsGateway
     this.eventEmitter.emit('visitor.identified', event);
   }
 
-  @SubscribeMessage('sendMessage')
+  @SubscribeMessage(WebSocketEvent.SEND_MESSAGE)
   async handleSendMessage(
-    @MessageBody() data: { content: string; tempId: string },
+    @MessageBody() data: SendMessagePayload,
     @ConnectedSocket() client: Socket
   ): Promise<void> {
     if (!client.data.visitorUid || !client.data.projectId) {
@@ -218,25 +274,26 @@ export class EventsGateway
     this.eventEmitter.emit('visitor.message.received', event);
   }
 
-  @SubscribeMessage('visitorIsTyping')
+  @SubscribeMessage(WebSocketEvent.VISITOR_TYPING)
   handleVisitorTyping(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { isTyping: boolean }
+    @MessageBody() payload: VisitorTypingPayload
   ): void {
     const { projectId, conversationId } = client.data;
     if (projectId) {
       this.logger.log(`Emitting visitorIsTyping to project ${projectId}`);
-      this.server.to(`project:${projectId}`).emit('visitorIsTyping', {
+      const broadcastPayload: VisitorTypingBroadcastPayload = {
         conversationId,
         isTyping: payload.isTyping,
-      });
+      };
+      this.server.to(`project:${projectId}`).emit(WebSocketEvent.VISITOR_TYPING, broadcastPayload);
     }
   }
 
-  @SubscribeMessage('updateContext')
+  @SubscribeMessage(WebSocketEvent.UPDATE_CONTEXT)
   async handleUpdateContext(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { currentUrl: string }
+    @MessageBody() payload: UpdateContextPayload
   ): Promise<void> {
     const { projectId, conversationId, visitorUid } = client.data;
     this.logger.debug(
@@ -275,27 +332,41 @@ export class EventsGateway
 
     // Broadcast to agents
     this.logger.log(`Emitting visitorContextUpdated to project ${projectId}`);
-    this.server.to(`project:${projectId}`).emit('visitorContextUpdated', {
+    const broadcastPayload: VisitorContextUpdatedPayload = {
       conversationId,
       currentUrl: payload.currentUrl,
-    });
+    };
+    this.server.to(`project:${projectId}`).emit(WebSocketEvent.VISITOR_CONTEXT_UPDATED, broadcastPayload);
   }
 
-  @SubscribeMessage('joinProjectRoom')
-  handleJoinProjectRoom(
+  @SubscribeMessage(WebSocketEvent.JOIN_PROJECT_ROOM)
+  async handleJoinProjectRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { projectId: number }
-  ): { status: string; roomName: string } {
+    @MessageBody() payload: JoinRoomPayload
+  ): Promise<{ status: string; roomName: string }> {
+    // Security Check: Ensure user is authenticated
+    if (!client.data.user) {
+      throw new WsException('Unauthorized: You must be logged in to join a project room.');
+    }
+
+    // Security Check: Ensure user is a member of the project
+    try {
+      await this.projectService.validateProjectMembership(payload.projectId, client.data.user.id);
+    } catch (error) {
+      this.logger.warn(`User ${client.data.user.id} attempted to join unauthorized project ${payload.projectId}`);
+      throw new WsException('Forbidden: You are not a member of this project.');
+    }
+
     const roomName = `project:${payload.projectId}`;
     client.join(roomName);
-    this.logger.log(`Client with ${client.id} joined room: ${roomName}`);
+    this.logger.log(`Client ${client.id} (User: ${client.data.user.email}) joined room: ${roomName}`);
     return { status: 'ok', roomName };
   }
 
-  @SubscribeMessage('leaveProjectRoom')
+  @SubscribeMessage(WebSocketEvent.LEAVE_PROJECT_ROOM)
   handleLeaveProjectRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { projectId: number }
+    @MessageBody() payload: JoinRoomPayload
   ): { status: string; roomName: string } {
     const roomName = `project:${payload.projectId}`;
     client.leave(roomName);
@@ -309,21 +380,22 @@ export class EventsGateway
     agentName: string
   ) {
     this.logger.log(`Emitting agentIsTyping to ${visitorSocketId}`);
-    this.server.to(visitorSocketId).emit('agentIsTyping', {
+    const payload: AgentTypingPayload = {
       agentName,
       isTyping,
-    });
+    };
+    this.server.to(visitorSocketId).emit(WebSocketEvent.AGENT_TYPING, payload);
   }
 
   public sendReplyToVisitor(visitorSocketId: string, message: any) {
     this.logger.log(`Emitting agentReplied to ${visitorSocketId}`);
-    this.server.to(visitorSocketId).emit('agentReplied', message);
+    this.server.to(visitorSocketId).emit(WebSocketEvent.AGENT_REPLIED, message);
   }
 
   public visitorMessageSent(visitorSocketId: string, data: any) {
     try {
       this.logger.log(`Emitting messageSent to ${visitorSocketId}`);
-      this.server.to(visitorSocketId).emit('messageSent', data);
+      this.server.to(visitorSocketId).emit(WebSocketEvent.MESSAGE_SENT, data);
     } catch (error) {
       this.logger.log(error);
     }

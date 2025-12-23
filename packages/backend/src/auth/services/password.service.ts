@@ -14,6 +14,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { EntityManager } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { BCRYPT_SALT_ROUNDS } from '../../common/constants/crypto.constants';
 import * as crypto from 'crypto';
 import { User } from '../../database/entities';
 import { UserStatus } from '@live-chat/shared-types';
@@ -78,7 +79,7 @@ export class PasswordService {
         this.logger.log(`User ${userId} is setting password for the first time (OAuth account)`);
       }
 
-      const newHashedPassword = await bcrypt.hash(newPassword, 12);
+      const newHashedPassword = await bcrypt.hash(newPassword, BCRYPT_SALT_ROUNDS);
       user.passwordHash = newHashedPassword;
       await entityManager.save(user);
 
@@ -102,7 +103,7 @@ export class PasswordService {
         });
       }
 
-      const newHashedPassword = await bcrypt.hash(newPassword, 12);
+      const newHashedPassword = await bcrypt.hash(newPassword, BCRYPT_SALT_ROUNDS);
       user.passwordHash = newHashedPassword;
       await entityManager.save(user);
 
@@ -158,7 +159,7 @@ export class PasswordService {
         throw new NotFoundException('Người dùng không tồn tại.');
       }
 
-      const newHashedPassword = await bcrypt.hash(newPassword, 12);
+      const newHashedPassword = await bcrypt.hash(newPassword, BCRYPT_SALT_ROUNDS);
       user.passwordHash = newHashedPassword;
       await entityManager.save(user);
 

@@ -80,7 +80,8 @@ export const updateProjectSettings = async (
 export const inviteUserToProject = async (
   data: CreateInvitationDto
 ): Promise<Invitation> => {
-  const response = await api.post("/projects/invitations", data);
+  const { projectId, ...body } = data;
+  const response = await api.post(`/projects/${projectId}/invitations`, body);
   return response.data;
 };
 

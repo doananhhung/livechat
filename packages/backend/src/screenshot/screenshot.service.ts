@@ -59,7 +59,7 @@ export class ScreenshotService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async getScreenshot(url: string): Promise<Buffer> {
+  async getScreenshot(url: string, headers?: Record<string, string>): Promise<Buffer> {
     // Check if browser is available
     if (!this.browserAvailable || !this.browser) {
       throw new Error(
@@ -99,10 +99,15 @@ export class ScreenshotService implements OnModuleInit, OnModuleDestroy {
       // 3. Set viewport
       await page.setViewport({ width: 1280, height: 720 });
 
-      // 4. Go to the URL with a timeout
+      // 4. Set extra HTTP headers if provided (used for Host header in DNS rebinding protection)
+      if (headers && Object.keys(headers).length > 0) {
+        await page.setExtraHTTPHeaders(headers);
+      }
+
+      // 5. Go to the URL with a timeout
       await page.goto(url, { waitUntil: 'networkidle0', timeout: 15000 });
 
-      // 5. Take screenshot
+      // 6. Take screenshot
       const screenshot = await page.screenshot({
         type: 'jpeg',
         quality: 70,
