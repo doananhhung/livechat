@@ -72,18 +72,27 @@ export class TokenService {
    * Verifies if a refresh token is valid for a user.
    */
   async verifyRefreshToken(refreshToken: string, userId: string): Promise<boolean> {
+    this.logger.debug(`[verifyRefreshToken] Starting verification for userId: ${userId}`);
+    this.logger.debug(`[verifyRefreshToken] Token (first 20 chars): ${refreshToken.substring(0, 20)}...`);
+    
     const storedTokens = await this.refreshTokenRepository.find({
       where: { userId },
     });
 
+    this.logger.debug(`[verifyRefreshToken] Found ${storedTokens?.length || 0} tokens in DB for userId: ${userId}`);
+
     if (!storedTokens || storedTokens.length === 0) {
+      this.logger.warn(`[verifyRefreshToken] No tokens found in DB for userId: ${userId}`);
       return false;
     }
 
     let matchingToken: RefreshToken | undefined;
 
-    for (const storedToken of storedTokens) {
+    for (let i = 0; i < storedTokens.length; i++) {
+      const storedToken = storedTokens[i];
+      this.logger.debug(`[verifyRefreshToken] Comparing with token ${i + 1}/${storedTokens.length} (id: ${storedToken.id})`);
       const isMatch = await bcrypt.compare(refreshToken, storedToken.hashedToken);
+      this.logger.debug(`[verifyRefreshToken] Token ${i + 1} match result: ${isMatch}`);
       if (isMatch) {
         matchingToken = storedToken;
         break;
@@ -91,13 +100,17 @@ export class TokenService {
     }
 
     if (matchingToken) {
+      this.logger.debug(`[verifyRefreshToken] Found matching token (id: ${matchingToken.id}), checking expiration`);
       if (matchingToken.expiresAt < new Date()) {
+        this.logger.warn(`[verifyRefreshToken] Token expired at ${matchingToken.expiresAt}`);
         await this.refreshTokenRepository.delete(matchingToken.id);
         throw new UnauthorizedException('Refresh token has expired');
       }
+      this.logger.debug(`[verifyRefreshToken] Token is valid and not expired`);
       return true;
     }
 
+    this.logger.warn(`[verifyRefreshToken] No matching token found after comparing all ${storedTokens.length} tokens`);
     return false;
   }
 

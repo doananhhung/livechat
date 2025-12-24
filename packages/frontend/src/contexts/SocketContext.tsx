@@ -36,9 +36,15 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
 
     // Define all handlers as stable references
     const handleNewMessage = async (newMessage: Message) => {
+      console.log('[SocketContext] handleNewMessage called with:', newMessage);
+      console.log('[SocketContext] currentProjectId:', currentProjectId);
+      
       const conversationId = parseInt(String(newMessage.conversationId), 10);
 
-      if (isNaN(conversationId)) return;
+      if (isNaN(conversationId)) {
+        console.warn('[SocketContext] Invalid conversationId, skipping');
+        return;
+      }
 
       // Extract projectId from URL to match the cache key used in inboxApi.ts
       const projectPathMatch = location.pathname.match(/\/projects\/(\d+)/);
@@ -79,14 +85,15 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
         }
       }
 
-      // Also invalidate conversations to update snippets/unread counts
+      // Also invalidate conversations to update snippets/unread counts/timestamps
       if (currentProjectId) {
         console.log(
-          "Invalidating conversations cache for project:",
+          "[SocketContext] Invalidating and refetching conversations cache for project:",
           currentProjectId
         );
         queryClient.invalidateQueries({
           queryKey: ["conversations", currentProjectId],
+          refetchType: "all", // Force immediate refetch, not just mark stale
         });
       }
     };
@@ -96,6 +103,8 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
     };
 
     const handleVisitorContextUpdated = (payload: VisitorContextUpdatedPayload) => {
+      console.log('[SocketContext] Received visitorContextUpdated:', payload);
+      
       // Update the visitor's currentUrl in the conversations cache
       queryClient.setQueriesData<any>(
         { queryKey: ["conversations"] },
@@ -111,6 +120,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
                   Number(conversation.id) === Number(payload.conversationId) &&
                   conversation.visitor
                 ) {
+                  console.log('[SocketContext] Updating conversation visitor currentUrl:', payload.currentUrl);
                   return {
                     ...conversation,
                     visitor: {
@@ -127,6 +137,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       );
 
       // Also update the specific visitor cache if it exists
+      // IMPORTANT: The cache key must match useGetVisitor: ["visitor", projectId, visitorId]
       const conversationIdNum = Number(payload.conversationId);
       const allConversations = queryClient
         .getQueriesData<any>({ queryKey: ["conversations"] })
@@ -138,9 +149,10 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
         (c: any) => c && Number(c.id) === conversationIdNum
       );
 
-      if (conversation?.visitor?.id) {
+      if (conversation?.visitor?.id && currentProjectId) {
+        console.log('[SocketContext] Updating visitor cache with key:', ["visitor", currentProjectId, conversation.visitor.id]);
         queryClient.setQueryData(
-          ["visitor", conversation.visitor.id],
+          ["visitor", currentProjectId, conversation.visitor.id],
           (oldVisitor: any) => {
             if (!oldVisitor) return oldVisitor;
             return {

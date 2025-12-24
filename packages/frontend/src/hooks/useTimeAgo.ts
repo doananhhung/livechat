@@ -25,6 +25,10 @@ export const useTimeAgo = (date: Date | string) => {
   const [timeAgo, setTimeAgo] = useState(() => formatConversationTime(date));
 
   useEffect(() => {
+    // Immediately update when date changes
+    setTimeAgo(formatConversationTime(date));
+    
+    // Also set up interval for periodic updates (e.g., "5 minutes ago" → "6 minutes ago")
     const interval = setInterval(() => {
       setTimeAgo(formatConversationTime(date));
     }, 60000); // Update every 60 seconds

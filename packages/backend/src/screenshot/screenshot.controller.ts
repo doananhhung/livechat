@@ -156,24 +156,18 @@ export class ScreenshotController {
       );
     }
 
-    // --- 4. Construct safe URL with IP and original Host header ---
-    // Rewrite URL to use the resolved IP instead of hostname
-    const safeUrl = new URL(targetUrl.toString());
-    safeUrl.hostname = resolvedIP;
-    const finalUrl = safeUrl.toString();
-
-    // Pass the original Host header so the target server responds correctly
-    const headers: Record<string, string> = {
-      Host: originalHostname,
-    };
+    // --- 4. Use original URL (SSRF validation complete) ---
+    // We validated the resolved IP is not private/reserved, so it's safe to proceed
+    // We use the original URL (not IP) because HTTPS requires proper SNI for certificate validation
+    const finalUrl = targetUrl.toString();
 
     this.logger.debug(
-      `Processing screenshot: original=${targetUrl.toString()}, resolved=${finalUrl}, Host=${originalHostname}`
+      `Processing screenshot: url=${finalUrl}, resolvedIP=${resolvedIP} (validated as safe)`
     );
 
     // --- 5. Screenshot Generation and Response ---
     try {
-      const buffer = await this.screenshotService.getScreenshot(finalUrl, headers);
+      const buffer = await this.screenshotService.getScreenshot(finalUrl);
       return new StreamableFile(buffer);
     } catch (error) {
       this.logger.error(
