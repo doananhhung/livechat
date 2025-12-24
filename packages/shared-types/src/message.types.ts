@@ -13,11 +13,17 @@ export interface Message {
   conversationId: number;
   visitorId?: number;
   userId?: string;
-  content: string;
-  contentType: string; // 'text' | 'image' etc
-  attachments?: Attachment[];
+  /** Sender identifier (visitor UID or agent ID) */
+  senderId?: string;
+  /** Recipient identifier */
+  recipientId?: string;
+  content: string | null;
+  /** Optional content type, defaults to 'text' if not provided */
+  contentType?: string;
+  attachments?: Attachment[] | null;
   fromCustomer: boolean;
   /** Date on backend, string after JSON serialization on frontend */
   createdAt: Date | string;
   status: MessageStatus;
 }
+

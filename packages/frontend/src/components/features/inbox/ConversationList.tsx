@@ -91,7 +91,7 @@ export const ConversationList = () => {
       ) : (
         <nav className="flex-1 overflow-y-auto">
           {conversations.map((conversation) => {
-            const isTyping = typingStatus[conversation.id];
+            const isTyping = typingStatus[Number(conversation.id)];
 
             return (
               <NavLink
@@ -111,7 +111,7 @@ export const ConversationList = () => {
                   if (conversation.unreadCount > 0 && numericProjectId) {
                     updateConversation({
                       projectId: numericProjectId,
-                      conversationId: conversation.id,
+                      conversationId: Number(conversation.id),
                       payload: { read: true },
                     });
                   }

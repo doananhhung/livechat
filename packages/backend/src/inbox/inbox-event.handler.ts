@@ -165,7 +165,9 @@ export class InboxEventHandlerService {
       const messageForFrontend = {
         id: message.id,
         content: message.content,
-        sender: message.fromCustomer ? 'visitor' : 'agent',
+        sender: {
+          type: message.fromCustomer ? 'visitor' : 'agent',
+        },
         status: message.status,
         timestamp: message.createdAt,
       };

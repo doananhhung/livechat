@@ -157,14 +157,8 @@ class SocketService {
 
     const messageSentHandler = (data: MessageSentPayload) => {
       logWithTime(this.instanceId, `📤 Message sent:`, data);
-      const finalMessage = data.finalMessage;
-      const correctedMessage: Message = {
-        ...finalMessage,
-        sender: {
-          type: finalMessage.sender === "visitor" ? "visitor" : "agent",
-        },
-      };
-      finalizeMessage(data.tempId, correctedMessage);
+      // Backend now sends correct WidgetMessageDto shape
+      finalizeMessage(data.tempId, data.finalMessage);
     };
 
     const agentRepliedHandler = (data: any) => {

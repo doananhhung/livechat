@@ -275,7 +275,7 @@ export const MessagePane = () => {
     updateConversation(
       {
         projectId: numericProjectId,
-        conversationId: conversation.id,
+        conversationId: Number(conversation.id),
         payload: { status },
       },
       {
