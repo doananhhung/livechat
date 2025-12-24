@@ -29,7 +29,7 @@ import { GetCurrentUser } from '../common/decorators/get-current-user.decorator'
 import { RolesGuard } from '../rbac/roles.guard';
 import { Roles } from '../rbac/roles.decorator';
 
-@Controller('inbox')
+@Controller('projects/:projectId/inbox')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(ProjectRole.AGENT) // All users with AGENT or MANAGER project role can access
 export class InboxController {
@@ -42,9 +42,10 @@ export class InboxController {
   @Get('conversations')
   async listConversations(
     @GetCurrentUser() user: User,
+    @Param('projectId', ParseIntPipe) projectId: number,
     @Query() query: ListConversationsDto
   ): Promise<ConversationListResponseDto> {
-    const result = await this.conversationService.listByProject(user, query);
+    const result = await this.conversationService.listByProject(user, projectId, query);
     return result;
   }
 

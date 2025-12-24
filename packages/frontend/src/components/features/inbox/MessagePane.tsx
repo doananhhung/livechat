@@ -24,8 +24,8 @@ import { ZoomIn } from "lucide-react"; // 3. Import an icon
 /**
  * Component displaying detailed visitor information.
  */
-const VisitorContextPanel = ({ visitorId }: { visitorId: number }) => {
-  const { data: visitor, isLoading } = useGetVisitor(visitorId);
+const VisitorContextPanel = ({ projectId, visitorId }: { projectId: number; visitorId: number }) => {
+  const { data: visitor, isLoading } = useGetVisitor(projectId, visitorId);
   // 4. Add state for the dialog
   const [isScreenshotModalOpen, setScreenshotModalOpen] = useState(false);
 
@@ -217,16 +217,17 @@ const MessageList = ({
  * Main component for the message display frame.
  */
 export const MessagePane = () => {
-  const { conversationId } = useParams<{
+  const { projectId, conversationId } = useParams<{
     projectId: string;
     conversationId: string;
   }>();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const numericProjectId = projectId ? parseInt(projectId, 10) : undefined;
   const convoId = conversationId ? parseInt(conversationId, 10) : undefined;
 
-  const { data: messages, isLoading } = useGetMessages(convoId);
+  const { data: messages, isLoading } = useGetMessages(numericProjectId, convoId);
   const { mutate: updateConversation, isPending: isUpdatingStatus } =
     useUpdateConversationStatus();
 
@@ -259,19 +260,21 @@ export const MessagePane = () => {
   );
 
   useEffect(() => {
-    if (convoId && conversation && conversation.unreadCount > 0) {
+    if (convoId && numericProjectId && conversation && conversation.unreadCount > 0) {
       updateConversation({
+        projectId: numericProjectId,
         conversationId: convoId,
         payload: { read: true },
       });
     }
-  }, [convoId, conversation, updateConversation]);
+  }, [convoId, numericProjectId, conversation, updateConversation]);
 
   const handleStatusUpdate = (status: ConversationStatus) => {
-    if (!conversation) return;
+    if (!conversation || !numericProjectId) return;
 
     updateConversation(
       {
+        projectId: numericProjectId,
         conversationId: conversation.id,
         payload: { status },
       },
@@ -369,11 +372,13 @@ export const MessagePane = () => {
           visitorName={conversation?.visitor?.displayName || 'Anonymous'}
         />
 
-        <MessageComposer conversationId={convoId} />
+        {numericProjectId && convoId && (
+          <MessageComposer projectId={numericProjectId} conversationId={convoId} />
+        )}
       </div>
 
-      {conversation && conversation.visitor?.id && (
-        <VisitorContextPanel visitorId={conversation.visitor.id} />
+      {conversation && conversation.visitor?.id && numericProjectId && (
+        <VisitorContextPanel projectId={numericProjectId} visitorId={conversation.visitor.id} />
       )}
     </div>
   );

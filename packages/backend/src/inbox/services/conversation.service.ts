@@ -94,8 +94,8 @@ export class ConversationService {
    * @param query - DTO for pagination and filtering.
    * @returns A paginated list of conversations.
    */
-  async listByProject(user: User, query: ListConversationsDto) {
-    const { projectId, status, page = 1, limit = 10 } = query;
+  async listByProject(user: User, projectId: number, query: ListConversationsDto) {
+    const { status, page = 1, limit = 10 } = query;
 
     const qb = this.entityManager
       // SQL: SELECT ... FROM conversation

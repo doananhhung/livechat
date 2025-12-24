@@ -1,8 +1,5 @@
-import { IsNotEmpty } from 'class-validator';
-
 export class ListConversationsDto {
-  @IsNotEmpty()
-  projectId: number;
+  // projectId is now extracted from route params in /projects/:projectId/inbox
   status?: 'open' | 'closed';
   page?: number;
   limit?: number;

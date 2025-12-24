@@ -3,6 +3,7 @@ import { EntityManager, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { OutboxEvent } from '../database/entities';
 import { WorkerEventType } from '@live-chat/shared-types';
+import { OUTBOX_CHANNEL } from '../common/constants';
 
 /**
  * Payload structure for outbox events.
@@ -50,6 +51,9 @@ export class OutboxPersistenceService {
     });
 
     const savedEvent = await outboxRepo.save(event);
+
+    // Notify the OutboxListenerService to process immediately instead of waiting for polling
+    await manager.query(`SELECT pg_notify($1, $2)`, [OUTBOX_CHANNEL, savedEvent.id]);
 
     this.logger.log(
       `Inserted outbox event for ${aggregateType}:${aggregateId} (type: ${eventType})`

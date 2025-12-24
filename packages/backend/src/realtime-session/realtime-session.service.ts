@@ -85,7 +85,7 @@ export class RealtimeSessionService {
     }
 
     const keys = visitorUids.map((uid) => this.getCurrentUrlKey(uid));
-    const values = await this.redis.mGet(keys);
+    const values = await (this.redis as any).mget(keys);
 
     const result = new Map<string, string | null>();
     visitorUids.forEach((uid, index) => {

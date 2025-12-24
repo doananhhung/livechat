@@ -10,10 +10,11 @@ import { Input } from "../../ui/Input";
 import { Send } from "lucide-react";
 
 interface MessageComposerProps {
+  projectId: number;
   conversationId: number;
 }
 
-const MessageComposer = ({ conversationId }: MessageComposerProps) => {
+const MessageComposer = ({ projectId, conversationId }: MessageComposerProps) => {
   const [content, setContent] = useState("");
   const { mutate: sendMessage, isPending } = useSendAgentReply();
   const { mutate: notifyTyping } = useNotifyAgentTyping();
@@ -24,7 +25,7 @@ const MessageComposer = ({ conversationId }: MessageComposerProps) => {
   // Function to emit typing status - use useRef to avoid stale closures
   const handleTyping = (isTyping: boolean) => {
     if (isMountedRef.current) {
-      notifyTyping({ conversationId, isTyping });
+      notifyTyping({ projectId, conversationId, isTyping });
     }
   };
 
@@ -50,7 +51,7 @@ const MessageComposer = ({ conversationId }: MessageComposerProps) => {
     e.preventDefault();
     if (content.trim()) {
       const messageToSend = content.trim();
-      sendMessage({ conversationId, text: messageToSend });
+      sendMessage({ projectId, conversationId, text: messageToSend });
       setContent("");
       inputRef.current?.focus();
       // Stop typing immediately on send
@@ -73,9 +74,9 @@ const MessageComposer = ({ conversationId }: MessageComposerProps) => {
         typingTimeoutRef.current = null;
       }
       // Send typing=false on unmount if needed
-      notifyTyping({ conversationId, isTyping: false });
+      notifyTyping({ projectId, conversationId, isTyping: false });
     };
-  }, [conversationId, notifyTyping]);
+  }, [projectId, conversationId, notifyTyping]);
 
   return (
     <form

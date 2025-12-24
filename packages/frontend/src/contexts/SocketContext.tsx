@@ -40,16 +40,25 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
 
       if (isNaN(conversationId)) return;
 
+      // Extract projectId from URL to match the cache key used in inboxApi.ts
+      const projectPathMatch = location.pathname.match(/\/projects\/(\d+)/);
+      const projectIdFromUrl = projectPathMatch
+        ? parseInt(projectPathMatch[1], 10)
+        : null;
+
       // Optimistically update the messages list
-      queryClient.setQueryData(
-        ["messages", conversationId],
-        (oldData?: Message[]) => {
-          if (oldData && !oldData.some((msg) => msg.id === newMessage.id)) {
-            return [...oldData, newMessage];
+      // Use the same cache key structure as inboxApi.ts: ["messages", projectId, conversationId]
+      if (projectIdFromUrl) {
+        queryClient.setQueryData(
+          ["messages", projectIdFromUrl, conversationId],
+          (oldData?: Message[]) => {
+            if (oldData && !oldData.some((msg) => msg.id === newMessage.id)) {
+              return [...oldData, newMessage];
+            }
+            return oldData || [newMessage];
           }
-          return oldData || [newMessage];
-        }
-      );
+        );
+      }
 
       // Check if the conversation is currently open
       const pathMatch = location.pathname.match(/\/conversations\/(\d+)/);
@@ -58,9 +67,10 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
         : null;
 
       // If the message is from the currently open conversation, mark it as read immediately
-      if (activeConversationId === conversationId && newMessage.fromCustomer) {
+      if (activeConversationId === conversationId && newMessage.fromCustomer && projectIdFromUrl) {
         try {
           await updateConversationStatus({
+            projectId: projectIdFromUrl,
             conversationId,
             payload: { read: true },
           });

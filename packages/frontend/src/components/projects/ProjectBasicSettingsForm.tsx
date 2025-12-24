@@ -16,7 +16,7 @@ interface ProjectBasicSettingsFormProps {
 // Regex for FQDN (Fully Qualified Domain Name) validation
 // Allows: example.com, sub.example.com, localhost
 // Disallows: http://example.com, example.com/path
-const HOSTNAME_REGEX = /^(?!:\/\/)([a-zA-Z0-9-_]+\.)*[a-zA-Z0-9][a-zA-Z0-9-_]+\.[a-zA-Z]{2,11}?$/;
+const domainRegex = /^(localhost|([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})(:\d{1,5})?$/;
 
 export const ProjectBasicSettingsForm = ({
   project,
@@ -29,7 +29,7 @@ export const ProjectBasicSettingsForm = ({
   );
 
   useEffect(() => {
-    setProjectName(project.name);
+    setProjectName(project.name);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
     setWhitelistedDomains(project.whitelistedDomains || []);
   }, [project]);
 
@@ -93,7 +93,7 @@ export const ProjectBasicSettingsForm = ({
 
     // Validate domains format
     const invalidDomains = finalDomains.filter(
-      (domain) => !HOSTNAME_REGEX.test(domain)
+      (domain) => !domainRegex.test(domain)
     );
 
     if (invalidDomains.length > 0) {

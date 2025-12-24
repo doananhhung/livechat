@@ -19,7 +19,6 @@ import type {
   PaginationDto,
 } from "@live-chat/shared-types";
 import { MessageStatus } from "@live-chat/shared-types";
-import type { rest } from "lodash";
 
 // --- Type Definitions ---
 // All type definitions are now imported from @live-chat/shared
@@ -27,38 +26,43 @@ import type { rest } from "lodash";
 // --- API Functions ---
 
 interface UpdateConversationStatusParams {
+  projectId: number;
   conversationId: number;
   payload: UpdateConversationDto;
 }
 
 export const updateConversationStatus = async ({
+  projectId,
   conversationId,
   payload,
 }: UpdateConversationStatusParams) => {
   const response = await api.patch(
-    `/inbox/conversations/${conversationId}`,
+    `/projects/${projectId}/inbox/conversations/${conversationId}`,
     payload
   );
   return response.data;
 };
 
 export const sendAgentTypingStatus = async ({
+  projectId,
   conversationId,
   isTyping,
 }: {
+  projectId: number;
   conversationId: number;
   isTyping: boolean;
 }) => {
   // This API returns 204 No Content, so no need to process response.data
-  await api.post(`/inbox/conversations/${conversationId}/typing`, {
+  await api.post(`/projects/${projectId}/inbox/conversations/${conversationId}/typing`, {
     isTyping,
   });
 };
 
 const getConversationsByProjectId = async (
+  projectId: number,
   params: ListConversationsDto
 ): Promise<PaginationDto<Conversation>> => {
-  const response = await api.get(`/inbox/conversations`, {
+  const response = await api.get(`/projects/${projectId}/inbox/conversations`, {
     params,
   });
 
@@ -70,9 +74,9 @@ const getConversationsByProjectId = async (
   return response.data;
 };
 
-const getMessages = async (conversationId: number): Promise<Message[]> => {
+const getMessages = async (projectId: number, conversationId: number): Promise<Message[]> => {
   const response = await api.get(
-    `/inbox/conversations/${conversationId}/messages`,
+    `/projects/${projectId}/inbox/conversations/${conversationId}/messages`,
     {
       params: { limit: 1000 }, // Set a high limit to fetch more messages
     }
@@ -80,23 +84,22 @@ const getMessages = async (conversationId: number): Promise<Message[]> => {
   return response.data.data; // Assuming paginated response
 };
 
-const getVisitorById = async (visitorId: number): Promise<Visitor> => {
-  // ARCHITECTURAL FEEDBACK: The backend needs to provide this endpoint.
-  // Example: GET /inbox/visitors/:visitorId
-  // For now, we will assume it exists to complete the frontend.
-  const response = await api.get(`/inbox/visitors/${visitorId}`);
+const getVisitorById = async (projectId: number, visitorId: number): Promise<Visitor> => {
+  const response = await api.get(`/projects/${projectId}/inbox/visitors/${visitorId}`);
   return response.data;
 };
 
 const sendAgentReply = async ({
+  projectId,
   conversationId,
   text,
 }: {
+  projectId: number;
   conversationId: number;
   text: string;
 }): Promise<Message> => {
   const response = await api.post(
-    `/inbox/conversations/${conversationId}/messages`,
+    `/projects/${projectId}/inbox/conversations/${conversationId}/messages`,
     {
       text,
     }
@@ -106,17 +109,16 @@ const sendAgentReply = async ({
 
 // --- Custom Hooks ---
 
-export const useGetConversations = (params: Partial<ListConversationsDto>) => {
+export const useGetConversations = (params: Partial<ListConversationsDto> & { projectId?: number }) => {
   const { projectId, ...restParams } = params;
   return useInfiniteQuery({
     queryKey: ["conversations", projectId, restParams],
     queryFn: ({ pageParam = 1 }) => {
-      if (!params.projectId) {
+      if (!projectId) {
         return Promise.resolve({ data: [], total: 0, page: 1, limit: 10 });
       }
-      return getConversationsByProjectId({
-        ...params,
-        projectId: params.projectId,
+      return getConversationsByProjectId(projectId, {
+        ...restParams,
         page: pageParam,
       });
     },
@@ -125,23 +127,23 @@ export const useGetConversations = (params: Partial<ListConversationsDto>) => {
       return hasMore ? lastPage.page + 1 : undefined;
     },
     initialPageParam: 1,
-    enabled: !!params.projectId,
+    enabled: !!projectId,
   });
 };
 
-export const useGetMessages = (conversationId?: number) => {
+export const useGetMessages = (projectId?: number, conversationId?: number) => {
   return useQuery({
-    queryKey: ["messages", conversationId],
-    queryFn: () => getMessages(conversationId!),
-    enabled: !!conversationId,
+    queryKey: ["messages", projectId, conversationId],
+    queryFn: () => getMessages(projectId!, conversationId!),
+    enabled: !!projectId && !!conversationId,
   });
 };
 
-export const useGetVisitor = (visitorId?: number) => {
+export const useGetVisitor = (projectId?: number, visitorId?: number) => {
   return useQuery({
-    queryKey: ["visitor", visitorId],
-    queryFn: () => getVisitorById(visitorId!),
-    enabled: !!visitorId,
+    queryKey: ["visitor", projectId, visitorId],
+    queryFn: () => getVisitorById(projectId!, visitorId!),
+    enabled: !!projectId && !!visitorId,
   });
 };
 
@@ -151,10 +153,11 @@ export const useSendAgentReply = () => {
   return useMutation({
     mutationFn: sendAgentReply,
     onMutate: async (newMessagePayload: {
+      projectId: number;
       conversationId: number;
       text: string;
     }) => {
-      const queryKey = ["messages", newMessagePayload.conversationId];
+      const queryKey = ["messages", newMessagePayload.projectId, newMessagePayload.conversationId];
       await queryClient.cancelQueries({ queryKey });
 
       const optimisticMessage: Message = {
@@ -177,7 +180,7 @@ export const useSendAgentReply = () => {
       return { optimisticMessageId: optimisticMessage.id };
     },
     onSuccess: (finalMessage, variables, context) => {
-      const queryKey = ["messages", variables.conversationId];
+      const queryKey = ["messages", variables.projectId, variables.conversationId];
       queryClient.setQueryData<Message[]>(queryKey, (oldData = []) =>
         oldData.map((msg) =>
           msg.id === context?.optimisticMessageId ? finalMessage : msg
@@ -186,7 +189,7 @@ export const useSendAgentReply = () => {
       console.log("Message sent successfully:", finalMessage);
     },
     onError: (_err, variables, context) => {
-      const queryKey = ["messages", variables.conversationId];
+      const queryKey = ["messages", variables.projectId, variables.conversationId];
       queryClient.setQueryData<Message[]>(queryKey, (oldData = []) =>
         oldData.map((msg) =>
           msg.id === context?.optimisticMessageId
@@ -197,7 +200,7 @@ export const useSendAgentReply = () => {
     },
     onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["messages", variables.conversationId],
+        queryKey: ["messages", variables.projectId, variables.conversationId],
       });
     },
   });
@@ -218,7 +221,7 @@ export const useUpdateConversationStatus = () => {
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
       // Invalidate messages for this specific conversation
       queryClient.invalidateQueries({
-        queryKey: ["messages", variables.conversationId],
+        queryKey: ["messages", variables.projectId, variables.conversationId],
       });
       console.log("✅ Conversation status updated:", data);
     },

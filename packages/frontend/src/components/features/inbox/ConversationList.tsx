@@ -108,8 +108,9 @@ export const ConversationList = () => {
                   )
                 }
                 onClick={() => {
-                  if (conversation.unreadCount > 0) {
+                  if (conversation.unreadCount > 0 && numericProjectId) {
                     updateConversation({
+                      projectId: numericProjectId,
                       conversationId: conversation.id,
                       payload: { read: true },
                     });

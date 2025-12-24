@@ -70,7 +70,8 @@ describe('InboxController', () => {
 
   describe('listConversations', () => {
     it('should call conversationService.listByProject', async () => {
-      const query: ListConversationsDto = { projectId: 1 };
+      const projectId = 1;
+      const query: ListConversationsDto = {};
       const response: ConversationListResponseDto = {
         data: [],
         total: 0,
@@ -79,10 +80,11 @@ describe('InboxController', () => {
       };
       conversationService.listByProject.mockResolvedValue(response as any);
 
-      const result = await controller.listConversations(mockUser, query);
+      const result = await controller.listConversations(mockUser, projectId, query);
 
       expect(conversationService.listByProject).toHaveBeenCalledWith(
         mockUser,
+        projectId,
         query
       );
       expect(result).toEqual(response);
