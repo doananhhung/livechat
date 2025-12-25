@@ -127,7 +127,10 @@ export const ChatWindow = (props: ChatWindowProps) => {
   return (
     <div
       ref={windowRef}
-      className={`fixed w-96 h-[448px] shadow-2xl flex flex-col fade-in-up z-[9999] ${positionClasses} ${borderRadiusClasses} theme-${theme}`}
+      className={`fixed flex flex-col fade-in-up z-[9999] shadow-2xl bg-white
+        w-[calc(100%-40px)] sm:w-[380px] 
+        h-[calc(100%-120px)] sm:h-[600px] max-h-[750px]
+        ${positionClasses} ${borderRadiusClasses} theme-${theme}`}
       style={windowStyles}
       role="dialog"
       aria-modal="true"

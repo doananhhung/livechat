@@ -35,30 +35,28 @@ export const Header = ({
   headerText 
 }: HeaderProps) => {
 
-  const headerStyle = {
-    background: primaryColor || 'hsl(262 83% 58%)',
-  };
-
   return (
     <div
-      style={headerStyle}
-      className="p-4 text-[var(--widget-text-header)] flex justify-between items-center rounded-t-xl shadow-sm bg-[var(--widget-header-background)]"
+      className="glass-effect p-4 text-[var(--widget-text-header)] flex justify-between items-center z-10 sticky top-0"
       role="banner"
     >
       <div className="flex items-center gap-3">
         {companyLogoUrl && (
-          <img src={companyLogoUrl} alt="Company Logo" className="h-10 w-10 rounded-full object-cover" />
+          <img src={companyLogoUrl} alt="Company Logo" className="h-10 w-10 rounded-full object-cover shadow-sm" />
         )}
         <div>
-          <h3 className="font-semibold text-lg">{headerText || "Chat with us"}</h3>
+          <h3 className="font-bold text-lg leading-tight">{headerText || "Chat with us"}</h3>
           {agentDisplayName && (
-            <p className="text-xs opacity-80">{agentDisplayName}</p>
+            <p className="text-xs font-medium opacity-70 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+              {agentDisplayName}
+            </p>
           )}
         </div>
       </div>
       <button
         onClick={onClose}
-        className="p-1 rounded-full transition-colors hover:bg-white/20"
+        className="p-2 rounded-full transition-all hover:opacity-70 active:scale-95 text-[var(--widget-text-header)]"
         aria-label="Close chat window"
         title="Close chat"
       >

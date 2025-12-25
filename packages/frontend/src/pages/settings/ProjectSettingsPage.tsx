@@ -55,7 +55,7 @@ export const ProjectSettingsPage = () => {
       const settings = currentProject.widgetSettings;
       setTheme(settings.theme || WidgetTheme.LIGHT);
       setHeaderText(settings.headerText || "");
-      setPrimaryColor(settings.primaryColor || "#0066FF");
+      setPrimaryColor(settings.primaryColor || "");
       setWelcomeMessage(settings.welcomeMessage || "");
       setPosition(settings.position || WidgetPosition.BOTTOM_RIGHT);
       setCompanyLogoUrl(settings.companyLogoUrl || "");
@@ -258,24 +258,36 @@ export const ProjectSettingsPage = () => {
                     <label className="block text-sm font-medium text-foreground mb-2">
                       Màu chủ đạo
                     </label>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                    <div className="relative">
                       <Input
                         type="color"
-                        value={primaryColor}
-                        onChange={(e) => setPrimaryColor(e.target.value)}
-                        disabled={updateWidgetMutation.isPending}
-                        className="w-20 h-10"
-                      />
-                      <Input
-                        type="text"
-                        value={primaryColor}
-                        onChange={(e) => setPrimaryColor(e.target.value)}
-                        disabled={updateWidgetMutation.isPending}
-                        className="flex-1"
-                        placeholder="#0066FF"
-                        pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
+                        value={primaryColor || "#6d28d9"} // Default purple for picker preview
+                        onChange={(e) =>
+                          setPrimaryColor(e.target.value)
+                        }
+                        className="w-12 h-10 p-1 cursor-pointer"
                       />
                     </div>
+                    <Input
+                      type="text"
+                      value={primaryColor || ""}
+                      onChange={(e) =>
+                        setPrimaryColor(e.target.value)
+                      }
+                      placeholder="Mặc định (Gradient)"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPrimaryColor("")}
+                      title="Sử dụng màu mặc định"
+                    >
+                      Mặc định
+                    </Button>
+                  </div>
                   </div>
 
                   <div>

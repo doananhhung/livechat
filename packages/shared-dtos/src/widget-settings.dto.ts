@@ -8,6 +8,7 @@ import {
   IsNumber,
   Min,
   Max,
+  ValidateIf,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 import type { IWidgetSettingsDto } from "@live-chat/shared-types";
@@ -63,6 +64,7 @@ export class WidgetSettingsDto implements IWidgetSettingsDto {
     required: false,
   })
   @IsOptional()
+  @ValidateIf((o: WidgetSettingsDto) => o.primaryColor !== "" && o.primaryColor !== null)
   @IsHexColor({ message: "Primary color must be a valid hex color code." })
   primaryColor?: string;
 

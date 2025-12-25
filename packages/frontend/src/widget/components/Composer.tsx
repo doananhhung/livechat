@@ -16,51 +16,72 @@ const TYPING_TIMEOUT = 1500; // ms
 const RATE_LIMIT_COUNT = 10; // Max messages
 const RATE_LIMIT_WINDOW = 60000; // Per 60 seconds
 
-// Dynamic styles based on theme
 const getStyles = (theme: 'light' | 'dark') => ({
   form: {
-    padding: "0.75rem",
-    borderTop: `1px solid ${theme === 'light' ? '#e5e7eb' : '#374151'}`,
-    backgroundColor: theme === 'light' ? '#ffffff' : '#1f2937',
+    padding: "1rem",
+    backgroundColor: "transparent",
+    position: "relative" as const,
   },
   container: {
     display: "flex",
-    alignItems: "center",
-    backgroundColor: theme === 'light' ? '#f3f4f6' : '#374151',
-    borderRadius: "9999px",
-    padding: "0.25rem",
+    alignItems: "flex-end",
+    backgroundColor: "var(--widget-composer-background)", // Use CSS var
+    borderRadius: "1.5rem",
+    padding: "0.5rem",
+    boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
+    border: theme === 'light' ? '1px solid #f3f4f6' : '1px solid rgba(255,255,255,0.1)', // Lighter border in dark mode
+    transition: "box-shadow 0.2s ease, border-color 0.2s ease",
   },
   textarea: {
     width: "100%",
     backgroundColor: "transparent",
     resize: "none" as const,
     border: "none",
-    padding: "0.5rem 0.75rem",
-    color: theme === 'light' ? '#111827' : '#f9fafb',
+    padding: "0.75rem 1rem",
+    color: "var(--widget-text-primary)", // Use CSS var
     outline: "none",
+    fontSize: "0.95rem",
+    lineHeight: "1.4",
+    maxHeight: "120px",
+    minHeight: "24px",
   },
   button: {
-    padding: "0.5rem",
+    padding: "0.75rem",
     color: "#ffffff",
-    backgroundColor: "#2563eb", // Primary color, remains the same
-    borderRadius: "9999px",
+    backgroundColor: "var(--widget-primary-color)", 
+    background: "var(--widget-primary-gradient)",
+    borderRadius: "50%",
     border: "none",
     cursor: "pointer",
-    transition: "background-color 0.2s",
+    transition: "transform 0.1s ease, opacity 0.2s",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: "42px",
+    minHeight: "42px",
+    marginBottom: "2px", 
+    boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
   },
   buttonDisabled: {
-    backgroundColor: "#d1d5db",
+    background: "#d1d5db",
     cursor: "not-allowed",
+    boxShadow: "none",
   },
   charCount: {
-    fontSize: "11px",
+    fontSize: "10px",
     color: theme === 'light' ? '#9ca3af' : '#6b7280',
     textAlign: "right" as const,
-    marginTop: "4px",
+    marginTop: "6px",
+    marginRight: "12px",
+    opacity: 0.7,
   },
   offlineText: {
     textAlign: 'center' as const,
     color: theme === 'light' ? '#6b7280' : '#9ca3af',
+    padding: '1rem',
+    background: theme === 'light' ? '#f3f4f6' : '#374151',
+    borderRadius: '0.75rem',
+    margin: '0 1rem 1rem 1rem',
   }
 });
 
@@ -118,8 +139,12 @@ export const Composer = ({
     return messageTimes.current.length >= RATE_LIMIT_COUNT;
   };
 
+  // Auto-resize textarea
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   const handleTyping = (e: FormEvent<HTMLTextAreaElement>) => {
     const value = e.currentTarget.value;
+    const target = e.currentTarget;
 
     // Enforce max length
     if (value.length > MAX_MESSAGE_LENGTH) {
@@ -129,6 +154,11 @@ export const Composer = ({
 
     setContent(value);
     setError("");
+
+    // Auto-grow logic
+    target.style.height = "auto";
+    const newHeight = Math.min(target.scrollHeight, 120); // Max height 120px (~5-6 lines)
+    target.style.height = `${newHeight}px`;
 
     if (typingTimeoutRef.current === null) {
       onTypingChange(true);
@@ -142,6 +172,7 @@ export const Composer = ({
     }, TYPING_TIMEOUT);
   };
 
+  // Reset height on send
   const sendMessage = () => {
     const trimmedContent = content.trim();
 
@@ -149,20 +180,22 @@ export const Composer = ({
       return;
     }
 
-    // Rate limiting check
     if (isRateLimited()) {
       setError("Sending too fast. Please wait a moment.");
       return;
     }
 
-    // Record timestamp
     messageTimes.current.push(Date.now());
 
     onSendMessage(trimmedContent);
     setContent("");
     setError("");
+    
+    // Reset height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
 
-    // Clear typing indicator
     if (typingTimeoutRef.current !== null) {
       clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = null;
@@ -176,7 +209,7 @@ export const Composer = ({
       sendMessage();
     }
   };
-
+  
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     sendMessage();
@@ -197,6 +230,7 @@ export const Composer = ({
 
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
+      {/* ... error display ... */}
       {error && (
         <div
           style={{
@@ -211,12 +245,13 @@ export const Composer = ({
       )}
       <div style={styles.container}>
         <textarea
+          ref={textareaRef}
           value={content}
           onInput={handleTyping}
           onKeyDown={handleKeyDown}
           disabled={isDisabled}
           placeholder={isDisabled ? "Connecting..." : "Type a message..."}
-          style={styles.textarea}
+          style={{...styles.textarea, height: 'auto', maxHeight: '120px', overflowY: 'auto'}}
           rows={1}
           maxLength={MAX_MESSAGE_LENGTH}
           aria-label="Message input"
@@ -230,9 +265,7 @@ export const Composer = ({
           <SendIcon />
         </button>
       </div>
-      <div
-        style={styles.charCount}
-      >
+      <div style={styles.charCount}>
         {content.length}/{MAX_MESSAGE_LENGTH}
       </div>
     </form>

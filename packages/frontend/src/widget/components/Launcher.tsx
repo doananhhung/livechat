@@ -7,6 +7,7 @@ interface LauncherProps {
   position?: WidgetPosition;
 }
 
+// Original Icon (Simple, Outline)
 const ChatIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -34,13 +35,15 @@ export const Launcher = ({
       ? "bottom-5 left-5" 
       : "bottom-5 right-5";
 
-  const style = primaryColor ? { backgroundColor: primaryColor } : {};
+  const style = primaryColor 
+    ? { backgroundColor: primaryColor } 
+    : { background: 'var(--widget-primary-gradient, var(--widget-primary-color))' };
 
   return (
     <button
       onClick={onClick}
       style={style}
-      className={`fixed w-16 h-16 rounded-full text-[var(--widget-text-on-primary)] bg-[var(--widget-primary-color)] flex items-center justify-center shadow-lg transition-all duration-300 ease-in-out transform hover:scale-110 z-[9999] ${positionClasses}`}
+      className={`fixed w-16 h-16 rounded-full text-[var(--widget-text-on-primary)] flex items-center justify-center shadow-lg transition-all duration-300 ease-in-out transform hover:scale-110 z-[9999] ${positionClasses}`}
       aria-label={`Open chat${
         unreadCount > 0 ? ` (${unreadCount} unread messages)` : ""
       }`}

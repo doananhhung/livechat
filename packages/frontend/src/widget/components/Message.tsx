@@ -73,13 +73,18 @@ export const Message = ({ message, primaryColor, theme }: MessageProps) => {
   const bubbleStyle = useMemo(() => {
     if (isVisitor) {
       return {
-        backgroundColor: primaryColor || '#2563eb',
-        color: isColorLight(primaryColor) ? '#111827' : '#ffffff',
+        // Use gradient if defined in CSS, fallback to primaryColor
+        background: 'var(--widget-primary-gradient, var(--widget-primary-color))',
+        backgroundColor: primaryColor || '#2563eb', // Fallback
+        color: '#ffffff', // Always white on primary gradient
+        boxShadow: "0 2px 4px rgba(0,0,0,0.1)", // Subtle shadow
       };
     } else {
       return {
-        backgroundColor: theme === 'light' ? '#e5e7eb' : '#374151',
+        backgroundColor: theme === 'light' ? '#f3f4f6' : '#374151',
         color: theme === 'light' ? '#1f2937' : '#e5e7eb',
+        // Slight border for contrast in light mode
+        border: theme === 'light' ? '1px solid #e5e7eb' : 'none',
       };
     }
   }, [isVisitor, primaryColor, theme]);
