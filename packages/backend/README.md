@@ -40,7 +40,6 @@ Create a `.env` file in this directory by copying the `.env.example` file. The f
 - **Authentication**: `JWT_SECRET`, `JWT_EXPIRES_IN`, `JWT_REFRESH_SECRET`, `JWT_REFRESH_EXPIRES_IN`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
 - **Two-Factor Auth**: `TWO_FACTOR_AUTH_JWT_SECRET`, `TWO_FACTOR_AUTH_JWT_EXPIRES_IN`, `TWO_FACTOR_APP_NAME`
 - **Application**: `API_BASE_URL`, `NODE_ENV`, `ENCRYPTION_KEY`, `FRONTEND_URL`
-- **AWS (LocalStack)**: `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SQS_QUEUE_URL`
 - **Email**: `MAIL_APP_PASSWORD`, `MAIL_USER`
 
 Refer to the `.env.example` file for more details and default development values.
