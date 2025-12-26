@@ -124,3 +124,6 @@ sequenceDiagram
 *   `AuditLogWriteError` (System Error):
     *   Severity: High (Investigate immediately).
     *   Behavior: Log to stderr, but allow the user operation to proceed (Availability > strict auditing for v1).
+
+### 7. Technical Debt / Deviations
+*   **Deferred Component:** The `AuditLoggerInterceptor` (and the interceptor-based architecture described in Section 3) was deferred to a subsequent slice (`audit_log_interceptor`) to reduce scope complexity. Current implementation includes only `AuditService`, `AuditLog` entity, and `AuditModule`.
