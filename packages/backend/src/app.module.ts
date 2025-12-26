@@ -21,6 +21,7 @@ import { MailModule } from './mail/mail.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bullmq';
 import { TYPEORM_CONFIG } from './database/database.config';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { TYPEORM_CONFIG } from './database/database.config';
     CommonModule,
     MailModule,
     ScreenshotModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [AppService],
