@@ -4,13 +4,14 @@ You are the **Orchestrator**. You drive the File-Based State Machine. The Agents
 
 ---
 
-## THE THREE PERSONAS
+## THE FOUR PERSONAS
 
 | Persona | Role | Writes To | Reads From |
 |---------|------|-----------|------------|
 | **Architect** | Designs constraints, schemas, invariants | `designs/`, `handoffs/` | `reviews/`, `actions/` |
 | **Coder** | Implements designs, writes tests | `reviews/`, `implementation_plans/`, `actions/`, source code | `designs/`, `handoffs/`, `code_reviews/` |
 | **Reviewer** | Reviews code quality, security, performance | `code_reviews/` | `designs/`, `handoffs/`, `implementation_plans/`, `actions/`, source code |
+| **Scribe** | Documents completed features | `docs/` | ALL folders (read only), source code |
 
 ---
 
@@ -22,6 +23,7 @@ sequenceDiagram
     participant Architect
     participant Coder
     participant Reviewer
+    participant Scribe
 
     User->>Architect: Request Feature
     Architect->>Architect: Pre-Mortem & Design
@@ -62,18 +64,21 @@ sequenceDiagram
     Architect->>Architect: HANDOFF (compare design vs implementation)
     Architect-->>User: handoffs/<slice>.md ready
     alt ALIGNED
-        User->>User: Proceed to next slice
+        User->>Scribe: Document feature
+        Scribe->>Scribe: DOCUMENT (synthesize all artifacts)
+        Scribe-->>User: docs/<feature>/ ready
     else DEVIATION
         User->>User: Review deviation
         alt Accept Deviation
-            User->>User: Proceed to next slice
+            User->>Scribe: Document feature
+            Scribe->>Scribe: DOCUMENT
+            Scribe-->>User: docs/<feature>/ ready
         else Fix Deviation
             User->>Coder: Fix deviation
             Coder->>Coder: FIX_DEVIATION
             Coder-->>User: actions/<slice>.md updated
             User->>Reviewer: Re-review
             Reviewer->>Reviewer: REVIEW
-            Reviewer-->>User: code_reviews/<slice>.md
             User->>Architect: Re-verify
         end
     end
@@ -195,14 +200,29 @@ sequenceDiagram
 
 ---
 
-### PHASE 6: COMPLETE
+### PHASE 6: DOCUMENT (Scribe)
+**Goal:** Create comprehensive documentation for future reference.
+**Command:**
+> "Scribe, document the feature `<feature_name>`. Read your instructions in `Scribe_Persona_and_Workflow.md`."
+
+**Expected Output:** Scribe writes to `docs/<feature_name>/`:
+- `overview.md` — Feature purpose and summary
+- `architecture.md` — Technical architecture with diagrams
+- `decisions.md` — Decision log with rationale
+- `changelog.md` — What changed, when, why
+
+**Next Step:** Go to **PHASE 7**
+
+---
+
+### PHASE 7: COMPLETE
 **Goal:** Confirm the slice is done and move to the next.
 **Options:**
 > "Great. Architect, let's move to the next slice: `<next_slice_name>`."
 
 OR
 
-> "This feature is complete. Architect, verify alignment and document any technical debt."
+> "This feature is complete."
 
 ---
 
@@ -213,12 +233,13 @@ All communication happens here:
 
 | Folder | Purpose | Written By | Read By |
 |--------|---------|------------|---------|
-| `designs/<slice>.md` | The Single Source of Truth | Architect | Coder, Reviewer |
-| `handoffs/<slice>.md` | Handoff Verification Report | Architect | User, Coder, Reviewer |
-| `reviews/<slice>.md` | Design Rejection Signal | Coder | Architect |
-| `implementation_plans/<slice>.md` | Test-First Implementation Plan | Coder | User, Reviewer |
-| `actions/<slice>.md` | Implementation Log | Coder | Architect, Reviewer |
-| `code_reviews/<slice>.md` | Code Review Feedback | Reviewer | Coder |
+| `designs/<slice>.md` | The Single Source of Truth | Architect | Coder, Reviewer, Scribe |
+| `handoffs/<slice>.md` | Handoff Verification Report | Architect | User, Coder, Reviewer, Scribe |
+| `reviews/<slice>.md` | Design Rejection Signal | Coder | Architect, Scribe |
+| `implementation_plans/<slice>.md` | Test-First Implementation Plan | Coder | User, Reviewer, Scribe |
+| `actions/<slice>.md` | Implementation Log | Coder | Architect, Reviewer, Scribe |
+| `code_reviews/<slice>.md` | Code Review Feedback | Reviewer | Coder, Scribe |
+| `docs/<feature>/` | Feature Documentation | Scribe | All |
 
 ---
 
