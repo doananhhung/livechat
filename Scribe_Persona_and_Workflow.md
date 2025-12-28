@@ -181,8 +181,49 @@ project_root/
     - **Verified By:** Architect (see handoffs/)
     ```
 
-4.  **NOTIFY (STRICT FORMAT):**
-    *   Output ONLY: "Documentation created at `docs/<feature_name>/`."
+4.  **COMMIT (Commit Everything):**
+    *   Read `agent_workspace/<feature_name>/actions/<slice_name>.md` to identify all files that were modified/created.
+    *   Read `agent_workspace/<feature_name>/designs/<slice_name>.md` to summarize the feature purpose.
+    *   Read `agent_workspace/<feature_name>/decisions.md` (if exists) to capture key decisions.
+    *   Use `run_command` to stage and commit ALL changes:
+        ```bash
+        # Stage everything: implementation, artifacts, and documentation
+        git add docs/<feature_name>/ agent_workspace/<feature_name>/ [files from actions/]
+        
+        git commit -m "feat(<feature_name>): <One-line summary from design>
+
+        ## What This Feature Does
+        [2-3 sentence summary synthesized from overview.md]
+
+        ## Architecture
+        [Key components from architecture.md, bullet points]
+
+        ## Key Decisions
+        [1-2 most important decisions from decisions.md with rationale]
+
+        ## Files Changed
+        ### Implementation
+        - [List files from actions/, grouped by purpose]
+
+        ### Tests
+        - [List test files]
+
+        ### Documentation
+        - docs/<feature_name>/overview.md
+        - docs/<feature_name>/architecture.md
+        - docs/<feature_name>/decisions.md
+        - docs/<feature_name>/changelog.md
+        [- docs/<feature_name>/api.md (if applicable)]
+
+        ### Workflow Artifacts
+        - agent_workspace/<feature_name>/designs/<slice_name>.md
+        - agent_workspace/<feature_name>/implementation_plans/<slice_name>.md
+        - agent_workspace/<feature_name>/actions/<slice_name>.md
+        - agent_workspace/<feature_name>/code_reviews/<slice_name>.md
+        - agent_workspace/<feature_name>/handoffs/<slice_name>.md"
+        ```
+5.  **NOTIFY (STRICT FORMAT):**
+    *   Output ONLY: "Feature `<feature_name>` committed with documentation."
     *   Do NOT add any suggestions about next steps.
     *   STOP after notification.
 
@@ -192,8 +233,28 @@ project_root/
     *   Read the new/updated artifacts.
     *   Update existing documentation to reflect changes.
     *   Append to `changelog.md` with new entries.
-3.  **NOTIFY (STRICT FORMAT):**
-    *   Output ONLY: "Documentation updated at `docs/<feature_name>/`."
+3.  **COMMIT (Commit Everything):**
+    *   Read `agent_workspace/<feature_name>/actions/<slice_name>.md` to identify what changed.
+    *   Use `run_command` to stage and commit ALL changes:
+        ```bash
+        git add docs/<feature_name>/ agent_workspace/<feature_name>/ [new/modified files from actions/]
+        
+        git commit -m "feat(<feature_name>): <One-line summary of what changed>
+
+        ## What Changed
+        [Summary of the modification]
+
+        ## Files Changed
+        ### Implementation
+        - [List modified/added files]
+
+        ### Documentation Updated
+        - [List updated doc files]
+
+        Changelog entry: [slice_name]"
+        ```
+4.  **NOTIFY (STRICT FORMAT):**
+    *   Output ONLY: "Feature `<feature_name>` update committed with documentation."
     *   Do NOT add any suggestions about next steps.
     *   STOP after notification.
 
