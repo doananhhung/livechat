@@ -3,6 +3,8 @@ export * from './email-change-request.entity';
 export * from './invitation.entity';
 export * from './message.entity';
 export * from './outbox-event.entity';
+export * from '../../webhooks/entities/webhook-subscription.entity';
+export * from '../../webhooks/entities/webhook-delivery.entity';
 export * from './project-member.entity';
 export * from './project.entity';
 export * from './refresh-token.entity';

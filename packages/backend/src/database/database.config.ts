@@ -1,6 +1,8 @@
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleAsyncOptions } from '@nestjs/typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import { WebhookSubscription } from '../webhooks/entities/webhook-subscription.entity';
+import { WebhookDelivery } from '../webhooks/entities/webhook-delivery.entity';
 import {
   Conversation,
   EmailChangeRequest,
@@ -33,6 +35,8 @@ export const DATABASE_ENTITIES = [
   UserIdentity,
   Visitor,
   OutboxEvent,
+  WebhookSubscription,
+  WebhookDelivery,
 ];
 
 /**

@@ -109,6 +109,7 @@ export class EventConsumerService {
           message: savedMessage,
           tempId,
           visitorUid,
+          projectId,
         },
         manager
       );

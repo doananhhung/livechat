@@ -22,6 +22,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bullmq';
 import { TYPEORM_CONFIG } from './database/database.config';
 import { AuditModule } from './audit/audit.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { AuditModule } from './audit/audit.module';
     MailModule,
     ScreenshotModule,
     AuditModule,
+    WebhooksModule,
   ],
   controllers: [AppController],
   providers: [AppService],

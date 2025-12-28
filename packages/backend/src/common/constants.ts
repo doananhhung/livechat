@@ -23,6 +23,11 @@ export const NEW_MESSAGE_CHANNEL = 'new_message_channel';
 export const LIVE_CHAT_EVENTS_QUEUE = 'live-chat-events-queue';
 
 /**
+ * Queue for processing outbound webhooks.
+ */
+export const WEBHOOKS_QUEUE = 'webhooks-queue';
+
+/**
  * Default job name for events in the queue
  */
 export const EVENT_JOB_NAME = 'event-job';
