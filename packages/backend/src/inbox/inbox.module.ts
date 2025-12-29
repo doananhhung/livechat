@@ -5,6 +5,7 @@ import { Conversation, Message, Visitor } from '../database/entities';
 import { ConversationService } from './services/conversation.service';
 import { MessageService } from './services/message.service';
 import { InboxController } from './inbox.controller';
+import { AssignmentsController } from './assignments.controller';
 import { EncryptionService } from '../common/services/encryption.service';
 import { GatewayModule } from '../gateway/gateway.module';
 import { VisitorService } from './services/visitor.service';
@@ -30,7 +31,7 @@ import { InboxPersistenceModule } from './inbox.persistence.module';
     VisitorService,
     InboxEventHandlerService,
   ],
-  controllers: [InboxController],
+  controllers: [InboxController, AssignmentsController],
   exports: [ConversationService, MessageService, VisitorService],
 })
 export class InboxModule {}

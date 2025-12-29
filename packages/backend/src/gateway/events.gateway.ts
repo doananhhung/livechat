@@ -36,7 +36,8 @@ import {
   JoinRoomPayload,
   AgentTypingPayload,
   VisitorTypingBroadcastPayload,
-  VisitorContextUpdatedPayload
+  VisitorContextUpdatedPayload,
+  ConversationUpdatedPayload
 } from '@live-chat/shared-types';
 
 const NEW_MESSAGE_CHANNEL = 'new_message_channel';
@@ -61,6 +62,11 @@ export class EventsGateway
     private readonly jwtService: JwtService,
     private readonly userService: UserService
   ) {}
+
+  public emitConversationUpdated(projectId: number, payload: ConversationUpdatedPayload) {
+    this.logger.log(`Emitting conversationUpdated to project:${projectId}`);
+    this.server.to(`project:${projectId}`).emit(WebSocketEvent.CONVERSATION_UPDATED, payload);
+  }
 
   async handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
