@@ -12,6 +12,7 @@ import {
 import { Message } from "./message.entity";
 import { Project } from "./project.entity";
 import { Visitor } from "./visitor.entity";
+import { User } from "./user.entity";
 
 export enum ConversationStatus {
   OPEN = "open",
@@ -41,6 +42,16 @@ export class Conversation {
 
   @Column({ type: "bigint", name: "visitor_id" })
   visitorId: number;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: "assignee_id" })
+  assignee: User | null;
+
+  @Column({ type: "uuid", nullable: true, name: "assignee_id" })
+  assigneeId: string | null;
+
+  @Column({ type: "timestamptz", nullable: true, name: "assigned_at" })
+  assignedAt: Date | null;
 
   @Column({ type: "text", nullable: true, name: "last_message_snippet" })
   lastMessageSnippet: string | null;

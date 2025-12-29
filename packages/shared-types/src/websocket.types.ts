@@ -17,6 +17,7 @@ export enum WebSocketEvent {
   AGENT_TYPING = 'agentIsTyping',
   NEW_MESSAGE = 'newMessage', // Broadcast to agents
   VISITOR_CONTEXT_UPDATED = 'visitorContextUpdated', // Broadcast to agents
+  CONVERSATION_UPDATED = 'conversationUpdated', // Broadcast to agents
 }
 
 export interface IdentifyPayload {
@@ -59,4 +60,9 @@ export interface VisitorContextUpdatedPayload {
 export interface VisitorTypingBroadcastPayload {
   conversationId: number;
   isTyping: boolean;
+}
+
+export interface ConversationUpdatedPayload {
+  conversationId: string;
+  fields: Record<string, any>; // Flexible payload for partial updates
 }

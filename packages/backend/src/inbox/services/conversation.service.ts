@@ -311,4 +311,86 @@ export class ConversationService {
       );
     }
   }
+
+  /**
+   * Assigns a conversation to a specific agent (user).
+   * @param actorId - The ID of the user performing the assignment.
+   * @param conversationId - The ID of the conversation.
+   * @param assigneeId - The ID of the user to assign the conversation to.
+   */
+  async assign(actorId: string, conversationId: string, assigneeId: string): Promise<Conversation> {
+    return this.entityManager.transaction(async (manager) => {
+      // 1. Fetch Conversation
+      const conversation = await manager.findOne(Conversation, {
+        where: { id: conversationId },
+        relations: ['project'],
+      });
+
+      if (!conversation) {
+        throw new NotFoundException(`Conversation with ID ${conversationId} not found.`);
+      }
+
+      // 2. Validate Actor (must be member of project)
+      await this.projectService.validateProjectMembership(conversation.projectId, actorId);
+
+      // 3. Validate Assignee (must be member of project)
+      await this.projectService.validateProjectMembership(conversation.projectId, assigneeId);
+
+      // 4. Update Conversation
+      conversation.assigneeId = assigneeId;
+      conversation.assignedAt = new Date();
+      
+      const updated = await manager.save(conversation);
+
+      // 5. Emit Event
+      this.eventsGateway.emitConversationUpdated(conversation.projectId, {
+        conversationId: conversation.id,
+        fields: {
+          assigneeId: conversation.assigneeId,
+          assignedAt: conversation.assignedAt,
+        },
+      });
+
+      return updated;
+    });
+  }
+
+  /**
+   * Unassigns a conversation.
+   * @param actorId - The ID of the user performing the unassignment.
+   * @param conversationId - The ID of the conversation.
+   */
+  async unassign(actorId: string, conversationId: string): Promise<Conversation> {
+    return this.entityManager.transaction(async (manager) => {
+      // 1. Fetch Conversation
+      const conversation = await manager.findOne(Conversation, {
+        where: { id: conversationId },
+        relations: ['project'],
+      });
+
+      if (!conversation) {
+        throw new NotFoundException(`Conversation with ID ${conversationId} not found.`);
+      }
+
+      // 2. Validate Actor (must be member of project)
+      await this.projectService.validateProjectMembership(conversation.projectId, actorId);
+
+      // 3. Update Conversation
+      conversation.assigneeId = null;
+      conversation.assignedAt = null;
+      
+      const updated = await manager.save(conversation);
+
+      // 4. Emit Event
+      this.eventsGateway.emitConversationUpdated(conversation.projectId, {
+        conversationId: conversation.id,
+        fields: {
+          assigneeId: null,
+          assignedAt: null,
+        },
+      });
+
+      return updated;
+    });
+  }
 }
