@@ -1,5 +1,6 @@
 import { IProject } from "./project.types";
 import { Visitor } from "./visitor.types";
+import { User } from "./user.types";
 
 export enum ConversationStatus {
   OPEN = "open",
@@ -14,6 +15,9 @@ export interface Conversation {
   project?: IProject;
   visitorId: number;
   visitor?: Visitor;
+  assigneeId: string | null;
+  assignee?: User | null;
+  assignedAt: Date | string | null;
   lastMessageSnippet: string | null;
   /** Date on backend, string after JSON serialization on frontend */
   lastMessageTimestamp: Date | string | null;

@@ -1,6 +1,23 @@
 # Changelog: Conversation Assignment
 
-## 2025-12-12 - Initial Implementation
+## 2025-12-12 - Frontend Assignment (Slice 2)
+- **Slice:** `frontend_assignment`
+- **What Changed:** Implemented UI for assigning conversations.
+- **Files Modified/Created:**
+  - `packages/shared-types/src/conversation.types.ts`: Added fields.
+  - `packages/frontend/src/services/inboxApi.ts`: Added hooks.
+  - `packages/frontend/src/components/features/inbox/AssignmentControls.tsx`: New component.
+  - `packages/frontend/src/components/features/inbox/MessagePane.tsx`: Integration.
+  - `packages/frontend/src/components/features/inbox/ConversationList.tsx`: Added avatar.
+  - `packages/frontend/src/contexts/SocketContext.tsx`: Real-time handling.
+- **Features:**
+  - "Assign to Me" button.
+  - Optimistic UI updates.
+  - Real-time sync across clients.
+- **Reviewed By:** Reviewer (see `agent_workspace/conversation_assignment/code_reviews/frontend_assignment.md`)
+- **Verified By:** Architect (see `agent_workspace/conversation_assignment/handoffs/frontend_assignment.md`)
+
+## 2025-12-12 - Initial Implementation (Slice 1)
 - **Slice:** `assignment_engine`
 - **What Changed:** Added ability to assign/unassign conversations.
 - **Files Modified:**

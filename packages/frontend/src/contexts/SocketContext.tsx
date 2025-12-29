@@ -10,7 +10,7 @@ import {
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "../stores/authStore";
 import { useQueryClient } from "@tanstack/react-query";
-import { type Message, WebSocketEvent, type VisitorContextUpdatedPayload, type VisitorTypingBroadcastPayload } from "@live-chat/shared-types";
+import { type Message, WebSocketEvent, type VisitorContextUpdatedPayload, type VisitorTypingBroadcastPayload, type ConversationUpdatedPayload } from "@live-chat/shared-types";
 import { useTypingStore } from "../stores/typingStore";
 import { useProjectStore } from "../stores/projectStore";
 import { useLocation } from "react-router-dom";
@@ -164,10 +164,17 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       }
     };
 
+    const handleConversationUpdated = (payload: ConversationUpdatedPayload) => {
+      console.log('[SocketContext] Received conversationUpdated:', payload);
+      // Invalidate queries to fetch updated assignee details
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    };
+
     socket.on(WebSocketEvent.NEW_MESSAGE, handleNewMessage);
     socket.on(WebSocketEvent.AGENT_REPLIED, handleNewMessage);
     socket.on(WebSocketEvent.VISITOR_TYPING, handleVisitorTyping);
     socket.on(WebSocketEvent.VISITOR_CONTEXT_UPDATED, handleVisitorContextUpdated);
+    socket.on(WebSocketEvent.CONVERSATION_UPDATED, handleConversationUpdated);
 
     // CRITICAL: Always cleanup listeners on unmount or when dependencies change
     return () => {
@@ -175,6 +182,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       socket.off(WebSocketEvent.AGENT_REPLIED, handleNewMessage);
       socket.off(WebSocketEvent.VISITOR_TYPING, handleVisitorTyping);
       socket.off(WebSocketEvent.VISITOR_CONTEXT_UPDATED, handleVisitorContextUpdated);
+      socket.off(WebSocketEvent.CONVERSATION_UPDATED, handleConversationUpdated);
     };
   }, [
     socket,

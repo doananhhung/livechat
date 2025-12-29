@@ -154,11 +154,18 @@ export const ConversationList = () => {
                           conversation.lastMessageSnippet || "Chưa có tin nhắn."
                         )}
                       </p>
-                      {conversation.unreadCount > 0 && (
-                        <span className="bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 min-w-[20px] px-1.5 flex items-center justify-center flex-shrink-0 animate-bounce-subtle">
-                          {conversation.unreadCount}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {conversation.assignee && (
+                          <div title={`Assigned to ${conversation.assignee.fullName}`}>
+                            <Avatar name={conversation.assignee.fullName} size="sm" className="w-5 h-5 text-[10px]" />
+                          </div>
+                        )}
+                        {conversation.unreadCount > 0 && (
+                          <span className="bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 min-w-[20px] px-1.5 flex items-center justify-center flex-shrink-0 animate-bounce-subtle">
+                            {conversation.unreadCount}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

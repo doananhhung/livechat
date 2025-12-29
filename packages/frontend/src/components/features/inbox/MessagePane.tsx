@@ -21,6 +21,8 @@ import { useToast } from "../../ui/use-toast";
 import { Dialog, DialogContent } from "../../ui/Dialog"; // 2. Import Dialog
 import { ZoomIn } from "lucide-react"; // 3. Import an icon
 
+import { AssignmentControls } from "./AssignmentControls";
+
 /**
  * Component displaying detailed visitor information.
  */
@@ -242,23 +244,6 @@ export const MessagePane = () => {
       return c && Number(c.id) === Number(convoId);
     });
 
-  console.log("🔍 Debug MessagePane:");
-  console.log("  - conversationId from params:", conversationId);
-  console.log("  - convoId (parsed):", convoId, "type:", typeof convoId);
-  console.log("  - conversation object:", conversation);
-  console.log(
-    "  - conversation.id:",
-    conversation?.id,
-    "type:",
-    typeof conversation?.id
-  );
-  console.log("  - conversation.status:", conversation?.status);
-  console.log("  - conversation exists?", !!conversation);
-  console.log(
-    "  - ID match?",
-    conversation && Number(conversation.id) === Number(convoId)
-  );
-
   useEffect(() => {
     if (convoId && numericProjectId && conversation && conversation.unreadCount > 0) {
       updateConversation({
@@ -332,6 +317,8 @@ export const MessagePane = () => {
 
           {/* Debug: Always show this section */}
           <div className="flex items-center gap-2">
+            {conversation && <AssignmentControls conversation={conversation} />}
+
             {!conversation && (
               <span className="text-sm text-muted-foreground">
                 Loading conversation...

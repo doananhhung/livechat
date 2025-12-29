@@ -22,3 +22,18 @@
 - **Rationale:** 
     -   The database FK only checks if the user exists in the `users` table, not if they are in the specific `project`. 
     -   This prevents cross-tenant data leaks or confusion.
+
+## Decision 4: Optimistic UI Updates
+- **Date:** 2025-12-12
+- **Context:** Assignment actions should feel instant to the user.
+- **Decision:** Use React Query's `onMutate` to update the UI immediately before the API response arrives.
+- **Rationale:** Reduces perceived latency. If the request fails, we simply roll back.
+
+## Decision 5: Cache Invalidation Strategy
+- **Date:** 2025-12-12
+- **Context:** When a `CONVERSATION_UPDATED` event arrives, the payload contains `assigneeId` but not the full `User` object (name, avatar).
+- **Decision:** Trigger `queryClient.invalidateQueries` to refetch the conversation list/details.
+- **Rationale:** 
+    -   Simpler than trying to manually patch the cache (which would require looking up the User object separately).
+    -   Ensures strong consistency (V1 priority).
+    -   Acceptable performance trade-off for V1.

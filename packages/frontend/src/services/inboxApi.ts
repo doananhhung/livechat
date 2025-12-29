@@ -230,3 +230,119 @@ export const useUpdateConversationStatus = () => {
     },
   });
 };
+
+// --- Assignment Hooks ---
+
+export const assignConversation = async ({
+  projectId,
+  conversationId,
+  assigneeId,
+}: {
+  projectId: number;
+  conversationId: number | string;
+  assigneeId: string;
+}) => {
+  const response = await api.post(
+    `/projects/${projectId}/inbox/conversations/${conversationId}/assignments`,
+    { assigneeId }
+  );
+  return response.data;
+};
+
+export const unassignConversation = async ({
+  projectId,
+  conversationId,
+}: {
+  projectId: number;
+  conversationId: number | string;
+}) => {
+  const response = await api.delete(
+    `/projects/${projectId}/inbox/conversations/${conversationId}/assignments`
+  );
+  return response.data;
+};
+
+export const useAssignConversation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: assignConversation,
+    onMutate: async ({ projectId, conversationId, assigneeId }) => {
+      // Cancel queries
+      await queryClient.cancelQueries({ queryKey: ["conversations"] });
+      
+      // Snapshot previous value
+      const previousConversations = queryClient.getQueryData(["conversations", projectId]);
+
+      // Optimistic update
+      queryClient.setQueryData(["conversations", projectId], (old: any) => {
+        if (!old || !old.pages) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            data: page.data.map((conv: Conversation) =>
+              conv.id === conversationId
+                ? { ...conv, assigneeId, assignedAt: new Date().toISOString() } // Note: assignee object missing, list view handles null check
+                : conv
+            ),
+          })),
+        };
+      });
+
+      return { previousConversations };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousConversations) {
+        queryClient.setQueryData(
+          ["conversations", variables.projectId],
+          context.previousConversations
+        );
+      }
+    },
+    onSettled: (data, error, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+};
+
+export const useUnassignConversation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: unassignConversation,
+    onMutate: async ({ projectId, conversationId }) => {
+      await queryClient.cancelQueries({ queryKey: ["conversations"] });
+
+      const previousConversations = queryClient.getQueryData(["conversations", projectId]);
+
+      queryClient.setQueryData(["conversations", projectId], (old: any) => {
+        if (!old || !old.pages) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            data: page.data.map((conv: Conversation) =>
+              conv.id === conversationId
+                ? { ...conv, assigneeId: null, assignee: null, assignedAt: null }
+                : conv
+            ),
+          })),
+        };
+      });
+
+      return { previousConversations };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousConversations) {
+        queryClient.setQueryData(
+          ["conversations", variables.projectId],
+          context.previousConversations
+        );
+      }
+    },
+    onSettled: (data, error, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+};
