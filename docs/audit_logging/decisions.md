@@ -34,3 +34,18 @@
 - **Context:** Different actions require different context (e.g., `User` update vs `Project` deletion).
 - **Decision:** Use PostgreSQL `JSONB` column.
 - **Rationale:** Allows schema flexibility without migrations for every new event type.
+
+## Decision 5: Project Scoping (Tenancy)
+- **Date:** 2025-12-12
+- **Context:** Users need to see logs for *their* project, but the `audit_logs` table was originally global.
+- **Decision:** Add a nullable `projectId` column to `audit_logs` and enforce filtering in `AuditController`.
+- **Rationale:** 
+    - Strictly enforcing tenant isolation is mandatory for security.
+    - `projectId` allows efficient indexing and querying.
+- **Consequences:** Older logs (from before this column) will have `projectId: null` and won't appear in the UI. Accepted for V1.
+
+## Decision 6: Refactoring to Shared Types
+- **Date:** 2025-12-12
+- **Context:** The Frontend needed to know `AuditAction` enums to build the filter dropdown.
+- **Decision:** Move `AuditAction` and `AuditLog` interfaces to the `shared-types` package.
+- **Rationale:** DRY (Don't Repeat Yourself). Prevents frontend/backend enum drift.

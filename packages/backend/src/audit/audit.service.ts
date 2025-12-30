@@ -1,9 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AuditLog, AuditAction, JsonValue } from './audit.entity';
+import { AuditLog } from './audit.entity';
+import { AuditAction, JsonValue } from '@live-chat/shared-types';
+import { ListAuditLogsDto } from '@live-chat/shared-dtos';
+import { PaginationDto } from '@live-chat/shared-types';
 
 export interface CreateAuditLogDto {
+  projectId?: number;
   actorId?: string | null;
   actorType?: 'USER' | 'SYSTEM' | 'API_KEY';
   ipAddress?: string | null;
@@ -26,8 +30,6 @@ export class AuditService {
   async log(dto: CreateAuditLogDto): Promise<void> {
     try {
       // 1. Validation: Safe JSON check
-      // We rely on JSON.stringify to detect circular references or unsafe types
-      // Only do this if metadata is present
       if (dto.metadata) {
         try {
            JSON.stringify(dto.metadata);
@@ -40,6 +42,7 @@ export class AuditService {
       const actorType = dto.actorType ?? (dto.actorId ? 'USER' : 'SYSTEM');
 
       const logEntry = this.auditRepository.create({
+        projectId: dto.projectId ?? null,
         actorId: dto.actorId ?? null,
         actorType: actorType,
         ipAddress: dto.ipAddress ?? null,
@@ -55,7 +58,42 @@ export class AuditService {
     } catch (error) {
       // 4. Fail Open
       this.logger.error(`AuditLogWriteError: Failed to write audit log for ${dto.entity}:${dto.entityId}`, error);
-      // We do NOT re-throw, per design "Fail Open"
     }
+  }
+
+  async findAll(projectId: number, query: ListAuditLogsDto): Promise<PaginationDto<AuditLog>> {
+    const { action, actorId, startDate, endDate, page = 1, limit = 20 } = query;
+    const qb = this.auditRepository.createQueryBuilder('audit');
+
+    qb.where('audit.projectId = :projectId', { projectId });
+
+    if (action) {
+      qb.andWhere('audit.action = :action', { action });
+    }
+
+    if (actorId) {
+      qb.andWhere('audit.actorId = :actorId', { actorId });
+    }
+
+    if (startDate) {
+      qb.andWhere('audit.createdAt >= :startDate', { startDate });
+    }
+
+    if (endDate) {
+      qb.andWhere('audit.createdAt <= :endDate', { endDate });
+    }
+
+    qb.orderBy('audit.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [data, total] = await qb.getManyAndCount();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+    };
   }
 }

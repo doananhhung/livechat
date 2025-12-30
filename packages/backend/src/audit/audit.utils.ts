@@ -1,4 +1,4 @@
-import { JsonValue } from "./audit.entity";
+import { JsonValue } from "@live-chat/shared-types";
 
 /**
  * Recursively scrubs sensitive keys from an object, replacing their values with '[REDACTED]'.

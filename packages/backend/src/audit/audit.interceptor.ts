@@ -10,7 +10,7 @@ import { Observable, throwError } from "rxjs";
 import { tap, catchError } from "rxjs/operators";
 import { AuditService } from "./audit.service";
 import { AUDIT_LOG_METADATA, AuditableMetadata } from "./auditable.decorator";
-import { JsonValue } from "./audit.entity";
+import { JsonValue } from "@live-chat/shared-types";
 import { Request } from "express";
 import { sanitizeMetadata, DEFAULT_SENSITIVE_KEYS } from "./audit.utils";
 import { RequestWithUser } from "../common/interfaces/request-with-user.interface";
@@ -40,6 +40,16 @@ export class AuditLoggerInterceptor implements NestInterceptor {
     const actorId = user?.id ? String(user.id) : null;
     const ipAddress = ip || null;
     const userAgent = headers["user-agent"] || null;
+    
+    let projectId: number | undefined;
+    if (params.projectId) {
+      projectId = parseInt(params.projectId, 10);
+    } else if (body && body.projectId) {
+      projectId = parseInt(body.projectId, 10);
+    }
+    if (projectId && isNaN(projectId)) {
+      projectId = undefined;
+    }
 
     return next.handle().pipe(
       tap((responseBody) => {
@@ -61,6 +71,7 @@ export class AuditLoggerInterceptor implements NestInterceptor {
 
           this.auditService
             .log({
+              projectId,
               actorId,
               actorType: actorId ? "USER" : "SYSTEM",
               ipAddress,
@@ -87,6 +98,7 @@ export class AuditLoggerInterceptor implements NestInterceptor {
             
             this.auditService
             .log({
+                projectId,
                 actorId,
                 actorType: actorId ? "USER" : "SYSTEM",
                 ipAddress,

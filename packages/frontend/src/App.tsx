@@ -60,6 +60,11 @@ const ProjectSettingsPage = lazy(() =>
     default: m.ProjectSettingsPage,
   }))
 );
+const AuditLogsPage = lazy(() =>
+  import("./pages/settings/AuditLogsPage").then((m) => ({
+    default: m.AuditLogsPage,
+  }))
+);
 const ProjectsListPage = lazy(() =>
   import("./pages/settings/ProjectsListPage").then((m) => ({
     default: m.ProjectsListPage,
@@ -202,6 +207,10 @@ function App() {
             <Route
               path="/projects/:projectId/settings"
               element={<ProjectSettingsPage />}
+            />
+            <Route
+              path="/projects/:projectId/settings/audit-logs"
+              element={<AuditLogsPage />}
             />
 
             {/* Invitation management (protected) */}

@@ -1,5 +1,5 @@
 import { SetMetadata } from "@nestjs/common";
-import { AuditAction, JsonValue } from "./audit.entity";
+import { AuditAction, JsonValue } from "@live-chat/shared-types";
 
 export const AUDIT_LOG_METADATA = "audit_log_metadata";
 

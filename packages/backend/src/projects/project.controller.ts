@@ -19,7 +19,7 @@ import {
   AcceptInvitationDto,
 } from '@live-chat/shared-dtos';
 import { User } from '../database/entities';
-import { ProjectRole } from '@live-chat/shared-types';
+import { ProjectRole, AuditAction } from '@live-chat/shared-types';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetCurrentUser } from '../common/decorators/get-current-user.decorator';
 import { RolesGuard } from '../rbac/roles.guard';
@@ -27,6 +27,7 @@ import { Roles } from '../rbac/roles.decorator';
 import { InvitationService } from './invitation.service';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../common/decorators/public.decorator';
+import { Auditable } from '../audit/auditable.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('projects')
@@ -49,6 +50,7 @@ export class ProjectController {
     return this.projectService.findAllForUser(user.id);
   }
 
+  @Auditable({ action: AuditAction.UPDATE, entity: 'Project' })
   @Roles(ProjectRole.MANAGER)
   @Patch(':projectId')
   update(
@@ -132,6 +134,7 @@ export class ProjectController {
     return this.projectService.getProjectMembers(projectId, user.id);
   }
 
+  @Auditable({ action: AuditAction.UPDATE, entity: 'ProjectMember' })
   @Roles(ProjectRole.MANAGER)
   @Patch(':projectId/members/:userId/role')
   updateMemberRole(

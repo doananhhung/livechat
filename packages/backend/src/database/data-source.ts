@@ -14,6 +14,9 @@ import {
   EmailChangeRequest,
   OutboxEvent,
 } from './entities';
+import { WebhookSubscription } from '../webhooks/entities/webhook-subscription.entity';
+import { WebhookDelivery } from '../webhooks/entities/webhook-delivery.entity';
+import { AuditLog } from '../audit/audit.entity';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import * as dotenv from 'dotenv';
 import { ConfigService } from '@nestjs/config';
@@ -55,6 +58,9 @@ export const AppDataSource = new DataSource({
     Visitor,
     EmailChangeRequest,
     OutboxEvent,
+    WebhookSubscription,
+    WebhookDelivery,
+    AuditLog,
   ],
   migrations: ['src/database/migrations/*.ts'],
   namingStrategy: new SnakeNamingStrategy(),

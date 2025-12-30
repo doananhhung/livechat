@@ -13,6 +13,7 @@ export * from './invitation.dto';
 
 export * from './list-conversations.dto';
 export * from './list-messages.dto';
+export * from './list-audit-logs.dto';
 export * from './login.dto';
 
 

@@ -1,23 +1,14 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 'typeorm';
-
-export enum AuditAction {
-  CREATE = 'CREATE',
-  UPDATE = 'UPDATE',
-  DELETE = 'DELETE',
-  LOGIN = 'LOGIN',
-  LOGOUT = 'LOGOUT',
-  FAILED_LOGIN = 'FAILED_LOGIN',
-}
-
-export type JsonPrimitive = string | number | boolean | null;
-export type JsonArray = JsonValue[];
-export type JsonObject = { [key: string]: JsonValue };
-export type JsonValue = JsonPrimitive | JsonObject | JsonArray;
+import { AuditAction, JsonValue } from '@live-chat/shared-types';
 
 @Entity('audit_logs')
 export class AuditLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Index()
+  @Column({ type: 'int', nullable: true })
+  projectId: number | null;
 
   @Index()
   @Column({ type: 'varchar', nullable: true })
