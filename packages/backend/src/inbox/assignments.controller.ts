@@ -3,13 +3,17 @@ import { ConversationService } from './services/conversation.service';
 import { AssignConversationDto } from './dto/assign-conversation.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/types/authenticated-request.interface';
+import { RolesGuard } from '../rbac/roles.guard';
+import { Roles } from '../rbac/roles.decorator';
+import { ProjectRole } from '@live-chat/shared-types';
 
-@Controller('conversations/:id/assignments')
-@UseGuards(JwtAuthGuard)
+@Controller('projects/:projectId/inbox/conversations/:id/assignments')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class AssignmentsController {
   constructor(private readonly conversationService: ConversationService) {}
 
   @Post()
+  @Roles(ProjectRole.AGENT)
   @HttpCode(200)
   async assign(
     @Param('id') id: string,
@@ -20,6 +24,7 @@ export class AssignmentsController {
   }
 
   @Delete()
+  @Roles(ProjectRole.AGENT)
   @HttpCode(200)
   async unassign(
     @Param('id') id: string,

@@ -233,6 +233,17 @@ export const MessagePane = () => {
   const { mutate: updateConversation, isPending: isUpdatingStatus } =
     useUpdateConversationStatus();
 
+  // Force re-render when conversations cache updates
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+      if (event.query.queryKey[0] === 'conversations') {
+        setTick((t) => t + 1);
+      }
+    });
+    return unsubscribe;
+  }, [queryClient]);
+
   // Find the conversation from the infinite query cache
   const conversation = queryClient
     .getQueriesData<InfiniteData<{ data: Conversation[] }>>({

@@ -12,6 +12,7 @@
 5.  **API:** Created `AssignmentsController` (`POST`, `DELETE`).
 6.  **Tests:** Created `assignments.e2e-spec.ts` covering happy path, edge cases (non-members), and unassignment.
 7.  **Fixes (Review):** Added missing E2E tests for 404 (non-existent conversation) and 400 (invalid UUID) errors.
+8.  **Fixes (Bug):** Updated `AssignmentsController` path to `'projects/:projectId/inbox/conversations/:id/assignments'` to match frontend request structure. Added `@Roles` guards. Updated E2E tests to reflect new path.
 
 ## Verification
 -   Run `npm run test:e2e packages/backend/test/assignments.e2e-spec.ts` to verify.

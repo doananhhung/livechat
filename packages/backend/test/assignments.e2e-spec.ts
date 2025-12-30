@@ -93,10 +93,10 @@ describe('Assignments Engine (E2E)', () => {
     conversationId = convRes[0].id;
   });
 
-  describe('POST /conversations/:id/assignments', () => {
+  describe('POST /projects/:projectId/inbox/conversations/:id/assignments', () => {
     it('should assign conversation to self (Manager)', async () => {
       await agent
-        .post(`/conversations/${conversationId}/assignments`)
+        .post(`/projects/${projectId}/inbox/conversations/${conversationId}/assignments`)
         .set('Authorization', `Bearer ${managerToken}`)
         .send({ assigneeId: managerId })
         .expect(200);
@@ -108,7 +108,7 @@ describe('Assignments Engine (E2E)', () => {
 
     it('should assign conversation to another member', async () => {
       await agent
-        .post(`/conversations/${conversationId}/assignments`)
+        .post(`/projects/${projectId}/inbox/conversations/${conversationId}/assignments`)
         .set('Authorization', `Bearer ${managerToken}`) // Manager assigns to Member
         .send({ assigneeId: memberId })
         .expect(200);
@@ -119,7 +119,7 @@ describe('Assignments Engine (E2E)', () => {
 
     it('should allow member to claim conversation', async () => {
       await agent
-        .post(`/conversations/${conversationId}/assignments`)
+        .post(`/projects/${projectId}/inbox/conversations/${conversationId}/assignments`)
         .set('Authorization', `Bearer ${memberToken}`)
         .send({ assigneeId: memberId }) // Member assigns to Self
         .expect(200);
@@ -135,7 +135,7 @@ describe('Assignments Engine (E2E)', () => {
         .send({ assigneeId: managerId });
       
       // Then re-assign to Member
-      await agent.post(`/conversations/${conversationId}/assignments`)
+      await agent.post(`/projects/${projectId}/inbox/conversations/${conversationId}/assignments`)
         .set('Authorization', `Bearer ${managerToken}`)
         .send({ assigneeId: memberId })
         .expect(200);
@@ -149,7 +149,7 @@ describe('Assignments Engine (E2E)', () => {
       const strangerId = (await harness.dataSource.query(`SELECT id FROM users WHERE email = 'stranger@example.com'`))[0].id;
       
       await agent
-        .post(`/conversations/${conversationId}/assignments`)
+        .post(`/projects/${projectId}/inbox/conversations/${conversationId}/assignments`)
         .set('Authorization', `Bearer ${managerToken}`)
         .send({ assigneeId: strangerId })
         .expect(403); // Or 400? The service throws Forbidden if user not in project.
@@ -158,7 +158,7 @@ describe('Assignments Engine (E2E)', () => {
 
     it('should fail if actor is NOT in project', async () => {
       await agent
-        .post(`/conversations/${conversationId}/assignments`)
+        .post(`/projects/${projectId}/inbox/conversations/${conversationId}/assignments`)
         .set('Authorization', `Bearer ${strangerToken}`) // Stranger tries to assign
         .send({ assigneeId: managerId })
         .expect(403);
@@ -166,7 +166,7 @@ describe('Assignments Engine (E2E)', () => {
 
     it('should return 404 if conversation does not exist', async () => {
       await agent
-        .post(`/conversations/999999/assignments`)
+        .post(`/projects/${projectId}/inbox/conversations/999999/assignments`)
         .set('Authorization', `Bearer ${managerToken}`)
         .send({ assigneeId: managerId })
         .expect(404);
@@ -174,20 +174,20 @@ describe('Assignments Engine (E2E)', () => {
 
     it('should return 400 if assigneeId is invalid UUID', async () => {
       await agent
-        .post(`/conversations/${conversationId}/assignments`)
+        .post(`/projects/${projectId}/inbox/conversations/${conversationId}/assignments`)
         .set('Authorization', `Bearer ${managerToken}`)
         .send({ assigneeId: 'not-a-uuid' })
         .expect(400);
     });
   });
 
-  describe('DELETE /conversations/:id/assignments', () => {
+  describe('DELETE /projects/:projectId/inbox/conversations/:id/assignments', () => {
     it('should unassign conversation', async () => {
       // Setup: Assign first
       await harness.dataSource.query(`UPDATE conversations SET assignee_id = '${managerId}', assigned_at = NOW() WHERE id = ${conversationId}`);
 
       await agent
-        .delete(`/conversations/${conversationId}/assignments`)
+        .delete(`/projects/${projectId}/inbox/conversations/${conversationId}/assignments`)
         .set('Authorization', `Bearer ${managerToken}`)
         .expect(200);
 
@@ -198,7 +198,7 @@ describe('Assignments Engine (E2E)', () => {
 
     it('should succeed even if already unassigned', async () => {
        await agent
-        .delete(`/conversations/${conversationId}/assignments`)
+        .delete(`/projects/${projectId}/inbox/conversations/${conversationId}/assignments`)
         .set('Authorization', `Bearer ${managerToken}`)
         .expect(200);
     });

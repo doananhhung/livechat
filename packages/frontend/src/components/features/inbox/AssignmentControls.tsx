@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
-import type { Conversation, User } from '@live-chat/shared-types';
-import { useAuthStore } from '../../../stores/authStore';
-import { useProjectStore } from '../../../stores/projectStore';
-import { useAssignConversation, useUnassignConversation } from '../../../services/inboxApi';
-import { UserPlus, UserMinus, UserCheck, ChevronDown } from 'lucide-react';
+import React, { useState } from "react";
+import type { Conversation, User } from "@live-chat/shared-types";
+import { useAuthStore } from "../../../stores/authStore";
+import { useProjectStore } from "../../../stores/projectStore";
+import {
+  useAssignConversation,
+  useUnassignConversation,
+} from "../../../services/inboxApi";
+import { UserPlus, UserCheck } from "lucide-react";
 
 // Simplified Dropdown for V1 (standard select or custom div)
 // In a real app we'd use Radix UI Popover
@@ -12,19 +15,20 @@ interface AssignmentControlsProps {
   conversation: Conversation;
 }
 
-export const AssignmentControls: React.FC<AssignmentControlsProps> = ({ conversation }) => {
+export const AssignmentControls: React.FC<AssignmentControlsProps> = ({
+  conversation,
+}) => {
   const { user } = useAuthStore();
-  const { currentProject } = useProjectStore();
+  const { currentProjectId } = useProjectStore();
   const assignMutation = useAssignConversation();
   const unassignMutation = useUnassignConversation();
-  const [isOpen, setIsOpen] = useState(false);
 
   // Fallback if stores not ready
-  if (!user || !currentProject) return null;
+  if (!user || !currentProjectId) return null;
 
   const handleAssignToMe = () => {
     assignMutation.mutate({
-      projectId: currentProject.id,
+      projectId: currentProjectId,
       conversationId: conversation.id,
       assigneeId: user.id,
     });
@@ -32,7 +36,7 @@ export const AssignmentControls: React.FC<AssignmentControlsProps> = ({ conversa
 
   const handleUnassign = () => {
     unassignMutation.mutate({
-      projectId: currentProject.id,
+      projectId: currentProjectId,
       conversationId: conversation.id,
     });
   };
@@ -63,8 +67,14 @@ export const AssignmentControls: React.FC<AssignmentControlsProps> = ({ conversa
       >
         <UserCheck size={16} />
         Assigned to Me
-        <span className="ml-1 text-xs text-green-500 hover:text-red-500" onClick={(e) => { e.stopPropagation(); handleUnassign(); }}>
-             (Unassign)
+        <span
+          className="ml-1 text-xs text-green-500 hover:text-red-500"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleUnassign();
+          }}
+        >
+          (Unassign)
         </span>
       </button>
     );
@@ -74,10 +84,10 @@ export const AssignmentControls: React.FC<AssignmentControlsProps> = ({ conversa
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-50 rounded-md border border-gray-200">
       <div className="w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center text-xs text-white">
-        {conversation.assignee?.fullName?.charAt(0) || 'A'}
+        {conversation.assignee?.fullName?.charAt(0) || "A"}
       </div>
-      <span>{conversation.assignee?.fullName || 'Agent'}</span>
-       {/* Future: Allow reassigning from peer */}
+      <span>{conversation.assignee?.fullName || "Agent"}</span>
+      {/* Future: Allow reassigning from peer */}
     </div>
   );
 };

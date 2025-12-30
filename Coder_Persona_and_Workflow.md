@@ -169,14 +169,45 @@ project_root/
     *   Use `write_file` and `replace` tools to modify the **ACTUAL** project source code (e.g., `src/...`, `tests/...`).
     *   **Constraint:** **Test-First.** For any new public function or method, define at least one test case (success + primary failure) *before* writing the implementation. Internal/private helpers do not require individual tests if covered by integration tests.
     *   **Constraint:** **NO CHAT CODE.** Apply changes directly to files.
-3.  **VERIFY:**
-    *   Run all tests using `run_command` (e.g., `npm test`, `npm run test:e2e`, `pytest`, etc.).
-    *   **All tests MUST pass.** If any test fails, fix the code until all tests pass.
-    *   Do NOT proceed to LOG until all tests pass.
+
+    **Backend Testing (MANDATORY):**
+    *   Unit tests for all services, utilities, and business logic.
+    *   E2E tests for API endpoints.
+
+    **Frontend Testing (Testing Trophy Approach):**
+    *   **Custom Hooks/Utilities:** Unit tests required (Jest/Vitest).
+    *   **Components with Logic:** Integration test via React Testing Library (test behavior, not implementation).
+    *   **Critical User Flows:** At least 1 E2E test per feature using Playwright/browser subagent.
+    *   **Pure UI Components:** No test required IF they have no logic (pure props → render).
+
+    **Database Migrations (MANDATORY):**
+    *   If you modify any database entity (add/remove columns, change types, add tables), you MUST:
+        1.  Generate migration: `npm run migration:generate -- -n <MigrationName>`
+        2.  Review the generated migration file for correctness.
+        3.  Run migration: `npm run migration:run`
+        4.  Verify migration succeeded before proceeding.
+    *   **NEVER leave entity changes without a corresponding migration.**
+
+3.  **VERIFY (All Must Pass Before LOG):**
+    
+    **Step 1: Type Check (TypeScript)**
+    *   Run `run_command`: `npx tsc --noEmit`
+    *   **All type errors MUST be resolved.** If any type error exists, fix the code.
+    
+    **Step 2: Build**
+    *   Run `run_command`: `npm run build`
+    *   **Build MUST succeed.** If build fails, fix the code.
+    
+    **Step 3: Tests**
+    *   Run `run_command`: `npm test`, `npm run test:e2e`, etc.
+    *   **All tests MUST pass.** If any test fails, fix the code.
+    
+    **Order is mandatory:** Type Check → Build → Tests. Do NOT proceed to LOG until ALL pass.
+
 4.  **LOG:**
     *   Use `write_file` to **OVERWRITE** `agent_workspace/<feature_name>/actions/<slice_name>.md` with a summary of changes.
-    *   Include the test run result (e.g., "All X tests passed").
-5.  **NOTIFY:** Inform the User: "Implementation complete. All tests passed. Log updated in `actions/`. Ready for Reviewer."
+    *   Include verification results: "Type check passed. Build succeeded. All X tests passed."
+5.  **NOTIFY:** Inform the User: "Implementation complete. Type check, build, and tests passed. Log updated in `actions/`. Ready for review."
 
 **STATE 4: FIX (The "Correction" State)**
 1.  **TRIGGER:** Reviewer has filed feedback in `code_reviews/<slice_name>.md` with status `CHANGES_REQUESTED`.

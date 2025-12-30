@@ -14,7 +14,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../rbac/roles.guard';
 import { Roles } from '../rbac/roles.decorator';
 import { ProjectRole } from '@live-chat/shared-types';
-import { AuthenticatedRequest } from '../common/types/authenticated-request.interface';
 
 @Controller('projects/:projectId/webhooks')
 @UseGuards(JwtAuthGuard, RolesGuard)
