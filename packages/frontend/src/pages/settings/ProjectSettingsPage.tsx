@@ -7,7 +7,7 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Spinner } from "../../components/ui/Spinner";
 import { useToast } from "../../components/ui/use-toast";
-import { ChevronRight, ArrowLeft, Info, Palette, Code } from "lucide-react";
+import { ChevronRight, ArrowLeft, Info, Palette, Code, ShieldAlert } from "lucide-react";
 import { PermissionGate } from "../../components/PermissionGate";
 import { ProjectRole, WidgetPosition, WidgetTheme } from "@live-chat/shared-types";
 import { ProjectBasicSettingsForm } from "../../components/projects/ProjectBasicSettingsForm";
@@ -444,6 +444,27 @@ export const ProjectSettingsPage = () => {
               </Button>
             </div>
           )}
+        </div>
+
+        {/* Audit Logs Link */}
+        <div className="bg-card border rounded-lg overflow-hidden">
+          <button
+            onClick={() => navigate(`/projects/${projectId}/settings/audit-logs`)}
+            className="group w-full px-6 py-4 flex items-center justify-between hover:bg-accent transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <ShieldAlert className="h-5 w-5 text-muted-foreground" />
+              <div className="text-left">
+                <h2 className="text-lg font-semibold text-foreground">
+                  Nhật ký hoạt động
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Xem lịch sử thay đổi và bảo mật
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-200" />
+          </button>
         </div>
       </div>
     </div>

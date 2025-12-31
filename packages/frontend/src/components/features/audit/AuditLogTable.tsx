@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useGetAuditLogs } from '../../../services/auditApi';
-import { AuditLogDto, AuditAction } from '@live-chat/shared-types';
+import type { AuditLogDto } from '@live-chat/shared-types';
+import { AuditAction } from '@live-chat/shared-types';
 import { Spinner } from '../../ui/Spinner';
 import { Button } from '../../ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/Dialog';

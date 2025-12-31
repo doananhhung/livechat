@@ -17,11 +17,7 @@
     *   Created `auditApi` service.
     *   Created `AuditLogTable` component with filtering and details modal.
     *   Added `AuditLogsPage` and linked it in `ProjectManagementMenu`.
-5.  **Tests:** Created `packages/backend/test/audit.e2e-spec.ts` covering:
-    *   Role-based access control (Manager vs Agent).
-    *   Project scope isolation.
-    *   Filtering.
-    *   Interceptor data integrity (automatic `projectId` capture).
+    *   **Fix:** Updated `AuditLogTable.tsx` to use type-only import for `AuditLogDto`.
 
 ## Verification
 -   Run `npm run test:e2e packages/backend/test/audit.e2e-spec.ts` to verify backend logic.
