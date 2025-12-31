@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuditService } from './audit.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { AuditAction, AuditLog } from './audit.entity';
+import { AuditAction } from '@live-chat/shared-types';
+import { AuditLog } from './audit.entity';
 import { Repository } from 'typeorm';
 
 const mockRepository = {

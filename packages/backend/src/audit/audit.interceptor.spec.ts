@@ -5,7 +5,7 @@ import { Reflector } from '@nestjs/core';
 import { ExecutionContext, CallHandler } from '@nestjs/common';
 import { of, throwError } from 'rxjs';
 import { AUDIT_LOG_METADATA } from './auditable.decorator';
-import { AuditAction } from './audit.entity';
+import { AuditAction } from '@live-chat/shared-types';
 import { RequestWithUser, AuthenticatedUser } from '../common/interfaces/request-with-user.interface';
 import { DEFAULT_SENSITIVE_KEYS } from './audit.utils';
 

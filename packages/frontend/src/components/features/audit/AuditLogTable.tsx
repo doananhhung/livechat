@@ -35,9 +35,9 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ projectId }) => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Audit Logs</h3>
+        <h3 className="text-lg font-medium text-foreground">Audit Logs</h3>
         <select 
-          className="border rounded p-1 text-sm"
+          className="border rounded p-1 text-sm bg-background text-foreground border-input"
           value={actionFilter || ''}
           onChange={(e) => {
             const val = e.target.value as AuditAction;
@@ -53,36 +53,36 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ projectId }) => {
       </div>
 
       <div className="border rounded-md overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-border">
+          <thead className="bg-muted">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actor</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entity</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Date</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actor</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Action</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Entity</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Details</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-card divide-y divide-border">
             {logs.map((log) => (
               <tr key={log.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                   {format(new Date(log.createdAt), 'MMM d, yyyy HH:mm')}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                   {log.actorId ? (
                     <span title={log.actorId}>User</span>
                   ) : (
-                    <span className="text-gray-500 italic">{log.actorType}</span>
+                    <span className="text-muted-foreground italic">{log.actorType}</span>
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
                     {log.action}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {log.entity} <span className="text-xs text-gray-400">({log.entityId.substring(0, 8)}...)</span>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                  {log.entity} <span className="text-xs text-muted-foreground/70">({log.entityId.substring(0, 8)}...)</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <Button variant="ghost" size="sm" onClick={() => setSelectedLog(log)}>View</Button>
@@ -91,7 +91,7 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ projectId }) => {
             ))}
             {logs.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                <td colSpan={5} className="px-6 py-4 text-center text-sm text-muted-foreground">
                   No logs found.
                 </td>
               </tr>
@@ -110,7 +110,7 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ projectId }) => {
           >
             Previous
           </Button>
-          <span className="text-sm flex items-center">Page {page} of {totalPages}</span>
+          <span className="text-sm flex items-center text-muted-foreground">Page {page} of {totalPages}</span>
           <Button 
             variant="outline" 
             size="sm" 
@@ -137,7 +137,7 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ projectId }) => {
               </div>
               <div>
                 <strong>Metadata:</strong>
-                <pre className="bg-gray-100 p-4 rounded-md text-xs overflow-auto mt-2 max-h-96">
+                <pre className="bg-muted p-4 rounded-md text-xs overflow-auto mt-2 max-h-96 text-foreground">
                   {JSON.stringify(selectedLog.metadata, null, 2)}
                 </pre>
               </div>
