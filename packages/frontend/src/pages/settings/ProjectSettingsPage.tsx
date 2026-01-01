@@ -7,7 +7,7 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Spinner } from "../../components/ui/Spinner";
 import { useToast } from "../../components/ui/use-toast";
-import { ChevronRight, ArrowLeft, Info, Palette, Code, ShieldAlert } from "lucide-react";
+import { ChevronRight, ArrowLeft, Info, Palette, Code, ShieldAlert, MessageSquarePlus } from "lucide-react";
 import { PermissionGate } from "../../components/PermissionGate";
 import { ProjectRole, WidgetPosition, WidgetTheme } from "@live-chat/shared-types";
 import { ProjectBasicSettingsForm } from "../../components/projects/ProjectBasicSettingsForm";
@@ -444,6 +444,27 @@ export const ProjectSettingsPage = () => {
               </Button>
             </div>
           )}
+        </div>
+
+        {/* Canned Responses Link */}
+        <div className="bg-card border rounded-lg overflow-hidden">
+          <button
+            onClick={() => navigate(`/projects/${projectId}/settings/canned-responses`)}
+            className="group w-full px-6 py-4 flex items-center justify-between hover:bg-accent transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <MessageSquarePlus className="h-5 w-5 text-muted-foreground" />
+              <div className="text-left">
+                <h2 className="text-lg font-semibold text-foreground">
+                  Mẫu câu trả lời
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Quản lý các phím tắt tin nhắn nhanh
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-200" />
+          </button>
         </div>
 
         {/* Audit Logs Link */}

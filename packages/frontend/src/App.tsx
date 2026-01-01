@@ -65,6 +65,11 @@ const AuditLogsPage = lazy(() =>
     default: m.AuditLogsPage,
   }))
 );
+const CannedResponsesPage = lazy(() =>
+  import("./pages/settings/CannedResponsesPage").then((m) => ({
+    default: m.CannedResponsesPage,
+  }))
+);
 const ProjectsListPage = lazy(() =>
   import("./pages/settings/ProjectsListPage").then((m) => ({
     default: m.ProjectsListPage,
@@ -211,6 +216,10 @@ function App() {
             <Route
               path="/projects/:projectId/settings/audit-logs"
               element={<AuditLogsPage />}
+            />
+            <Route
+              path="/projects/:projectId/settings/canned-responses"
+              element={<CannedResponsesPage />}
             />
 
             {/* Invitation management (protected) */}

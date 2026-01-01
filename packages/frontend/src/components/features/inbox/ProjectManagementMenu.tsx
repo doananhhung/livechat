@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings, UserPlus, Info, Users, Sliders, ShieldAlert } from "lucide-react";
+import { Settings, UserPlus, Info, Users, Sliders, ShieldAlert, MessageSquarePlus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,6 +66,13 @@ export const ProjectManagementMenu = ({
           >
             <Sliders className="h-4 w-4 mr-2" />
             Cài đặt chi tiết
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={() => navigate(`/projects/${project.id}/settings/canned-responses`)}
+          >
+            <MessageSquarePlus className="h-4 w-4 mr-2" />
+            Mẫu câu trả lời
           </DropdownMenuItem>
 
           <DropdownMenuItem
