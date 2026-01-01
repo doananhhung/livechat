@@ -11,10 +11,12 @@
     *   Created `CannedResponsesPage.tsx`.
     *   Added navigation links in `ProjectManagementMenu` and `ProjectSettingsPage`.
     *   Added route in `App.tsx`.
+    *   **Fix:** Enforced regex validation on shortcut input to prevent invalid characters.
 3.  **Composer Integration:**
     *   Created `SlashCommandPopover.tsx` to display filtered canned responses.
     *   Updated `MessageComposer.tsx` to detect `/` trigger and render popover.
     *   Implemented text replacement logic.
+4.  **Backend Fix:** Fixed `LoggerMiddleware` to correctly log request body (was logging empty object due to closure issue).
 
 ## Verification
 -   **Management:**

@@ -42,7 +42,7 @@ export class LoggerMiddleware implements NestMiddleware {
 
   use(request: Request, response: Response, next: NextFunction) {
     const startTime = Date.now();
-    const { method, originalUrl, body, headers, ip } = request;
+    const { method, originalUrl, headers, ip } = request;
 
     const oldSend = response.send;
     const oldJson = response.json;
@@ -84,7 +84,7 @@ export class LoggerMiddleware implements NestMiddleware {
           `User-Agent: ${headers['user-agent'] || 'unknown'}`,
           '',
           this.colorize('Request Body:', this.colors.bright),
-          JSON.stringify(body || {}, null, 2),
+          JSON.stringify(request.body || {}, null, 2),
           '',
           this.colorize('Response:', this.colors.bright),
           JSON.stringify(parsedResponse || {}, null, 2),

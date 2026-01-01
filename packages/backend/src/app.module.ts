@@ -23,6 +23,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { TYPEORM_CONFIG } from './database/database.config';
 import { AuditModule } from './audit/audit.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { CannedResponsesModule } from './canned-responses/canned-responses.module';
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     ScreenshotModule,
     AuditModule,
     WebhooksModule,
+    CannedResponsesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

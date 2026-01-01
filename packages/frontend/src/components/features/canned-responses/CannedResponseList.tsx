@@ -144,7 +144,7 @@ export const CannedResponseList: React.FC<CannedResponseListProps> = ({ projectI
               <label className="text-sm font-medium">Shortcut</label>
               <Input 
                 value={formData.shortcut} 
-                onChange={(e) => setFormData({...formData, shortcut: e.target.value})} 
+                onChange={(e) => setFormData({...formData, shortcut: e.target.value.replace(/[^a-zA-Z0-9_-]/g, '')})} 
                 placeholder="e.g. welcome"
                 pattern="^[a-zA-Z0-9_-]+$"
                 title="Letters, numbers, underscores, and dashes only"
@@ -181,7 +181,7 @@ export const CannedResponseList: React.FC<CannedResponseListProps> = ({ projectI
               <label className="text-sm font-medium">Shortcut</label>
               <Input 
                 value={formData.shortcut} 
-                onChange={(e) => setFormData({...formData, shortcut: e.target.value})} 
+                onChange={(e) => setFormData({...formData, shortcut: e.target.value.replace(/[^a-zA-Z0-9_-]/g, '')})} 
                 pattern="^[a-zA-Z0-9_-]+$"
                 required
               />

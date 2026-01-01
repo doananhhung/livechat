@@ -17,6 +17,7 @@ import {
 import { WebhookSubscription } from '../webhooks/entities/webhook-subscription.entity';
 import { WebhookDelivery } from '../webhooks/entities/webhook-delivery.entity';
 import { AuditLog } from '../audit/audit.entity';
+import { CannedResponse } from '../canned-responses/entities/canned-response.entity';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import * as dotenv from 'dotenv';
 import { ConfigService } from '@nestjs/config';
@@ -61,6 +62,7 @@ export const AppDataSource = new DataSource({
     WebhookSubscription,
     WebhookDelivery,
     AuditLog,
+    CannedResponse,
   ],
   migrations: ['src/database/migrations/*.ts'],
   namingStrategy: new SnakeNamingStrategy(),
