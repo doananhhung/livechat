@@ -69,7 +69,7 @@ export class WebhookDispatcher implements OnModuleInit {
         payload: payload
       },
       opts: {
-        attempts: 5,
+        attempts: process.env.NODE_ENV === 'test' ? 3 : 5,
         backoff: {
           type: 'exponential',
           delay: 1000,

@@ -5,13 +5,15 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/types/authenticated-request.interface';
 import { RolesGuard } from '../rbac/roles.guard';
 import { Roles } from '../rbac/roles.decorator';
-import { ProjectRole } from '@live-chat/shared-types';
+import { ProjectRole, AuditAction } from '@live-chat/shared-types';
+import { Auditable } from '../audit/auditable.decorator';
 
 @Controller('projects/:projectId/inbox/conversations/:id/assignments')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AssignmentsController {
   constructor(private readonly conversationService: ConversationService) {}
 
+  @Auditable({ action: AuditAction.UPDATE, entity: 'ConversationAssignment' })
   @Post()
   @Roles(ProjectRole.AGENT)
   @HttpCode(200)
@@ -23,6 +25,7 @@ export class AssignmentsController {
     return this.conversationService.assign(req.user.id, id, dto.assigneeId);
   }
 
+  @Auditable({ action: AuditAction.UPDATE, entity: 'ConversationAssignment' })
   @Delete()
   @Roles(ProjectRole.AGENT)
   @HttpCode(200)

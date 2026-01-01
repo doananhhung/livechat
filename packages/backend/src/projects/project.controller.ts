@@ -37,6 +37,7 @@ export class ProjectController {
     private readonly invitationService: InvitationService
   ) {}
 
+  @Auditable({ action: AuditAction.CREATE, entity: 'Project' })
   @Post()
   create(
     @Body() createProjectDto: CreateProjectDto,
@@ -76,6 +77,7 @@ export class ProjectController {
   }
 
   // Invitation endpoints
+  @Auditable({ action: AuditAction.CREATE, entity: 'Invitation' })
   @Roles(ProjectRole.MANAGER)
   // @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 invitations per minute - DISABLED FOR TESTING
   @Post(':projectId/invitations')
@@ -99,6 +101,7 @@ export class ProjectController {
     return this.invitationService.getProjectInvitations(projectId, user.id);
   }
 
+  @Auditable({ action: AuditAction.DELETE, entity: 'Invitation' })
   @Roles(ProjectRole.MANAGER)
   @Delete(':projectId/invitations/:invitationId')
   cancelInvitation(
@@ -151,6 +154,7 @@ export class ProjectController {
     );
   }
 
+  @Auditable({ action: AuditAction.DELETE, entity: 'ProjectMember' })
   @Roles(ProjectRole.MANAGER)
   @Delete(':projectId/members/:userId')
   removeMember(

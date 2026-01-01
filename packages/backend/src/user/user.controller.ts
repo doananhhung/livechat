@@ -15,6 +15,8 @@ import { UserService } from './user.service';
 import { EmailChangeDto, UpdateUserDto } from '@live-chat/shared-dtos';
 import { User } from '../database/entities';
 import { EmailChangeService } from './services/email-change.service';
+import { AuditAction } from '@live-chat/shared-types';
+import { Auditable } from '../audit/auditable.decorator';
 
 @Controller('user')
 @UseGuards(JwtAuthGuard)
@@ -39,6 +41,7 @@ export class UserController {
     };
   }
 
+  @Auditable({ action: AuditAction.UPDATE, entity: 'User' })
   @Patch('me')
   async updateProfile(
     @Request() req,
@@ -57,6 +60,7 @@ export class UserController {
     };
   }
 
+  @Auditable({ action: AuditAction.DELETE, entity: 'User' })
   @Delete('me')
   async deactivateAccount(@Request() req): Promise<{ message: string }> {
     const userId = req.user.id;
@@ -64,6 +68,7 @@ export class UserController {
     return { message: 'Tài khoản của bạn đã được vô hiệu hóa thành công.' };
   }
 
+  @Auditable({ action: AuditAction.UPDATE, entity: 'UserEmail' })
   @Post('request-email-change')
   async requestEmailChange(@Request() req, @Body() body: EmailChangeDto) {
     const userId = req.user.id;

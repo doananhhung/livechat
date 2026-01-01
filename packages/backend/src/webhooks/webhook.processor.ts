@@ -1,6 +1,6 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
-import { Logger } from '@nestjs/common';
+import { Logger, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WebhookDelivery, DeliveryStatus } from './entities/webhook-delivery.entity';
@@ -10,6 +10,7 @@ import * as crypto from 'crypto';
 import axios from 'axios';
 
 @Processor(WEBHOOKS_QUEUE)
+@Injectable()
 export class WebhookProcessor extends WorkerHost {
   private readonly logger = new Logger(WebhookProcessor.name);
 
@@ -19,6 +20,7 @@ export class WebhookProcessor extends WorkerHost {
     private readonly deliveryRepo: Repository<WebhookDelivery>,
   ) {
     super();
+    this.logger.log('[STARTUP] WebhookProcessor initialized');
   }
 
   async process(job: Job<any, any, string>): Promise<any> {
@@ -61,10 +63,9 @@ export class WebhookProcessor extends WorkerHost {
       delivery.responseStatus = response.status;
       await this.deliveryRepo.save(delivery);
       
-    } catch (error) {
-      delivery.status = DeliveryStatus.FAILURE;
-      if (axios.isAxiosError(error)) {
-        delivery.responseStatus = error.response?.status ?? 0;
+          } catch (error) {
+            delivery.status = DeliveryStatus.FAILURE;
+            if (axios.isAxiosError(error)) {        delivery.responseStatus = error.response?.status ?? 0;
         delivery.error = error.message;
       } else {
         delivery.error = String(error);

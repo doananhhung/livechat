@@ -24,7 +24,8 @@ import {
   UpdateConversationDto,
 } from '@live-chat/shared-dtos';
 import { User } from '../database/entities';
-import { ProjectRole } from '@live-chat/shared-types';
+import { ProjectRole, AuditAction } from '@live-chat/shared-types';
+import { Auditable } from '../audit/auditable.decorator';
 import { GetCurrentUser } from '../common/decorators/get-current-user.decorator';
 import { RolesGuard } from '../rbac/roles.guard';
 import { Roles } from '../rbac/roles.decorator';
@@ -58,6 +59,7 @@ export class InboxController {
     return this.messageService.sendAgentReply(user, conversationId, body.text);
   }
 
+  @Auditable({ action: AuditAction.UPDATE, entity: 'Conversation' })
   @Patch('conversations/:id')
   async updateConversation(
     @GetCurrentUser() user: User,

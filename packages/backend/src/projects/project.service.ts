@@ -114,6 +114,7 @@ export class ProjectService {
     // Step 1: Validate membership and get the managed entity.
     // 'project' is the actual entity from the database.
     const project = await this.validateProjectMembership(id, userId);
+    this.logger.debug(`Updating project ${id} for user ${userId}`);
 
     // Step 2: Copy the properties from the DTO to the fetched entity.
     // Object.assign updates 'project' in place with new values from the DTO.

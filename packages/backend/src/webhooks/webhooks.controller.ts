@@ -13,13 +13,15 @@ import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../rbac/roles.guard';
 import { Roles } from '../rbac/roles.decorator';
-import { ProjectRole } from '@live-chat/shared-types';
+import { ProjectRole, AuditAction } from '@live-chat/shared-types';
+import { Auditable } from '../audit/auditable.decorator';
 
 @Controller('projects/:projectId/webhooks')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class WebhooksController {
   constructor(private readonly webhooksService: WebhooksService) {}
 
+  @Auditable({ action: AuditAction.CREATE, entity: 'Webhook' })
   @Post()
   @Roles(ProjectRole.MANAGER)
   async create(
@@ -35,6 +37,7 @@ export class WebhooksController {
     return this.webhooksService.findAll(projectId);
   }
 
+  @Auditable({ action: AuditAction.DELETE, entity: 'Webhook' })
   @Delete(':id')
   @Roles(ProjectRole.MANAGER)
   async delete(@Param('projectId') projectId: number, @Param('id') id: string) {

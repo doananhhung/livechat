@@ -24,6 +24,8 @@ import {
   LoginDto,
 } from '@live-chat/shared-dtos';
 import { User } from '../database/entities';
+import { AuditAction } from '@live-chat/shared-types';
+import { Auditable } from '../audit/auditable.decorator';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { type Response } from 'express';
@@ -67,6 +69,7 @@ export class AuthController {
     );
   }
 
+  @Auditable({ action: AuditAction.CREATE, entity: 'User' })
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user' })
@@ -96,6 +99,7 @@ export class AuthController {
     return this.registrationService.resendVerificationEmail(resendVerificationDto);
   }
 
+  @Auditable({ action: AuditAction.LOGIN, entity: 'User' })
   @UseGuards(LocalAuthGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -179,6 +183,7 @@ export class AuthController {
     return { accessToken: tokens.accessToken };
   }
 
+  @Auditable({ action: AuditAction.UPDATE, entity: 'UserCredentials' })
   @UseGuards(JwtAuthGuard)
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
@@ -230,6 +235,7 @@ export class AuthController {
     };
   }
 
+  @Auditable({ action: AuditAction.UPDATE, entity: 'UserCredentials' })
   @UseGuards(JwtAuthGuard)
   @Post('set-password')
   @HttpCode(HttpStatus.OK)
@@ -269,6 +275,7 @@ export class AuthController {
     };
   }
 
+  @Auditable({ action: AuditAction.LOGOUT, entity: 'User' })
   @UseGuards(RefreshTokenGuard)
   @Post('logout')
   @HttpCode(HttpStatus.OK)
@@ -286,6 +293,7 @@ export class AuthController {
     return { message: 'Đăng xuất thành công.' };
   }
 
+  @Auditable({ action: AuditAction.LOGOUT, entity: 'User' })
   @UseGuards(RefreshTokenGuard)
   @Post('logout-all')
   @HttpCode(HttpStatus.OK)
@@ -390,6 +398,7 @@ export class AuthController {
     return this.passwordService.forgotPassword(forgotPasswordDto.email);
   }
 
+  @Auditable({ action: AuditAction.UPDATE, entity: 'UserCredentials' })
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset user password with token' })
@@ -470,6 +479,7 @@ export class AuthController {
     }
   }
 
+  @Auditable({ action: AuditAction.DELETE, entity: 'OAuthLink' })
   @UseGuards(JwtAuthGuard)
   @Post('unlink-oauth')
   @HttpCode(HttpStatus.OK)

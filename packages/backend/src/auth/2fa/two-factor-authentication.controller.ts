@@ -18,6 +18,8 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request.interface';
 import { UserService } from '../../user/user.service';
 import { TurnOn2faDto, RecoveryCodeDto } from '@live-chat/shared-dtos';
+import { AuditAction } from '@live-chat/shared-types';
+import { Auditable } from '../../audit/auditable.decorator';
 import { EncryptionService } from '../../common/services/encryption.service';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
@@ -88,6 +90,7 @@ export class TwoFactorAuthenticationController {
    * @throws BadRequestException - If the 2FA secret cookie is not found.
    * @throws UnauthorizedException - If the 2FA code is wrong.
    */
+  @Auditable({ action: AuditAction.UPDATE, entity: 'User2FA' })
   @Post('turn-on')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
@@ -145,6 +148,7 @@ export class TwoFactorAuthenticationController {
    * @throws UnauthorizedException - If the user is not found or the 2FA code is wrong.
    * @throws ForbiddenException - If 2FA is not enabled for the account.
    */
+  @Auditable({ action: AuditAction.LOGIN, entity: 'User' })
   @Post('authenticate')
   @UseGuards(AuthGuard('2fa-partial'))
   @HttpCode(HttpStatus.OK)
@@ -223,6 +227,7 @@ export class TwoFactorAuthenticationController {
    * @param body - The DTO containing the recovery code.
    * @param res - The response object to set cookies and return tokens.
    */
+  @Auditable({ action: AuditAction.LOGIN, entity: 'User' })
   @Post('recover')
   @UseGuards(AuthGuard('2fa-partial'))
   @HttpCode(HttpStatus.OK)
@@ -291,6 +296,7 @@ export class TwoFactorAuthenticationController {
    * @throws ForbiddenException - If 2FA is not enabled for the account.
    * @throws UnauthorizedException - If the 2FA code is wrong.
    */
+  @Auditable({ action: AuditAction.UPDATE, entity: 'User2FA' })
   @Post('turn-off')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)

@@ -4,13 +4,15 @@ import { CreateCannedResponseDto, UpdateCannedResponseDto } from '@live-chat/sha
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../rbac/roles.guard';
 import { Roles } from '../rbac/roles.decorator';
-import { ProjectRole } from '@live-chat/shared-types';
+import { ProjectRole, AuditAction } from '@live-chat/shared-types';
+import { Auditable } from '../audit/auditable.decorator';
 
 @Controller('projects/:projectId/canned-responses')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class CannedResponsesController {
   constructor(private readonly cannedResponsesService: CannedResponsesService) {}
 
+  @Auditable({ action: AuditAction.CREATE, entity: 'CannedResponse' })
   @Post()
   @Roles(ProjectRole.MANAGER)
   create(@Param('projectId', ParseIntPipe) projectId: number, @Body() createDto: CreateCannedResponseDto) {
@@ -23,6 +25,7 @@ export class CannedResponsesController {
     return this.cannedResponsesService.findAll(projectId);
   }
 
+  @Auditable({ action: AuditAction.UPDATE, entity: 'CannedResponse' })
   @Patch(':id')
   @Roles(ProjectRole.MANAGER)
   update(
@@ -33,6 +36,7 @@ export class CannedResponsesController {
     return this.cannedResponsesService.update(id, projectId, updateDto);
   }
 
+  @Auditable({ action: AuditAction.DELETE, entity: 'CannedResponse' })
   @Delete(':id')
   @Roles(ProjectRole.MANAGER)
   remove(@Param('projectId', ParseIntPipe) projectId: number, @Param('id') id: string) {

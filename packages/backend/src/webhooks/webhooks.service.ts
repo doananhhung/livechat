@@ -25,6 +25,12 @@ export class WebhooksService {
       const parsedUrl = new URL(urlString);
       const hostname = parsedUrl.hostname;
 
+      // Test environment: allow loopback for local test servers
+      // This enables E2E testing without external dependencies
+      if (process.env.NODE_ENV === 'test' && (hostname === 'localhost' || hostname === '127.0.0.1')) {
+        return;
+      }
+
       // Resolve DNS
       let addresses: string[];
       try {
