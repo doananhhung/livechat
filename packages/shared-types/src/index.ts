@@ -20,3 +20,4 @@ export * from './worker-events.types';
 export * from './websocket.types';
 export * from './audit.types';
 export * from './canned-response.types';
+export * from './visitor-note.types';

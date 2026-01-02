@@ -63,6 +63,11 @@ export class EventsGateway
     private readonly userService: UserService
   ) {}
 
+  public emitToProject(projectId: number, event: string, payload: any) {
+    this.logger.log(`Emitting ${event} to project:${projectId}`);
+    this.server.to(`project:${projectId}`).emit(event, payload);
+  }
+
   public emitConversationUpdated(projectId: number, payload: ConversationUpdatedPayload) {
     this.logger.log(`Emitting conversationUpdated to project:${projectId}`);
     this.server.to(`project:${projectId}`).emit(WebSocketEvent.CONVERSATION_UPDATED, payload);

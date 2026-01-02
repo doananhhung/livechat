@@ -26,6 +26,7 @@ import { TYPEORM_CONFIG } from './database/database.config';
 import { AuditModule } from './audit/audit.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { CannedResponsesModule } from './canned-responses/canned-responses.module';
+import { VisitorNotesModule } from './visitor-notes/visitor-notes.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { CannedResponsesModule } from './canned-responses/canned-responses.modul
     AuditModule,
     WebhooksModule,
     CannedResponsesModule,
+    VisitorNotesModule,
   ],
   controllers: [AppController],
   providers: [

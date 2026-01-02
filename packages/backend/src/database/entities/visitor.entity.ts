@@ -11,6 +11,7 @@ import {
 } from "typeorm";
 import { Project } from "./project.entity";
 import { Conversation } from "./conversation.entity";
+import { VisitorNote } from "./visitor-note.entity";
 
 @Entity("visitors")
 export class Visitor {
@@ -40,6 +41,9 @@ export class Visitor {
 
   @OneToMany(() => Conversation, (conversation) => conversation.visitor)
   conversations: Conversation[];
+
+  @OneToMany(() => VisitorNote, (note) => note.visitor)
+  notes: VisitorNote[];
 
   @CreateDateColumn({ type: "timestamptz" })
   createdAt: Date;

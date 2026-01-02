@@ -19,6 +19,9 @@ export enum WebSocketEvent {
   VISITOR_CONTEXT_UPDATED = 'visitorContextUpdated', // Broadcast to agents
   CONVERSATION_UPDATED = 'conversationUpdated', // Broadcast to agents
   CONVERSATION_DELETED = 'conversationDeleted', // Broadcast to agents
+  VISITOR_NOTE_ADDED = 'visitorNoteAdded',
+  VISITOR_NOTE_UPDATED = 'visitorNoteUpdated',
+  VISITOR_NOTE_DELETED = 'visitorNoteDeleted',
 }
 
 export interface IdentifyPayload {
@@ -66,4 +69,14 @@ export interface VisitorTypingBroadcastPayload {
 export interface ConversationUpdatedPayload {
   conversationId: string;
   fields: Record<string, any>; // Flexible payload for partial updates
+}
+
+export interface VisitorNotePayload {
+  visitorId: number;
+  note: any; // Ideally VisitorNote type, but keeping it flexible to avoid circular deps if needed
+}
+
+export interface VisitorNoteDeletedPayload {
+  visitorId: number;
+  noteId: string;
 }

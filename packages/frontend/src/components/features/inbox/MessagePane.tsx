@@ -22,6 +22,7 @@ import { Dialog, DialogContent } from "../../ui/Dialog"; // 2. Import Dialog
 import { ZoomIn } from "lucide-react"; // 3. Import an icon
 
 import { AssignmentControls } from "./AssignmentControls";
+import { VisitorNoteList } from "./VisitorNoteList";
 
 /**
  * Component displaying detailed visitor information.
@@ -41,82 +42,85 @@ const VisitorContextPanel = ({ projectId, visitorId }: { projectId: number; visi
       : null;
 
   return (
-    <aside className="w-64 bg-card border-l p-4 hidden lg:block">
-      <h3 className="font-semibold mb-4 text-foreground">
-        Chi tiết Khách truy cập
-      </h3>
-      {isLoading && <Spinner />}
-      {visitor && (
-        <div className="text-sm space-y-4">
-          <div className="flex items-center space-x-3">
-            <Avatar name={visitor.displayName} />
-            <p className="font-semibold text-foreground">
-              {visitor.displayName}
-            </p>
-          </div>
-          <div>
-            <p className="font-medium text-muted-foreground">Đang xem trang:</p>
-            <a
-              href={visitor.currentUrl ?? "#"}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary break-all hover:underline"
-              title={visitor.currentUrl || "Không rõ"}
-            >
-              {visitor.currentUrl || "Không rõ"}
-            </a>
-          </div>
-
-          {/* === 5. MODIFIED SCREENSHOT BLOCK === */}
-          {screenshotUrl && (
-            <div className="space-y-2">
-              <p className="font-medium text-muted-foreground">
-                Xem trước trang:
+    <aside className="w-64 bg-card border-l hidden lg:flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto p-4">
+        <h3 className="font-semibold mb-4 text-foreground">
+          Chi tiết Khách truy cập
+        </h3>
+        {isLoading && <Spinner />}
+        {visitor && (
+          <div className="text-sm space-y-4">
+            <div className="flex items-center space-x-3">
+              <Avatar name={visitor.displayName} />
+              <p className="font-semibold text-foreground">
+                {visitor.displayName}
               </p>
-              {/* Make the preview a clickable button */}
-              <button
-                type="button"
-                onClick={() => setScreenshotModalOpen(true)}
-                className="w-full aspect-[16/10] rounded-md border bg-muted flex items-center justify-center overflow-hidden relative group cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <img
-                  src={screenshotUrl}
-                  alt={`Screenshot of ${visitor.currentUrl}`}
-                  className="w-full h-full object-cover object-top"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.display =
-                      "none";
-                  }}
-                  key={screenshotUrl}
-                />
-                {/* Add a zoom-in icon overlay on hover */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <ZoomIn className="h-8 w-8 text-white" />
-                </div>
-              </button>
             </div>
-          )}
-          {/* === END OF MODIFIED BLOCK === */}
-        </div>
-      )}
+            <div>
+              <p className="font-medium text-muted-foreground">Đang xem trang:</p>
+              <a
+                href={visitor.currentUrl ?? "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary break-all hover:underline"
+                title={visitor.currentUrl || "Không rõ"}
+              >
+                {visitor.currentUrl || "Không rõ"}
+              </a>
+            </div>
 
-      {/* === 6. ADD THE DIALOG COMPONENT === */}
-      {/* It will show the same screenshotUrl */}
-      <Dialog
-        open={isScreenshotModalOpen}
-        onOpenChange={setScreenshotModalOpen}
-        className="max-w-[70vw]"
-      >
-        <DialogContent className="p-2">
-          {" "}
-          {/* Remove size class from here */}
-          <img
-            src={screenshotUrl || ""}
-            alt={`Screenshot of ${visitor?.currentUrl}`}
-            className="w-full h-auto object-contain max-h-[80vh]"
-          />
-        </DialogContent>
-      </Dialog>
+            {/* === 5. MODIFIED SCREENSHOT BLOCK === */}
+            {screenshotUrl && (
+              <div className="space-y-2">
+                <p className="font-medium text-muted-foreground">
+                  Xem trước trang:
+                </p>
+                {/* Make the preview a clickable button */}
+                <button
+                  type="button"
+                  onClick={() => setScreenshotModalOpen(true)}
+                  className="w-full aspect-[16/10] rounded-md border bg-muted flex items-center justify-center overflow-hidden relative group cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <img
+                    src={screenshotUrl}
+                    alt={`Screenshot of ${visitor.currentUrl}`}
+                    className="w-full h-full object-cover object-top"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display =
+                        "none";
+                    }}
+                    key={screenshotUrl}
+                  />
+                  {/* Add a zoom-in icon overlay on hover */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <ZoomIn className="h-8 w-8 text-white" />
+                  </div>
+                </button>
+              </div>
+            )}
+            {/* === END OF MODIFIED BLOCK === */}
+          </div>
+        )}
+
+        {/* === 6. ADD THE DIALOG COMPONENT === */}
+        {/* It will show the same screenshotUrl */}
+        <Dialog
+          open={isScreenshotModalOpen}
+          onOpenChange={setScreenshotModalOpen}
+          className="max-w-[70vw]"
+        >
+          <DialogContent className="p-2">
+            {" "}
+            {/* Remove size class from here */}
+            <img
+              src={screenshotUrl || ""}
+              alt={`Screenshot of ${visitor?.currentUrl}`}
+              className="w-full h-auto object-contain max-h-[80vh]"
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
+      <VisitorNoteList projectId={projectId} visitorId={visitorId} />
     </aside>
   );
 };

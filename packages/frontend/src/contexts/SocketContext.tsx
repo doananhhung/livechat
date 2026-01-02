@@ -10,7 +10,7 @@ import {
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "../stores/authStore";
 import { useQueryClient } from "@tanstack/react-query";
-import { type Message, WebSocketEvent, type VisitorContextUpdatedPayload, type VisitorTypingBroadcastPayload, type ConversationUpdatedPayload } from "@live-chat/shared-types";
+import { type Message, WebSocketEvent, type VisitorContextUpdatedPayload, type VisitorTypingBroadcastPayload, type ConversationUpdatedPayload, type VisitorNotePayload, type VisitorNoteDeletedPayload } from "@live-chat/shared-types";
 import { useTypingStore } from "../stores/typingStore";
 import { useProjectStore } from "../stores/projectStore";
 import { useLocation } from "react-router-dom";
@@ -170,11 +170,48 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     };
 
+    const handleVisitorNoteAdded = (payload: VisitorNotePayload) => {
+      if (!currentProjectId) return;
+      queryClient.setQueryData(
+        ["visitor-notes", currentProjectId, payload.visitorId],
+        (oldData: any[]) => {
+          if (!oldData) return [payload.note];
+          if (oldData.some(n => n.id === payload.note.id)) return oldData;
+          return [payload.note, ...oldData]; // Prepend (desc order)
+        }
+      );
+    };
+
+    const handleVisitorNoteUpdated = (payload: VisitorNotePayload) => {
+      if (!currentProjectId) return;
+      queryClient.setQueryData(
+        ["visitor-notes", currentProjectId, payload.visitorId],
+        (oldData: any[]) => {
+          if (!oldData) return oldData;
+          return oldData.map(n => n.id === payload.note.id ? payload.note : n);
+        }
+      );
+    };
+
+    const handleVisitorNoteDeleted = (payload: VisitorNoteDeletedPayload) => {
+      if (!currentProjectId) return;
+      queryClient.setQueryData(
+        ["visitor-notes", currentProjectId, payload.visitorId],
+        (oldData: any[]) => {
+          if (!oldData) return oldData;
+          return oldData.filter(n => n.id !== payload.noteId);
+        }
+      );
+    };
+
     socket.on(WebSocketEvent.NEW_MESSAGE, handleNewMessage);
     socket.on(WebSocketEvent.AGENT_REPLIED, handleNewMessage);
     socket.on(WebSocketEvent.VISITOR_TYPING, handleVisitorTyping);
     socket.on(WebSocketEvent.VISITOR_CONTEXT_UPDATED, handleVisitorContextUpdated);
     socket.on(WebSocketEvent.CONVERSATION_UPDATED, handleConversationUpdated);
+    socket.on(WebSocketEvent.VISITOR_NOTE_ADDED, handleVisitorNoteAdded);
+    socket.on(WebSocketEvent.VISITOR_NOTE_UPDATED, handleVisitorNoteUpdated);
+    socket.on(WebSocketEvent.VISITOR_NOTE_DELETED, handleVisitorNoteDeleted);
 
     // CRITICAL: Always cleanup listeners on unmount or when dependencies change
     return () => {
@@ -183,6 +220,9 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       socket.off(WebSocketEvent.VISITOR_TYPING, handleVisitorTyping);
       socket.off(WebSocketEvent.VISITOR_CONTEXT_UPDATED, handleVisitorContextUpdated);
       socket.off(WebSocketEvent.CONVERSATION_UPDATED, handleConversationUpdated);
+      socket.off(WebSocketEvent.VISITOR_NOTE_ADDED, handleVisitorNoteAdded);
+      socket.off(WebSocketEvent.VISITOR_NOTE_UPDATED, handleVisitorNoteUpdated);
+      socket.off(WebSocketEvent.VISITOR_NOTE_DELETED, handleVisitorNoteDeleted);
     };
   }, [
     socket,
