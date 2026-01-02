@@ -77,6 +77,7 @@ export class TokenService {
     
     const storedTokens = await this.refreshTokenRepository.find({
       where: { userId },
+      order: { expiresAt: 'DESC' },  // Check tokens with latest expiry first to avoid matching expired grace-period tokens
     });
 
     this.logger.debug(`[verifyRefreshToken] Found ${storedTokens?.length || 0} tokens in DB for userId: ${userId}`);

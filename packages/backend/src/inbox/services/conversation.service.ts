@@ -393,4 +393,31 @@ export class ConversationService {
       return updated;
     });
   }
+
+  /**
+   * Permanently deletes a conversation and all its messages.
+   * @param actorId - The ID of the user performing the deletion.
+   * @param conversationId - The ID of the conversation to delete.
+   */
+  async deleteConversation(actorId: string, conversationId: string): Promise<void> {
+    const conversation = await this.entityManager.findOne(Conversation, {
+      where: { id: conversationId },
+      relations: ['project'],
+    });
+
+    if (!conversation) {
+      throw new NotFoundException(`Conversation with ID ${conversationId} not found.`);
+    }
+
+    // Validate actor has access to the project
+    await this.projectService.validateProjectMembership(conversation.projectId, actorId);
+
+    const projectId = conversation.projectId;
+
+    // Hard delete - messages will cascade due to entity configuration
+    await this.entityManager.delete(Conversation, conversationId);
+
+    // Emit event to notify connected clients
+    this.eventsGateway.emitConversationDeleted(projectId, conversationId);
+  }
 }

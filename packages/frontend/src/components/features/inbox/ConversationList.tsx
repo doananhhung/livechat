@@ -1,9 +1,10 @@
 // src/components/features/inbox/ConversationList.tsx
 import { useEffect, useState } from "react";
-import { NavLink, useParams } from "react-router-dom";
+import { NavLink, useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   useGetConversations,
   useUpdateConversationStatus,
+  useDeleteConversation,
 } from "../../../services/inboxApi";
 import { Spinner } from "../../ui/Spinner";
 import { cn } from "../../../lib/utils";
@@ -12,6 +13,24 @@ import { useProjectStore } from "../../../stores/projectStore";
 import { Button } from "../../ui/Button";
 import { Avatar } from "../../ui/Avatar";
 import { useTimeAgo } from "../../../hooks/useTimeAgo";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../ui/DropdownMenu";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "../../ui/AlertDialog";
+import { MoreHorizontal, Trash2 } from "lucide-react";
+import type { Conversation } from "@live-chat/shared-types";
 
 const ConversationTime = ({ date }: { date: Date | string }) => {
   const timeAgo = useTimeAgo(date);
@@ -19,11 +38,20 @@ const ConversationTime = ({ date }: { date: Date | string }) => {
 };
 
 export const ConversationList = () => {
-  const { projectId } = useParams<{ projectId: string }>();
+  const { projectId, conversationId: activeConversationId } = useParams<{
+    projectId: string;
+    conversationId?: string;
+  }>();
+  const navigate = useNavigate();
+  const location = useLocation();
   const setCurrentProjectId = useProjectStore(
     (state) => state.setCurrentProjectId
   );
   const [status, setStatus] = useState<"open" | "closed" | undefined>("open");
+
+  // Delete confirmation dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<Conversation | null>(null);
 
   // Set the current project ID in the global store
   useEffect(() => {
@@ -45,8 +73,43 @@ export const ConversationList = () => {
       status,
     });
   const { mutate: updateConversation } = useUpdateConversationStatus();
+  const { mutate: deleteConversation, isPending: isDeleting } = useDeleteConversation();
 
   const conversations = data?.pages.flatMap((page) => page.data) || [];
+
+  const handleDeleteClick = (e: React.MouseEvent, conversation: Conversation) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setConversationToDelete(conversation);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!conversationToDelete || !numericProjectId) return;
+
+    const deletingId = conversationToDelete.id;
+
+    deleteConversation(
+      {
+        projectId: numericProjectId,
+        conversationId: deletingId,
+      },
+      {
+        onSuccess: () => {
+          // If we're viewing the deleted conversation, navigate away
+          if (activeConversationId === deletingId) {
+            navigate(`/inbox/projects/${projectId}`);
+          }
+          setDeleteDialogOpen(false);
+          setConversationToDelete(null);
+        },
+        onError: () => {
+          setDeleteDialogOpen(false);
+          setConversationToDelete(null);
+        },
+      }
+    );
+  };
 
   const FilterButton = ({
     value,
@@ -99,7 +162,7 @@ export const ConversationList = () => {
                 to={`/inbox/projects/${projectId}/conversations/${conversation.id}`}
                 className={({ isActive }) =>
                   cn(
-                    "block p-4 border-b transition-all duration-200",
+                    "block p-4 pr-2 border-b transition-all duration-200 group",
                     "hover:bg-accent hover:text-accent-foreground",
                     "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1",
                     isActive
@@ -168,6 +231,32 @@ export const ConversationList = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* More options dropdown - visible on hover */}
+                  <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={(e) => e.preventDefault()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">More options</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive cursor-pointer"
+                          onClick={(e) => handleDeleteClick(e, conversation)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Xóa cuộc trò chuyện
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               </NavLink>
             );
@@ -185,6 +274,28 @@ export const ConversationList = () => {
           )}
         </nav>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xóa cuộc trò chuyện?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hành động này không thể hoàn tác. Cuộc trò chuyện và tất cả tin nhắn sẽ bị xóa vĩnh viễn.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              variant="destructive"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Đang xóa..." : "Xóa"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

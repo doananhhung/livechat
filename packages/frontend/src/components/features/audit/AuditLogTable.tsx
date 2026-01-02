@@ -11,6 +11,26 @@ interface AuditLogTableProps {
   projectId: number;
 }
 
+/**
+ * Returns Tailwind classes for action badge based on action type.
+ */
+const getActionBadgeColor = (action: AuditAction): string => {
+  switch (action) {
+    case AuditAction.DELETE:
+      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100';
+    case AuditAction.CREATE:
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100';
+    case AuditAction.UPDATE:
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100';
+    case AuditAction.LOGIN:
+      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100';
+    case AuditAction.LOGOUT:
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100';
+    default:
+      return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100';
+  }
+};
+
 export const AuditLogTable: React.FC<AuditLogTableProps> = ({ projectId }) => {
   const [page, setPage] = useState(1);
   const [selectedLog, setSelectedLog] = useState<AuditLogDto | null>(null);
@@ -77,7 +97,7 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ projectId }) => {
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getActionBadgeColor(log.action)}`}>
                     {log.action}
                   </span>
                 </td>

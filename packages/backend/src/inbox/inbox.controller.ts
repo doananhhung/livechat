@@ -3,12 +3,14 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Body,
   Query,
   UseGuards,
   ParseIntPipe,
   HttpCode,
+  HttpStatus,
   Req,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -109,5 +111,16 @@ export class InboxController {
     @Param('id', ParseIntPipe) visitorId: number
   ) {
     return this.visitorService.getVisitorById(visitorId);
+  }
+
+  @Auditable({ action: AuditAction.DELETE, entity: 'Conversation' })
+  @Delete('conversations/:id')
+  @Roles(ProjectRole.MANAGER) // Only managers can delete conversations
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteConversation(
+    @GetCurrentUser() user: User,
+    @Param('id') conversationId: string,
+  ) {
+    await this.conversationService.deleteConversation(user.id, conversationId);
   }
 }

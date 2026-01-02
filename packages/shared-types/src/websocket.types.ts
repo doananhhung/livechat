@@ -18,6 +18,7 @@ export enum WebSocketEvent {
   NEW_MESSAGE = 'newMessage', // Broadcast to agents
   VISITOR_CONTEXT_UPDATED = 'visitorContextUpdated', // Broadcast to agents
   CONVERSATION_UPDATED = 'conversationUpdated', // Broadcast to agents
+  CONVERSATION_DELETED = 'conversationDeleted', // Broadcast to agents
 }
 
 export interface IdentifyPayload {

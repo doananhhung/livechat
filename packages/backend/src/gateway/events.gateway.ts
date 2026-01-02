@@ -68,6 +68,11 @@ export class EventsGateway
     this.server.to(`project:${projectId}`).emit(WebSocketEvent.CONVERSATION_UPDATED, payload);
   }
 
+  public emitConversationDeleted(projectId: number, conversationId: string) {
+    this.logger.log(`Emitting conversationDeleted to project:${projectId}`);
+    this.server.to(`project:${projectId}`).emit(WebSocketEvent.CONVERSATION_DELETED, { conversationId });
+  }
+
   async handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
 

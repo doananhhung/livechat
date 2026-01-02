@@ -346,3 +346,56 @@ export const useUnassignConversation = () => {
     },
   });
 };
+
+// --- Delete Conversation ---
+
+export const deleteConversation = async ({
+  projectId,
+  conversationId,
+}: {
+  projectId: number;
+  conversationId: number | string;
+}) => {
+  await api.delete(`/projects/${projectId}/inbox/conversations/${conversationId}`);
+};
+
+export const useDeleteConversation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteConversation,
+    onMutate: async ({ projectId, conversationId }) => {
+      await queryClient.cancelQueries({ queryKey: ["conversations"] });
+
+      const previousConversations = queryClient.getQueryData(["conversations", projectId]);
+
+      // Optimistically remove the conversation from the list
+      queryClient.setQueryData(["conversations", projectId], (old: any) => {
+        if (!old || !old.pages) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            data: page.data.filter((conv: Conversation) => conv.id !== String(conversationId)),
+            total: page.total - 1,
+          })),
+        };
+      });
+
+      return { previousConversations };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousConversations) {
+        queryClient.setQueryData(
+          ["conversations", variables.projectId],
+          context.previousConversations
+        );
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+};
+

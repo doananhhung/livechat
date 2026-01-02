@@ -21,5 +21,8 @@ export const useGetAuditLogs = (
     queryKey: ['audit-logs', projectId, params],
     queryFn: () => getAuditLogs(projectId, params),
     enabled: !!projectId,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    placeholderData: (previousData) => previousData, // Keep showing old data while refetching (no blink)
   });
 };

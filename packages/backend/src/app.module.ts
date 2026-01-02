@@ -1,4 +1,6 @@
 import { Module, NestModule } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { AuditLoggerInterceptor } from './audit/audit.interceptor';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -76,7 +78,13 @@ import { CannedResponsesModule } from './canned-responses/canned-responses.modul
     CannedResponsesModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditLoggerInterceptor,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure() {}
