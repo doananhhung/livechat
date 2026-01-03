@@ -1,0 +1,144 @@
+# =============================================================================
+# Docker Compose - Full Stack Production Deployment
+# =============================================================================
+# Usage:
+#   docker compose up -d              # Start all services
+#   docker compose up -d --build      # Rebuild and start
+#   docker compose logs -f api        # Follow API logs
+#   docker compose logs -f worker     # Follow Worker logs
+# =============================================================================
+
+name: live-chat
+
+services:
+  # ---------------------------------------------------------------------------
+  # Infrastructure
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5442:5432"
+    environment:
+      POSTGRES_USER: ${PSQL_USER:-postgres}
+      POSTGRES_PASSWORD: ${PSQL_PASSWORD:-postgres}
+      POSTGRES_DB: ${PSQL_DATABASE:-live_chat}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PSQL_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Backend API
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+      target: api
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      # Database
+      PSQL_HOST: db
+      PSQL_PORT: 5432
+      PSQL_USER: ${PSQL_USER:-postgres}
+      PSQL_PASSWORD: ${PSQL_PASSWORD:-postgres}
+      PSQL_DATABASE: ${PSQL_DATABASE:-live_chat}
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # Auth & Security
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
+      SESSION_LIMIT: ${SESSION_LIMIT:-5}
+      BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS:-12}
+      # 2FA
+      TWO_FACTOR_AUTH_JWT_SECRET: ${TWO_FACTOR_AUTH_JWT_SECRET:-}
+      TWO_FACTOR_AUTH_JWT_EXPIRES_IN: ${TWO_FACTOR_AUTH_JWT_EXPIRES_IN:-5m}
+      TWO_FACTOR_APP_NAME: ${TWO_FACTOR_APP_NAME:-Live Chat}
+      # Google OAuth
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FRONTEND_AUTH_CALLBACK_URL: ${FRONTEND_AUTH_CALLBACK_URL:-}
+      # Mail
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_SECURE: ${MAIL_SECURE:-false}
+      MAIL_USER: ${MAIL_USER:-}
+      MAIL_APP_PASSWORD: ${MAIL_APP_PASSWORD:-}
+      # URLs
+      API_BASE_URL: ${API_BASE_URL:-http://localhost:3000/api/v1}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      FRONTEND_2FA_URL: ${FRONTEND_2FA_URL:-http://localhost/verify-2fa}
+      APP_NAME: ${APP_NAME:-Live Chat}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Backend Worker (Background Jobs)
+  # ---------------------------------------------------------------------------
+  worker:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+      target: worker
+    environment:
+      NODE_ENV: production
+      PSQL_HOST: db
+      PSQL_PORT: 5432
+      PSQL_USER: ${PSQL_USER:-postgres}
+      PSQL_PASSWORD: ${PSQL_PASSWORD:-postgres}
+      PSQL_DATABASE: ${PSQL_DATABASE:-live_chat}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Frontend (Nginx)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: packages/frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/api/v1}
+        VITE_NODE_ENV: ${VITE_NODE_ENV:-development}
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  redis_data:

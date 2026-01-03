@@ -11,7 +11,71 @@
 | Docker         | ≥20.x   | `docker --version`       |
 | Docker Compose | ≥2.x    | `docker compose version` |
 
-## Setup
+---
+
+## Option A: Docker Deployment (Quick Start)
+
+> [!WARNING] > **Experimental:** Docker deployment has not been fully tested and may be unstable.
+> Use [Option B](#option-b-manual-development-setup) for a more reliable development experience.
+
+### 1. Clone and Configure
+
+```bash
+git clone <repository-url>
+cd live_chat
+cp .env.example .env
+```
+
+Edit `.env` and set required variables:
+
+```bash
+JWT_SECRET=your-secret-key
+ENCRYPTION_KEY=your-encryption-key
+# Optional: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET for OAuth
+```
+
+### 2. Start All Services
+
+```bash
+docker compose up -d --build
+```
+
+This starts:
+
+- **PostgreSQL** (port 5442)
+- **Redis** (internal)
+- **Backend API** (port 3000)
+- **Background Worker**
+- **Frontend** (port 5173)
+
+### 3. Run Database Migrations
+
+```bash
+PSQL_HOST=localhost PSQL_PORT=5442 PSQL_USER=postgres PSQL_PASSWORD=postgres PSQL_DATABASE=live_chat \
+  npm run migration:run --prefix packages/backend
+```
+
+### 4. Verify
+
+| Component   | URL                                 | Expected                  |
+| ----------- | ----------------------------------- | ------------------------- |
+| Frontend    | http://localhost:5173               | Login page loads          |
+| Backend API | http://localhost:3000/api/v1        | Returns "Hello World!"    |
+| Health      | http://localhost:3000/api/v1/health | Returns `{"status":"ok"}` |
+
+### Docker Commands Cheatsheet
+
+```bash
+docker compose logs -f api      # View API logs
+docker compose logs -f worker   # View worker logs
+docker compose down             # Stop all services
+docker compose up -d --build    # Rebuild and restart
+docker system prune -a -f       # Clean unused images
+```
+
+---
+
+## Option B: Manual Development Setup
 
 ### 1. Clone the Repository
 
@@ -26,12 +90,10 @@ PostgreSQL and Redis via Docker:
 
 ```bash
 cd packages/backend
-docker-compose up -d
+docker compose up -d
 ```
 
 ### 3. Configure Environment
-
-Copy the example environment file and configure:
 
 ```bash
 cp .env.example .env
@@ -39,21 +101,15 @@ cp .env.example .env
 
 Key variables to set:
 
-- `DATABASE_URL` - PostgreSQL connection string
-- `REDIS_URL` - Redis connection string
+- `PSQL_*` - PostgreSQL connection settings (port 5435)
+- `REDIS_*` - Redis connection settings (port 6380)
 - `JWT_SECRET` - Secret for JWT signing
 - `MAIL_*` - SMTP configuration for emails
 
 ### 4. Install Dependencies
 
 ```bash
-# Backend
-cd packages/backend
-npm install
-
-# Frontend
-cd ../frontend
-npm install
+npm install  # From root - installs all workspaces
 ```
 
 ### 5. Run Database Migrations
@@ -86,13 +142,15 @@ cd packages/frontend
 npm run dev
 ```
 
+---
+
 ## Verify Setup
 
-| Component   | URL                          | What to Check       |
-| ----------- | ---------------------------- | ------------------- |
-| Frontend    | http://localhost:5173        | Login page loads    |
-| Backend API | http://localhost:3000/health | Returns OK          |
-| Widget      | Embed on test page           | Chat bubble appears |
+| Component   | URL                                 | What to Check       |
+| ----------- | ----------------------------------- | ------------------- |
+| Frontend    | http://localhost:5173               | Login page loads    |
+| Backend API | http://localhost:3000/api/v1/health | Returns OK          |
+| Widget      | Embed on test page                  | Chat bubble appears |
 
 ## Project Structure
 
@@ -116,8 +174,7 @@ live_chat/
 │   │   └── ...
 │   └── shared-*/          # Shared DTOs and types
 ├── docs/                  # High-level documentation
-└── agent_workspace/       # Feature investigations
-    └── */investigations/  # Detailed per-feature docs
+└── compose.yaml           # Full-stack Docker deployment
 ```
 
 ## Common Tasks
@@ -167,7 +224,8 @@ npm run test
 
 | Issue                      | Solution                                      |
 | -------------------------- | --------------------------------------------- |
-| Database connection failed | Check `docker-compose up -d` ran successfully |
+| Database connection failed | Check `docker compose up -d` ran successfully |
 | Redis connection failed    | Verify Redis container is running             |
 | WebSocket not connecting   | Ensure backend is running on correct port     |
 | Widget not loading         | Check `data-project-id` and domain whitelist  |
+| Docker CORS errors         | Rebuild with `docker compose up -d --build`   |
