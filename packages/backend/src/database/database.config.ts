@@ -18,6 +18,7 @@ import {
   UserIdentity,
   Visitor,
   OutboxEvent,
+  VisitorNote,
 } from './entities';
 
 /**
@@ -41,6 +42,7 @@ export const DATABASE_ENTITIES = [
   WebhookDelivery,
   AuditLog,
   CannedResponse,
+  VisitorNote,
 ];
 
 /**

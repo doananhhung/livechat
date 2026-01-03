@@ -6,7 +6,6 @@ import {
   useNotifyAgentTyping,
 } from "../../../services/inboxApi";
 import { Button } from "../../ui/Button";
-import { Input } from "../../ui/Input";
 import { Send } from "lucide-react";
 import { SlashCommandPopover } from "../canned-responses/SlashCommandPopover";
 
@@ -20,7 +19,7 @@ const MessageComposer = ({ projectId, conversationId }: MessageComposerProps) =>
   const { mutate: sendMessage, isPending } = useSendAgentReply();
   const { mutate: notifyTyping } = useNotifyAgentTyping();
   const typingTimeoutRef = useRef<number | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const isMountedRef = useRef(true);
 
   // Slash Command State
@@ -30,6 +29,14 @@ const MessageComposer = ({ projectId, conversationId }: MessageComposerProps) =>
     triggerIndex: number;
   }>({ isOpen: false, filter: "", triggerIndex: -1 });
 
+  // Auto-resize textarea
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 200) + 'px'; // Cap at 200px
+    }
+  }, [content]);
+
   // Function to emit typing status - use useRef to avoid stale closures
   const handleTyping = (isTyping: boolean) => {
     if (isMountedRef.current) {
@@ -37,7 +44,7 @@ const MessageComposer = ({ projectId, conversationId }: MessageComposerProps) =>
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setContent(val);
 
@@ -49,11 +56,11 @@ const MessageComposer = ({ projectId, conversationId }: MessageComposerProps) =>
     if (lastSlash !== -1) {
       // Check if start of line or preceded by space
       const isStart = lastSlash === 0;
-      const isPrecededBySpace = val[lastSlash - 1] === " ";
+      const isPrecededBySpace = val[lastSlash - 1] === " " || val[lastSlash - 1] === "\n";
       
       // Check if text between slash and cursor contains space (end of command)
       const textAfterSlash = val.substring(lastSlash + 1, cursor);
-      const hasSpace = textAfterSlash.includes(" ");
+      const hasSpace = textAfterSlash.includes(" ") || textAfterSlash.includes("\n");
 
       if ((isStart || isPrecededBySpace) && !hasSpace) {
         setSlashState({
@@ -86,11 +93,7 @@ const MessageComposer = ({ projectId, conversationId }: MessageComposerProps) =>
   const handleSelectResponse = (responseContent: string) => {
     if (slashState.triggerIndex === -1) return;
     
-    // Replace the shortcut with content
     const prefix = content.substring(0, slashState.triggerIndex);
-    // Determine suffix (if any, though usually cursor is at end of filter)
-    // We replace from triggerIndex to current cursor? Or just triggerIndex + filter.length?
-    // Let's assume we replace the filter text we detected.
     const suffix = content.substring(slashState.triggerIndex + 1 + slashState.filter.length);
     
     const newContent = prefix + responseContent + suffix;
@@ -99,8 +102,7 @@ const MessageComposer = ({ projectId, conversationId }: MessageComposerProps) =>
     inputRef.current?.focus();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitMessage = () => {
     if (content.trim()) {
       const messageToSend = content.trim();
       sendMessage({ projectId, conversationId, text: messageToSend });
@@ -113,6 +115,26 @@ const MessageComposer = ({ projectId, conversationId }: MessageComposerProps) =>
         typingTimeoutRef.current = null;
       }
       handleTyping(false);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitMessage();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      // Prevent default to avoid new line
+      e.preventDefault();
+      // Don't submit if slash command menu is open (let the menu handle enter? No, menu handles keydown via window listener in Popover component? 
+      // SlashCommandPopover uses window listener.
+      // But if we preventDefault here, window listener might not see it or it bubbles up?
+      // Actually SlashCommandPopover uses window listener, so it captures it.
+      // But we should check if slashState.isOpen to avoid submitting while selecting.
+      if (!slashState.isOpen) {
+        submitMessage();
+      }
     }
   };
 
@@ -134,7 +156,7 @@ const MessageComposer = ({ projectId, conversationId }: MessageComposerProps) =>
   return (
     <form
       onSubmit={handleSubmit}
-      className="relative flex items-center gap-2 p-4 border-t bg-card"
+      className="relative flex items-end gap-2 p-4 border-t bg-card"
     >
       {slashState.isOpen && (
         <SlashCommandPopover 
@@ -144,16 +166,17 @@ const MessageComposer = ({ projectId, conversationId }: MessageComposerProps) =>
           onClose={() => setSlashState({ isOpen: false, filter: "", triggerIndex: -1 })}
         />
       )}
-      <Input
+      <textarea
         ref={inputRef}
-        type="text"
         placeholder="Nhập tin nhắn... (Gõ / để dùng mẫu câu)"
-        className="flex-1"
+        className="flex-1 text-sm border rounded-md px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary resize-none overflow-hidden min-h-[40px] max-h-[200px]"
         value={content}
         onChange={handleInputChange}
+        onKeyDown={handleKeyDown}
         autoComplete="off"
+        rows={1}
       />
-      <Button type="submit" disabled={isPending || !content.trim()} size="icon">
+      <Button type="submit" disabled={isPending || !content.trim()} size="icon" className="mb-0.5">
         <Send className="w-4 h-4" />
       </Button>
     </form>

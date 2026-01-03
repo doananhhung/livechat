@@ -12,3 +12,4 @@ export * from './two-factor-recovery-code.entity';
 export * from './user-identity.entity';
 export * from './user.entity';
 export * from './visitor.entity';
+export * from './visitor-note.entity';

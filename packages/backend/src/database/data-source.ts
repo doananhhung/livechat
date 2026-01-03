@@ -13,6 +13,7 @@ import {
   Visitor,
   EmailChangeRequest,
   OutboxEvent,
+  VisitorNote,
 } from './entities';
 import { WebhookSubscription } from '../webhooks/entities/webhook-subscription.entity';
 import { WebhookDelivery } from '../webhooks/entities/webhook-delivery.entity';
@@ -63,6 +64,7 @@ export const AppDataSource = new DataSource({
     WebhookDelivery,
     AuditLog,
     CannedResponse,
+    VisitorNote,
   ],
   migrations: ['src/database/migrations/*.ts'],
   namingStrategy: new SnakeNamingStrategy(),
