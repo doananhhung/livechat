@@ -155,11 +155,25 @@ project_root/
     *   Use `read_file` to read `agent_workspace/<feature_name>/designs/<slice_name>.md` to verify alignment with design intent.
     *   Run the Review Checklist (Section V).
     *   **Verify Plan vs Implementation:** Compare the planned tests in `implementation_plans/` against the actual tests written. Flag any missing or deviated tests.
-3.  **DECISION:**
+3.  **VERIFY (Mandatory Before Any Verdict):**
+    
+    > **CRITICAL:** Do NOT trust the Coder's claim that "tests passed." You MUST verify independently.
+    
+    *   **Step 1: Type Check**
+        *   Run `run_command`: `npx tsc --noEmit`
+        *   **If type errors exist:** Add to findings as CRITICAL. Verdict = `CHANGES_REQUESTED`.
+    *   **Step 2: Run Tests**
+        *   Run `run_command`: `npm test` (and `npm run test:e2e` if applicable)
+        *   **If any test fails:** Add to findings as CRITICAL. Verdict = `CHANGES_REQUESTED`.
+    
+    **Order is mandatory:** Type Check → Tests → Static Review. Do NOT issue APPROVED if either fails.
+
+4.  **DECISION:**
     *   **IF ISSUES FOUND:** Use `write_file` to **OVERWRITE** `agent_workspace/<feature_name>/code_reviews/<slice_name>.md` with findings.
         *   **NOTIFY:** "Review complete. [X] issues found. See `code_reviews/<slice_name>.md`."
-    *   **IF NO ISSUES:** Use `write_file` to **OVERWRITE** `agent_workspace/<feature_name>/code_reviews/<slice_name>.md` with `STATUS: APPROVED`.
-        *   **NOTIFY:** "Review complete. No blocking issues. Approved for merge."
+    *   **IF NO ISSUES AND VERIFY PASSED:** Use `write_file` to **OVERWRITE** `agent_workspace/<feature_name>/code_reviews/<slice_name>.md` with `STATUS: APPROVED`.
+        *   Include verification results: "Type check passed. All X tests passed."
+        *   **NOTIFY:** "Review complete. Verification passed. Approved for merge."
 
 **STATE 2: RE-REVIEW (The "Verification" State)**
 1.  **TRIGGER:**
@@ -168,9 +182,13 @@ project_root/
 2.  **ACTION:**
     *   Use `read_file` to read the updated source files.
     *   Verify that each issue in the previous `code_reviews/<slice_name>.md` is resolved.
-3.  **DECISION:**
-    *   **IF ALL RESOLVED:** Update `code_reviews/<slice_name>.md` to `STATUS: APPROVED`.
-    *   **IF NOT RESOLVED:** Update `code_reviews/<slice_name>.md` with remaining issues.
+3.  **VERIFY (Mandatory Before Approval):**
+    *   **Step 1: Type Check** — Run `run_command`: `npx tsc --noEmit`
+    *   **Step 2: Run Tests** — Run `run_command`: `npm test` (and `npm run test:e2e` if applicable)
+    *   **If either fails:** Verdict = `CHANGES_REQUESTED`. Do NOT approve.
+4.  **DECISION:**
+    *   **IF ALL RESOLVED AND VERIFY PASSED:** Update `code_reviews/<slice_name>.md` to `STATUS: APPROVED`. Include: "Type check passed. All X tests passed."
+    *   **IF NOT RESOLVED OR VERIFY FAILED:** Update `code_reviews/<slice_name>.md` with remaining issues and/or verification failures.
 
 ### VII. OUTPUT FORMAT FOR CODE REVIEWS
 
