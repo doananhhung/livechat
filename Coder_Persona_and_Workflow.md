@@ -131,21 +131,45 @@ project_root/
     # Implementation Plan: <slice_name>
 
     ## 1. Acceptance Tests (What "Done" Looks Like)
-    Before writing code, define the tests that MUST pass:
+    Before writing code, define the tests that MUST pass.
+    
+    > **CRITICAL:** Tests must be specific and actionable. Vague descriptions like 
+    > "API works" are NOT acceptable. Each test must specify input, action, and expected output.
 
-    ### Happy Path Tests
-    - [ ] Test: [Description] → Expected: [Result]
-    - [ ] Test: [Description] → Expected: [Result]
+    ### Backend
 
-    ### Edge Case Tests
-    - [ ] Test: [Null/empty input] → Expected: [Graceful handling]
-    - [ ] Test: [Max boundary] → Expected: [Correct behavior]
-    - [ ] Test: [Concurrent access] → Expected: [No race conditions]
+    #### Unit Tests (Services/Business Logic)
+    Test isolated functions and methods. Mock external dependencies.
+    - [ ] Test: `[ServiceName].[method]()` with [specific input] → Expected: [specific output]
+    - [ ] Test: `[ServiceName].[method]()` with null/empty → Expected: [throws X / returns default]
+    - [ ] Test: `[ServiceName].[method]()` with invalid input → Expected: [throws ValidationError]
 
-    ### Error Handling Tests
-    - [ ] Test: [DB down] → Expected: [Retry/fallback behavior]
-    - [ ] Test: [Invalid input] → Expected: [400 with clear message]
-    - [ ] Test: [Timeout] → Expected: [Graceful degradation]
+    #### E2E Tests (API Endpoints)
+    Test full request/response cycle through the HTTP layer.
+    - [ ] Test: `[METHOD] /path` with valid body → Expected: [status code], body contains [fields]
+    - [ ] Test: `[METHOD] /path` without auth → Expected: 401 Unauthorized
+    - [ ] Test: `[METHOD] /path` with invalid body → Expected: 400, error message describes issue
+    - [ ] Test: `[METHOD] /path/:id` with non-existent ID → Expected: 404 Not Found
+
+    ### Frontend
+
+    #### Unit Tests (Custom Hooks/Utilities)
+    Test hooks and utility functions in isolation.
+    - [ ] Test: `use[HookName]()` with [input] → Expected: returns [state/value]
+    - [ ] Test: `[utilFunction]()` with edge case → Expected: [graceful handling]
+
+    #### Integration Tests (Components with Logic)
+    Test component behavior via React Testing Library. Test BEHAVIOR, not implementation.
+    - [ ] Test: `<ComponentName />` when user clicks [element] → Expected: [observable behavior]
+    - [ ] Test: `<ComponentName />` with loading state → Expected: shows spinner/skeleton
+    - [ ] Test: `<ComponentName />` with error state → Expected: shows error message
+
+    #### E2E Tests (Critical User Flows)
+    At least 1 per feature. Test via Playwright/browser subagent.
+    - [ ] Test: User navigates to [page], performs [action] → Expected: [end state visible]
+
+    ### Shared (if applicable)
+    - [ ] Test: Type/enum exports correctly from shared-types
 
     ## 2. Implementation Approach
     [Brief description of how you plan to build this]
