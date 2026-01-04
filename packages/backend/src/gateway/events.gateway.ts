@@ -27,7 +27,7 @@ import { MessageStatus, WidgetMessageDto, WebSocketEvent } from '@live-chat/shar
 import { ProjectService } from '../projects/project.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { UserService } from '../user/user.service';
+import { UserService } from '../users/user.service';
 import { 
   IdentifyPayload, 
   SendMessagePayload, 

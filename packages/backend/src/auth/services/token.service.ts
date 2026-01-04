@@ -9,7 +9,7 @@ import * as bcrypt from 'bcrypt';
 import { BCRYPT_SALT_ROUNDS } from '../../common/constants/crypto.constants';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { UserStatus } from '@live-chat/shared-types';
-import { UserService } from '../../user/user.service';
+import { UserService } from '../../users/user.service';
 
 interface SetRefreshTokenOptions {
   refreshToken: string;

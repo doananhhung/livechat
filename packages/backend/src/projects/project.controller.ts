@@ -27,7 +27,7 @@ import { Roles } from '../rbac/roles.decorator';
 import { InvitationService } from './invitation.service';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../common/decorators/public.decorator';
-import { Auditable } from '../audit/auditable.decorator';
+import { Auditable } from '../audit-logs/auditable.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('projects')

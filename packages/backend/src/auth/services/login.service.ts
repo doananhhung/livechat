@@ -3,7 +3,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../../database/entities';
 import { TokenService } from './token.service';
-import { UserService } from '../../user/user.service';
+import { UserService } from '../../users/user.service';
 import { OAuthService } from './oauth.service';
 
 export type LoginResult = 

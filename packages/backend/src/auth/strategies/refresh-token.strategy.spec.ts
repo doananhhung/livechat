@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RefreshTokenStrategy } from './refresh-token.strategy';
-import { UserService } from '../../user/user.service';
+import { UserService } from '../../users/user.service';
 import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException, Logger } from '@nestjs/common';
 import { User } from '../../database/entities';

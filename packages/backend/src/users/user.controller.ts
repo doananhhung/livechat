@@ -16,7 +16,7 @@ import { EmailChangeDto, UpdateUserDto } from '@live-chat/shared-dtos';
 import { User } from '../database/entities';
 import { EmailChangeService } from './services/email-change.service';
 import { AuditAction } from '@live-chat/shared-types';
-import { Auditable } from '../audit/auditable.decorator';
+import { Auditable } from '../audit-logs/auditable.decorator';
 
 @Controller('user')
 @UseGuards(JwtAuthGuard)

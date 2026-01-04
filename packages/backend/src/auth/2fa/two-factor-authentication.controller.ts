@@ -16,10 +16,10 @@ import {
 import { TwoFactorAuthenticationService } from './two-factor-authentication.service';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request.interface';
-import { UserService } from '../../user/user.service';
+import { UserService } from '../../users/user.service';
 import { TurnOn2faDto, RecoveryCodeDto } from '@live-chat/shared-dtos';
 import { AuditAction } from '@live-chat/shared-types';
-import { Auditable } from '../../audit/auditable.decorator';
+import { Auditable } from '../../audit-logs/auditable.decorator';
 import { EncryptionService } from '../../common/services/encryption.service';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
@@ -27,7 +27,7 @@ import { AuthGuard } from '@nestjs/passport';
 import type { TwoFactorRequest } from '../../common/types/two-factor-request.interface';
 import { type Response } from 'express';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { UserSecurityService } from '../../user/services/user-security.service';
+import { UserSecurityService } from '../../users/services/user-security.service';
 import { LoginService } from '../services/login.service';
 
 /**

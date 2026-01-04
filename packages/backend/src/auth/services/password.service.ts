@@ -8,7 +8,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { UserService } from '../../user/user.service';
+import { UserService } from '../../users/user.service';
 import { MailService } from '../../mail/mail.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';

@@ -13,7 +13,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import * as crypto from 'crypto';
 import { User, UserIdentity } from '../../database/entities';
-import { UserService } from '../../user/user.service';
+import { UserService } from '../../users/user.service';
 
 @Injectable()
 export class OAuthService {

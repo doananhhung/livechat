@@ -10,7 +10,7 @@ import { useToast } from "../../components/ui/use-toast";
 import { ChevronRight, ArrowLeft, Info, Palette, Code, ShieldAlert, MessageSquarePlus } from "lucide-react";
 import { PermissionGate } from "../../components/PermissionGate";
 import { ProjectRole, WidgetPosition, WidgetTheme } from "@live-chat/shared-types";
-import { ProjectBasicSettingsForm } from "../../components/projects/ProjectBasicSettingsForm";
+import { ProjectBasicSettingsForm } from "../../components/features/projects/ProjectBasicSettingsForm";
 import type { WidgetSettingsDto } from "@live-chat/shared-dtos";
 import { getWidgetSnippet } from "../../lib/widget";
 

@@ -6,7 +6,7 @@ import {
   NotFoundException,
   Logger,
 } from '@nestjs/common';
-import { UserService } from '../../user/user.service';
+import { UserService } from '../../users/user.service';
 import * as bcrypt from 'bcrypt';
 import { BCRYPT_SALT_ROUNDS } from '../../common/constants/crypto.constants';
 import * as crypto from 'crypto';

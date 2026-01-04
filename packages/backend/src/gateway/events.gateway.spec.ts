@@ -5,7 +5,7 @@ import { REDIS_SUBSCRIBER_CLIENT } from '../redis/redis.module';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
-import { UserService } from '../user/user.service';
+import { UserService } from '../users/user.service';
 import { ProjectService } from '../projects/project.service';
 import { ConfigService } from '@nestjs/config';
 

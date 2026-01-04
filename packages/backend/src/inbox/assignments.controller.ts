@@ -6,7 +6,7 @@ import { AuthenticatedRequest } from '../common/types/authenticated-request.inte
 import { RolesGuard } from '../rbac/roles.guard';
 import { Roles } from '../rbac/roles.decorator';
 import { ProjectRole, AuditAction } from '@live-chat/shared-types';
-import { Auditable } from '../audit/auditable.decorator';
+import { Auditable } from '../audit-logs/auditable.decorator';
 
 @Controller('projects/:projectId/inbox/conversations/:id/assignments')
 @UseGuards(JwtAuthGuard, RolesGuard)

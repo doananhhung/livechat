@@ -27,7 +27,7 @@ import {
 } from '@live-chat/shared-dtos';
 import { User } from '../database/entities';
 import { ProjectRole, AuditAction } from '@live-chat/shared-types';
-import { Auditable } from '../audit/auditable.decorator';
+import { Auditable } from '../audit-logs/auditable.decorator';
 import { GetCurrentUser } from '../common/decorators/get-current-user.decorator';
 import { RolesGuard } from '../rbac/roles.guard';
 import { Roles } from '../rbac/roles.decorator';

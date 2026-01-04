@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TwoFactorAuthenticationController } from './two-factor-authentication.controller';
 import { TwoFactorAuthenticationService } from './two-factor-authentication.service';
-import { UserService } from '../../user/user.service';
-import { UserSecurityService } from '../../user/services/user-security.service';
+import { UserService } from '../../users/user.service';
+import { UserSecurityService } from '../../users/services/user-security.service';
 import { LoginService } from '../services/login.service';
 import { EncryptionService } from '../../common/services/encryption.service';
 import { ConfigService } from '@nestjs/config';

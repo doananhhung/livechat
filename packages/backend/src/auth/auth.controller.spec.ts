@@ -15,8 +15,8 @@ import { LoginService } from './services/login.service';
 import { PasswordService } from './services/password.service';
 import { OAuthService } from './services/oauth.service';
 import { TokenService } from './services/token.service';
-import { EmailChangeService } from '../user/services/email-change.service';
-import { UserService } from '../user/user.service';
+import { EmailChangeService } from '../users/services/email-change.service';
+import { UserService } from '../users/user.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 describe('AuthController', () => {

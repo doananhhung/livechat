@@ -2,10 +2,10 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X, Plus } from "lucide-react";
-import { Button } from "../ui/Button";
-import { Input } from "../ui/Input";
-import { useToast } from "../ui/use-toast";
-import { updateProject } from "../../services/projectApi";
+import { Button } from "../../ui/Button";
+import { Input } from "../../ui/Input";
+import { useToast } from "../../ui/use-toast";
+import { updateProject } from "../../../services/projectApi";
 import type { UpdateProjectDto } from "@live-chat/shared-dtos";
 import { type ProjectWithRole } from "@live-chat/shared-types";
 

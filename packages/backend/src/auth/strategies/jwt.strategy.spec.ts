@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtStrategy } from './jwt.strategy';
-import { UserService } from '../../user/user.service';
+import { UserService } from '../../users/user.service';
 import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException } from '@nestjs/common';
 import { GlobalRole } from '@live-chat/shared-types';

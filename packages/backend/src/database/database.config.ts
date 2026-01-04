@@ -3,7 +3,7 @@ import { TypeOrmModuleAsyncOptions } from '@nestjs/typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { WebhookSubscription } from '../webhooks/entities/webhook-subscription.entity';
 import { WebhookDelivery } from '../webhooks/entities/webhook-delivery.entity';
-import { AuditLog } from '../audit/audit.entity';
+import { AuditLog } from '../audit-logs/audit.entity';
 import { CannedResponse } from '../canned-responses/entities/canned-response.entity';
 import {
   Conversation,
