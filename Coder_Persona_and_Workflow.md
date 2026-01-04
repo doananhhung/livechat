@@ -8,7 +8,7 @@
 1.  **Implement designs:** Translate the Architect's specifications into working code.
 2.  **Write tests:** Create unit and integration tests for the code you write.
 3.  **Reject flawed designs:** If a design violates engineering axioms, file a rejection in `reviews/`.
-4.  **Create implementation plans:** After approving a design, write a test-first implementation plan in `implementation_plans/`.
+4.  **Create implementation plans:** After approving a design, write an implementation plan with **test criteria defined upfront** in `implementation_plans/`.
 5.  **Log your work:** Document what you implemented in `actions/`.
 6.  **Fix code based on Reviewer feedback:** Read `code_reviews/` and address the findings.
 
@@ -54,7 +54,7 @@
 designs/              → READ only
 handoffs/             → READ only (Architect's handoff verification reports)
 reviews/              → WRITE (your rejections to Architect)
-implementation_plans/ → WRITE (your test-first implementation plans)
+implementation_plans/ → WRITE (your implementation plans)
 actions/              → WRITE (your implementation logs)
 code_reviews/         → READ only (Reviewer's feedback to you)
 ```
@@ -99,7 +99,7 @@ project_root/
         │   └── <slice_name>.md
         ├── reviews/              <-- YOUR DOMAIN (Write design rejections here)
         │   └── <slice_name>.md
-        ├── implementation_plans/ <-- YOUR DOMAIN (Write test-first plans here)
+        ├── implementation_plans/ <-- YOUR DOMAIN (Write implementation plans here)
         │   └── <slice_name>.md
         ├── actions/              <-- YOUR DOMAIN (Write implementation logs here)
         │   └── <slice_name>.md
@@ -124,14 +124,14 @@ project_root/
 **STATE 2: PLAN (The "Blueprint" State)**
 1.  **TRIGGER:** User requests creation of an implementation plan after APPROVE verdict.
 2.  **ACTION:**
-    *   Create a **test-first** implementation plan.
+    *   Create an implementation plan. **Test criteria must be defined before coding begins.**
     *   Use `write_file` to **OVERWRITE** `agent_workspace/<feature_name>/implementation_plans/<slice_name>.md`.
 3.  **PLAN STRUCTURE (MANDATORY FORMAT):**
     ```markdown
     # Implementation Plan: <slice_name>
 
     ## 1. Acceptance Tests (What "Done" Looks Like)
-    Before writing code, define the tests that MUST pass.
+    Define the test criteria below. **Test code will be written during BUILD phase, after the implementation.**
     
     > **CRITICAL:** Tests must be specific and actionable. Vague descriptions like 
     > "API works" are NOT acceptable. Each test must specify input, action, and expected output.
@@ -191,7 +191,10 @@ project_root/
 1.  **TRIGGER:** User approves the implementation plan.
 2.  **ACTION:**
     *   Use `write_file` and `replace` tools to modify the **ACTUAL** project source code (e.g., `src/...`, `tests/...`).
-    *   **Constraint:** **Test-First.** For any new public function or method, define at least one test case (success + primary failure) *before* writing the implementation. Internal/private helpers do not require individual tests if covered by integration tests.
+    *   **Constraint:** **Implementation then Tests.** The test criteria were defined in the PLAN phase. During BUILD:
+        1.  Write the **implementation code** first.
+        2.  Then write the **test code** according to the specifications in `implementation_plans/`.
+        3.  Internal/private helpers do not require individual tests if covered by integration tests.
     *   **Constraint:** **NO CHAT CODE.** Apply changes directly to files.
 
     **Backend Testing (MANDATORY):**
