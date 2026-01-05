@@ -53,7 +53,7 @@ Bidirectional messaging between agents (dashboard) and visitors (widget).
 | Agent → Visitor | REST API → Redis lookup → Socket emit          |
 | Visitor → Agent | Socket → BullMQ → Outbox → Pub/Sub → Broadcast |
 
-**Investigations:** [dashboard_to_widget_message_flow.md](../deep_investigation/dashboard_to_widget_message_flow.md) | [widget_to_dashboard_message_flow.md](../deep_investigation/widget_to_dashboard_message_flow.md)
+**Investigations:** [dashboard_to_widget_message_flow.md](../deep_investigation/dashboard_to_widget_message_flow.md) | [widget_to_dashboard_message_flow.md](../deep_investigation/widget_to_dashboard_message_flow.md) | [agent-message-broadcast-flow.md](../deep_investigation/agent-message-broadcast-flow.md)
 
 ---
 
