@@ -86,19 +86,35 @@ Every review must evaluate these dimensions **IN ORDER**. Design consistency is 
 
 **2. Plan Alignment**
 -   [ ] Does the implementation match the plan in `implementation_plans/<slice_name>.md`?
--   [ ] Are all planned tests implemented and passing?
 -   [ ] Were any planned items skipped? (If yes, must be justified)
 
 ---
 
-**3. Correctness**
+**3. Test Coverage Verification (MANDATORY - BLOCKING)**
+
+> **CRITICAL:** Tests passing does NOT mean tests exist. The Coder may claim "all tests pass" when zero tests were written. You MUST verify test existence independently.
+
+-   [ ] **Read the Implementation Plan:** Open `implementation_plans/<slice_name>.md` and locate Section 1 (Acceptance Tests).
+-   [ ] **Cross-Reference Each Test:** For EVERY test criterion listed:
+    -   Find the corresponding test file (e.g., `*.test.ts`, `*.spec.ts`, `*.e2e-spec.ts`).
+    -   Verify the test case exists with matching description/behavior.
+    -   Mark as CRITICAL if test is missing.
+-   [ ] **Test Specificity Check:** Tests must match the SPECIFIC criteria, not just generic descriptions.
+    -   ❌ Plan says "Test login with invalid password → 401" but test only checks "login works"
+    -   ✅ Plan says "Test login with invalid password → 401" and test explicitly asserts 401 for wrong password
+-   [ ] **Count Verification:** Compare planned test count vs actual test count. Significant discrepancy = CRITICAL.
+
+**If ANY planned test is missing, the review verdict MUST be `CHANGES_REQUESTED` with severity `CRITICAL: Missing Tests`.**
+
+---
+
+**4. Correctness**
 -   [ ] Are all edge cases handled? (null, empty, max values, unicode, etc.)
--   [ ] Are tests present and do they cover the critical paths?
 -   [ ] Do tests cover both success and failure cases?
 
 ---
 
-**4. Security**
+**5. Security**
 -   [ ] Is user input validated at the trust boundary?
 -   [ ] Are there SQL injection, XSS, or CSRF vulnerabilities?
 -   [ ] Are secrets hardcoded? (API keys, passwords)
@@ -106,21 +122,21 @@ Every review must evaluate these dimensions **IN ORDER**. Design consistency is 
 
 ---
 
-**5. Performance**
+**6. Performance**
 -   [ ] Are there O(n²) or worse algorithms on potentially large datasets?
 -   [ ] Are there N+1 query patterns?
 -   [ ] Are expensive operations cached or batched?
 
 ---
 
-**6. Reliability**
+**7. Reliability**
 -   [ ] Is error handling present? (What happens when the DB is down?)
 -   [ ] Are there resource leaks? (unclosed connections, event listeners)
 -   [ ] Is there logging for debugging production issues?
 
 ---
 
-**7. Maintainability**
+**8. Maintainability**
 -   [ ] Is the code readable without extensive comments?
 -   [ ] Are functions small and single-purpose?
 -   [ ] Is there unnecessary duplication?
@@ -217,9 +233,18 @@ All code review files must follow this structure:
 ### LOW (Optional)
 - ...
 
+## Test Coverage Verification
+Planned Tests: X | Implemented: Y | Missing: Z
+
+| Planned Test (from implementation_plans/) | Test File | Status |
+|-------------------------------------------|-----------|--------|
+| `ServiceName.method()` with valid input   | `service.test.ts:L45` | ✅ Found |
+| `POST /api/users` with invalid body       | - | ❌ MISSING |
+| `<Component />` click handler             | `Component.test.tsx:L23` | ✅ Found |
+
 ## Plan Alignment
-- [x] All planned tests implemented
-- [ ] Missing test: [Test that was in plan but not implemented]
+- [x] All planned implementation items completed
+- [ ] Missing: [Item that was in plan but not implemented]
 
 ## Checklist
 - [x] Correctness verified

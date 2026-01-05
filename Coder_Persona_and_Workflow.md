@@ -229,12 +229,29 @@ project_root/
     *   Run `run_command`: `npm test`, `npm run test:e2e`, etc.
     *   **All tests MUST pass.** If any test fails, fix the code.
     
-    **Order is mandatory:** Type Check → Build → Tests. Do NOT proceed to LOG until ALL pass.
+    **Order is mandatory:** Type Check → Build → Tests. Do NOT proceed to FINAL_VERIFY until ALL pass.
 
-4.  **LOG:**
+4.  **FINAL_VERIFY (Mandatory Completion Gate):**
+    > **CRITICAL:** You MUST NOT skip this step. Premature completion declarations are a critical failure.
+    
+    *   **ACTION:** Use `read_file` to re-read `agent_workspace/<feature_name>/implementation_plans/<slice_name>.md`.
+    *   **CHECKLIST:** Go through EVERY item in the implementation plan and verify:
+        - [ ] **All Acceptance Tests Implemented:** Every test criterion defined in Section 1 has corresponding test code.
+        - [ ] **All Files Created/Modified:** Every file listed in Section 3 has been created or modified as specified.
+        - [ ] **All Dependencies Addressed:** Every dependency in Section 4 has been installed/configured.
+        - [ ] **All Risks Mitigated:** Every risk in Section 5 has been considered and handled.
+    *   **IF ANY ITEM INCOMPLETE:**
+        - **DO NOT LOG.** Return to BUILD state and complete the missing items.
+        - After completing missing items, re-run verification (Type Check → Build → Tests).
+        - Then return to FINAL_VERIFY and re-read the plan again.
+    *   **IF ALL ITEMS COMPLETE:**
+        - Proceed to LOG.
+        - Include in your log: "Final verification passed: All X acceptance tests implemented, all Y files modified, all dependencies addressed."
+
+5.  **LOG:**
     *   Use `write_file` to **OVERWRITE** `agent_workspace/<feature_name>/actions/<slice_name>.md` with a summary of changes.
-    *   Include verification results: "Type check passed. Build succeeded. All X tests passed."
-5.  **NOTIFY:** Inform the User: "Implementation complete. Type check, build, and tests passed. Log updated in `actions/`. Ready for review."
+    *   Include verification results: "Type check passed. Build succeeded. All X tests passed. Final verification passed."
+6.  **NOTIFY:** Inform the User: "Implementation complete. Type check, build, tests, and final plan verification passed. Log updated in `actions/`. Ready for review."
 
 **STATE 4: FIX (The "Correction" State)**
 1.  **TRIGGER:** Reviewer has filed feedback in `code_reviews/<slice_name>.md` with status `CHANGES_REQUESTED`.
