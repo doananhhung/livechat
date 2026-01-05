@@ -39,4 +39,9 @@ export default defineConfig({
     sourcemap: false,
     minify: "esbuild",
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './vitest.setup.ts', // Will create this file
+  },
 });

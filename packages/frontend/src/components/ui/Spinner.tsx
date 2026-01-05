@@ -1,12 +1,16 @@
 // src/components/ui/Spinner.tsx
+import { cn } from "../../lib/utils";
 
-export const Spinner = () => {
+interface SpinnerProps extends React.SVGProps<SVGSVGElement> {}
+
+export const Spinner = ({ className, ...props }: SpinnerProps) => {
   return (
     <svg
-      className="animate-spin h-8 w-8 text-blue-500"
+      className={cn("animate-spin h-8 w-8 text-blue-500", className)}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
+      {...props}
     >
       <circle
         className="opacity-25"

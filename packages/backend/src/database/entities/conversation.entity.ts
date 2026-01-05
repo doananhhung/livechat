@@ -13,12 +13,7 @@ import { Message } from "./message.entity";
 import { Project } from "./project.entity";
 import { Visitor } from "./visitor.entity";
 import { User } from "./user.entity";
-
-export enum ConversationStatus {
-  OPEN = "open",
-  CLOSED = "closed",
-  PENDING = "pending",
-}
+import { ConversationStatus } from "@live-chat/shared-types";
 
 @Entity("conversations")
 export class Conversation {

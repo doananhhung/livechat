@@ -105,12 +105,12 @@ describe('InboxController', () => {
 
   describe('updateConversation', () => {
     it('should call conversationService.updateStatus', async () => {
-      const body: UpdateConversationDto = { status: ConversationStatus.CLOSED };
+      const body: UpdateConversationDto = { status: ConversationStatus.SOLVED };
       await controller.updateConversation(mockUser, '1', body);
       expect(conversationService.updateStatus).toHaveBeenCalledWith(
         mockUser.id,
         '1',
-        ConversationStatus.CLOSED
+        ConversationStatus.SOLVED
       );
     });
 

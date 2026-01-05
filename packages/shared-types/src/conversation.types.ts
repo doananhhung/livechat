@@ -4,8 +4,9 @@ import { User } from "./user.types";
 
 export enum ConversationStatus {
   OPEN = "open",
-  CLOSED = "closed",
   PENDING = "pending",
+  SOLVED = "solved", // Was 'closed'
+  SPAM = "spam"
 }
 
 export interface Conversation {

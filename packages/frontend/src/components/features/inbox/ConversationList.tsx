@@ -1,6 +1,6 @@
 // src/components/features/inbox/ConversationList.tsx
 import { useEffect, useState } from "react";
-import { NavLink, useParams, useNavigate, useLocation } from "react-router-dom";
+import { NavLink, useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   useGetConversations,
   useUpdateConversationStatus,
@@ -30,7 +30,7 @@ import {
   AlertDialogCancel,
 } from "../../ui/AlertDialog";
 import { MoreHorizontal, Trash2 } from "lucide-react";
-import type { Conversation } from "@live-chat/shared-types";
+import { ConversationStatus, type Conversation } from "@live-chat/shared-types";
 
 const ConversationTime = ({ date }: { date: Date | string }) => {
   const timeAgo = useTimeAgo(date);
@@ -44,10 +44,41 @@ export const ConversationList = () => {
   }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const setCurrentProjectId = useProjectStore(
     (state) => state.setCurrentProjectId
   );
-  const [status, setStatus] = useState<"open" | "closed" | undefined>("open");
+
+  // Read initial status from URL query param, default to OPEN
+  const getStatusFromUrl = (): ConversationStatus | undefined => {
+    const urlStatus = searchParams.get("status");
+    if (urlStatus && Object.values(ConversationStatus).includes(urlStatus as ConversationStatus)) {
+      return urlStatus as ConversationStatus;
+    }
+    return ConversationStatus.OPEN;
+  };
+
+  const [status, setStatus] = useState<ConversationStatus | undefined>(getStatusFromUrl);
+
+  // Sync status state when URL changes (e.g., from MessagePane navigation)
+  useEffect(() => {
+    const newStatus = getStatusFromUrl();
+    if (newStatus !== status) {
+      setStatus(newStatus);
+    }
+  }, [searchParams]);
+
+  // Update URL when status filter is clicked
+  const handleStatusChange = (newStatus: ConversationStatus | undefined) => {
+    setStatus(newStatus);
+    if (newStatus) {
+      setSearchParams({ status: newStatus }, { replace: true });
+    } else {
+      // Remove status param if undefined (show all)
+      searchParams.delete("status");
+      setSearchParams(searchParams, { replace: true });
+    }
+  };
 
   // Delete confirmation dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -115,14 +146,14 @@ export const ConversationList = () => {
     value,
     label,
   }: {
-    value: typeof status;
+    value: ConversationStatus | undefined;
     label: string;
   }) => (
     <Button
       variant={status === value ? "outline" : "ghost"}
       size="sm"
-      onClick={() => setStatus(value)}
-      className="flex-1"
+      onClick={() => handleStatusChange(value)}
+      className="flex-1 px-2 text-xs"
     >
       {label}
     </Button>
@@ -131,12 +162,14 @@ export const ConversationList = () => {
   return (
     <div className="h-full flex flex-col">
       <div className="p-2 border-b">
-        <div className="flex items-center gap-1 bg-muted p-1 rounded-md">
-          <FilterButton value="open" label="Mở" />
-          <FilterButton value="closed" label="Đóng" />
-          <FilterButton value={undefined} label="Tất cả" />
+        <div className="flex items-center gap-1 bg-muted p-1 rounded-md overflow-x-auto">
+          <FilterButton value={ConversationStatus.OPEN} label="Mở" />
+          <FilterButton value={ConversationStatus.PENDING} label="Chờ" />
+          <FilterButton value={ConversationStatus.SOLVED} label="Xong" />
+          <FilterButton value={ConversationStatus.SPAM} label="Spam" />
         </div>
       </div>
+      {/* ... */}
       {isLoading ? (
         <div className="flex items-center justify-center p-8 h-full">
           <Spinner />
@@ -159,7 +192,7 @@ export const ConversationList = () => {
             return (
               <NavLink
                 key={conversation.id}
-                to={`/inbox/projects/${projectId}/conversations/${conversation.id}`}
+                to={`/inbox/projects/${projectId}/conversations/${conversation.id}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
                 className={({ isActive }) =>
                   cn(
                     "block p-4 pr-2 border-b transition-all duration-200 group",

@@ -1,5 +1,5 @@
 // src/components/features/inbox/MessagePane.tsx
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import {
   useGetMessages,
@@ -13,13 +13,22 @@ import { Spinner } from "../../../components/ui/Spinner";
 import { Avatar } from "../../../components/ui/Avatar";
 import { useTypingStore } from "../../../stores/typingStore";
 import { TypingIndicator } from "./TypingIndicator";
-import { useEffect, useState } from "react"; // 1. Import useState
+import { useEffect, useState } from "react";
 import { Button } from "../../ui/Button";
 import { formatMessageTime } from "../../../lib/dateUtils";
 import { cn } from "../../../lib/utils";
 import { useToast } from "../../ui/use-toast";
-import { Dialog, DialogContent } from "../../ui/Dialog"; // 2. Import Dialog
-import { ZoomIn } from "lucide-react"; // 3. Import an icon
+import { Dialog, DialogContent } from "../../ui/Dialog";
+import { ZoomIn, ChevronDown, CheckCircle, Clock, AlertOctagon, Archive, RotateCcw } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "../../ui/DropdownMenu";
+import { getStatusLabel, getAvailableTransitions } from "../../../lib/conversationUtils";
 
 import { AssignmentControls } from "./AssignmentControls";
 import { VisitorNoteList } from "./VisitorNoteList";
@@ -29,7 +38,6 @@ import { VisitorNoteList } from "./VisitorNoteList";
  */
 const VisitorContextPanel = ({ projectId, visitorId }: { projectId: number; visitorId: number }) => {
   const { data: visitor, isLoading } = useGetVisitor(projectId, visitorId);
-  // 4. Add state for the dialog
   const [isScreenshotModalOpen, setScreenshotModalOpen] = useState(false);
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -69,13 +77,12 @@ const VisitorContextPanel = ({ projectId, visitorId }: { projectId: number; visi
               </a>
             </div>
 
-            {/* === 5. MODIFIED SCREENSHOT BLOCK === */}
+            {/* === SCREENSHOT BLOCK === */}
             {screenshotUrl && (
               <div className="space-y-2">
                 <p className="font-medium text-muted-foreground">
                   Xem trước trang:
                 </p>
-                {/* Make the preview a clickable button */}
                 <button
                   type="button"
                   onClick={() => setScreenshotModalOpen(true)}
@@ -91,27 +98,23 @@ const VisitorContextPanel = ({ projectId, visitorId }: { projectId: number; visi
                     }}
                     key={screenshotUrl}
                   />
-                  {/* Add a zoom-in icon overlay on hover */}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <ZoomIn className="h-8 w-8 text-white" />
                   </div>
                 </button>
               </div>
             )}
-            {/* === END OF MODIFIED BLOCK === */}
+            {/* === END SCREENSHOT BLOCK === */}
           </div>
         )}
 
-        {/* === 6. ADD THE DIALOG COMPONENT === */}
-        {/* It will show the same screenshotUrl */}
+        {/* === DIALOG COMPONENT === */}
         <Dialog
           open={isScreenshotModalOpen}
           onOpenChange={setScreenshotModalOpen}
           className="max-w-[70vw]"
         >
           <DialogContent className="p-2">
-            {" "}
-            {/* Remove size class from here */}
             <img
               src={screenshotUrl || ""}
               alt={`Screenshot of ${visitor?.currentUrl}`}
@@ -228,6 +231,7 @@ export const MessagePane = () => {
     conversationId: string;
   }>();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   const numericProjectId = projectId ? parseInt(projectId, 10) : undefined;
@@ -269,24 +273,33 @@ export const MessagePane = () => {
     }
   }, [convoId, numericProjectId, conversation, updateConversation]);
 
-  const handleStatusUpdate = (status: ConversationStatus) => {
+  const handleStatusUpdate = (newStatus: ConversationStatus) => {
     if (!conversation || !numericProjectId) return;
+
+    // Capture current status before update for comparison
+    const currentStatus = conversation.status;
 
     updateConversation(
       {
         projectId: numericProjectId,
         conversationId: Number(conversation.id),
-        payload: { status },
+        payload: { status: newStatus },
       },
       {
         onSuccess: () => {
+          const visitorName = conversation.visitor?.displayName || "Khách";
           toast({
             title: "Thành công",
-            description:
-              status === ConversationStatus.CLOSED
-                ? "Đã đóng cuộc trò chuyện"
-                : "Đã mở lại cuộc trò chuyện",
+            description: `Cuộc hội thoại với "${visitorName}" đã được chuyển sang "${getStatusLabel(newStatus)}".`,
           });
+
+          // Navigate to the new status filter so user can continue viewing the conversation
+          // This prevents the "Loading conversation..." state when conversation moves to different filter
+          if (currentStatus !== newStatus) {
+            navigate(
+              `/inbox/projects/${projectId}/conversations/${conversationId}?status=${newStatus}`
+            );
+          }
         },
         onError: (error: Error) => {
           toast({
@@ -299,9 +312,21 @@ export const MessagePane = () => {
     );
   };
 
+  const getStatusIcon = (s: ConversationStatus) => {
+    switch (s) {
+      case ConversationStatus.OPEN: return <RotateCcw className="h-4 w-4" />;
+      case ConversationStatus.PENDING: return <Clock className="h-4 w-4" />;
+      case ConversationStatus.SOLVED: return <CheckCircle className="h-4 w-4" />;
+      case ConversationStatus.SPAM: return <AlertOctagon className="h-4 w-4" />;
+      default: return null;
+    }
+  };
+
+
   if (!convoId) {
     return null;
   }
+
 
   if (isLoading) {
     return (
@@ -321,16 +346,14 @@ export const MessagePane = () => {
               <h2 className="font-semibold text-foreground">
                 {conversation?.visitor?.displayName || "Visitor"}
               </h2>
-              {/* Debug: Show status */}
               {conversation && (
-                <p className="text-xs text-muted-foreground">
-                  Status: {conversation.status || "unknown"}
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  Status: <span className="font-medium">{getStatusLabel(conversation.status)}</span>
                 </p>
               )}
             </div>
           </div>
 
-          {/* Debug: Always show this section */}
           <div className="flex items-center gap-2">
             {conversation && <AssignmentControls conversation={conversation} />}
 
@@ -344,26 +367,32 @@ export const MessagePane = () => {
               <span className="text-sm text-yellow-500">⚠️ No status</span>
             )}
 
-            {conversation && conversation.status === "open" && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleStatusUpdate(ConversationStatus.CLOSED)}
-                disabled={isUpdatingStatus}
-              >
-                Đóng cuộc trò chuyện
-              </Button>
-            )}
-
-            {conversation && conversation.status === "closed" && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleStatusUpdate(ConversationStatus.OPEN)}
-                disabled={isUpdatingStatus}
-              >
-                Mở lại cuộc trò chuyện
-              </Button>
+            {conversation && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" disabled={isUpdatingStatus} className="gap-2">
+                      {isUpdatingStatus ? (
+                        <Spinner className="h-4 w-4" />
+                      ) : (
+                        <>
+                          {getStatusIcon(conversation.status)}
+                          {getStatusLabel(conversation.status)}
+                        </>
+                      )}
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Thay đổi trạng thái</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {getAvailableTransitions(conversation.status).map((s) => (
+                      <DropdownMenuItem key={s} onClick={() => handleStatusUpdate(s)}>
+                        {getStatusIcon(s)}
+                        <span className="ml-2">{getStatusLabel(s)}</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
             )}
           </div>
         </header>
