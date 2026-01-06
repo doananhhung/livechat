@@ -94,8 +94,10 @@ export class InboxEventHandlerService {
           manager
         );
 
-        let conversation =
-          await this.conversationService.getOrCreateHistoryByVisitorId(
+        // Lazy conversation creation: Only find existing open conversation,
+        // do NOT create a new one. Conversation is created on first message.
+        const conversation =
+          await this.conversationService.findOpenByVisitorId(
             payload.projectId,
             visitor.id,
             manager
@@ -107,7 +109,7 @@ export class InboxEventHandlerService {
     this.eventsGateway.prepareSocketForVisitor(
       payload.socketId,
       visitor,
-      conversation,
+      conversation, // Can be null for new visitors
       payload.projectId,
       payload.visitorUid
     );

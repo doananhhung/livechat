@@ -210,7 +210,7 @@ export class EventsGateway
   public prepareSocketForVisitor(
     socketId: string,
     visitor: Visitor,
-    conversation: Conversation,
+    conversation: Conversation | null,
     projectId: number,
     visitorUid: string
   ) {
@@ -232,25 +232,37 @@ export class EventsGateway
 
     let messagesForFrontend: WidgetMessageDto[] = [];
 
-    if (conversation && conversation.messages) {
-      messagesForFrontend = conversation.messages.map((msg) => ({
-        id: msg.id,
-        content: msg.content || '',
-        sender: {
-          type: msg.fromCustomer ? 'visitor' : 'agent',
-          name: msg.senderId,
-        },
-        status: msg.status as MessageStatus,
-        timestamp: typeof msg.createdAt === 'string' ? msg.createdAt : msg.createdAt.toISOString(),
-      }));
+    // Handle lazy conversation creation: conversation may be null for new visitors
+    if (conversation) {
+      socket.data.conversationId = conversation.id;
+      
+      if (conversation.messages && conversation.messages.length > 0) {
+        messagesForFrontend = conversation.messages.map((msg) => ({
+          id: msg.id,
+          content: msg.content || '',
+          sender: {
+            type: msg.fromCustomer ? 'visitor' : 'agent',
+            name: msg.senderId,
+          },
+          status: msg.status as MessageStatus,
+          timestamp: typeof msg.createdAt === 'string' ? msg.createdAt : msg.createdAt.toISOString(),
+        }));
+        this.logger.log(
+          `Loaded ${messagesForFrontend.length} messages for conversationId ${conversation.id}`
+        );
+      } else {
+        this.logger.log(
+          `No messages found for conversationId ${conversation.id}`
+        );
+      }
     } else {
+      // New visitor - no conversation yet (will be created on first message)
       this.logger.log(
-        `No messages found for conversationId ${conversation.id}`
+        `No existing conversation for visitor ${visitorUid} - will be created on first message`
       );
     }
 
     this.logger.log(`Emitting conversationHistory to ${socket.id}`);
-    socket.data.conversationId = conversation.id;
     socket.emit(WebSocketEvent.CONVERSATION_HISTORY, {
       messages: messagesForFrontend,
     });

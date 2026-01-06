@@ -232,21 +232,25 @@ export class ConversationService {
 
   /**
    * Finds an open conversation for a visitor, including its message history.
-   * If one doesn't exist, a new conversation is created.
+   * Returns null if no open conversation exists (lazy conversation creation pattern).
    *
-   * @param visitorId The ID of the visitor.
+   * This method is used during widget open (identify event) to load existing
+   * conversation history. It does NOT create a new conversation - that only
+   * happens when the visitor sends their first message.
+   *
    * @param projectId The ID of the project.
+   * @param visitorId The ID of the visitor.
    * @param manager The EntityManager to perform database operations.
-   * @returns A Promise containing the conversation (with or without messages).
+   * @returns The open conversation with messages, or null if none exists.
    */
-  async getOrCreateHistoryByVisitorId(
+  async findOpenByVisitorId(
     projectId: number,
     visitorId: number,
     manager: EntityManager
-  ): Promise<Conversation> {
+  ): Promise<Conversation | null> {
     const conversationRepo = manager.getRepository(Conversation);
 
-    let conversation = await conversationRepo.findOne({
+    const conversation = await conversationRepo.findOne({
       where: {
         visitor: { id: visitorId },
         project: { id: projectId },
@@ -259,17 +263,6 @@ export class ConversationService {
         },
       },
     });
-
-    if (!conversation) {
-      conversation = conversationRepo.create({
-        project: { id: projectId },
-        visitor: { id: visitorId },
-        status: ConversationStatus.OPEN,
-      });
-      await conversationRepo.save(conversation);
-
-      conversation.messages = [];
-    }
 
     return conversation;
   }
