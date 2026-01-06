@@ -94,6 +94,7 @@ export class EventConsumerService {
         conversation.id,
         content,
         new Date(),
+        savedMessage.id,
         manager
       );
       this.logger.log(

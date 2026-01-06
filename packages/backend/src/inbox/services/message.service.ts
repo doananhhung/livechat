@@ -10,6 +10,7 @@ import {
   Conversation,
   Message,
   User,
+  Project,
 } from '../../database/entities';
 import { MessageStatus } from '@live-chat/shared-types';
 import { EventsGateway } from '../../gateway/events.gateway';
@@ -22,6 +23,9 @@ import {
 import { RealtimeSessionService } from '../../realtime-session/realtime-session.service';
 import { ProjectService } from '../../projects/project.service';
 import { MessagePersistenceService } from './persistence/message.persistence.service';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { ConversationService } from './conversation.service';
 
 @Injectable()
 export class MessageService {
@@ -32,7 +36,9 @@ export class MessageService {
     private readonly realtimeSessionService: RealtimeSessionService,
     private readonly eventsGateway: EventsGateway,
     private readonly projectService: ProjectService,
-    private readonly messagePersistenceService: MessagePersistenceService
+    private readonly messagePersistenceService: MessagePersistenceService,
+    @InjectQueue('conversation-workflow-queue') private readonly workflowQueue: Queue,
+    private readonly conversationService: ConversationService
   ) {
     this.logger.log(`EventGateWay server: ${this.eventsGateway.server}`);
   }
@@ -70,7 +76,7 @@ export class MessageService {
     conversationId: string,
     replyText: string
   ): Promise<Message> {
-    const savedMessage = await this.entityManager.transaction(
+    const { savedMessage, project } = await this.entityManager.transaction(
       async (transactionalEntityManager) => {
         // Step 1: Find related conversation and visitor
         const conversation = await transactionalEntityManager.findOne(
@@ -103,7 +109,18 @@ export class MessageService {
           fromCustomer: false,
           status: MessageStatus.SENDING,
         });
-        return transactionalEntityManager.save(message);
+        const saved = await transactionalEntityManager.save(message);
+
+        // Update conversation last message and ID
+        await this.conversationService.updateLastMessage(
+            conversationId,
+            replyText,
+            saved.createdAt,
+            saved.id,
+            transactionalEntityManager
+        );
+
+        return { savedMessage: saved, project: conversation.project };
       }
     );
 
@@ -126,8 +143,28 @@ export class MessageService {
     this.logger.log(
       `Agent reply message ${savedMessage.id} status updated to ${savedMessage.status}`
     );
-    // Update message status
-    return this.entityManager.save(savedMessage);
+    
+    const updatedMessage = await this.entityManager.save(savedMessage);
+
+    // Step 5: Schedule Auto-Pending Job if enabled
+    if (project.autoResolveMinutes && project.autoResolveMinutes > 0) {
+        await this.workflowQueue.add(
+            'auto-pending',
+            {
+                conversationId,
+                projectId: project.id,
+                triggerMessageId: updatedMessage.id,
+            },
+            {
+                delay: project.autoResolveMinutes * 60 * 1000,
+                jobId: `auto-pending-${updatedMessage.id}`, // Deduplicate by message ID if needed
+                removeOnComplete: true,
+            }
+        );
+        this.logger.log(`Scheduled auto-pending job for conversation ${conversationId} in ${project.autoResolveMinutes} minutes.`);
+    }
+
+    return updatedMessage;
   }
 
   async listByConversation(

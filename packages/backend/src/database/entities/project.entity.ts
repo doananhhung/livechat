@@ -33,6 +33,9 @@ export class Project {
   })
   whitelistedDomains: string[];
 
+  @Column({ type: "integer", nullable: true, name: "auto_resolve_minutes" })
+  autoResolveMinutes: number | null;
+
   @OneToMany(() => ProjectMember, (member) => member.project)
   members: ProjectMember[];
 

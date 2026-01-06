@@ -77,12 +77,14 @@ export class ConversationService {
     conversationId: string,
     lastMessageSnippet: string,
     lastMessageTimestamp: Date,
+    lastMessageId: string,
     manager: EntityManager
   ): Promise<void> {
     return this.conversationPersistenceService.updateLastMessage(
       conversationId,
       lastMessageSnippet,
       lastMessageTimestamp,
+      lastMessageId,
       manager
     );
   }

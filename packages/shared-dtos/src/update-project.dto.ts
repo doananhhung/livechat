@@ -6,6 +6,8 @@ import {
   Matches,
   ArrayMinSize,
   ValidateNested,
+  IsInt,
+  Min,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
@@ -44,4 +46,14 @@ export class UpdateProjectDto {
     message: "Domains must be valid hostnames (e.g., example.com) or localhost, optionally with a port (e.g., localhost:3000). Protocols (http://) are not allowed."
   })
   whitelistedDomains?: string[];
+
+  @ApiProperty({
+    example: 10,
+    description: "Minutes after which an agent-replied conversation automatically moves to PENDING. 0 or null to disable.",
+    required: false,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  autoResolveMinutes?: number | null;
 }

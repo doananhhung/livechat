@@ -52,9 +52,27 @@ export class ConversationPersistenceService {
     conversationId: string,
     lastMessageSnippet: string,
     lastMessageTimestamp: Date,
+    lastMessageId: string,
     manager: EntityManager
   ): Promise<void> {
     const conversationRepo = manager.getRepository(Conversation);
+
+    // Fetch the conversation to check its current status
+    const conversation = await conversationRepo.findOne({
+      where: { id: conversationId },
+    });
+
+    if (!conversation) {
+      // Conversation not found, perhaps it was deleted or never existed.
+      // It might be appropriate to log this or throw an error depending on expected behavior.
+      return;
+    }
+
+    // Only update status to OPEN if it's not currently SPAM
+    const newStatus = conversation.status === ConversationStatus.SPAM
+      ? ConversationStatus.SPAM // Keep as SPAM
+      : ConversationStatus.OPEN; // Re-open
+
     // Increment unread count by 1 for new incoming messages
     await conversationRepo.increment({ id: conversationId }, 'unreadCount', 1);
 
@@ -63,7 +81,8 @@ export class ConversationPersistenceService {
       {
         lastMessageSnippet: lastMessageSnippet.substring(0, 100),
         lastMessageTimestamp,
-        status: ConversationStatus.OPEN, // Re-open conversation on new message
+        lastMessageId,
+        status: newStatus,
       }
     );
   }

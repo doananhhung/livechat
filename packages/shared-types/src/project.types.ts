@@ -6,6 +6,7 @@ export interface IProject {
   name: string;
   widgetSettings: IWidgetSettingsDto;
   whitelistedDomains: string[];
+  autoResolveMinutes?: number | null;
   members: ProjectMemberDto[]; // Frontend needs this for displaying project members
   createdAt: Date;
 }

@@ -24,12 +24,16 @@ export const ProjectBasicSettingsForm = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [projectName, setProjectName] = useState(project.name);
+  const [autoResolveMinutes, setAutoResolveMinutes] = useState<number | string>(
+    project.autoResolveMinutes ?? 0
+  );
   const [whitelistedDomains, setWhitelistedDomains] = useState<string[]>(
     project.whitelistedDomains || []
   );
 
   useEffect(() => {
-    setProjectName(project.name);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+    setProjectName(project.name);
+    setAutoResolveMinutes(project.autoResolveMinutes ?? 0);
     setWhitelistedDomains(project.whitelistedDomains || []);
   }, [project]);
 
@@ -107,9 +111,20 @@ export const ProjectBasicSettingsForm = ({
       return;
     }
 
+    const autoResolve = Number(autoResolveMinutes);
+    if (isNaN(autoResolve) || autoResolve < 0) {
+      toast({
+        title: "Lỗi",
+        description: "Thời gian tự động hoàn tất phải là số không âm",
+        variant: "destructive",
+      });
+      return;
+    }
+
     updateMutation.mutate({
       name: trimmedName,
       whitelistedDomains: finalDomains,
+      autoResolveMinutes: autoResolve,
     });
   };
 
@@ -117,16 +132,41 @@ export const ProjectBasicSettingsForm = ({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Project Name */}
       <div>
-        <label className="block text-sm font-medium text-foreground mb-2">
+        <label
+          htmlFor="projectName"
+          className="block text-sm font-medium text-foreground mb-2"
+        >
           Tên dự án <span className="text-destructive">*</span>
         </label>
         <Input
+          id="projectName"
           type="text"
           placeholder="Nhập tên dự án..."
           value={projectName}
           onChange={(e) => setProjectName(e.target.value)}
           disabled={updateMutation.isPending}
           required
+        />
+      </div>
+
+      {/* Auto Resolve Minutes */}
+      <div>
+        <label
+          htmlFor="autoResolveMinutes"
+          className="block text-sm font-medium text-foreground mb-2"
+        >
+          Tự động chuyển sang PENDING (phút)
+        </label>
+        <p className="text-xs text-muted-foreground mb-3">
+          Tự động chuyển hội thoại sang trạng thái Pending nếu khách hàng không trả lời sau khoảng thời gian này. Đặt 0 để tắt.
+        </p>
+        <Input
+          id="autoResolveMinutes"
+          type="number"
+          placeholder="0"
+          value={autoResolveMinutes}
+          onChange={(e) => setAutoResolveMinutes(e.target.value)}
+          disabled={updateMutation.isPending}
         />
       </div>
 

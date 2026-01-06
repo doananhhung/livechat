@@ -1,16 +1,16 @@
 import { TestHarness } from './utils/test-harness';
 import request from 'supertest';
 import { ProjectRole, AuditAction } from '@live-chat/shared-types';
-import { AuditLog } from '../src/audit/audit.entity';
+import { AuditLog } from '../src/audit-logs/audit.entity';
 
 describe('Audit Log System (E2E)', () => {
   const harness = new TestHarness();
   let agent: ReturnType<typeof request.agent>;
-  
+
   let managerToken: string;
   let agentToken: string;
   let strangerToken: string;
-  
+
   let projectId: number;
   let managerId: string;
   let agentId: string;
@@ -29,28 +29,65 @@ describe('Audit Log System (E2E)', () => {
 
     // 1. Setup Users
     // Manager
-    const mgrRes = await agent.post('/auth/register').send({ email: 'manager@audit.com', password: 'Password123!', fullName: 'Audit Manager' });
-    managerId = (await harness.dataSource.query(`SELECT id FROM users WHERE email = 'manager@audit.com'`))[0].id;
-    await harness.dataSource.query(`UPDATE users SET "is_email_verified" = true WHERE id = '${managerId}'`);
-    const mgrLogin = await agent.post('/auth/login').send({ email: 'manager@audit.com', password: 'Password123!' });
+    const mgrRes = await agent.post('/auth/register').send({
+      email: 'manager@audit.com',
+      password: 'Password123!',
+      fullName: 'Audit Manager',
+    });
+    managerId = (
+      await harness.dataSource.query(
+        `SELECT id FROM users WHERE email = 'manager@audit.com'`
+      )
+    )[0].id;
+    await harness.dataSource.query(
+      `UPDATE users SET "is_email_verified" = true WHERE id = '${managerId}'`
+    );
+    const mgrLogin = await agent
+      .post('/auth/login')
+      .send({ email: 'manager@audit.com', password: 'Password123!' });
     managerToken = mgrLogin.body.accessToken;
 
     // Agent
-    const agtRes = await agent.post('/auth/register').send({ email: 'agent@audit.com', password: 'Password123!', fullName: 'Audit Agent' });
-    agentId = (await harness.dataSource.query(`SELECT id FROM users WHERE email = 'agent@audit.com'`))[0].id;
-    await harness.dataSource.query(`UPDATE users SET "is_email_verified" = true WHERE id = '${agentId}'`);
-    const agtLogin = await agent.post('/auth/login').send({ email: 'agent@audit.com', password: 'Password123!' });
+    const agtRes = await agent.post('/auth/register').send({
+      email: 'agent@audit.com',
+      password: 'Password123!',
+      fullName: 'Audit Agent',
+    });
+    agentId = (
+      await harness.dataSource.query(
+        `SELECT id FROM users WHERE email = 'agent@audit.com'`
+      )
+    )[0].id;
+    await harness.dataSource.query(
+      `UPDATE users SET "is_email_verified" = true WHERE id = '${agentId}'`
+    );
+    const agtLogin = await agent
+      .post('/auth/login')
+      .send({ email: 'agent@audit.com', password: 'Password123!' });
     agentToken = agtLogin.body.accessToken;
 
     // Stranger
-    const strRes = await agent.post('/auth/register').send({ email: 'stranger@audit.com', password: 'Password123!', fullName: 'Stranger' });
-    const strId = (await harness.dataSource.query(`SELECT id FROM users WHERE email = 'stranger@audit.com'`))[0].id;
-    await harness.dataSource.query(`UPDATE users SET "is_email_verified" = true WHERE id = '${strId}'`);
-    const strLogin = await agent.post('/auth/login').send({ email: 'stranger@audit.com', password: 'Password123!' });
+    const strRes = await agent.post('/auth/register').send({
+      email: 'stranger@audit.com',
+      password: 'Password123!',
+      fullName: 'Stranger',
+    });
+    const strId = (
+      await harness.dataSource.query(
+        `SELECT id FROM users WHERE email = 'stranger@audit.com'`
+      )
+    )[0].id;
+    await harness.dataSource.query(
+      `UPDATE users SET "is_email_verified" = true WHERE id = '${strId}'`
+    );
+    const strLogin = await agent
+      .post('/auth/login')
+      .send({ email: 'stranger@audit.com', password: 'Password123!' });
     strangerToken = strLogin.body.accessToken;
 
     // 2. Setup Project
-    const projRes = await agent.post('/projects')
+    const projRes = await agent
+      .post('/projects')
       .set('Authorization', `Bearer ${managerToken}`)
       .send({ name: 'Audit Project', whitelistedDomains: ['localhost'] })
       .expect(201);
@@ -72,7 +109,7 @@ describe('Audit Log System (E2E)', () => {
         actorType: 'USER',
         entity: 'Project',
         entityId: String(projectId),
-        metadata: { field: 'name' }
+        metadata: { field: 'name' },
       }),
       repo.create({
         projectId,
@@ -81,7 +118,7 @@ describe('Audit Log System (E2E)', () => {
         actorType: 'USER',
         entity: 'Conversation',
         entityId: '123',
-        metadata: { visitorId: 1 }
+        metadata: { visitorId: 1 },
       }),
       // Log for another project (should not be visible)
       repo.create({
@@ -91,8 +128,8 @@ describe('Audit Log System (E2E)', () => {
         actorType: 'USER',
         entity: 'User',
         entityId: '999',
-        metadata: {}
-      })
+        metadata: {},
+      }),
     ]);
   });
 
@@ -102,7 +139,7 @@ describe('Audit Log System (E2E)', () => {
         .get(`/projects/${projectId}/audit-logs`)
         .set('Authorization', `Bearer ${managerToken}`)
         .expect(200);
-      
+
       expect(res.body.data).toHaveLength(2);
       expect(res.body.total).toBe(2);
       expect(res.body.data[0].projectId).toBe(projectId);
@@ -128,7 +165,7 @@ describe('Audit Log System (E2E)', () => {
         .query({ action: AuditAction.CREATE })
         .set('Authorization', `Bearer ${managerToken}`)
         .expect(200);
-      
+
       expect(res.body.data).toHaveLength(1);
       expect(res.body.data[0].action).toBe(AuditAction.CREATE);
     });
@@ -139,7 +176,7 @@ describe('Audit Log System (E2E)', () => {
         .query({ actorId: managerId })
         .set('Authorization', `Bearer ${managerToken}`)
         .expect(200);
-      
+
       expect(res.body.data).toHaveLength(1);
       expect(res.body.data[0].actorId).toBe(managerId);
     });
@@ -150,11 +187,11 @@ describe('Audit Log System (E2E)', () => {
       // Trigger an action that should be audited (e.g., Update Project Settings)
       // Note: We need an endpoint decorated with @Auditable.
       // Let's check `ProjectController.update`.
-      
+
       // Assuming `ProjectController.update` has @Auditable.
       // If not, we might need to find another endpoint or just trust the manual test.
       // Let's verify ProjectController first.
-      
+
       // For now, I'll try to trigger an update.
       await agent
         .patch(`/projects/${projectId}`)
@@ -163,19 +200,19 @@ describe('Audit Log System (E2E)', () => {
         .expect(200);
 
       // Wait a bit for async logging (it's fire-and-forget in interceptor catch but synchronous in tap?)
-      // Interceptor calls `this.auditService.log`. It is awaited in `tap`? 
+      // Interceptor calls `this.auditService.log`. It is awaited in `tap`?
       // "this.auditService.log(...).catch(...)" -> It is NOT awaited in the interceptor pipeline usually if not returned properly.
       // In the provided interceptor code: `tap(...)` logic runs synchronously or fires async promise.
       // The code:
       // `tap((responseBody) => { ... this.auditService.log(...) })`
       // It fires the promise but doesn't return it to the stream, so it's a side effect.
       // We might need to wait a small delay.
-      
-      await new Promise(r => setTimeout(r, 500));
+
+      await new Promise((r) => setTimeout(r, 500));
 
       const logs = await harness.dataSource.getRepository(AuditLog).find({
         where: { projectId, action: AuditAction.UPDATE, entity: 'Project' },
-        order: { createdAt: 'DESC' }
+        order: { createdAt: 'DESC' },
       });
 
       // Note: If ProjectController doesn't have @Auditable, this test will fail (or find 0 logs).

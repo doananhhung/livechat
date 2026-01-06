@@ -14,6 +14,7 @@ import { ProjectModule } from '../projects/project.module';
 import { InboxEventHandlerService } from './inbox-event.handler';
 import { EventProducerModule } from '../event-producer/event-producer.module';
 import { InboxPersistenceModule } from './inbox.persistence.module';
+import { WorkflowModule } from '../modules/workflow/workflow.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { InboxPersistenceModule } from './inbox.persistence.module';
     ProjectModule,
     EventProducerModule,
     InboxPersistenceModule,
+    WorkflowModule,
   ],
   providers: [
     ConversationService,

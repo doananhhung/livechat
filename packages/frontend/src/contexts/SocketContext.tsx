@@ -15,6 +15,7 @@ import { useTypingStore } from "../stores/typingStore";
 import { useProjectStore } from "../stores/projectStore";
 import { useLocation } from "react-router-dom";
 import { updateConversationStatus } from "../services/inboxApi";
+import { useToast } from "../components/ui/use-toast";
 
 const SOCKET_URL = import.meta.env.VITE_API_BASE_URL?.replace("/api/v1", "");
 
@@ -24,6 +25,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
   const setTypingStatus = useTypingStore((state) => state.setTypingStatus);
   const currentProjectId = useProjectStore((state) => state.currentProjectId);
   const location = useLocation();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!socket) {
@@ -204,6 +206,13 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       );
     };
 
+    const handleAutomationTriggered = (payload: { conversationId: string; type: string; message: string }) => {
+      toast({
+        title: "Tự động hóa",
+        description: payload.message,
+      });
+    };
+
     socket.on(WebSocketEvent.NEW_MESSAGE, handleNewMessage);
     socket.on(WebSocketEvent.AGENT_REPLIED, handleNewMessage);
     socket.on(WebSocketEvent.VISITOR_TYPING, handleVisitorTyping);
@@ -212,6 +221,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
     socket.on(WebSocketEvent.VISITOR_NOTE_ADDED, handleVisitorNoteAdded);
     socket.on(WebSocketEvent.VISITOR_NOTE_UPDATED, handleVisitorNoteUpdated);
     socket.on(WebSocketEvent.VISITOR_NOTE_DELETED, handleVisitorNoteDeleted);
+    socket.on('automation.triggered', handleAutomationTriggered);
 
     // CRITICAL: Always cleanup listeners on unmount or when dependencies change
     return () => {
@@ -223,6 +233,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       socket.off(WebSocketEvent.VISITOR_NOTE_ADDED, handleVisitorNoteAdded);
       socket.off(WebSocketEvent.VISITOR_NOTE_UPDATED, handleVisitorNoteUpdated);
       socket.off(WebSocketEvent.VISITOR_NOTE_DELETED, handleVisitorNoteDeleted);
+      socket.off('automation.triggered', handleAutomationTriggered);
     };
   }, [
     socket,
@@ -230,6 +241,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
     setTypingStatus,
     currentProjectId,
     location.pathname,
+    toast,
   ]);
 };
 

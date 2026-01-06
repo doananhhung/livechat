@@ -58,6 +58,9 @@ export class Conversation {
   })
   lastMessageTimestamp: Date | null;
 
+  @Column({ type: "bigint", nullable: true, name: "last_message_id" })
+  lastMessageId: string | null;
+
   @Index()
   @Column({
     type: "enum",

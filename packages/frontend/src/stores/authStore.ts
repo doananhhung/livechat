@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import api from "../lib/api";
 import { AxiosError } from "axios";
-import { queryClient } from "../main";
+import { queryClient } from "../lib/queryClient";
 import type { User, UserResponse } from "@live-chat/shared-types";
 
 interface AuthState {

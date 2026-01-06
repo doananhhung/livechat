@@ -48,17 +48,44 @@ describe('ConversationPersistenceService', () => {
       const conversationId = '1';
       const lastMessageSnippet = 'Hello';
       const lastMessageTimestamp = new Date();
+      const lastMessageId = '100';
 
-      await service.updateLastMessage(conversationId, lastMessageSnippet, lastMessageTimestamp, entityManager);
+      mockRepository.findOne.mockResolvedValue({ id: conversationId, status: ConversationStatus.PENDING });
+
+      await service.updateLastMessage(conversationId, lastMessageSnippet, lastMessageTimestamp, lastMessageId, entityManager);
 
       expect(mockEntityManager.getRepository).toHaveBeenCalledWith(Conversation);
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id: conversationId } });
       expect(mockRepository.increment).toHaveBeenCalledWith({ id: conversationId }, 'unreadCount', 1);
       expect(mockRepository.update).toHaveBeenCalledWith(
         { id: conversationId },
         {
           lastMessageSnippet: lastMessageSnippet.substring(0, 100),
           lastMessageTimestamp,
+          lastMessageId,
           status: ConversationStatus.OPEN,
+        }
+      );
+    });
+
+    it('should NOT auto-open conversation if it is SPAM', async () => {
+      const conversationId = '1';
+      const lastMessageSnippet = 'Hello';
+      const lastMessageTimestamp = new Date();
+      const lastMessageId = '100';
+
+      mockRepository.findOne.mockResolvedValue({ id: conversationId, status: ConversationStatus.SPAM });
+
+      await service.updateLastMessage(conversationId, lastMessageSnippet, lastMessageTimestamp, lastMessageId, entityManager);
+
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id: conversationId } });
+      expect(mockRepository.update).toHaveBeenCalledWith(
+        { id: conversationId },
+        {
+          lastMessageSnippet: lastMessageSnippet.substring(0, 100),
+          lastMessageTimestamp,
+          lastMessageId,
+          status: ConversationStatus.SPAM,
         }
       );
     });
