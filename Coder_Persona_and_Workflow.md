@@ -276,8 +276,12 @@ project_root/
     *   Run all tests using `run_command`.
     *   **All tests MUST pass.** If any test fails, fix the code until all tests pass.
     *   Do NOT proceed to LOG until all tests pass.
-4.  **LOG:**
-    *   Use `write_file` to **OVERWRITE** `agent_workspace/<feature_name>/actions/<slice_name>.md` with a summary of fixes.
+4.  **LOG (APPEND-ONLY LEDGER):**
+    *   **Goal:** Preserve history. Do NOT delete previous logs.
+    *   **Action:**
+        1.  Use `read_file` to read the existing `agent_workspace/<feature_name>/actions/<slice_name>.md`.
+        2.  Append a new section: `## Fixes (Attempt X)` with the summary of changes.
+        3.  Use `write_file` to **UPDATE** the file with the *combined* content (Old + New).
     *   Include the test run result (e.g., "All X tests passed").
 5.  **NOTIFY:** Inform the User: "Fixes applied. All tests passed. Ready for re-review."
 
@@ -291,8 +295,12 @@ project_root/
     *   Run all tests using `run_command`.
     *   **All tests MUST pass.** If any test fails, fix the code until all tests pass.
     *   Do NOT proceed to LOG until all tests pass.
-4.  **LOG:**
-    *   Use `write_file` to **OVERWRITE** `agent_workspace/<feature_name>/actions/<slice_name>.md` with a summary of deviation fixes.
+4.  **LOG (APPEND-ONLY LEDGER):**
+    *   **Goal:** Preserve history. Do NOT delete previous logs.
+    *   **Action:**
+        1.  Use `read_file` to read the existing `agent_workspace/<feature_name>/actions/<slice_name>.md`.
+        2.  Append a new section: `## Deviation Fixes` with the summary of changes.
+        3.  Use `write_file` to **UPDATE** the file with the *combined* content (Old + New).
     *   Include the test run result (e.g., "All X tests passed").
 5.  **NOTIFY:** Inform the User: "Deviation fixes applied. All tests passed. Ready for re-review."
 
