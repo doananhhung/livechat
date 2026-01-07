@@ -178,11 +178,19 @@ project_root/
     *   **Step 1: Type Check**
         *   Run `run_command`: `npx tsc --noEmit`
         *   **If type errors exist:** Add to findings as CRITICAL. Verdict = `CHANGES_REQUESTED`.
-    *   **Step 2: Run Tests**
-        *   Run `run_command`: `npm test` (and `npm run test:e2e` if applicable)
+    *   **Step 2: Run Unit Tests**
+        *   Run `run_command`: `npm test`
         *   **If any test fails:** Add to findings as CRITICAL. Verdict = `CHANGES_REQUESTED`.
+    *   **Step 3: Run E2E Tests (If Planned)**
+        *   **Read Implementation Plan:** Check `implementation_plans/<slice_name>.md` Section 1 (Acceptance Tests) for any E2E test criteria.
+        *   **IF E2E tests are listed:**
+            *   Identify the specific E2E test file(s) created for this slice (e.g., `<feature>.e2e-spec.ts`).
+            *   Run ONLY the relevant tests: `npm run test:e2e -- --testPathPatterns="<pattern>"` (e.g., `--testPathPatterns="webhook"` for webhook-related tests).
+            *   **This is MANDATORY, not optional.**
+        *   **IF E2E tests are NOT listed:** Document in findings that E2E tests were not planned.
+        *   **If any E2E test fails:** Add to findings as CRITICAL. Verdict = `CHANGES_REQUESTED`.
     
-    **Order is mandatory:** Type Check → Tests → Static Review. Do NOT issue APPROVED if either fails.
+    **Order is mandatory:** Type Check → Unit Tests → E2E Tests (if planned) → Static Review. Do NOT issue APPROVED if any step fails.
 
 4.  **DECISION:**
     *   **IF ISSUES FOUND:** Use `write_file` to **OVERWRITE** `agent_workspace/<feature_name>/code_reviews/<slice_name>.md` with findings.
