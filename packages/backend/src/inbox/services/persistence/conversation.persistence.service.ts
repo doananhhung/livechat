@@ -1,32 +1,101 @@
 
 import { Injectable } from '@nestjs/common';
-import { EntityManager } from 'typeorm';
+import { EntityManager, In, Not } from 'typeorm';
 import { Conversation } from '../../../database/entities';
-import { ConversationStatus } from '@live-chat/shared-types';
+import { ConversationStatus, HistoryVisibilityMode } from '@live-chat/shared-types';
 
 @Injectable()
 export class ConversationPersistenceService {
   /**
-   * Finds an existing conversation for a visitor or creates a new one.
-   * This is intended to be called within a transaction.
+   * Finds an existing conversation for a visitor based on the mode.
+   * Does NOT create a new one.
+   * 
    * @param projectId - The ID of the project.
    * @param visitorId - The ID of the visitor.
    * @param manager - The EntityManager from the transaction.
+   * @param mode - The history visibility mode.
+   * @returns The found Conversation or null.
+   */
+  async findByVisitorId(
+    projectId: number,
+    visitorId: number,
+    manager: EntityManager,
+    mode: HistoryVisibilityMode = 'limit_to_active'
+  ): Promise<Conversation | null> {
+    const conversationRepo = manager.getRepository(Conversation);
+
+    if (mode === 'forever') {
+      // Find the most recent conversation that is NOT Spam
+      return conversationRepo.findOne({
+        where: {
+          project: { id: projectId },
+          visitor: { id: visitorId },
+          status: Not(ConversationStatus.SPAM),
+        },
+        relations: ['messages'],
+        order: { 
+          createdAt: 'DESC',
+          messages: { createdAt: 'ASC' }
+        }, 
+      });
+    } else {
+      // limit_to_active (Default)
+      // Only find active conversations (OPEN or PENDING)
+      return conversationRepo.findOne({
+        where: {
+          project: { id: projectId },
+          visitor: { id: visitorId },
+          status: In([ConversationStatus.OPEN, ConversationStatus.PENDING]),
+        },
+        relations: ['messages'],
+        order: { 
+          createdAt: 'DESC',
+          messages: { createdAt: 'ASC' }
+        },
+      });
+    }
+  }
+
+  /**
+   * Finds an existing conversation or creates a new one.
+   * Used when processing a new message.
+   * 
+   * @param projectId - The ID of the project.
+   * @param visitorId - The ID of the visitor.
+   * @param manager - The EntityManager from the transaction.
+   * @param mode - The history visibility mode.
    * @returns The found or newly created Conversation.
    */
   async findOrCreateByVisitorId(
     projectId: number,
     visitorId: number,
-    manager: EntityManager
+    manager: EntityManager,
+    mode: HistoryVisibilityMode = 'limit_to_active'
   ): Promise<Conversation> {
     const conversationRepo = manager.getRepository(Conversation);
 
-    let conversation = await conversationRepo.findOne({
-      where: {
-        project: { id: projectId },
-        visitor: { id: visitorId },
-      },
-    });
+    // Reuse the find logic, but without loading messages (optimization for write path)
+    let conversation: Conversation | null = null;
+
+    if (mode === 'forever') {
+      conversation = await conversationRepo.findOne({
+        where: {
+          project: { id: projectId },
+          visitor: { id: visitorId },
+          status: Not(ConversationStatus.SPAM),
+        },
+        order: { createdAt: 'DESC' },
+      });
+    } else {
+      conversation = await conversationRepo.findOne({
+        where: {
+          project: { id: projectId },
+          visitor: { id: visitorId },
+          status: In([ConversationStatus.OPEN, ConversationStatus.PENDING]),
+        },
+        order: { createdAt: 'DESC' },
+      });
+    }
 
     if (!conversation) {
       conversation = conversationRepo.create({
@@ -63,8 +132,6 @@ export class ConversationPersistenceService {
     });
 
     if (!conversation) {
-      // Conversation not found, perhaps it was deleted or never existed.
-      // It might be appropriate to log this or throw an error depending on expected behavior.
       return;
     }
 

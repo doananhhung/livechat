@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EventConsumerService } from './event-consumer.service';
 import { EntityManager } from 'typeorm';
-import { Message, Visitor } from '../database/entities';
+import { Message, Visitor, Project } from '../database/entities';
 import {
   MessageStatus,
   WorkerEventTypes,
@@ -21,10 +21,15 @@ describe('EventConsumerService', () => {
   let outboxPersistenceService: jest.Mocked<OutboxPersistenceService>;
   let entityManager: jest.Mocked<EntityManager>;
 
+  const mockProjectRepo = {
+    findOne: jest.fn(),
+  };
+
   beforeEach(async () => {
     const mockEntityManager = {
       transaction: jest.fn().mockImplementation((cb) => cb(mockEntityManager)),
       query: jest.fn(),
+      getRepository: jest.fn().mockReturnValue(mockProjectRepo),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -134,6 +139,12 @@ describe('EventConsumerService', () => {
       );
       messagePersistenceService.createMessage.mockResolvedValue(savedMessage);
       outboxPersistenceService.createEvent.mockResolvedValue({} as any);
+      
+      // Mock project settings finding
+      mockProjectRepo.findOne.mockResolvedValue({
+        id: 1,
+        widgetSettings: { historyVisibility: 'limit_to_active' }
+      });
 
       // Call private method via casting
       await (service as any).handleNewMessageFromVisitor(payload);
@@ -143,9 +154,15 @@ describe('EventConsumerService', () => {
         payload.visitorUid,
         expect.anything()
       );
+      
+      // Verify fetching project settings
+      expect(entityManager.getRepository).toHaveBeenCalledWith(Project);
+      expect(mockProjectRepo.findOne).toHaveBeenCalledWith(expect.objectContaining({ where: { id: payload.projectId } }));
+
       expect(
         conversationPersistenceService.findOrCreateByVisitorId
-      ).toHaveBeenCalledWith(payload.projectId, visitor.id, expect.anything());
+      ).toHaveBeenCalledWith(payload.projectId, visitor.id, expect.anything(), 'limit_to_active');
+      
       expect(messagePersistenceService.createMessage).toHaveBeenCalledWith(
         payload.tempId,
         payload.visitorUid,

@@ -12,7 +12,7 @@ import {
   ListConversationsDto,
   UpdateConversationDto,
 } from '@live-chat/shared-dtos';
-import { ConversationStatus } from '@live-chat/shared-types';
+import { ConversationStatus, HistoryVisibilityMode } from '@live-chat/shared-types';
 import {
   Conversation,
   User,
@@ -51,17 +51,20 @@ export class ConversationService {
    * @param projectId - The ID of the project.
    * @param visitorId - The ID of the visitor.
    * @param manager - The EntityManager from the transaction.
+   * @param mode - History visibility mode.
    * @returns The found or newly created Conversation.
    */
   async findOrCreateByVisitorId(
     projectId: number,
     visitorId: number,
-    manager: EntityManager
+    manager: EntityManager,
+    mode: HistoryVisibilityMode = 'limit_to_active'
   ): Promise<Conversation> {
     return this.conversationPersistenceService.findOrCreateByVisitorId(
       projectId,
       visitorId,
-      manager
+      manager,
+      mode
     );
   }
 
@@ -231,40 +234,28 @@ export class ConversationService {
   }
 
   /**
-   * Finds an open conversation for a visitor, including its message history.
-   * Returns null if no open conversation exists (lazy conversation creation pattern).
-   *
-   * This method is used during widget open (identify event) to load existing
-   * conversation history. It does NOT create a new conversation - that only
-   * happens when the visitor sends their first message.
+   * Finds an appropriate conversation to show to the widget based on visibility settings.
+   * Returns null if no suitable conversation exists (lazy creation).
+   * Delegates to persistence service.
    *
    * @param projectId The ID of the project.
    * @param visitorId The ID of the visitor.
    * @param manager The EntityManager to perform database operations.
-   * @returns The open conversation with messages, or null if none exists.
+   * @param mode The history visibility mode.
+   * @returns The conversation with messages, or null.
    */
-  async findOpenByVisitorId(
+  async findConversationForWidget(
     projectId: number,
     visitorId: number,
-    manager: EntityManager
+    manager: EntityManager,
+    mode: HistoryVisibilityMode = 'limit_to_active'
   ): Promise<Conversation | null> {
-    const conversationRepo = manager.getRepository(Conversation);
-
-    const conversation = await conversationRepo.findOne({
-      where: {
-        visitor: { id: visitorId },
-        project: { id: projectId },
-        status: ConversationStatus.OPEN,
-      },
-      relations: ['messages'], // Eagerly load messages
-      order: {
-        messages: {
-          createdAt: 'ASC', // Order messages chronologically
-        },
-      },
-    });
-
-    return conversation;
+    return this.conversationPersistenceService.findByVisitorId(
+      projectId,
+      visitorId,
+      manager,
+      mode
+    );
   }
 
   /**

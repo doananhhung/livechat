@@ -6,11 +6,13 @@ import {
   WorkerEventTypes,
   WorkerEvent,
   NewMessageFromVisitorPayload,
+  HistoryVisibilityMode,
 } from '@live-chat/shared-types';
 import { VisitorPersistenceService } from '../inbox/services/persistence/visitor.persistence.service';
 import { ConversationPersistenceService } from '../inbox/services/persistence/conversation.persistence.service';
 import { MessagePersistenceService } from '../inbox/services/persistence/message.persistence.service';
 import { OutboxPersistenceService } from './outbox.persistence.service';
+import { Project } from '../database/entities';
 
 @Injectable()
 export class EventConsumerService {
@@ -65,11 +67,22 @@ export class EventConsumerService {
       );
       this.logger.log(`[Transaction] Found or created visitor: ${visitor.id}`);
 
+      // Fetch project settings to determine history visibility
+      const projectRepo = manager.getRepository(Project);
+      const project = await projectRepo.findOne({
+        where: { id: projectId },
+        select: ['id', 'widgetSettings'],
+      });
+
+      const historyMode: HistoryVisibilityMode = 
+        project?.widgetSettings?.historyVisibility || 'limit_to_active';
+
       const conversation =
         await this.conversationPersistenceService.findOrCreateByVisitorId(
           projectId,
           visitor.id,
-          manager
+          manager,
+          historyMode
         );
       this.logger.log(
         `[Transaction] Found or created conversation: ${conversation.id}`

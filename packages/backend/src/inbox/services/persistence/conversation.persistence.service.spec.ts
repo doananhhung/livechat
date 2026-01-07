@@ -43,6 +43,77 @@ describe('ConversationPersistenceService', () => {
     expect(service).toBeDefined();
   });
 
+  describe('findByVisitorId', () => {
+    it('should find active conversation in limit_to_active mode (default)', async () => {
+      const projectId = 1;
+      const visitorId = 1;
+      const mockConversation = { id: '1', status: ConversationStatus.OPEN };
+      
+      mockRepository.findOne.mockResolvedValue(mockConversation);
+
+      const result = await service.findByVisitorId(projectId, visitorId, entityManager);
+
+      expect(mockRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({
+          status: expect.anything(), // In([OPEN, PENDING])
+        })
+      }));
+      expect(result).toEqual(mockConversation);
+    });
+
+    it('should find any non-spam conversation in forever mode', async () => {
+      const projectId = 1;
+      const visitorId = 1;
+      const mockConversation = { id: '1', status: ConversationStatus.SOLVED };
+      
+      mockRepository.findOne.mockResolvedValue(mockConversation);
+
+      const result = await service.findByVisitorId(projectId, visitorId, entityManager, 'forever');
+
+      expect(mockRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({
+          status: expect.anything(), // Not(SPAM)
+        })
+      }));
+      expect(result).toEqual(mockConversation);
+    });
+  });
+
+  describe('findOrCreateByVisitorId', () => {
+    it('should create new conversation if none active in limit_to_active mode', async () => {
+      const projectId = 1;
+      const visitorId = 1;
+      
+      // Simulate no active conversation found
+      mockRepository.findOne.mockResolvedValue(null);
+      const newConversation = { id: '2', status: ConversationStatus.OPEN };
+      mockRepository.create.mockReturnValue(newConversation);
+      mockRepository.save.mockResolvedValue(newConversation);
+
+      const result = await service.findOrCreateByVisitorId(projectId, visitorId, entityManager, 'limit_to_active');
+
+      expect(mockRepository.findOne).toHaveBeenCalled();
+      expect(mockRepository.create).toHaveBeenCalled();
+      expect(mockRepository.save).toHaveBeenCalled();
+      expect(result).toEqual(newConversation);
+    });
+
+    it('should return existing SOLVED conversation in forever mode (re-opening logic)', async () => {
+      const projectId = 1;
+      const visitorId = 1;
+      const solvedConversation = { id: '1', status: ConversationStatus.SOLVED };
+      
+      // Simulate finding a solved conversation
+      mockRepository.findOne.mockResolvedValue(solvedConversation);
+
+      const result = await service.findOrCreateByVisitorId(projectId, visitorId, entityManager, 'forever');
+
+      expect(mockRepository.findOne).toHaveBeenCalled();
+      expect(mockRepository.create).not.toHaveBeenCalled();
+      expect(result).toEqual(solvedConversation);
+    });
+  });
+
   describe('updateLastMessage', () => {
     it('should auto-open conversation when a new message is added', async () => {
       const conversationId = '1';

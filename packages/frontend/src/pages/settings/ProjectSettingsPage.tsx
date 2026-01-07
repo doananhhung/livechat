@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as projectApi from "../../services/projectApi";
 import { useState, useEffect } from "react";
@@ -10,6 +9,7 @@ import { useToast } from "../../components/ui/use-toast";
 import { ChevronRight, ArrowLeft, Info, Palette, Code, ShieldAlert, MessageSquarePlus } from "lucide-react";
 import { PermissionGate } from "../../components/PermissionGate";
 import { ProjectRole, WidgetPosition, WidgetTheme } from "@live-chat/shared-types";
+import type { HistoryVisibilityMode } from "@live-chat/shared-types";
 import { ProjectBasicSettingsForm } from "../../components/features/projects/ProjectBasicSettingsForm";
 import type { WidgetSettingsDto } from "@live-chat/shared-dtos";
 import { getWidgetSnippet } from "../../lib/widget";
@@ -41,6 +41,9 @@ export const ProjectSettingsPage = () => {
   const [companyLogoUrl, setCompanyLogoUrl] = useState("");
   const [agentDisplayName, setAgentDisplayName] = useState("");
   const [fontFamily, setFontFamily] = useState("sans-serif");
+  const [historyVisibility, setHistoryVisibility] = useState<HistoryVisibilityMode>(
+    "limit_to_active"
+  );
 
   const { data: projects, isLoading } = useQuery({
     queryKey: ["projects"],
@@ -61,6 +64,7 @@ export const ProjectSettingsPage = () => {
       setCompanyLogoUrl(settings.companyLogoUrl || "");
       setAgentDisplayName(settings.agentDisplayName || "");
       setFontFamily(settings.fontFamily || "sans-serif");
+      setHistoryVisibility(settings.historyVisibility || "limit_to_active");
     }
   }, [currentProject]);
 
@@ -101,6 +105,7 @@ export const ProjectSettingsPage = () => {
       companyLogoUrl: companyLogoUrl.trim() || undefined,
       agentDisplayName: agentDisplayName.trim() || undefined,
       fontFamily: fontFamily.trim() || undefined,
+      historyVisibility,
     });
   };
 
@@ -220,6 +225,51 @@ export const ProjectSettingsPage = () => {
                 }
               >
                 <form onSubmit={handleWidgetSubmit} className="space-y-6 pt-6">
+                  {/* History Visibility Mode */}
+                  <div className="border p-3 rounded-md bg-muted/20">
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Lịch sử trò chuyện
+                    </label>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-start space-x-2">
+                        <input
+                          type="radio"
+                          id="mode-active-page"
+                          name="historyVisibility"
+                          value="limit_to_active"
+                          checked={historyVisibility === 'limit_to_active'}
+                          onChange={() => setHistoryVisibility('limit_to_active')}
+                          disabled={updateWidgetMutation.isPending}
+                          className="mt-1"
+                        />
+                        <label htmlFor="mode-active-page" className="text-sm cursor-pointer">
+                          <span className="font-semibold block">Ticket Style (Mặc định)</span>
+                          <span className="text-muted-foreground">
+                            Chỉ hiện hội thoại đang mở. Hội thoại đã đóng (Solved) sẽ bị ẩn khi khách quay lại.
+                          </span>
+                        </label>
+                      </div>
+                      <div className="flex items-start space-x-2">
+                        <input
+                          type="radio"
+                          id="mode-forever-page"
+                          name="historyVisibility"
+                          value="forever"
+                          checked={historyVisibility === 'forever'}
+                          onChange={() => setHistoryVisibility('forever')}
+                          disabled={updateWidgetMutation.isPending}
+                          className="mt-1"
+                        />
+                        <label htmlFor="mode-forever-page" className="text-sm cursor-pointer">
+                          <span className="font-semibold block">Chat Style</span>
+                          <span className="text-muted-foreground">
+                            Luôn hiện lịch sử trò chuyện cũ. Tin nhắn mới sẽ mở lại hội thoại cũ.
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
                       Giao diện Widget

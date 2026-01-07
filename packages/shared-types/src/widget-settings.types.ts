@@ -8,6 +8,8 @@ export enum WidgetTheme {
   DARK = 'dark',
 }
 
+export type HistoryVisibilityMode = 'limit_to_active' | 'forever';
+
 export interface IWidgetSettingsDto {
   theme?: WidgetTheme;
   backgroundImageUrl?: string;
@@ -21,4 +23,5 @@ export interface IWidgetSettingsDto {
   agentDisplayName?: string;
   offlineMessage?: string;
   autoOpenDelay?: number;
+  historyVisibility?: HistoryVisibilityMode;
 }

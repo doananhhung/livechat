@@ -39,6 +39,7 @@ export const ProjectWidgetSettingsDialog = ({
     welcomeMessage: "",
     position: "bottom-right" as any,
     fontFamily: "sans-serif",
+    historyVisibility: "limit_to_active", // Default
   });
 
   useEffect(() => {
@@ -56,6 +57,7 @@ export const ProjectWidgetSettingsDialog = ({
         backgroundImageUrl: project.widgetSettings.backgroundImageUrl,
         backgroundOpacity: project.widgetSettings.backgroundOpacity,
         fontFamily: project.widgetSettings.fontFamily || "sans-serif",
+        historyVisibility: project.widgetSettings.historyVisibility || "limit_to_active",
       });
     }
   }, [project]);
@@ -101,6 +103,49 @@ export const ProjectWidgetSettingsDialog = ({
         >
           <div className="flex-1 overflow-y-auto pr-4 -mr-4 px-1">
             <div className="space-y-4 pb-4">
+              {/* History Visibility Mode */}
+              <div className="border p-3 rounded-md bg-muted/20">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Lịch sử trò chuyện
+                </label>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-start space-x-2">
+                    <input
+                      type="radio"
+                      id="mode-active"
+                      name="historyVisibility"
+                      value="limit_to_active"
+                      checked={settings.historyVisibility === 'limit_to_active'}
+                      onChange={(e) => setSettings({ ...settings, historyVisibility: 'limit_to_active' })}
+                      className="mt-1"
+                    />
+                    <label htmlFor="mode-active" className="text-sm cursor-pointer">
+                      <span className="font-semibold block">Ticket Style (Mặc định)</span>
+                      <span className="text-muted-foreground">
+                        Chỉ hiện hội thoại đang mở. Hội thoại đã đóng (Solved) sẽ bị ẩn khi khách quay lại.
+                      </span>
+                    </label>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <input
+                      type="radio"
+                      id="mode-forever"
+                      name="historyVisibility"
+                      value="forever"
+                      checked={settings.historyVisibility === 'forever'}
+                      onChange={(e) => setSettings({ ...settings, historyVisibility: 'forever' })}
+                      className="mt-1"
+                    />
+                    <label htmlFor="mode-forever" className="text-sm cursor-pointer">
+                      <span className="font-semibold block">Chat Style</span>
+                      <span className="text-muted-foreground">
+                        Luôn hiện lịch sử trò chuyện cũ. Tin nhắn mới sẽ mở lại hội thoại cũ.
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
               {/* Theme */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">

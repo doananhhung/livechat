@@ -1,4 +1,3 @@
-
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { VisitorIdentifiedEvent, VisitorMessageReceivedEvent } from './events';
@@ -8,7 +7,8 @@ import { RealtimeSessionService } from '../realtime-session/realtime-session.ser
 import { BullMqProducerService } from '../event-producer/bullmq-producer.service';
 import { EventsGateway } from '../gateway/events.gateway';
 import { EntityManager } from 'typeorm';
-import { WorkerEventTypes, WebSocketEvent, MessageSentPayload } from '@live-chat/shared-types';
+import { WorkerEventTypes, WebSocketEvent, MessageSentPayload, HistoryVisibilityMode } from '@live-chat/shared-types';
+import { Project } from '../database/entities';
 
 /**
  * Expected payload structure from Redis pub/sub channel.
@@ -94,13 +94,24 @@ export class InboxEventHandlerService {
           manager
         );
 
-        // Lazy conversation creation: Only find existing open conversation,
+        // Fetch project settings to determine history visibility
+        const projectRepo = manager.getRepository(Project);
+        const project = await projectRepo.findOne({
+          where: { id: payload.projectId },
+          select: ['id', 'widgetSettings'],
+        });
+
+        const historyMode: HistoryVisibilityMode = 
+          project?.widgetSettings?.historyVisibility || 'limit_to_active';
+
+        // Lazy conversation creation: Only find existing conversation based on mode.
         // do NOT create a new one. Conversation is created on first message.
-        const conversation =
-          await this.conversationService.findOpenByVisitorId(
+        const conversation = 
+          await this.conversationService.findConversationForWidget(
             payload.projectId,
             visitor.id,
-            manager
+            manager,
+            historyMode
           );
         return { visitor, conversation };
       }
@@ -109,7 +120,7 @@ export class InboxEventHandlerService {
     this.eventsGateway.prepareSocketForVisitor(
       payload.socketId,
       visitor,
-      conversation, // Can be null for new visitors
+      conversation, // Can be null for new visitors or limited history
       payload.projectId,
       payload.visitorUid
     );

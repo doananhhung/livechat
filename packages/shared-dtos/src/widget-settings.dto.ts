@@ -14,6 +14,8 @@ import { ApiProperty } from "@nestjs/swagger";
 import type { IWidgetSettingsDto } from "@live-chat/shared-types";
 import { WidgetPosition, WidgetTheme } from "@live-chat/shared-types";
 
+export type HistoryVisibilityMode = 'limit_to_active' | 'forever';
+
 export class WidgetSettingsDto implements IWidgetSettingsDto {
   @ApiProperty({
     example: WidgetTheme.LIGHT,
@@ -141,4 +143,14 @@ export class WidgetSettingsDto implements IWidgetSettingsDto {
   @IsNumber({}, { message: "Auto open delay must be a number." })
   @Min(0)
   autoOpenDelay?: number;
+
+  @ApiProperty({
+    example: "limit_to_active",
+    enum: ['limit_to_active', 'forever'],
+    description: "Controls how conversation history is presented to returning visitors",
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(['limit_to_active', 'forever'], { message: "Invalid history visibility mode." })
+  historyVisibility?: HistoryVisibilityMode;
 }

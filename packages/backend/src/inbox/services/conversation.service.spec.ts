@@ -37,6 +37,7 @@ describe('ConversationService', () => {
   const mockPersistenceService = {
     findOrCreateByVisitorId: jest.fn(),
     updateLastMessage: jest.fn(),
+    findByVisitorId: jest.fn(),
   };
 
   const mockProjectService = {
@@ -126,6 +127,22 @@ describe('ConversationService', () => {
       expect(mockSelectQueryBuilder.andWhere).toHaveBeenCalledWith('conversation.status = :status', { status: ConversationStatus.SOLVED });
       expect(result.data).toHaveLength(2);
       expect(result.data[0].status).toBe(ConversationStatus.SOLVED);
+    });
+  });
+
+  describe('findConversationForWidget', () => {
+    it('should delegate to persistence service with correct mode', async () => {
+      const projectId = 1;
+      const visitorId = 1;
+      const mode = 'forever';
+      const mockConversation = { id: '1' };
+
+      mockPersistenceService.findByVisitorId.mockResolvedValue(mockConversation);
+
+      const result = await service.findConversationForWidget(projectId, visitorId, entityManager, mode);
+
+      expect(mockPersistenceService.findByVisitorId).toHaveBeenCalledWith(projectId, visitorId, entityManager, mode);
+      expect(result).toEqual(mockConversation);
     });
   });
 });
