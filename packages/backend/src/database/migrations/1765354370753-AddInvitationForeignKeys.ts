@@ -5,8 +5,8 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * The original schema had projectId and inviterId columns but no FK constraints,
  * which could lead to orphaned invitations if projects or users are deleted.
  */
-export class AddInvitationForeignKeys1733839200000 implements MigrationInterface {
-  name = 'AddInvitationForeignKeys1733839200000';
+export class AddInvitationForeignKeys1765354370753 implements MigrationInterface {
+  name = 'AddInvitationForeignKeys1765354370753';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Add FK constraint for project_id -> projects.id

@@ -27,6 +27,7 @@ lerna-debug.log*
 # Tests
 coverage
 .nyc_output
+packages/backend/test/**/*.js
 
 # IDEs and editors
 .idea
