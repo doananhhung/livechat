@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { acceptInvitation } from "../../services/projectApi";
 import { Button } from "../../components/ui/Button";
 import AuthLayout from "../../components/layout/AuthLayout";
@@ -12,6 +13,7 @@ const AcceptInvitationPage = () => {
     "🟢 [AcceptInvitationPage] COMPONENT RENDERING - This is the first line!"
   );
 
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -37,34 +39,26 @@ const AcceptInvitationPage = () => {
 
     // Check if user is authenticated
     if (!isAuthenticated) {
-      if (!token) {
-        console.error("❌ [AcceptInvitationPage] No token provided");
-        setStatus("error");
-        setErrorMessage("Token không hợp lệ. Vui lòng kiểm tra lại liên kết.");
-        return;
-      }
-
-      console.log(
-        "⚠️ [AcceptInvitationPage] User not authenticated, redirecting to login"
-      );
+      console.log("User not logged in, redirecting to login with token");
       toast({
-        title: "Yêu cầu đăng nhập",
-        description: "Vui lòng đăng nhập để chấp nhận lời mời.",
-        variant: "default",
+        title: t("members.accept.requireLogin"),
+        description: t("members.accept.requireLoginDesc"),
       });
-      // Redirect to login with return URL
-      navigate(`/login?redirect=/accept-invitation?token=${token}`, {
+      // Pass token in state to preserve it through login flow
+      navigate("/login", {
+        state: { invitationToken: token },
         replace: true,
       });
       return;
     }
 
     if (!token) {
-      console.error(
-        "❌ [AcceptInvitationPage] No token in URL despite being authenticated"
-      );
-      setStatus("error");
-      setErrorMessage("Token không hợp lệ. Vui lòng kiểm tra lại liên kết.");
+      toast({
+        title: t("common.error"),
+        description: t("members.accept.invalidToken"),
+        variant: "destructive",
+      });
+      navigate("/");
       return;
     }
 
@@ -91,8 +85,8 @@ const AcceptInvitationPage = () => {
         );
         setStatus("success");
         toast({
-          title: "Thành công",
-          description: "Bạn đã tham gia dự án thành công!",
+          title: t("common.success"),
+          description: t("members.accept.successToast"),
         });
 
         // Redirect to inbox after 2 seconds
@@ -112,10 +106,10 @@ const AcceptInvitationPage = () => {
         setStatus("error");
         const message =
           error.response?.data?.message ||
-          "Không thể chấp nhận lời mời. Vui lòng thử lại sau.";
+          t("members.accept.genericError");
         setErrorMessage(message);
         toast({
-          title: "Lỗi",
+          title: t("common.error"),
           description: message,
           variant: "destructive",
         });
@@ -123,56 +117,64 @@ const AcceptInvitationPage = () => {
     };
 
     handleAcceptInvitation();
-  }, [searchParams, navigate, toast, isAuthenticated]);
+  }, [searchParams, navigate, toast, isAuthenticated, t]);
+
+  const isPending = status === "loading";
+  const isSuccess = status === "success";
+  const isError = status === "error";
 
   return (
-    <AuthLayout title="Chấp nhận lời mời">
+    <AuthLayout
+      title={t("members.accept.title")}
+      subtitle={
+        isPending
+          ? t("members.accept.processing")
+          : isSuccess
+          ? t("members.accept.successTitle")
+          : t("members.accept.title")
+      }
+    >
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center justify-center space-y-6 text-center">
-          {status === "loading" && (
-            <>
-              <Loader2 className="h-16 w-16 animate-spin text-primary" />
-              <div>
-                <h3 className="text-lg font-semibold">Đang xử lý...</h3>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Vui lòng đợi trong giây lát
-                </p>
-              </div>
-            </>
+          {isPending && (
+            <div className="text-center py-8 space-y-4">
+              <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+              <p className="text-muted-foreground">{t("members.accept.wait")}</p>
+            </div>
           )}
 
-          {status === "success" && (
+          {isSuccess && (
             <>
               <CheckCircle className="h-16 w-16 text-green-500" />
               <div>
                 <h3 className="text-lg font-semibold text-green-700">
-                  Chấp nhận thành công!
+                  {t("members.accept.successTitle")}
                 </h3>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Bạn đã tham gia dự án. Đang chuyển hướng...
+                  {t("members.accept.redirecting")}
                 </p>
               </div>
             </>
           )}
 
-          {status === "error" && (
+          {isError && (
             <>
               <XCircle className="h-16 w-16 text-red-500" />
-              <div>
-                <h3 className="text-lg font-semibold text-red-700">
-                  Chấp nhận thất bại
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-destructive">
+                  {t("members.accept.failTitle")}
                 </h3>
-                <p className="text-sm text-muted-foreground mt-2">
+                <p className="text-muted-foreground">
                   {errorMessage}
                 </p>
-              </div>
-              <div className="flex gap-3 mt-4">
-                <Button variant="outline" onClick={() => navigate("/inbox")}>
-                  Về trang chủ
-                </Button>
-                <Button onClick={() => window.location.reload()}>
-                  Thử lại
-                </Button>
+                <div className="flex gap-4 justify-center">
+                  <Button variant="outline" onClick={() => navigate("/")}>
+                    {t("members.accept.home")}
+                  </Button>
+                  <Button onClick={() => window.location.reload()}>
+                    {t("members.accept.retry")}
+                  </Button>
+                </div>
               </div>
             </>
           )}

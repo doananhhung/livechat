@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Settings, UserPlus, Info, Users, Sliders, ShieldAlert, MessageSquarePlus } from "lucide-react";
 import {
   DropdownMenu,
@@ -23,6 +24,7 @@ interface ProjectManagementMenuProps {
 export const ProjectManagementMenu = ({
   project,
 }: ProjectManagementMenuProps) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const currentUser = useAuthStore((state) => state.user);
   const [showProjectInfo, setShowProjectInfo] = useState(false);
@@ -35,8 +37,8 @@ export const ProjectManagementMenu = ({
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm">
             <Settings className="h-4 w-4 mr-2" />
-            Quản lý
-          </Button>
+          {t("settings.manage")}
+        </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>{project.name}</DropdownMenuLabel>
@@ -46,48 +48,48 @@ export const ProjectManagementMenu = ({
             onClick={() => navigate(`/projects/${project.id}/invite`)}
           >
             <UserPlus className="h-4 w-4 mr-2" />
-            Mời thành viên
-          </DropdownMenuItem>
+          {t("members.inviteMember")}
+        </DropdownMenuItem>
 
           <DropdownMenuItem onClick={() => setShowMembers(true)}>
             <Users className="h-4 w-4 mr-2" />
-            Quản lý thành viên
-          </DropdownMenuItem>
+          {t("members.manageMembers")}
+        </DropdownMenuItem>
 
           <DropdownMenuSeparator />
 
           <DropdownMenuItem onClick={() => setShowWidgetSettings(true)}>
             <Settings className="h-4 w-4 mr-2" />
-            Cài đặt nhanh Widget
-          </DropdownMenuItem>
+          {t("settings.quickWidgetSettings")}
+        </DropdownMenuItem>
 
           <DropdownMenuItem
             onClick={() => navigate(`/projects/${project.id}/settings`)}
           >
             <Sliders className="h-4 w-4 mr-2" />
-            Cài đặt chi tiết
-          </DropdownMenuItem>
+          {t("settings.detailedSettings")}
+        </DropdownMenuItem>
 
           <DropdownMenuItem
             onClick={() => navigate(`/projects/${project.id}/settings/canned-responses`)}
           >
             <MessageSquarePlus className="h-4 w-4 mr-2" />
-            Mẫu câu trả lời
-          </DropdownMenuItem>
+          {t("settings.cannedResponses")}
+        </DropdownMenuItem>
 
           <DropdownMenuItem
             onClick={() => navigate(`/projects/${project.id}/settings/audit-logs`)}
           >
             <ShieldAlert className="h-4 w-4 mr-2" />
-            Nhật ký hoạt động (Audit)
-          </DropdownMenuItem>
+          {t("settings.auditLogs")}
+        </DropdownMenuItem>
 
           <DropdownMenuSeparator />
 
           <DropdownMenuItem onClick={() => setShowProjectInfo(true)}>
             <Info className="h-4 w-4 mr-2" />
-            Thông tin dự án
-          </DropdownMenuItem>
+          {t("settings.projectInfo")}
+        </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 

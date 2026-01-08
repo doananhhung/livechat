@@ -6,6 +6,7 @@ import {
   useLocation,
   useSearchParams,
 } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useLoginMutation } from "../../services/authApi";
 import { useAuthStore } from "../../stores/authStore";
 import { Button } from "../../components/ui/Button";
@@ -15,6 +16,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useToast } from "../../components/ui/use-toast";
 
 const LoginPage = () => {
+  const { t } = useTranslation();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,8 +45,8 @@ const LoginPage = () => {
       hasShownMessage.current = true;
       toast({
         title: state.invitationToken
-          ? "Thông báo - Lời mời đang chờ"
-          : "Thông báo",
+          ? t("auth.noticeWithInvitation")
+          : t("auth.notice"),
         description: state.message,
       });
       if (state.email) {
@@ -112,10 +114,10 @@ const LoginPage = () => {
         navigate("/verify-2fa");
       } else {
         toast({
-          title: "Lỗi",
+          title: t("common.error"),
           description:
             error.response?.data?.message ||
-            "Email hoặc mật khẩu không hợp lệ.",
+            t("auth.invalidCredentials"),
           variant: "destructive",
         });
       }
@@ -134,7 +136,7 @@ const LoginPage = () => {
   };
 
   return (
-    <AuthLayout title="Chào mừng trở lại" subtitle="Đăng nhập để tiếp tục">
+    <AuthLayout title={t("auth.welcomeBack")} subtitle={t("auth.loginToContinue")}>
       <form onSubmit={handleEmailLogin} className="space-y-5">
         <div className="space-y-4">
           <div>
@@ -162,7 +164,7 @@ const LoginPage = () => {
               htmlFor="password"
               className="block text-sm font-medium text-foreground mb-1.5"
             >
-              Mật khẩu
+              {t("auth.password")}
             </label>
             <div className="relative">
               <Input
@@ -197,7 +199,7 @@ const LoginPage = () => {
             to="/forgot-password"
             className="text-sm font-medium text-primary hover:text-primary/90 transition-colors"
           >
-            Quên mật khẩu?
+            {t("auth.forgotPassword")}
           </Link>
         </div>
 
@@ -206,7 +208,7 @@ const LoginPage = () => {
           className="w-full h-11"
           disabled={isPending || isGoogleLoading}
         >
-          {isPending ? "Đang đăng nhập..." : "Đăng nhập"}
+          {isPending ? t("auth.loggingIn") : t("auth.login")}
         </Button>
       </form>
 
@@ -216,7 +218,7 @@ const LoginPage = () => {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-card px-3 text-muted-foreground font-medium">
-            Hoặc
+            {t("auth.or")}
           </span>
         </div>
       </div>
@@ -246,26 +248,26 @@ const LoginPage = () => {
             fill="#EA4335"
           />
         </svg>
-        {isGoogleLoading ? "Đang chuyển hướng..." : "Tiếp tục với Google"}
+        {isGoogleLoading ? t("auth.redirecting") : t("auth.continueWithGoogle")}
       </Button>
 
       <div className="mt-6 space-y-3">
         <p className="text-center text-sm text-muted-foreground">
-          Chưa có tài khoản?{" "}
+          {t("auth.noAccount")}{" "}
           <Link
             to="/register"
             className="font-semibold text-primary hover:text-primary/90 transition-colors"
           >
-            Đăng ký ngay
+            {t("auth.registerNow")}
           </Link>
         </p>
         <p className="text-center text-xs text-muted-foreground">
-          Chưa nhận được email xác thực?{" "}
+          {t("auth.noVerificationEmail")}{" "}
           <Link
             to="/resend-verification"
             className="font-medium text-primary hover:text-primary/90 transition-colors"
           >
-            Gửi lại
+            {t("auth.resend")}
           </Link>
         </p>
       </div>

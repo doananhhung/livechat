@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Copy, Check } from "lucide-react";
 import {
   Dialog,
@@ -23,6 +24,7 @@ export const ProjectInfoDialog = ({
   open,
   onOpenChange,
 }: ProjectInfoDialogProps) => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [copiedSnippet, setCopiedSnippet] = useState(false);
   const [copiedProjectId, setCopiedProjectId] = useState(false);
@@ -38,14 +40,14 @@ export const ProjectInfoDialog = ({
         setTimeout(() => setCopiedProjectId(false), 2000);
       }
       toast({
-        title: "Đã sao chép",
+        title: t("project.info.copied"),
         description:
-          type === "snippet" ? "Đã sao chép mã nhúng" : "Đã sao chép ID dự án",
+          type === "snippet" ? t("project.info.copiedSnippet") : t("project.info.copiedId"),
       });
     } catch (error) {
       toast({
-        title: "Lỗi",
-        description: "Không thể sao chép vào clipboard",
+        title: t("common.error"),
+        description: t("project.info.copyError"),
         variant: "destructive",
       });
     }
@@ -55,9 +57,9 @@ export const ProjectInfoDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Thông tin dự án</DialogTitle>
+          <DialogTitle>{t("project.info.title")}</DialogTitle>
           <DialogDescription>
-            Chi tiết về dự án {project.name}
+            {t("project.info.description", { name: project.name })}
           </DialogDescription>
         </DialogHeader>
 
@@ -65,7 +67,7 @@ export const ProjectInfoDialog = ({
           {/* Project ID */}
           <div>
             <label className="block text-sm font-medium text-muted-foreground mb-2">
-              ID Dự án
+              {t("project.info.id")}
             </label>
             <div className="flex items-center gap-2">
               <code className="flex-1 bg-muted px-3 py-2 rounded-md text-sm">
@@ -88,7 +90,7 @@ export const ProjectInfoDialog = ({
           {/* Project Name */}
           <div>
             <label className="block text-sm font-medium text-muted-foreground mb-2">
-              Tên dự án
+              {t("project.info.name")}
             </label>
             <p className="bg-muted px-3 py-2 rounded-md">{project.name}</p>
           </div>
@@ -98,7 +100,7 @@ export const ProjectInfoDialog = ({
             project.whitelistedDomains.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-2">
-                  Tên miền được phép ({project.whitelistedDomains.length})
+                  {t("project.info.whitelistedDomains")} ({project.whitelistedDomains.length})
                 </label>
                 <div className="bg-muted px-3 py-2 rounded-md space-y-1">
                   {project.whitelistedDomains.map(
@@ -115,7 +117,7 @@ export const ProjectInfoDialog = ({
           {/* Widget Snippet */}
           <div>
             <label className="block text-sm font-medium text-muted-foreground mb-2">
-              Mã nhúng Widget
+              {t("project.info.widgetSnippet")}
             </label>
             <div className="relative">
               <pre className="bg-muted text-sm p-4 rounded-md overflow-x-auto">
@@ -132,12 +134,12 @@ export const ProjectInfoDialog = ({
                 {copiedSnippet ? (
                   <>
                     <Check className="h-4 w-4 mr-1" />
-                    Đã sao chép
+                    {t("project.info.copied")}
                   </>
                 ) : (
                   <>
                     <Copy className="h-4 w-4 mr-1" />
-                    Sao chép
+                    {t("project.info.copySnippet")}
                   </>
                 )}
               </Button>
@@ -148,10 +150,10 @@ export const ProjectInfoDialog = ({
           {project.createdAt && (
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-2">
-                Ngày tạo
+                {t("project.info.createdAt")}
               </label>
               <p className="bg-muted px-3 py-2 rounded-md">
-                {new Date(project.createdAt).toLocaleDateString("vi-VN", {
+                {new Date(project.createdAt).toLocaleDateString(t("momentLocale", { defaultValue: "vi-VN" }), {
                   year: "numeric",
                   month: "long",
                   day: "numeric",

@@ -13,9 +13,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { type Message, WebSocketEvent, type VisitorContextUpdatedPayload, type VisitorTypingBroadcastPayload, type ConversationUpdatedPayload, type VisitorNotePayload, type VisitorNoteDeletedPayload } from "@live-chat/shared-types";
 import { useTypingStore } from "../stores/typingStore";
 import { useProjectStore } from "../stores/projectStore";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { updateConversationStatus } from "../services/inboxApi";
 import { useToast } from "../components/ui/use-toast";
+import { useTranslation } from "react-i18next";
 
 const SOCKET_URL = import.meta.env.VITE_API_BASE_URL?.replace("/api/v1", "");
 
@@ -25,7 +26,9 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
   const setTypingStatus = useTypingStore((state) => state.setTypingStatus);
   const currentProjectId = useProjectStore((state) => state.currentProjectId);
   const location = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!socket) {
@@ -168,6 +171,24 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
 
     const handleConversationUpdated = (payload: ConversationUpdatedPayload) => {
       console.log('[SocketContext] Received conversationUpdated:', payload);
+
+      // If this is the currently selected conversation and status changed,
+      // update the URL status filter to keep the conversation visible
+      const pathMatch = location.pathname.match(/\/conversations\/(\d+)/);
+      const activeConversationId = pathMatch ? parseInt(pathMatch[1], 10) : null;
+
+      if (
+        activeConversationId &&
+        Number(payload.conversationId) === activeConversationId &&
+        payload.fields?.status
+      ) {
+        // Navigate to the new status filter to update tabs and keep conversation visible
+        navigate(
+          `${location.pathname}?status=${payload.fields.status}`,
+          { replace: true }
+        );
+      }
+
       // Invalidate queries to fetch updated assignee details
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     };
@@ -208,7 +229,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
 
     const handleAutomationTriggered = (payload: { conversationId: string; type: string; message: string }) => {
       toast({
-        title: "Tự động hóa",
+        title: t("common.automation"),
         description: payload.message,
       });
     };
@@ -241,6 +262,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
     setTypingStatus,
     currentProjectId,
     location.pathname,
+    navigate,
     toast,
   ]);
 };

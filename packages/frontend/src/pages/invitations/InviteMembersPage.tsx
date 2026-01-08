@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   inviteUserToProject,
@@ -17,6 +18,7 @@ import {
   CheckCircle,
   XCircle,
   ArrowLeft,
+  Loader2,
 } from "lucide-react";
 import type {
   CreateInvitationDto,
@@ -27,12 +29,15 @@ import type {
 } from "@live-chat/shared-types";
 import { useIsProjectManager } from "../../hooks/useProjectRole";
 import { Spinner } from "../../components/ui/Spinner";
+import { useAuthStore } from "../../stores/authStore";
 
 const InviteMembersPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const currentUser = useAuthStore((state) => state.user);
 
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<string>("agent");
@@ -48,23 +53,11 @@ const InviteMembersPage = () => {
 
   const currentProject = projects?.find((p) => p.id === Number(projectId));
 
-  // Redirect if user is not a manager
-  useEffect(() => {
-    if (!isLoadingProjects && projects && !isManager) {
-      toast({
-        title: "Không có quyền truy cập",
-        description: "Chỉ quản lý viên mới có thể mời thành viên vào dự án.",
-        variant: "destructive",
-      });
-      navigate("/settings");
-    }
-  }, [isManager, isLoadingProjects, projects, navigate, toast]);
-
   // Fetch invitations for this project
   const { data: invitations, isLoading } = useQuery({
     queryKey: ["invitations", projectId],
     queryFn: () => getProjectInvitations(Number(projectId)),
-    enabled: !!projectId,
+    enabled: !!projectId && !!currentProject,
   });
 
   // Mutation to send invitation
@@ -72,18 +65,18 @@ const InviteMembersPage = () => {
     mutationFn: (data: CreateInvitationDto) => inviteUserToProject(data),
     onSuccess: () => {
       toast({
-        title: "Thành công",
-        description: "Lời mời đã được gửi thành công!",
+        title: t("common.success"),
+        description: t("members.invite.sendSuccess"),
       });
       setEmail("");
+      setRole("agent");
       queryClient.invalidateQueries({ queryKey: ["invitations", projectId] });
     },
     onError: (error: any) => {
       toast({
-        title: "Lỗi",
+        title: t("common.error"),
         description:
-          error.response?.data?.message ||
-          "Không thể gửi lời mời. Vui lòng thử lại.",
+          error.response?.data?.message || t("members.invite.sendError"),
         variant: "destructive",
       });
     },
@@ -95,15 +88,15 @@ const InviteMembersPage = () => {
       cancelInvitation(Number(projectId), invitationId),
     onSuccess: () => {
       toast({
-        title: "Thành công",
-        description: "Đã hủy lời mời.",
+        title: t("common.success"),
+        description: t("members.invite.cancelSuccess"),
       });
       queryClient.invalidateQueries({ queryKey: ["invitations", projectId] });
     },
     onError: (error: any) => {
       toast({
-        title: "Lỗi",
-        description: error.response?.data?.message || "Không thể hủy lời mời.",
+        title: t("common.error"),
+        description: error.response?.data?.message || t("members.invite.cancelError"),
         variant: "destructive",
       });
     },
@@ -136,18 +129,18 @@ const InviteMembersPage = () => {
   const getStatusText = (status: string) => {
     switch (status) {
       case "pending":
-        return "Đang chờ";
+        return t("members.invite.status.pending");
       case "accepted":
-        return "Đã chấp nhận";
+        return t("members.invite.status.accepted");
       case "expired":
-        return "Đã hết hạn";
+        return t("members.invite.status.expired");
       default:
         return status;
     }
   };
 
   const formatDate = (date: string | Date) => {
-    return new Date(date).toLocaleDateString("vi-VN", {
+    return new Date(date).toLocaleDateString(i18n.language, {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -156,12 +149,32 @@ const InviteMembersPage = () => {
     });
   };
 
-  // Show loading while checking permissions
+  if (!projectId) {
+    return (
+      <div className="p-8 text-center text-muted-foreground">
+        {t("settings.projectNotFound")}
+      </div>
+    );
+  }
+
   if (isLoadingProjects) {
     return (
-      <div className="flex w-full h-full items-center justify-center">
-        <Spinner />
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">{t("common.loading")}</span>
       </div>
+    );
+  }
+
+  if (currentProject && currentUser && !isManager && currentUser.id !== (currentProject as any).ownerId) {
+    return (
+         <div className="p-8 text-center">
+            <h1 className="text-2xl font-bold text-destructive mb-2">{t("members.invite.accessDenied")}</h1>
+            <p className="text-muted-foreground">{t("members.invite.accessDeniedDesc")}</p>
+            <Button variant="outline" className="mt-4" onClick={() => navigate(`/settings/projects/${projectId}`)}>
+                {t("members.invite.back")}
+            </Button>
+         </div>
     );
   }
 
@@ -174,23 +187,23 @@ const InviteMembersPage = () => {
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Quay lại
+          {t("common.back")}
         </Button>
-        <h1 className="text-3xl font-bold">Mời thành viên</h1>
+        <h1 className="text-3xl font-bold">{t("members.invite.title")}</h1>
         {currentProject && (
           <p className="text-muted-foreground mt-2">
-            Dự án: <span className="font-medium">{currentProject.name}</span>
+            {t("common.project")}: <span className="font-medium">{currentProject.name}</span>
           </p>
         )}
       </div>
 
       {/* Invitation Form */}
       <div className="bg-card border rounded-lg p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Gửi lời mời</h2>
+        <h2 className="text-xl font-semibold mb-4">{t("members.invite.sendInvitation")}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium mb-2">
-              Địa chỉ email
+              {t("common.emailAddress")}
             </label>
             <Input
               id="email"
@@ -205,7 +218,7 @@ const InviteMembersPage = () => {
 
           <div>
             <label htmlFor="role" className="block text-sm font-medium mb-2">
-              Vai trò
+              {t("common.role")}
             </label>
             <select
               id="role"
@@ -214,24 +227,24 @@ const InviteMembersPage = () => {
               className="w-full px-3 py-2 border rounded-md bg-background"
               disabled={isSending}
             >
-              <option value="agent">Agent (Nhân viên hỗ trợ)</option>
-              <option value="manager">Manager (Quản lý)</option>
+              <option value="agent">{t("common.agent")}</option>
+              <option value="manager">{t("common.manager")}</option>
             </select>
           </div>
 
           <Button type="submit" disabled={isSending} className="w-full">
             <Mail className="h-4 w-4 mr-2" />
-            {isSending ? "Đang gửi..." : "Gửi lời mời"}
+            {isSending ? t("members.invite.sending") : t("members.invite.sendInvitation")}
           </Button>
         </form>
       </div>
 
       {/* Invitations List */}
       <div className="bg-card border rounded-lg p-6">
-        <h2 className="text-xl font-semibold mb-4">Danh sách lời mời</h2>
+        <h2 className="text-xl font-semibold mb-4">{t("members.invite.invitationsList")}</h2>
 
         {isLoading ? (
-          <p className="text-center text-muted-foreground py-8">Đang tải...</p>
+          <p className="text-center text-muted-foreground py-8">{t("common.loading")}</p>
         ) : invitations && invitations.length > 0 ? (
           <div className="space-y-3">
             {invitations.map((invitation: Invitation) => (
@@ -243,14 +256,14 @@ const InviteMembersPage = () => {
                   <div className="flex items-center gap-2 mb-1">
                     <p className="font-medium">{invitation.email}</p>
                     <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">
-                      {invitation.role === "agent" ? "Agent" : "Manager"}
+                      {invitation.role === "agent" ? t("common.agent") : t("common.manager")}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     {getStatusIcon(invitation.status)}
                     <span>{getStatusText(invitation.status)}</span>
                     <span>•</span>
-                    <span>Hết hạn: {formatDate(invitation.expiresAt)}</span>
+                    <span>{t("members.invite.expires")}: {formatDate(invitation.expiresAt)}</span>
                   </div>
                 </div>
 
@@ -269,7 +282,7 @@ const InviteMembersPage = () => {
           </div>
         ) : (
           <p className="text-center text-muted-foreground py-8">
-            Chưa có lời mời nào được gửi.
+            {t("members.invite.noInvitations")}
           </p>
         )}
       </div>

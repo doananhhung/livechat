@@ -6,16 +6,18 @@ import { Avatar } from "../../components/ui/Avatar";
 import { Button } from "../../components/ui/Button";
 import { useAuthStore } from "../../stores/authStore";
 import { useState } from "react";
-
-const navItems = [
-  { name: "Hồ sơ cá nhân", href: "/settings/profile", icon: User },
-  { name: "Bảo mật", href: "/settings/security", icon: Shield },
-  { name: "Dự án", href: "/settings/projects", icon: FolderKanban },
-];
+import { useTranslation } from "react-i18next";
 
 export function SettingsLayout() {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  const navItems = [
+    { name: t("settings.menu.profile"), href: "/settings/profile", icon: User },
+    { name: t("settings.menu.security"), href: "/settings/security", icon: Shield },
+    { name: t("settings.menu.projects"), href: "/settings/projects", icon: FolderKanban },
+  ];
 
   return (
     <div className="flex min-h-screen">
@@ -48,12 +50,12 @@ export function SettingsLayout() {
             className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
           >
             <MessageSquare className="h-4 w-4" />
-            <span>Quay lại Inbox</span>
+            <span>{t("settings.backToInbox")}</span>
           </Link>
 
           <div className="pt-4 pb-2">
             <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Cài đặt
+              {t("settings.title")}
             </h3>
           </div>
 
@@ -88,7 +90,7 @@ export function SettingsLayout() {
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <h1 className="font-semibold text-foreground">Cài đặt</h1>
+          <h1 className="font-semibold text-foreground">{t("settings.title")}</h1>
           <div className="w-10" />
         </div>
 
@@ -120,7 +122,7 @@ export function SettingsLayout() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <MessageSquare className="h-4 w-4" />
-                <span>Quay lại Inbox</span>
+                <span>{t("settings.backToInbox")}</span>
               </Link>
 
               {navItems.map((item) => (

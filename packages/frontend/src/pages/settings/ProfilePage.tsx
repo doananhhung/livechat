@@ -1,6 +1,7 @@
 // src/pages/settings/ProfilePage.tsx
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import {
   useUserProfileQuery,
   useUpdateProfileMutation,
@@ -8,6 +9,9 @@ import {
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Select } from "../../components/ui/Select";
+import { useAuthStore } from "../../stores/authStore";
+import { useToast } from "../../components/ui/use-toast";
+import type { UserResponse } from "@live-chat/shared-types";
 
 interface ProfileFormData {
   fullName: string;
@@ -16,15 +20,21 @@ interface ProfileFormData {
   timezone: string;
 }
 
-const languageOptions = [{ value: "vi", label: "Tiếng Việt" }];
+const languageOptions = [
+  { value: "vi", label: "🇻🇳 Tiếng Việt" },
+  { value: "en", label: "🇺🇸 English" },
+];
 
 const timezoneOptions = [
   { value: "Asia/Ho_Chi_Minh", label: "Asia/Ho Chi Minh (GMT+7)" },
 ];
 
 export function ProfilePage() {
+  const { t } = useTranslation();
   const { data: user, isLoading, isError } = useUserProfileQuery();
   const updateProfile = useUpdateProfileMutation();
+  const setUser = useAuthStore((state) => state.setUser);
+  const { toast } = useToast();
   const { register, handleSubmit, reset, watch, setValue } =
     useForm<ProfileFormData>();
 
@@ -40,17 +50,33 @@ export function ProfilePage() {
   }, [user, reset]);
 
   const onSubmit = (data: ProfileFormData) => {
-    updateProfile.mutate(data);
+    updateProfile.mutate(data, {
+      onSuccess: (updatedUser) => {
+        // Sync authStore to update i18n
+        setUser(updatedUser as UserResponse);
+        toast({
+          title: t("common.success"),
+          description: t("profile.updateSuccess"),
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: t("common.error"),
+          description: error instanceof Error ? error.message : t("profile.updateError"),
+          variant: "destructive",
+        });
+      },
+    });
   };
 
-  if (isLoading) return <div>Đang tải hồ sơ...</div>;
-  if (isError) return <div>Không thể tải hồ sơ.</div>;
+  if (isLoading) return <div>{t("profile.loadingProfile")}</div>;
+  if (isError) return <div>{t("profile.loadError")}</div>;
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Hồ sơ</h1>
+      <h1 className="text-2xl font-bold mb-4">{t("profile.title")}</h1>
       <p className="text-muted-foreground mb-6">
-        Xem và quản lý thông tin cá nhân của bạn.
+        {t("profile.description")}
       </p>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-md">
         {/* --- READ-ONLY FIELD --- */}
@@ -59,7 +85,7 @@ export function ProfilePage() {
             htmlFor="email"
             className="block text-sm font-medium text-foreground"
           >
-            Địa chỉ Email
+            {t("profile.emailAddress")}
           </label>
           <Input id="email" value={user?.email || ""} disabled />
         </div>
@@ -70,7 +96,7 @@ export function ProfilePage() {
             htmlFor="fullName"
             className="block text-sm font-medium text-foreground"
           >
-            Họ và Tên
+            {t("profile.fullName")}
           </label>
           <Input id="fullName" {...register("fullName")} />
         </div>
@@ -79,7 +105,7 @@ export function ProfilePage() {
             htmlFor="avatarUrl"
             className="block text-sm font-medium text-foreground"
           >
-            URL ảnh đại diện
+            {t("profile.avatarUrl")}
           </label>
           <Input id="avatarUrl" {...register("avatarUrl")} />
         </div>
@@ -88,7 +114,7 @@ export function ProfilePage() {
             htmlFor="language"
             className="block text-sm font-medium text-foreground"
           >
-            Ngôn ngữ
+            {t("profile.language")}
           </label>
           <Select
             options={languageOptions}
@@ -103,7 +129,7 @@ export function ProfilePage() {
             htmlFor="timezone"
             className="block text-sm font-medium text-foreground"
           >
-            Múi giờ
+            {t("profile.timezone")}
           </label>
           <Select
             options={timezoneOptions}
@@ -115,29 +141,29 @@ export function ProfilePage() {
         </div>
 
         <Button type="submit" disabled={updateProfile.isPending}>
-          {updateProfile.isPending ? "Đang lưu..." : "Lưu thay đổi"}
+          {updateProfile.isPending ? t("common.saving") : t("common.save")}
         </Button>
 
         {/* --- ADDITIONAL INFORMATION (READ-ONLY) --- */}
         <div className="pt-4 text-sm text-muted-foreground space-y-2">
           <p>
-            Trạng thái tài khoản:{" "}
+            {t("profile.accountStatus")}:{" "}
             <span className="font-medium text-foreground">{user?.status}</span>
           </p>
           <p>
-            Đăng nhập lần cuối:{" "}
+            {t("profile.lastLogin")}:{" "}
             <span className="font-medium text-foreground">
               {user?.lastLoginAt
                 ? new Date(user.lastLoginAt).toLocaleString()
-                : "N/A"}
+                : t("common.na")}
             </span>
           </p>
           <p>
-            Tham gia từ:{" "}
+            {t("profile.memberSince")}:{" "}
             <span className="font-medium text-foreground">
               {user?.createdAt
                 ? new Date(user.createdAt).toLocaleDateString()
-                : "N/A"}
+                : t("common.na")}
             </span>
           </p>
         </div>

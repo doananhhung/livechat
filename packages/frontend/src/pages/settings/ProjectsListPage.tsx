@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as projectApi from "../../services/projectApi";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Spinner } from "../../components/ui/Spinner";
@@ -12,6 +13,7 @@ import { ProjectRole } from "@live-chat/shared-types";
 import { getWidgetSnippet } from "../../lib/widget";
 
 export const ProjectsListPage = () => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -29,13 +31,13 @@ export const ProjectsListPage = () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       setNewProjectName("");
       setWhitelistedDomains([""]);
-      toast({ title: "Thành công", description: "Đã tạo dự án mới" });
+      toast({ title: t("common.success"), description: t("project.list.createSuccess") });
     },
     onError: (error) => {
       const errorMessage =
-        error instanceof Error ? error.message : "Không thể tạo dự án";
+        error instanceof Error ? error.message : t("project.list.createError");
       toast({
-        title: "Lỗi",
+        title: t("common.error"),
         description: errorMessage,
         variant: "destructive",
       });
@@ -61,8 +63,8 @@ export const ProjectsListPage = () => {
     const trimmedName = newProjectName.trim();
     if (!trimmedName) {
       toast({
-        title: "Lỗi",
-        description: "Tên dự án không được để trống",
+        title: t("common.error"),
+        description: t("settings.projectNameRequired"),
         variant: "destructive",
       });
       return;
@@ -74,8 +76,8 @@ export const ProjectsListPage = () => {
 
     if (finalDomains.length === 0) {
       toast({
-        title: "Lỗi",
-        description: "Phải có ít nhất một tên miền",
+        title: t("common.error"),
+        description: t("settings.domainRequired"),
         variant: "destructive",
       });
       return;
@@ -98,15 +100,15 @@ export const ProjectsListPage = () => {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6 text-foreground">
-        Quản lý các dự án của bạn
+        {t("project.list.title")}
       </h1>
 
       <div className="bg-card text-card-foreground border rounded-lg p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">Tạo dự án mới</h2>
+        <h2 className="text-xl font-semibold mb-4">{t("project.list.createTitle")}</h2>
         <div className="space-y-4">
           <Input
             type="text"
-            placeholder="Nhập tên cho dự án mới"
+            placeholder={t("project.list.createPlaceholder")}
             value={newProjectName}
             onChange={(e) => setNewProjectName(e.target.value)}
             disabled={createProjectMutation.isPending}
@@ -115,14 +117,14 @@ export const ProjectsListPage = () => {
 
           <div>
             <label className="block text-sm font-medium text-muted-foreground mb-2">
-              Danh sách tên miền của các trang web bạn muốn tích hợp dự án vào
+              {t("project.list.domainsLabel")}
             </label>
             <div className="space-y-2">
               {whitelistedDomains.map((domain, index) => (
                 <div key={index} className="flex items-center space-x-2">
                   <Input
                     type="text"
-                    placeholder="ten-mien-cua-ban.com ✅  https://ten-mien-cua-ban.com ❌"
+                    placeholder={t("project.list.domainPlaceholder")}
                     value={domain}
                     onChange={(e) => handleDomainChange(index, e.target.value)}
                     disabled={createProjectMutation.isPending}
@@ -135,7 +137,7 @@ export const ProjectsListPage = () => {
                       onClick={() => removeDomainInput(index)}
                       disabled={createProjectMutation.isPending}
                     >
-                      Xóa
+                      {t("common.delete")}
                     </Button>
                   )}
                 </div>
@@ -148,7 +150,7 @@ export const ProjectsListPage = () => {
               onClick={addDomainInput}
               disabled={createProjectMutation.isPending}
             >
-              Thêm tên miền khác
+              {t("project.list.addDomain")}
             </Button>
           </div>
         </div>
@@ -158,15 +160,15 @@ export const ProjectsListPage = () => {
             disabled={createProjectMutation.isPending}
           >
             {createProjectMutation.isPending
-              ? "Đang tạo dự án..."
-              : "Tạo dự án"}
+              ? t("project.list.creating")
+              : t("project.list.createButton")}
           </Button>
         </div>
       </div>
 
       <div className="space-y-6">
         <h2 className="text-xl font-semibold text-foreground">
-          Danh sách dự án
+          {t("project.list.myProjects")}
         </h2>
         {projects && projects.length > 0 ? (
           projects.map((project) => (
@@ -189,7 +191,7 @@ export const ProjectsListPage = () => {
                       }
                     >
                       <Settings className="h-4 w-4 mr-2" />
-                      Cài đặt
+                      {t("project.list.settings")}
                     </Button>
                   </PermissionGate>
 
@@ -203,7 +205,7 @@ export const ProjectsListPage = () => {
                       onClick={() => navigate(`/projects/${project.id}/invite`)}
                     >
                       <UserPlus className="h-4 w-4 mr-2" />
-                      Mời thành viên
+                      {t("project.list.invite")}
                     </Button>
                   </PermissionGate>
                 </div>
@@ -211,7 +213,7 @@ export const ProjectsListPage = () => {
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-muted-foreground mb-2">
-                  Mã nhúng Widget
+                  {t("project.list.embedCode")}
                 </label>
                 <pre className="bg-muted text-muted-foreground p-4 rounded-md text-sm overflow-x-auto">
                   <code>{getWidgetSnippet(project.id)}</code>
@@ -223,19 +225,19 @@ export const ProjectsListPage = () => {
                   onClick={() => {
                     navigator.clipboard.writeText(getWidgetSnippet(project.id));
                     toast({
-                      title: "Đã copy",
-                      description: "Mã nhúng đã được copy vào clipboard",
+                      title: t("widget.copied"),
+                      description: t("widget.snippetCopied"),
                     });
                   }}
                 >
-                  Copy Snippet
+                  {t("project.list.copySnippet")}
                 </Button>
               </div>
             </div>
           ))
         ) : (
           <p className="text-muted-foreground text-center py-8">
-            Bạn chưa có dự án nào. Tạo dự án đầu tiên để bắt đầu!
+            {t("project.list.noProjects")}
           </p>
         )}
       </div>

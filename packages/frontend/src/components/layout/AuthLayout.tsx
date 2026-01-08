@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 const AuthLayout = ({
   children,
@@ -9,6 +10,7 @@ const AuthLayout = ({
   title: string;
   subtitle?: string;
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-gradient-to-br from-muted via-background to-muted flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-md">
@@ -35,7 +37,7 @@ const AuthLayout = ({
 
         {/* Footer */}
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          © 2025 Live Chat. Tất cả quyền được bảo lưu.
+          {t("common.copyright", { year: 2025 })}
         </p>
       </div>
     </div>
@@ -43,3 +45,4 @@ const AuthLayout = ({
 };
 
 export default AuthLayout;
+

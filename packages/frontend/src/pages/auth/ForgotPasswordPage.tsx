@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useForgotPasswordMutation } from "../../services/authApi";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
@@ -8,6 +9,7 @@ import { Mail, ArrowLeft, AlertCircle } from "lucide-react";
 import { useToast } from "../../components/ui/use-toast";
 
 const ForgotPasswordPage = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isOAuthUser, setIsOAuthUser] = useState(false);
@@ -21,7 +23,7 @@ const ForgotPasswordPage = () => {
         setIsOAuthUser(true);
       }
       toast({
-        title: data.isOAuthUser ? "Tài khoản Google" : "Email đã được gửi",
+        title: data.isOAuthUser ? t("auth.googleAccount") : t("auth.emailSent"),
         description: data.message,
         variant: data.isOAuthUser ? "default" : "default",
       });
@@ -29,10 +31,9 @@ const ForgotPasswordPage = () => {
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Lỗi",
+        title: t("common.error"),
         description:
-          error.response?.data?.message ||
-          "Đã xảy ra lỗi. Vui lòng thử lại sau.",
+          error.response?.data?.message || t("auth.tryAgainLater"),
       });
     },
   });
@@ -43,8 +44,8 @@ const ForgotPasswordPage = () => {
     if (!email) {
       toast({
         variant: "destructive",
-        title: "Lỗi",
-        description: "Vui lòng nhập địa chỉ email.",
+        title: t("common.error"),
+        description: t("auth.enterEmail"),
       });
       return;
     }
@@ -60,19 +61,17 @@ const ForgotPasswordPage = () => {
   // OAuth User Screen
   if (isSubmitted && isOAuthUser) {
     return (
-      <AuthLayout title="Tài khoản Google OAuth">
+      <AuthLayout title={t("auth.googleOAuthAccount")}>
         <div className="space-y-6">
           <div className="rounded-lg bg-blue-50 dark:bg-blue-950 p-4 border border-blue-200 dark:border-blue-800">
             <div className="flex gap-3">
               <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
               <div className="space-y-2">
                 <p className="font-medium text-blue-900 dark:text-blue-100">
-                  Tài khoản này được đăng nhập bằng Google
+                  {t("auth.googleLoginAccount")}
                 </p>
                 <p className="text-sm text-blue-800 dark:text-blue-200">
-                  Email <strong>{email}</strong> được liên kết với tài khoản
-                  Google. Bạn không thể đặt lại mật khẩu vì tài khoản này không
-                  sử dụng mật khẩu.
+                  {t("auth.googleNoPasswordReset", { email })}
                 </p>
               </div>
             </div>
@@ -80,7 +79,7 @@ const ForgotPasswordPage = () => {
 
           <div className="space-y-3">
             <p className="text-sm font-medium text-foreground">
-              Để đăng nhập vào tài khoản của bạn:
+              {t("auth.toLoginToAccount")}:
             </p>
             <Button onClick={handleGoogleLogin} className="w-full" size="lg">
               <svg
@@ -93,7 +92,7 @@ const ForgotPasswordPage = () => {
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
-              Đăng nhập bằng Google
+              {t("auth.loginWithGoogle")}
             </Button>
 
             <Button
@@ -105,7 +104,7 @@ const ForgotPasswordPage = () => {
               variant="outline"
               className="w-full"
             >
-              Thử email khác
+              {t("auth.tryOtherEmail")}
             </Button>
           </div>
 
@@ -113,7 +112,7 @@ const ForgotPasswordPage = () => {
             <Link to="/login">
               <Button variant="ghost" className="w-full">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Quay lại đăng nhập
+                {t("auth.backToLogin")}
               </Button>
             </Link>
           </div>
@@ -126,24 +125,23 @@ const ForgotPasswordPage = () => {
   if (isSubmitted) {
     return (
       <AuthLayout
-        title="Kiểm tra email của bạn"
-        subtitle="Chúng tôi đã gửi hướng dẫn đặt lại mật khẩu đến email của bạn"
+        title={t("auth.checkEmail")}
+        subtitle={t("auth.resetInstructionsSent")}
       >
         <div className="space-y-6">
           <div className="rounded-lg bg-primary/10 p-4 text-center">
             <Mail className="mx-auto h-12 w-12 text-primary mb-3" />
             <p className="text-sm text-foreground">
-              Nếu email <strong>{email}</strong> tồn tại trong hệ thống, bạn sẽ
-              nhận được email hướng dẫn đặt lại mật khẩu trong vài phút.
+              {t("auth.ifEmailExists", { email })}
             </p>
           </div>
 
           <div className="space-y-3 text-sm text-muted-foreground">
-            <p>Không nhận được email?</p>
+            <p>{t("auth.noEmailReceived")}</p>
             <ul className="list-disc list-inside space-y-1 pl-2">
-              <li>Kiểm tra thư mục spam hoặc rác</li>
-              <li>Đảm bảo bạn đã nhập đúng địa chỉ email</li>
-              <li>Đợi vài phút và kiểm tra lại</li>
+              <li>{t("auth.checkSpam")}</li>
+              <li>{t("auth.checkEmailCorrect")}</li>
+              <li>{t("auth.waitAndCheck")}</li>
             </ul>
           </div>
 
@@ -156,13 +154,13 @@ const ForgotPasswordPage = () => {
               variant="outline"
               className="w-full"
             >
-              Thử email khác
+              {t("auth.tryOtherEmail")}
             </Button>
 
             <Link to="/login">
               <Button variant="ghost" className="w-full">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Quay lại đăng nhập
+                {t("auth.backToLogin")}
               </Button>
             </Link>
           </div>
@@ -174,8 +172,8 @@ const ForgotPasswordPage = () => {
   // Forgot Password Form
   return (
     <AuthLayout
-      title="Quên mật khẩu?"
-      subtitle="Nhập email của bạn để nhận hướng dẫn đặt lại mật khẩu"
+      title={t("auth.forgotPassword")}
+      subtitle={t("auth.enterEmailForReset")}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -198,13 +196,13 @@ const ForgotPasswordPage = () => {
         </div>
 
         <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? "Đang gửi..." : "Gửi hướng dẫn đặt lại mật khẩu"}
+          {isPending ? t("auth.sending") : t("auth.sendResetInstructions")}
         </Button>
 
         <Link to="/login">
           <Button variant="ghost" className="w-full" disabled={isPending}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Quay lại đăng nhập
+            {t("auth.backToLogin")}
           </Button>
         </Link>
       </form>

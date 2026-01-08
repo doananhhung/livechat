@@ -1,22 +1,29 @@
 import { ConversationStatus } from "@live-chat/shared-types";
 import { getStatusLabel, getAvailableTransitions } from "./conversationUtils";
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+// Mock i18n to just return the key
+vi.mock('../i18n', () => ({
+  default: {
+    t: (key: string) => key,
+  },
+}));
 
 describe('conversationUtils', () => {
-  it('getStatusLabel should return correct label for OPEN', () => {
-    expect(getStatusLabel(ConversationStatus.OPEN)).toBe('Mở');
+  it('getStatusLabel should return correct i18n key for OPEN', () => {
+    expect(getStatusLabel(ConversationStatus.OPEN)).toBe('conversations.status.open');
   });
 
-  it('getStatusLabel should return correct label for PENDING', () => {
-    expect(getStatusLabel(ConversationStatus.PENDING)).toBe('Đang chờ');
+  it('getStatusLabel should return correct i18n key for PENDING', () => {
+    expect(getStatusLabel(ConversationStatus.PENDING)).toBe('conversations.status.pending');
   });
 
-  it('getStatusLabel should return correct label for SOLVED', () => {
-    expect(getStatusLabel(ConversationStatus.SOLVED)).toBe('Đã giải quyết');
+  it('getStatusLabel should return correct i18n key for SOLVED', () => {
+    expect(getStatusLabel(ConversationStatus.SOLVED)).toBe('conversations.status.solved');
   });
 
-  it('getStatusLabel should return correct label for SPAM', () => {
-    expect(getStatusLabel(ConversationStatus.SPAM)).toBe('Spam');
+  it('getStatusLabel should return correct i18n key for SPAM', () => {
+    expect(getStatusLabel(ConversationStatus.SPAM)).toBe('conversations.status.spam');
   });
 
   it('getAvailableTransitions for OPEN should return PENDING, SOLVED, SPAM', () => {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ export const ProjectWidgetSettingsDialog = ({
   open,
   onOpenChange,
 }: ProjectWidgetSettingsDialogProps) => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -68,15 +70,15 @@ export const ProjectWidgetSettingsDialog = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast({
-        title: "Thành công",
-        description: "Đã cập nhật cài đặt widget",
+        title: t("common.success"),
+        description: t("toast.widgetUpdated"),
       });
       onOpenChange(false);
     },
     onError: (error: Error) => {
       toast({
-        title: "Lỗi",
-        description: error.message || "Không thể cập nhật cài đặt",
+        title: t("common.error"),
+        description: error.message || t("settings.updateError"),
         variant: "destructive",
       });
     },
@@ -91,9 +93,9 @@ export const ProjectWidgetSettingsDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Cài đặt Widget</DialogTitle>
+          <DialogTitle>{t("settings.widgetSettings")}</DialogTitle>
           <DialogDescription>
-            Tùy chỉnh giao diện widget cho dự án {project.name}
+            {t("widget.customizeFor", { projectName: project.name })}
           </DialogDescription>
         </DialogHeader>
 
@@ -106,7 +108,7 @@ export const ProjectWidgetSettingsDialog = ({
               {/* History Visibility Mode */}
               <div className="border p-3 rounded-md bg-muted/20">
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Lịch sử trò chuyện
+                  {t("settings.chatHistory")}
                 </label>
                 <div className="flex flex-col gap-2">
                   <div className="flex items-start space-x-2">
@@ -120,9 +122,9 @@ export const ProjectWidgetSettingsDialog = ({
                       className="mt-1"
                     />
                     <label htmlFor="mode-active" className="text-sm cursor-pointer">
-                      <span className="font-semibold block">Ticket Style (Mặc định)</span>
+                      <span className="font-semibold block">{t("settings.ticketStyleDefault")}</span>
                       <span className="text-muted-foreground">
-                        Chỉ hiện hội thoại đang mở. Hội thoại đã đóng (Solved) sẽ bị ẩn khi khách quay lại.
+                        {t("settings.ticketStyleDesc")}
                       </span>
                     </label>
                   </div>
@@ -137,9 +139,9 @@ export const ProjectWidgetSettingsDialog = ({
                       className="mt-1"
                     />
                     <label htmlFor="mode-forever" className="text-sm cursor-pointer">
-                      <span className="font-semibold block">Chat Style</span>
+                      <span className="font-semibold block">{t("settings.chatStyle")}</span>
                       <span className="text-muted-foreground">
-                        Luôn hiện lịch sử trò chuyện cũ. Tin nhắn mới sẽ mở lại hội thoại cũ.
+                        {t("settings.chatStyleDesc")}
                       </span>
                     </label>
                   </div>
@@ -149,7 +151,7 @@ export const ProjectWidgetSettingsDialog = ({
               {/* Theme */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Giao diện
+                  {t("widget.theme")}
                 </label>
                 <select
                   className="w-full px-3 py-2 text-sm border rounded-md bg-background"
@@ -158,19 +160,19 @@ export const ProjectWidgetSettingsDialog = ({
                     setSettings({ ...settings, theme: e.target.value as WidgetTheme })
                   }
                 >
-                  <option value={WidgetTheme.LIGHT}>Sáng</option>
-                  <option value={WidgetTheme.DARK}>Tối</option>
+                  <option value={WidgetTheme.LIGHT}>{t("settings.themeLight")}</option>
+                  <option value={WidgetTheme.DARK}>{t("settings.themeDark")}</option>
                 </select>
               </div>
 
               {/* Header Text */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Tiêu đề Header
+                  {t("widget.headerTitle")}
                 </label>
                 <Input
                   type="text"
-                  placeholder="Nhập tiêu đề..."
+                  placeholder={t("widget.enterTitle")}
                   value={settings.headerText}
                   onChange={(e) =>
                     setSettings({ ...settings, headerText: e.target.value })
@@ -178,14 +180,14 @@ export const ProjectWidgetSettingsDialog = ({
                   maxLength={50}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Tối đa 50 ký tự
+                  {t("widget.maxChars", { count: 50 })}
                 </p>
               </div>
 
               {/* Primary Color */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Màu chủ đạo
+                  {t("settings.primaryColor")}
                 </label>
                 <div className="flex items-center gap-2">
                   <div className="relative">
@@ -204,7 +206,7 @@ export const ProjectWidgetSettingsDialog = ({
                     onChange={(e) =>
                       setSettings({ ...settings, primaryColor: e.target.value })
                     }
-                    placeholder="Mặc định (Gradient)"
+                    placeholder={t("settings.default")}
                     className="flex-1"
                   />
                   <Button
@@ -212,9 +214,9 @@ export const ProjectWidgetSettingsDialog = ({
                     variant="outline"
                     size="sm"
                     onClick={() => setSettings({ ...settings, primaryColor: "" })}
-                    title="Sử dụng màu mặc định"
+                    title={t("settings.useDefaultColor")}
                   >
-                    Mặc định
+                    {t("settings.default")}
                   </Button>
                 </div>
               </div>
@@ -222,7 +224,7 @@ export const ProjectWidgetSettingsDialog = ({
               {/* Font Family */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Font chữ
+                  {t("settings.fontFamily")}
                 </label>
                 <Input
                   type="text"
@@ -233,18 +235,18 @@ export const ProjectWidgetSettingsDialog = ({
                   }
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Sử dụng tên font an toàn cho web (vd: Arial, Verdana, sans-serif)
+                  {t("widget.fontHelp")}
                 </p>
               </div>
 
               {/* Welcome Message */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Lời chào
+                  {t("widget.greeting")}
                 </label>
                 <textarea
                   className="w-full min-h-[80px] px-3 py-2 text-sm border rounded-md bg-background"
-                  placeholder="Nhập lời chào..."
+                  placeholder={t("widget.enterGreeting")}
                   value={settings.welcomeMessage}
                   onChange={(e) =>
                     setSettings({ ...settings, welcomeMessage: e.target.value })
@@ -252,14 +254,14 @@ export const ProjectWidgetSettingsDialog = ({
                   maxLength={200}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Tối đa 200 ký tự
+                  {t("widget.maxChars", { count: 200 })}
                 </p>
               </div>
 
               {/* Widget Position */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Vị trí Widget
+                  {t("settings.widgetPosition")}
                 </label>
                 <select
                   className="w-full px-3 py-2 text-sm border rounded-md bg-background"
@@ -268,15 +270,15 @@ export const ProjectWidgetSettingsDialog = ({
                     setSettings({ ...settings, position: e.target.value as any })
                   }
                 >
-                  <option value="bottom-right">Góc dưới bên phải</option>
-                  <option value="bottom-left">Góc dưới bên trái</option>
+                  <option value="bottom-right">{t("settings.bottomRight")}</option>
+                  <option value="bottom-left">{t("settings.bottomLeft")}</option>
                 </select>
               </div>
 
               {/* Company Logo URL */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Logo công ty (URL)
+                  {t("settings.companyLogoUrl")}
                 </label>
                 <Input
                   type="url"
@@ -291,11 +293,11 @@ export const ProjectWidgetSettingsDialog = ({
               {/* Agent Display Name */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Tên hiển thị nhân viên
+                  {t("settings.agentDisplayName")}
                 </label>
                 <Input
                   type="text"
-                  placeholder="Nhập tên..."
+                  placeholder={t("widget.headerTitle")}
                   value={settings.agentDisplayName || ""}
                   onChange={(e) =>
                     setSettings({ ...settings, agentDisplayName: e.target.value })
@@ -313,12 +315,12 @@ export const ProjectWidgetSettingsDialog = ({
               onClick={() => onOpenChange(false)}
               disabled={updateSettingsMutation.isPending}
             >
-              Hủy
+              {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={updateSettingsMutation.isPending}>
               {updateSettingsMutation.isPending
-                ? "Đang lưu..."
-                : "Lưu thay đổi"}
+                ? t("common.saving")
+                : t("common.save")}
             </Button>
           </DialogFooter>
         </form>

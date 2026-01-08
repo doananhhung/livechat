@@ -1,12 +1,12 @@
 import { ConversationStatus } from "@live-chat/shared-types";
-import { RotateCcw, Clock, CheckCircle, AlertOctagon } from "lucide-react";
+import i18n from '../i18n';
 
 export const getStatusLabel = (s: ConversationStatus) => {
   switch (s) {
-    case ConversationStatus.OPEN: return "Mở";
-    case ConversationStatus.PENDING: return "Đang chờ";
-    case ConversationStatus.SOLVED: return "Đã giải quyết";
-    case ConversationStatus.SPAM: return "Spam";
+    case ConversationStatus.OPEN: return i18n.t("conversations.status.open");
+    case ConversationStatus.PENDING: return i18n.t("conversations.status.pending");
+    case ConversationStatus.SOLVED: return i18n.t("conversations.status.solved");
+    case ConversationStatus.SPAM: return i18n.t("conversations.status.spam");
     default: return s;
   }
 };

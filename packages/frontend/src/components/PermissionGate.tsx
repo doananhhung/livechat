@@ -14,18 +14,6 @@ interface PermissionGateProps {
 
 /**
  * Component that conditionally renders children based on user's project role
- *
- * @example
- * // Only show for managers
- * <PermissionGate projectId={projectId} requiredRole={ProjectRole.MANAGER}>
- *   <button>Mời thành viên</button>
- * </PermissionGate>
- *
- * @example
- * // Show for managers and agents (allowHigherRoles doesn't apply here since agent is lower)
- * <PermissionGate projectId={projectId} requiredRole={ProjectRole.AGENT} allowHigherRoles>
- *   <div>All project members can see this</div>
- * </PermissionGate>
  */
 export const PermissionGate = ({
   projectId,

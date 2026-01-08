@@ -1,6 +1,7 @@
 // src/components/features/inbox/ConversationList.tsx
 import { useEffect, useState } from "react";
 import { NavLink, useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   useGetConversations,
   useUpdateConversationStatus,
@@ -38,6 +39,7 @@ const ConversationTime = ({ date }: { date: Date | string }) => {
 };
 
 export const ConversationList = () => {
+  const { t } = useTranslation();
   const { projectId, conversationId: activeConversationId } = useParams<{
     projectId: string;
     conversationId?: string;
@@ -163,10 +165,10 @@ export const ConversationList = () => {
     <div className="h-full flex flex-col">
       <div className="p-2 border-b">
         <div className="flex items-center gap-1 bg-muted p-1 rounded-md overflow-x-auto">
-          <FilterButton value={ConversationStatus.OPEN} label="Mở" />
-          <FilterButton value={ConversationStatus.PENDING} label="Chờ" />
-          <FilterButton value={ConversationStatus.SOLVED} label="Xong" />
-          <FilterButton value={ConversationStatus.SPAM} label="Spam" />
+          <FilterButton value={ConversationStatus.OPEN} label={t("inbox.status.open")} />
+          <FilterButton value={ConversationStatus.PENDING} label={t("inbox.status.pending")} />
+          <FilterButton value={ConversationStatus.SOLVED} label={t("inbox.status.solved")} />
+          <FilterButton value={ConversationStatus.SPAM} label={t("inbox.status.spam")} />
         </div>
       </div>
       {/* ... */}
@@ -177,11 +179,10 @@ export const ConversationList = () => {
       ) : conversations.length === 0 ? (
         <div className="p-4 text-center text-muted-foreground h-full flex flex-col justify-center">
           <h3 className="font-semibold text-foreground">
-            Chưa có cuộc trò chuyện nào
+            {t("inbox.noConversations")}
           </h3>
           <p className="text-sm mt-1">
-            Khi khách truy cập trang web của bạn gửi tin nhắn, nó sẽ xuất hiện ở
-            đây.
+            {t("inbox.noConversationsDescription")}
           </p>
         </div>
       ) : (
@@ -245,9 +246,9 @@ export const ConversationList = () => {
                         )}
                       >
                         {isTyping ? (
-                          <i className="text-primary">Đang nhập...</i>
+                          <i className="text-primary">{t("inbox.typing")}</i>
                         ) : (
-                          conversation.lastMessageSnippet || "Chưa có tin nhắn."
+                          conversation.lastMessageSnippet || t("inbox.noMessages")
                         )}
                       </p>
                       <div className="flex items-center gap-1">
@@ -285,7 +286,7 @@ export const ConversationList = () => {
                           onClick={(e) => handleDeleteClick(e, conversation)}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Xóa cuộc trò chuyện
+                          {t("inbox.deleteConversation")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -301,7 +302,7 @@ export const ConversationList = () => {
                 disabled={isFetchingNextPage}
                 variant="outline"
               >
-                {isFetchingNextPage ? "Đang tải..." : "Tải thêm"}
+                {isFetchingNextPage ? t("common.loading") : t("inbox.loadMore")}
               </Button>
             </div>
           )}
@@ -312,19 +313,19 @@ export const ConversationList = () => {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xóa cuộc trò chuyện?</AlertDialogTitle>
+            <AlertDialogTitle>{t("inbox.deleteConversationTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Hành động này không thể hoàn tác. Cuộc trò chuyện và tất cả tin nhắn sẽ bị xóa vĩnh viễn.
+              {t("inbox.deleteConversationDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Hủy</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
               variant="destructive"
               disabled={isDeleting}
             >
-              {isDeleting ? "Đang xóa..." : "Xóa"}
+              {isDeleting ? t("inbox.deleting") : t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

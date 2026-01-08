@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGetVisitorNotes, useCreateVisitorNote, useUpdateVisitorNote, useDeleteVisitorNote } from '../../../services/visitorApi';
 import type { VisitorNote } from '@live-chat/shared-types';
 import { Button } from '../../ui/Button';
@@ -13,6 +14,7 @@ interface VisitorNoteListProps {
 }
 
 export const VisitorNoteList: React.FC<VisitorNoteListProps> = ({ projectId, visitorId }) => {
+  const { t } = useTranslation();
   const { data: notes, isLoading } = useGetVisitorNotes(projectId, visitorId);
   const createMutation = useCreateVisitorNote();
   const updateMutation = useUpdateVisitorNote();
@@ -73,23 +75,23 @@ export const VisitorNoteList: React.FC<VisitorNoteListProps> = ({ projectId, vis
   };
 
   const handleDeleteNote = (id: string) => {
-    if (!confirm('Delete this note?')) return;
+    if (!confirm(t('visitor.deleteNoteConfirm'))) return;
     deleteMutation.mutate({ projectId, visitorId, noteId: id });
   };
 
-  if (isLoading) return <div className="p-4 text-center text-muted-foreground">Loading notes...</div>;
+  if (isLoading) return <div className="p-4 text-center text-muted-foreground">{t('visitor.loadingNotes')}</div>;
 
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-card border-t mt-4 pt-4">
-      <h3 className="font-semibold px-4 mb-2 text-foreground">Internal Notes</h3>
+      <h3 className="font-semibold px-4 mb-2 text-foreground">{t('visitor.internalNotes')}</h3>
       
       <div className="flex-1 overflow-y-auto px-4 space-y-4 max-h-64">
-        {notes?.length === 0 && <p className="text-sm text-muted-foreground italic">No notes yet.</p>}
+        {notes?.length === 0 && <p className="text-sm text-muted-foreground italic">{t('visitor.noNotes')}</p>}
         {notes?.map((note) => (
           <div key={note.id} className="group text-sm border rounded-md p-3 bg-muted/30 hover:bg-muted/50 transition-colors">
             <div className="flex items-center gap-2 mb-1">
               <Avatar name={note.author?.fullName} size="xs" />
-              <span className="font-medium text-xs text-foreground">{note.author?.fullName || 'Agent'}</span>
+              <span className="font-medium text-xs text-foreground">{note.author?.fullName || t('inbox.agent')}</span>
               <span className="text-xs text-muted-foreground ml-auto">{formatMessageTime(new Date(note.createdAt))}</span>
             </div>
             
@@ -127,7 +129,7 @@ export const VisitorNoteList: React.FC<VisitorNoteListProps> = ({ projectId, vis
           <textarea 
             ref={newNoteRef}
             className="flex-1 text-sm border rounded-md px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary min-w-0 resize-none overflow-hidden min-h-[38px] max-h-[120px]"
-            placeholder="Add a note..."
+            placeholder={t('visitor.addNotePlaceholder')}
             value={newNoteContent}
             onChange={(e) => setNewNoteContent(e.target.value)}
             onKeyDown={handleKeyDown}

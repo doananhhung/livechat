@@ -1,6 +1,7 @@
 // src/components/features/inbox/MessagePane.tsx
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   useGetMessages,
   useGetVisitor,
@@ -37,6 +38,7 @@ import { VisitorNoteList } from "./VisitorNoteList";
  * Component displaying detailed visitor information.
  */
 const VisitorContextPanel = ({ projectId, visitorId }: { projectId: number; visitorId: number }) => {
+  const { t } = useTranslation();
   const { data: visitor, isLoading } = useGetVisitor(projectId, visitorId);
   const [isScreenshotModalOpen, setScreenshotModalOpen] = useState(false);
 
@@ -53,7 +55,7 @@ const VisitorContextPanel = ({ projectId, visitorId }: { projectId: number; visi
     <aside className="w-64 bg-card border-l hidden lg:flex flex-col h-full">
       <div className="flex-1 overflow-y-auto p-4">
         <h3 className="font-semibold mb-4 text-foreground">
-          Chi tiết Khách truy cập
+          {t("visitor.details")}
         </h3>
         {isLoading && <Spinner />}
         {visitor && (
@@ -65,15 +67,15 @@ const VisitorContextPanel = ({ projectId, visitorId }: { projectId: number; visi
               </p>
             </div>
             <div>
-              <p className="font-medium text-muted-foreground">Đang xem trang:</p>
+              <p className="font-medium text-muted-foreground">{t("visitor.currentPage")}:</p>
               <a
                 href={visitor.currentUrl ?? "#"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary break-all hover:underline"
-                title={visitor.currentUrl || "Không rõ"}
+                title={visitor.currentUrl || t("common.unknown")}
               >
-                {visitor.currentUrl || "Không rõ"}
+                {visitor.currentUrl || t("common.unknown")}
               </a>
             </div>
 
@@ -81,7 +83,7 @@ const VisitorContextPanel = ({ projectId, visitorId }: { projectId: number; visi
             {screenshotUrl && (
               <div className="space-y-2">
                 <p className="font-medium text-muted-foreground">
-                  Xem trước trang:
+                  {t("visitor.pagePreview")}:
                 </p>
                 <button
                   type="button"
@@ -226,6 +228,7 @@ const MessageList = ({
  * Main component for the message display frame.
  */
 export const MessagePane = () => {
+  const { t } = useTranslation();
   const { projectId, conversationId } = useParams<{
     projectId: string;
     conversationId: string;
@@ -287,10 +290,10 @@ export const MessagePane = () => {
       },
       {
         onSuccess: () => {
-          const visitorName = conversation.visitor?.displayName || "Khách";
+          const visitorName = conversation.visitor?.displayName || t("visitor.guest");
           toast({
-            title: "Thành công",
-            description: `Cuộc hội thoại với "${visitorName}" đã được chuyển sang "${getStatusLabel(newStatus)}".`,
+            title: t("common.success"),
+            description: t("toast.statusUpdated", { visitorName, status: getStatusLabel(newStatus) }),
           });
 
           // Navigate to the new status filter so user can continue viewing the conversation
@@ -303,8 +306,8 @@ export const MessagePane = () => {
         },
         onError: (error: Error) => {
           toast({
-            title: "Lỗi",
-            description: error.message || "Không thể cập nhật trạng thái",
+            title: t("common.error"),
+            description: error.message || t("inbox.statusUpdateError"),
             variant: "destructive",
           });
         },
@@ -359,7 +362,7 @@ export const MessagePane = () => {
 
             {!conversation && (
               <span className="text-sm text-muted-foreground">
-                Loading conversation...
+                {t("inbox.loadingConversation")}
               </span>
             )}
 
@@ -383,7 +386,7 @@ export const MessagePane = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Thay đổi trạng thái</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t("inbox.changeStatus")}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {getAvailableTransitions(conversation.status).map((s) => (
                       <DropdownMenuItem key={s} onClick={() => handleStatusUpdate(s)}>

@@ -2,6 +2,7 @@
 import { useEffect } from "react";
 import { Outlet, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { MessageSquare, AlertTriangle } from "lucide-react";
 import * as projectApi from "../../services/projectApi";
 import { ProjectSelector } from "../../components/features/inbox/ProjectSelector";
@@ -11,6 +12,7 @@ import { Button } from "../../components/ui/Button";
 import { useSocket } from "../../contexts/SocketContext";
 
 const InboxContent = () => {
+  const { t } = useTranslation();
   const { projectId, conversationId } = useParams<{
     projectId: string;
     conversationId: string;
@@ -77,10 +79,10 @@ const InboxContent = () => {
         <div className="text-center text-muted-foreground">
           <MessageSquare className="mx-auto h-12 w-12" />
           <h2 className="mt-4 text-xl font-semibold text-foreground">
-            Chào mừng đến Hộp thư của bạn
+            {t("inbox.welcome")}
           </h2>
           <p className="mt-2 text-sm">
-            Chọn một cuộc trò chuyện từ danh sách bên trái để xem tin nhắn.
+            {t("inbox.selectConversation")}
           </p>
         </div>
       )}
@@ -89,6 +91,7 @@ const InboxContent = () => {
 };
 
 export const InboxLayout = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { projectId } = useParams<{
     projectId: string;
@@ -122,9 +125,9 @@ export const InboxLayout = () => {
     return (
       <div className="flex flex-col h-screen items-center justify-center text-center bg-background text-foreground">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-        <h2 className="text-xl font-semibold">Lỗi tải dự án</h2>
+        <h2 className="text-xl font-semibold">{t("inbox.loadError")}</h2>
         <p className="mt-2 text-muted-foreground">
-          Không thể tải danh sách dự án. Vui lòng thử lại sau.
+          {t("inbox.loadErrorDescription")}
         </p>
       </div>
     );
@@ -133,12 +136,12 @@ export const InboxLayout = () => {
   if (projects.length === 0) {
     return (
       <div className="flex flex-col h-screen items-center justify-center text-center bg-background text-foreground">
-        <h2 className="text-xl font-semibold">Không tìm thấy dự án nào</h2>
+        <h2 className="text-xl font-semibold">{t("inbox.noProjects")}</h2>
         <p className="mt-2 text-muted-foreground">
-          Vui lòng tạo một dự án trong phần cài đặt để bắt đầu nhận tin nhắn.
+          {t("inbox.noProjectsDescription")}
         </p>
         <Button className="mt-4" onClick={() => navigate("/settings/projects")}>
-          Đi đến Cài đặt Dự án
+          {t("inbox.goToProjectSettings")}
         </Button>
       </div>
     );

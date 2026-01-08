@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useRegisterMutation } from "../../services/authApi";
 import { useAuthStore } from "../../stores/authStore";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import AuthLayout from "../../components/layout/AuthLayout";
 import { useToast } from "../../components/ui/use-toast";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, Mail } from "lucide-react";
 import {
   getInvitationDetails,
   acceptInvitation,
@@ -18,6 +19,7 @@ import { ProjectRole } from "@live-chat/shared-types";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const RegisterPage = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -68,9 +70,8 @@ const RegisterPage = () => {
         .catch((error) => {
           console.error("Error loading invitation:", error);
           toast({
-            title: "Lỗi",
-            description:
-              "Không thể tải thông tin lời mời. Link có thể đã hết hạn.",
+            title: t("common.error"),
+            description: t("auth.invitationLoadError"),
             variant: "destructive",
           });
         })
@@ -85,9 +86,8 @@ const RegisterPage = () => {
       // For invitation registration, show special message
       if (invitationToken) {
         toast({
-          title: "Đăng ký thành công!",
-          description:
-            "Vui lòng kiểm tra email để xác thực tài khoản. Sau khi xác thực, bạn có thể đăng nhập và tự động tham gia dự án.",
+          title: t("auth.registerSuccess"),
+          description: t("auth.registerSuccessInvitation"),
         });
       }
 
@@ -115,7 +115,7 @@ const RegisterPage = () => {
       }
 
       toast({
-        title: "Đăng ký thất bại",
+        title: t("auth.registerFailed"),
         description: errorMessage,
         variant: "destructive",
       });
@@ -132,20 +132,19 @@ const RegisterPage = () => {
     e.preventDefault();
 
     // Basic validation
-    if (!fullName.trim() || !email.trim()) {
+    if (!fullName || !email || !password || !confirmPassword) {
       toast({
-        title: "Lỗi",
-        description: "Vui lòng điền đầy đủ thông tin.",
+        title: t("common.error"),
+        description: t("auth.fillAll"),
         variant: "destructive",
       });
       return;
     }
 
-    // Strict Email Validation
-    if (!EMAIL_REGEX.test(email.trim())) {
+    if (!/\S+@\S+\.\S+/.test(email)) {
       toast({
-        title: "Lỗi",
-        description: "Địa chỉ email không hợp lệ.",
+        title: t("common.error"),
+        description: t("auth.invalidEmail"),
         variant: "destructive",
       });
       return;
@@ -153,18 +152,17 @@ const RegisterPage = () => {
 
     if (password.length < 8) {
       toast({
-        title: "Lỗi",
-        description: "Mật khẩu phải có ít nhất 8 ký tự.",
+        title: t("common.error"),
+        description: t("auth.passwordMin"),
         variant: "destructive",
       });
       return;
     }
 
-    // [4] New validation: Check if passwords match
     if (password !== confirmPassword) {
       toast({
-        title: "Lỗi",
-        description: "Mật khẩu xác nhận không khớp.",
+        title: t("common.error"),
+        description: t("auth.passwordMismatch"),
         variant: "destructive",
       });
       return;
@@ -183,60 +181,43 @@ const RegisterPage = () => {
     });
   };
 
+  if (loadingInvitation) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+            <p>{t("auth.loadingInvitation")}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <AuthLayout
-      title="Tạo tài khoản mới"
-      subtitle="Bắt đầu hành trình của bạn với chúng tôi"
+      title={t("auth.createAccount")}
+      subtitle={t("auth.startJourney")}
     >
-      {/* Show invitation info if present */}
-      {loadingInvitation && (
-        <div className="mb-5 flex items-center justify-center gap-2 rounded-lg bg-blue-50 dark:bg-blue-950 p-3 border border-blue-200 dark:border-blue-800">
-          <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
-          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-            Đang tải thông tin lời mời...
-          </span>
-        </div>
-      )}
-
       {invitation && (
-        <div className="mb-5 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 p-4 border border-blue-200 dark:border-blue-800">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 text-2xl">🎉</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                Lời mời tham gia dự án
-              </p>
-              <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
-                <span className="font-bold">{invitation.project?.name}</span>
-              </p>
-              <p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
-                Vai trò:{" "}
-                <span className="font-medium">
-                  {invitation.role === ProjectRole.AGENT
-                    ? "Nhân viên"
-                    : "Quản lý viên"}
-                </span>
-              </p>
-            </div>
+        <div className="mb-6 bg-primary/10 border border-primary/20 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Mail className="h-4 w-4 text-primary" />
+            <span className="font-semibold text-primary">{t("auth.hasInvitation")}</span>
           </div>
+          <p className="text-sm">
+             {t("auth.role")}: <span className="font-bold">{invitation.role === ProjectRole.AGENT ? t("common.agent") : t("common.manager")}</span>
+          </p>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label
-            htmlFor="fullName"
-            className="block text-sm font-medium text-foreground mb-1.5"
-          >
-            Họ và tên
-          </label>
+        <div className="space-y-2">
+          <label htmlFor="fullName" className="block text-sm font-medium text-foreground mb-1.5">{t("auth.fullName")}</label>
           <Input
             id="fullName"
             type="text"
+            placeholder={t("auth.fullNamePlaceholder")}
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            placeholder="Nguyễn Văn A"
-            required
             disabled={isPending}
             className="h-11"
           />
@@ -262,18 +243,13 @@ const RegisterPage = () => {
           />
           {invitation && (
             <p className="mt-1 text-xs text-muted-foreground">
-              Email được lấy từ lời mời
+                {t("auth.emailFromInvite")}
             </p>
           )}
         </div>
 
-        <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-foreground mb-1.5"
-          >
-            Mật khẩu
-          </label>
+        <div className="space-y-2">
+          <label htmlFor="password" className="block text-sm font-medium text-foreground mb-1.5">{t("auth.password")}</label>
           <div className="relative">
             <Input
               id="password"
@@ -299,17 +275,12 @@ const RegisterPage = () => {
             </button>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Tối thiểu 8 ký tự
+            {t("auth.minChars", { count: 8 })}
           </p>
         </div>
 
-        <div>
-          <label
-            htmlFor="confirmPassword"
-            className="block text-sm font-medium text-foreground mb-1.5"
-          >
-            Xác nhận mật khẩu
-          </label>
+        <div className="space-y-2">
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground mb-1.5">{t("auth.confirmPassword")}</label>
           <div className="relative">
             <Input
               id="confirmPassword"
@@ -325,7 +296,7 @@ const RegisterPage = () => {
         </div>
 
         <Button type="submit" className="w-full h-11" disabled={isPending}>
-          {isPending ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
+          {isPending ? t("auth.creatingAccount") : t("auth.createAccountBtn")}
         </Button>
 
         <div className="relative">
@@ -334,18 +305,18 @@ const RegisterPage = () => {
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-card px-3 text-muted-foreground font-medium">
-              Hoặc
+              {t("auth.or")}
             </span>
           </div>
         </div>
 
         <p className="text-center text-sm text-muted-foreground">
-          Đã có tài khoản?{" "}
+                    {t("auth.hasAccount")}{" "}
           <Link
             to="/login"
             className="font-semibold text-primary hover:text-primary/90 transition-colors"
           >
-            Đăng nhập ngay
+            {t("auth.loginNow")}
           </Link>
         </p>
       </form>

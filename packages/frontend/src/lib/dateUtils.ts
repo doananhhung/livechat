@@ -4,12 +4,10 @@ import {
   isYesterday,
   isThisWeek,
 } from "date-fns";
+import i18n from "../i18n";
 
 /**
  * Format timestamp for message bubbles
- * - "14:30" for today
- * - "Hôm qua 14:30" for yesterday
- * - "23/10/2024 14:30" for older
  */
 export const formatMessageTime = (date: Date | string): string => {
   const dateObj = typeof date === "string" ? new Date(date) : date;
@@ -19,7 +17,7 @@ export const formatMessageTime = (date: Date | string): string => {
   }
 
   if (isYesterday(dateObj)) {
-    return `Hôm qua ${format(dateObj, "HH:mm")}`;
+    return i18n.t("time.yesterday", { time: format(dateObj, "HH:mm") });
   }
 
   return format(dateObj, "dd/MM/yyyy HH:mm");
@@ -27,24 +25,21 @@ export const formatMessageTime = (date: Date | string): string => {
 
 /**
  * Get date group label
- * - "Hôm nay"
- * - "Hôm qua"
- * - "Tuần này"
  * - Date string for older
  */
 export const getDateGroupLabel = (date: Date | string): string => {
   const dateObj = typeof date === "string" ? new Date(date) : date;
 
   if (isToday(dateObj)) {
-    return "Hôm nay";
+    return i18n.t("date.today");
   }
 
   if (isYesterday(dateObj)) {
-    return "Hôm qua";
+    return i18n.t("date.yesterday");
   }
 
   if (isThisWeek(dateObj)) {
-    return "Tuần này";
+    return i18n.t("date.thisWeek");
   }
 
   return format(dateObj, "dd/MM/yyyy");

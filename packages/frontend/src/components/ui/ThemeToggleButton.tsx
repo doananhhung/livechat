@@ -1,4 +1,5 @@
 // src/components/ui/ThemeToggleButton.tsx
+import { useTranslation } from "react-i18next";
 import { useThemeStore } from "../../stores/themeStore";
 import { Button } from "./Button";
 import {
@@ -52,6 +53,7 @@ const MoonIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export const ThemeToggleButton = () => {
+  const { t } = useTranslation();
   const { setTheme } = useThemeStore();
 
   return (
@@ -67,15 +69,16 @@ export const ThemeToggleButton = () => {
         onCloseAutoFocus={(event) => event.preventDefault()} // ADD onCloseAutoFocus prop
       >
         <DropdownMenuItem onClick={() => setTheme("light")}>
-          Sáng
+          {t("settings.themeLight")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
-          Tối
+          {t("settings.themeDark")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
-          Hệ thống
+          {t("settings.themeSystem")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 };
+

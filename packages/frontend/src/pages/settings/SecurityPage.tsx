@@ -1,6 +1,7 @@
 // src/pages/settings/SecurityPage.tsx
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../stores/authStore";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
@@ -58,16 +59,17 @@ const getPasswordStrength = (password: string) => {
 };
 
 const PasswordStrengthIndicator = ({ password }: { password: string }) => {
+  const { t } = useTranslation();
   const strength = getPasswordStrength(password);
 
   const requirements = [
-    { label: "Ít nhất 8 ký tự", met: password.length >= 8 },
+    { label: t("security.passwordStrength.minChars"), met: password.length >= 8 },
     {
-      label: "Chữ hoa và chữ thường",
+      label: t("security.passwordStrength.mixedCase"),
       met: /[a-z]/.test(password) && /[A-Z]/.test(password),
     },
-    { label: "Ít nhất 1 số", met: /\d/.test(password) },
-    { label: "Ít nhất 1 ký tự đặc biệt", met: /[^a-zA-Z\d]/.test(password) },
+    { label: t("security.passwordStrength.number"), met: /\d/.test(password) },
+    { label: t("security.passwordStrength.specialChar"), met: /[^a-zA-Z\d]/.test(password) },
   ];
 
   const strengthColors = [
@@ -77,7 +79,13 @@ const PasswordStrengthIndicator = ({ password }: { password: string }) => {
     "bg-success",
     "bg-success",
   ];
-  const strengthLabels = ["Rất yếu", "Yếu", "Trung bình", "Mạnh", "Rất mạnh"];
+  const strengthLabels = [
+    t("security.passwordStrength.veryWeak"),
+    t("security.passwordStrength.weak"),
+    t("security.passwordStrength.medium"),
+    t("security.passwordStrength.strong"),
+    t("security.passwordStrength.veryStrong"),
+  ];
 
   if (!password) return null;
 
@@ -127,6 +135,7 @@ const PasswordStrengthIndicator = ({ password }: { password: string }) => {
 // 2FA Logic and JSX are placed here, kept 100% as is
 // ========================================================================
 const TwoFactorAuthSection = () => {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const { toast } = useToast();
@@ -154,8 +163,8 @@ const TwoFactorAuthSection = () => {
       onError: (error) => {
         console.error("Failed to generate 2FA secret:", error);
         toast({
-          title: "Lỗi",
-          description: "Không thể tạo mã QR. Vui lòng thử lại.",
+          title: t("common.error"),
+          description: t("security.2fa.error"), // Using generic error or specific one implies creation fail
           variant: "destructive",
         });
       },
@@ -174,15 +183,15 @@ const TwoFactorAuthSection = () => {
             setUser({ ...user, isTwoFactorAuthenticationEnabled: true });
           }
           toast({
-            title: "Thành công",
-            description: "Xác thực hai yếu tố đã được bật.",
+            title: t("common.success"),
+            description: t("security.2fa.enabledSuccess"),
           });
         },
         onError: (error) => {
           console.error("Failed to turn on 2FA:", error);
           toast({
-            title: "Lỗi",
-            description: "Mã không chính xác. Vui lòng thử lại.",
+            title: t("common.error"),
+            description: t("security.2fa.error"),
             variant: "destructive",
           });
         },
@@ -201,15 +210,15 @@ const TwoFactorAuthSection = () => {
           setDisableDialogOpen(false);
           setCode("");
           toast({
-            title: "Thành công",
-            description: "Xác thực hai yếu tố đã được tắt.",
+            title: t("common.success"),
+            description: t("security.2fa.disabledSuccess"),
           });
         },
         onError: (error) => {
           console.error("Failed to disable 2FA:", error);
           toast({
-            title: "Lỗi",
-            description: "Mã không chính xác hoặc đã xảy ra lỗi.",
+            title: t("common.error"),
+            description: t("security.2fa.error"),
             variant: "destructive",
           });
         },
@@ -235,34 +244,34 @@ const TwoFactorAuthSection = () => {
           <Shield className="h-5 w-5 text-primary" />
         </div>
         <div>
-          <h3 className="text-lg font-medium">Xác thực hai yếu tố</h3>
+          <h3 className="text-lg font-medium">{t("security.2fa.title")}</h3>
           <p className="text-sm text-muted-foreground">
-            Thêm một lớp bảo mật bổ sung cho tài khoản của bạn.
+            {t("security.2fa.description")}
           </p>
         </div>
       </div>
       <div className="p-4 border rounded-lg max-w-md bg-card">
         {user?.isTwoFactorAuthenticationEnabled ? (
           <div className="flex items-center justify-between">
-            <p className="text-sm">Xác thực hai yếu tố đã được bật</p>
+            <p className="text-sm">{t("security.2fa.enabled")}</p>
             <Button
               variant="destructive"
               size="sm"
               onClick={() => setDisableDialogOpen(true)}
             >
-              Tắt 2FA
+              {t("security.2fa.disableBtn")}
             </Button>
           </div>
         ) : (
           <div className="flex items-center justify-between">
-            <p className="text-sm">Xác thực hai yếu tố chưa được kích hoạt</p>
+            <p className="text-sm">{t("security.2fa.disabled")}</p>
             <Button
               variant="default"
               size="sm"
               onClick={handleGenerate2FA}
               disabled={generate2FAMutation.isPending}
             >
-              {generate2FAMutation.isPending ? "Đang tạo..." : "Bật 2FA"}
+              {generate2FAMutation.isPending ? t("security.2fa.generating") : t("security.2fa.enableBtn")}
             </Button>
           </div>
         )}
@@ -271,17 +280,16 @@ const TwoFactorAuthSection = () => {
       <Dialog open={isSetupDialogOpen} onOpenChange={setSetupDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cài đặt Xác thực hai yếu tố</DialogTitle>
+            <DialogTitle>{t("security.2fa.setupTitle")}</DialogTitle>
             <DialogDescription>
-              Quét mã QR bằng ứng dụng xác thực của bạn, sau đó nhập mã vào bên
-              dưới.
+              {t("security.2fa.setupDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-center my-4">
             {qrCode ? (
               <img src={qrCode} alt="2FA QR Code" />
             ) : (
-              <p>Đang tải mã QR...</p>
+              <p>{t("common.loading")}</p>
             )}
           </div>
           <form onSubmit={handleVerify2FA}>
@@ -294,8 +302,8 @@ const TwoFactorAuthSection = () => {
             <DialogFooter className="mt-4">
               <Button type="submit" disabled={turnOn2FAMutation.isPending}>
                 {turnOn2FAMutation.isPending
-                  ? "Đang xác minh..."
-                  : "Xác minh & Bật"}
+                  ? t("security.2fa.verifying")
+                  : t("security.2fa.verifyAndEnable")}
               </Button>
             </DialogFooter>
           </form>
@@ -308,11 +316,9 @@ const TwoFactorAuthSection = () => {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Lưu mã khôi phục của bạn</DialogTitle>
+            <DialogTitle>{t("security.2fa.recoveryTitle")}</DialogTitle>
             <DialogDescription>
-              Lưu trữ các mã này ở một nơi an toàn. Chúng có thể được sử dụng để
-              giành lại quyền truy cập vào tài khoản của bạn nếu bạn mất thiết
-              bị.
+              {t("security.2fa.recoveryDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="my-4 p-4 bg-muted rounded-md">
@@ -331,7 +337,7 @@ const TwoFactorAuthSection = () => {
               className="h-4 w-4 rounded border-input"
             />
             <label htmlFor="confirm-saved" className="text-sm">
-              Tôi đã lưu các mã khôi phục này.
+              {t("security.2fa.iSaved")}
             </label>
           </div>
           <DialogFooter className="mt-4 flex-col sm:flex-row gap-2">
@@ -341,7 +347,7 @@ const TwoFactorAuthSection = () => {
               onClick={handleDownloadRecoveryCodes}
             >
               <Download className="h-4 w-4 mr-2" />
-              Tải xuống
+              {t("security.2fa.download")}
             </Button>
             <Button
               variant="outline"
@@ -349,20 +355,20 @@ const TwoFactorAuthSection = () => {
               onClick={() => {
                 navigator.clipboard.writeText(recoveryCodes.join("\n"));
                 toast({
-                  title: "Đã copy",
-                  description: "Mã khôi phục đã được copy vào clipboard",
+                  title: t("toast.copied"),
+                  description: t("toast.snippetCopied"), // Using reusable key
                 });
               }}
             >
               <Copy className="h-4 w-4 mr-2" />
-              Copy
+              {t("project.list.copySnippet").split(' ')[0]} 
             </Button>
             <Button
               onClick={() => setRecoveryCodesDialogOpen(false)}
               disabled={!confirmSavedCodes}
               size="sm"
             >
-              Đã lưu, đóng
+              {t("security.2fa.savedClose")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -371,10 +377,9 @@ const TwoFactorAuthSection = () => {
       <Dialog open={isDisableDialogOpen} onOpenChange={setDisableDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Tắt xác thực hai yếu tố</DialogTitle>
+            <DialogTitle>{t("security.2fa.disableTitle")}</DialogTitle>
             <DialogDescription>
-              Để tiếp tục, vui lòng nhập mã 6 chữ số từ ứng dụng xác thực của
-              bạn.
+              {t("security.2fa.disableDesc")}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleDisable2FA}>
@@ -390,7 +395,7 @@ const TwoFactorAuthSection = () => {
                 variant="destructive"
                 disabled={disable2FAMutation.isPending}
               >
-                {disable2FAMutation.isPending ? "Đang tắt..." : "Tắt"}
+                {disable2FAMutation.isPending ? t("security.2fa.disabling") : t("security.2fa.disableConfirm")}
               </Button>
             </DialogFooter>
           </form>
@@ -406,6 +411,7 @@ const TwoFactorAuthSection = () => {
 // ========================================================================
 const ChangePasswordForm = () => {
   const user = useAuthStore((state) => state.user);
+  const { t } = useTranslation();
   const hasPassword = user?.hasPassword ?? false;
 
   const {
@@ -440,18 +446,18 @@ const ChangePasswordForm = () => {
               setAccessToken(data.accessToken);
             }
             toast({
-              title: "Thành công",
+              title: t("common.success"),
               description:
                 data.message ||
-                "Đổi mật khẩu thành công, tự động đăng xuất khỏi tất cả thiết bị.",
+                t("security.password.successChange"),
             });
             reset();
           },
           onError: (error: any) => {
             toast({
-              title: "Lỗi",
+              title: t("common.error"),
               description:
-                error.response?.data?.message || "Không thể thay đổi mật khẩu.",
+                error.response?.data?.message || t("settings.updateError"),
               variant: "destructive",
             });
           },
@@ -468,8 +474,8 @@ const ChangePasswordForm = () => {
               setAccessToken(data.accessToken);
             }
             toast({
-              title: "Thành công",
-              description: data.message || "Đặt mật khẩu thành công.",
+              title: t("common.success"),
+              description: data.message || t("security.password.successSet"),
             });
             reset();
             // Refresh user data to update hasPassword status
@@ -477,9 +483,9 @@ const ChangePasswordForm = () => {
           },
           onError: (error: any) => {
             toast({
-              title: "Lỗi",
+              title: t("common.error"),
               description:
-                error.response?.data?.message || "Không thể đặt mật khẩu.",
+                error.response?.data?.message || t("settings.updateError"),
               variant: "destructive",
             });
           },
@@ -499,12 +505,12 @@ const ChangePasswordForm = () => {
         </div>
         <div>
           <h3 className="text-lg font-medium">
-            {hasPassword ? "Thay đổi mật khẩu" : "Đặt mật khẩu"}
+            {hasPassword ? t("security.password.changeTitle") : t("security.password.getTitle")}
           </h3>
           <p className="text-sm text-muted-foreground">
             {hasPassword
-              ? "Chọn một mật khẩu mạnh mà bạn không sử dụng ở bất kỳ nơi nào khác."
-              : "Đặt mật khẩu để có thể đăng nhập bằng email và mật khẩu."}
+              ? t("security.password.changeDesc")
+              : t("security.password.getDesc")}
           </p>
         </div>
       </div>
@@ -518,7 +524,7 @@ const ChangePasswordForm = () => {
               className="block text-sm font-medium text-foreground mb-2"
               htmlFor="currentPassword"
             >
-              Mật khẩu hiện tại
+              {t("security.password.current")}
             </label>
             <div className="relative">
               <Input
@@ -526,7 +532,7 @@ const ChangePasswordForm = () => {
                 type={showCurrentPassword ? "text" : "password"}
                 {...register("currentPassword", {
                   required: hasPassword
-                    ? "Mật khẩu hiện tại là bắt buộc."
+                    ? t("security.password.currentRequired")
                     : false,
                 })}
               />
@@ -554,17 +560,17 @@ const ChangePasswordForm = () => {
             className="block text-sm font-medium text-foreground mb-2"
             htmlFor="newPassword"
           >
-            Mật khẩu mới
+            {t("security.password.new")}
           </label>
           <div className="relative">
             <Input
               id="newPassword"
               type={showNewPassword ? "text" : "password"}
               {...register("newPassword", {
-                required: "Mật khẩu mới là bắt buộc.",
+                required: t("security.password.newRequired"),
                 minLength: {
                   value: 8,
-                  message: "Mật khẩu phải có ít nhất 8 ký tự.",
+                  message: t("auth.passwordMinLength"),
                 },
               })}
             />
@@ -592,16 +598,16 @@ const ChangePasswordForm = () => {
             className="block text-sm font-medium text-foreground mb-2"
             htmlFor="confirmPassword"
           >
-            Xác nhận mật khẩu mới
+            {t("security.password.confirm")}
           </label>
           <div className="relative">
             <Input
               id="confirmPassword"
               type={showConfirmPassword ? "text" : "password"}
               {...register("confirmPassword", {
-                required: "Vui lòng xác nhận mật khẩu mới của bạn.",
+                required: t("security.password.confirmRequired"),
                 validate: (value) =>
-                  value === watch("newPassword") || "Mật khẩu không khớp.",
+                  value === watch("newPassword") || t("auth.passwordMismatch"),
               })}
             />
             <button
@@ -625,10 +631,10 @@ const ChangePasswordForm = () => {
         <div className="pt-4 border-t">
           <Button type="submit" disabled={isLoading}>
             {isLoading
-              ? "Đang cập nhật..."
+              ? t("security.password.updating")
               : hasPassword
-              ? "Cập nhật mật khẩu"
-              : "Đặt mật khẩu"}
+              ? t("security.password.updateBtn")
+              : t("security.password.setBtn")}
           </Button>
         </div>
       </form>
@@ -641,6 +647,7 @@ const ChangePasswordForm = () => {
 // Component for managing linked OAuth accounts (Google, etc.)
 // ========================================================================
 const LinkedAccountsSection = () => {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const { toast } = useToast();
   const { data: linkedAccounts, isLoading } = useLinkedAccountsQuery();
@@ -662,10 +669,10 @@ const LinkedAccountsSection = () => {
       },
       onError: (error: any) => {
         toast({
-          title: "Lỗi",
+          title: t("common.error"),
           description:
             error.response?.data?.message ||
-            "Không thể khởi tạo liên kết Google.",
+            t("security.linkedAccounts.linkError"),
           variant: "destructive",
         });
       },
@@ -685,17 +692,17 @@ const LinkedAccountsSection = () => {
       {
         onSuccess: (data) => {
           toast({
-            title: "Thành công",
-            description: data.message,
+            title: t("common.success"),
+            description: data.message || t("security.linkedAccounts.unlinkSuccess"),
           });
           setIsUnlinkDialogOpen(false);
           setAccountToUnlink(null);
         },
         onError: (error: any) => {
           toast({
-            title: "Lỗi",
+            title: t("common.error"),
             description:
-              error.response?.data?.message || "Không thể hủy liên kết.",
+              error.response?.data?.message || t("security.linkedAccounts.unlinkError"),
             variant: "destructive",
           });
         },
@@ -747,10 +754,9 @@ const LinkedAccountsSection = () => {
           <LinkIcon className="h-5 w-5 text-primary" />
         </div>
         <div>
-          <h3 className="text-lg font-medium">Tài khoản liên kết</h3>
+          <h3 className="text-lg font-medium">{t("security.linkedAccounts.title")}</h3>
           <p className="text-sm text-muted-foreground">
-            Liên kết tài khoản của bạn với các nhà cung cấp OAuth để đăng nhập
-            nhanh hơn.
+            {t("security.linkedAccounts.description")}
           </p>
         </div>
       </div>
@@ -766,9 +772,9 @@ const LinkedAccountsSection = () => {
               <div>
                 <p className="font-medium">Google</p>
                 {isGoogleLinked ? (
-                  <p className="text-xs text-muted-foreground">Đã liên kết</p>
+                  <p className="text-xs text-muted-foreground">{t("security.linkedAccounts.linked")}</p>
                 ) : (
-                  <p className="text-xs text-muted-foreground">Chưa liên kết</p>
+                  <p className="text-xs text-muted-foreground">{t("security.linkedAccounts.notLinked")}</p>
                 )}
               </div>
             </div>
@@ -780,7 +786,7 @@ const LinkedAccountsSection = () => {
                 disabled={unlinkMutation.isPending}
               >
                 <Unlink className="h-4 w-4 mr-2" />
-                Hủy liên kết
+                {t("security.linkedAccounts.unlink")}
               </Button>
             ) : (
               <Button
@@ -790,11 +796,11 @@ const LinkedAccountsSection = () => {
                 disabled={initiateLinkMutation.isPending}
               >
                 {initiateLinkMutation.isPending ? (
-                  "Đang khởi tạo..."
+                  t("security.linkedAccounts.linking")
                 ) : (
                   <>
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    Liên kết
+                    {t("security.linkedAccounts.link")}
                   </>
                 )}
               </Button>
@@ -804,7 +810,7 @@ const LinkedAccountsSection = () => {
 
         {/* List of linked accounts */}
         {isLoading && (
-          <p className="text-sm text-muted-foreground">Đang tải...</p>
+          <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
         )}
       </div>
 
@@ -812,26 +818,20 @@ const LinkedAccountsSection = () => {
       <Dialog open={isUnlinkDialogOpen} onOpenChange={setIsUnlinkDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Xác nhận hủy liên kết</DialogTitle>
+            <DialogTitle>{t("security.linkedAccounts.confirmTitle")}</DialogTitle>
             <DialogDescription>
               {!user?.hasPassword ? (
                 <>
                   <p className="mb-2">
-                    <strong>Cảnh báo:</strong> Bạn chưa có mật khẩu cho tài
-                    khoản này.
+                    <strong>{t("security.linkedAccounts.warningNoPassword")}</strong>
                   </p>
                   <p>
-                    Bạn cần đặt mật khẩu trước khi hủy liên kết tài khoản{" "}
-                    {accountToUnlink ? getProviderName(accountToUnlink) : ""}.
-                    Điều này đảm bảo bạn vẫn có thể đăng nhập vào tài khoản.
+                    {t("security.linkedAccounts.setPwdMessage", { provider: accountToUnlink ? getProviderName(accountToUnlink) : "" })}
                   </p>
                 </>
               ) : (
                 <>
-                  Bạn có chắc muốn hủy liên kết tài khoản{" "}
-                  {accountToUnlink ? getProviderName(accountToUnlink) : ""}?
-                  <br />
-                  Bạn sẽ không thể đăng nhập bằng tài khoản này nữa.
+                  {t("security.linkedAccounts.confirmMessage", { provider: accountToUnlink ? getProviderName(accountToUnlink) : "" })}
                 </>
               )}
             </DialogDescription>
@@ -841,7 +841,7 @@ const LinkedAccountsSection = () => {
               variant="outline"
               onClick={() => setIsUnlinkDialogOpen(false)}
             >
-              Hủy
+              {t("security.linkedAccounts.cancel")}
             </Button>
             {user?.hasPassword && (
               <Button
@@ -849,7 +849,7 @@ const LinkedAccountsSection = () => {
                 onClick={confirmUnlink}
                 disabled={unlinkMutation.isPending}
               >
-                {unlinkMutation.isPending ? "Đang hủy..." : "Xác nhận"}
+                {unlinkMutation.isPending ? t("security.linkedAccounts.unlinking") : t("security.linkedAccounts.confirm")}
               </Button>
             )}
           </DialogFooter>
@@ -865,6 +865,7 @@ const LinkedAccountsSection = () => {
 // ========================================================================
 const ChangeEmailForm = () => {
   const user = useAuthStore((state) => state.user);
+  const { t } = useTranslation();
   const hasPassword = user?.hasPassword ?? false;
 
   const {
@@ -883,16 +884,16 @@ const ChangeEmailForm = () => {
     cancelEmailChangeMutation.mutate(undefined, {
       onSuccess: (response) => {
         toast({
-          title: "Đã hủy",
+          title: t("security.email.cancelSuccess"),
           description:
-            response.message || "Yêu cầu thay đổi email đã được hủy.",
+            response.message || t("security.email.cancelSuccessDesc"),
         });
       },
       onError: (error: any) => {
         toast({
-          title: "Lỗi",
+          title: t("common.error"),
           description:
-            error.response?.data?.message || "Không thể hủy yêu cầu.",
+            error.response?.data?.message || t("security.email.cancelError"),
           variant: "destructive",
         });
       },
@@ -905,21 +906,21 @@ const ChangeEmailForm = () => {
       {
         onSuccess: (response) => {
           const description = response.warning
-            ? `${response.warning}\n\nMột liên kết xác nhận đã được gửi đến ${data.newEmail}.`
-            : `Một liên kết xác nhận đã được gửi đến ${data.newEmail}.`;
+            ? `${response.warning}\n\n${t("security.email.successDesc", { email: data.newEmail })}`
+            : t("security.email.successDesc", { email: data.newEmail });
 
           toast({
-            title: "Kiểm tra hộp thư đến của bạn",
+            title: t("security.email.successTitle"),
             description,
           });
           reset();
         },
         onError: (error: any) => {
           toast({
-            title: "Lỗi",
+            title: t("common.error"),
             description:
               error.response?.data?.message ||
-              "Yêu cầu thay đổi email thất bại.",
+              t("security.email.requestError"),
             variant: "destructive",
           });
         },
@@ -934,9 +935,9 @@ const ChangeEmailForm = () => {
           <Mail className="h-5 w-5 text-primary" />
         </div>
         <div>
-          <h3 className="text-lg font-medium">Thay đổi địa chỉ Email</h3>
+          <h3 className="text-lg font-medium">{t("security.email.title")}</h3>
           <p className="text-sm text-muted-foreground">
-            Địa chỉ email hiện tại của bạn là <strong>{user?.email}</strong>.
+            {t("security.email.current")} <strong>{user?.email}</strong>.
           </p>
         </div>
       </div>
@@ -953,21 +954,18 @@ const ChangeEmailForm = () => {
             <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
               <h4 className="font-medium text-foreground mb-2">
-                Yêu cầu thay đổi email đang chờ xác nhận
+                {t("security.email.pendingRequest")}
               </h4>
               <p className="text-sm text-muted-foreground mb-3">
-                Một email xác nhận đã được gửi đến{" "}
-                <strong className="text-foreground">
-                  {pendingEmailChange.newEmail}
-                </strong>
-                . Vui lòng kiểm tra hộp thư và nhấp vào liên kết xác nhận để
-                hoàn tất quá trình thay đổi email.
+                {t("security.email.pendingDesc", { email: pendingEmailChange.newEmail })}
               </p>
               <div className="text-xs text-muted-foreground mb-4">
                 <p>
-                  ⏰ Liên kết sẽ hết hạn vào:{" "}
+                  ⏰ {t("security.email.expiresAt")}{" "}
                   {new Date(pendingEmailChange.expiresAt).toLocaleString(
-                    "vi-VN",
+                    // Using undefined locale/options for default browser behavior or specific if needed
+                    // But to keep it simple and localized by dateUtils might be better, but staying consistent:
+                    undefined, 
                     {
                       dateStyle: "medium",
                       timeStyle: "short",
@@ -983,8 +981,8 @@ const ChangeEmailForm = () => {
                 className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
               >
                 {cancelEmailChangeMutation.isPending
-                  ? "Đang hủy..."
-                  : "Hủy yêu cầu"}
+                  ? t("security.email.cancelling")
+                  : t("security.email.cancelBtn")}
               </Button>
             </div>
           </div>
@@ -998,16 +996,13 @@ const ChangeEmailForm = () => {
             <Shield className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
             <div className="flex-1">
               <h4 className="font-medium text-foreground mb-2">
-                Yêu cầu đặt mật khẩu
+                {t("security.email.noPwdTitle")}
               </h4>
               <p className="text-sm text-muted-foreground mb-3">
-                Để thay đổi địa chỉ email, bạn cần đặt mật khẩu cho tài khoản
-                trước. Điều này đảm bảo tính bảo mật khi thay đổi thông tin quan
-                trọng.
+                 {t("security.email.noPwdDesc")}
               </p>
               <p className="text-sm text-muted-foreground">
-                Vui lòng cuộn lên phía trên và sử dụng chức năng{" "}
-                <strong>"Đặt mật khẩu"</strong> trước khi thay đổi email.
+                {t("security.email.noPwdAction")}
               </p>
             </div>
           </div>
@@ -1016,8 +1011,7 @@ const ChangeEmailForm = () => {
         // Disable form if there's a pending request
         <div className="max-w-md mt-4 p-6 border rounded-lg bg-card opacity-50">
           <p className="text-sm text-muted-foreground text-center">
-            Bạn cần hoàn tất hoặc hủy yêu cầu thay đổi email hiện tại trước khi
-            tạo yêu cầu mới.
+            {t("security.email.pendingWait")}
           </p>
         </div>
       ) : (
@@ -1031,12 +1025,12 @@ const ChangeEmailForm = () => {
               className="block text-sm font-medium text-foreground mb-2"
               htmlFor="newEmail"
             >
-              Địa chỉ Email mới
+              {t("security.email.newEmail")}
             </label>
             <Input
               id="newEmail"
               type="email"
-              {...register("newEmail", { required: "Email mới là bắt buộc." })}
+              {...register("newEmail", { required: t("security.email.newEmailRequired") })}
             />
             {errors.newEmail && (
               <p className="text-xs text-destructive mt-1">
@@ -1049,13 +1043,13 @@ const ChangeEmailForm = () => {
               className="block text-sm font-medium text-foreground mb-2"
               htmlFor="password"
             >
-              Xác minh bằng mật khẩu hiện tại
+              {t("security.email.verifyPwd")}
             </label>
             <Input
               id="password"
               type="password"
               {...register("password", {
-                required: "Cần có mật khẩu để xác minh.",
+                required: t("security.email.pwdRequired"),
               })}
             />
             {errors.password && (
@@ -1066,8 +1060,8 @@ const ChangeEmailForm = () => {
           </div>
           <Button type="submit" disabled={requestEmailChangeMutation.isPending}>
             {requestEmailChangeMutation.isPending
-              ? "Đang gửi..."
-              : "Yêu cầu thay đổi Email"}
+              ? t("security.email.sending")
+              : t("security.email.submitBtn")}
           </Button>
         </form>
       )}
@@ -1080,6 +1074,7 @@ const ChangeEmailForm = () => {
 // ========================================================================
 export const SecurityPage = () => {
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   // Handle redirect from Google OAuth linking
   useEffect(() => {
@@ -1087,8 +1082,8 @@ export const SecurityPage = () => {
 
     if (urlParams.get("linkSuccess")) {
       toast({
-        title: "Thành công",
-        description: "Liên kết tài khoản Google thành công!",
+        title: t("common.success"),
+        description: t("security.linkSuccess"),
       });
       // Clean up URL
       window.history.replaceState({}, "", window.location.pathname);
@@ -1097,16 +1092,16 @@ export const SecurityPage = () => {
     if (urlParams.get("linkError")) {
       const error = urlParams.get("linkError");
       toast({
-        title: "Lỗi",
+        title: t("common.error"),
         description: decodeURIComponent(
-          error || "Có lỗi xảy ra khi liên kết tài khoản."
+          error || t("security.genericLinkError")
         ),
         variant: "destructive",
       });
       // Clean up URL
       window.history.replaceState({}, "", window.location.pathname);
     }
-  }, [toast]);
+  }, [toast, t]);
 
   return (
     <div className="space-y-6">

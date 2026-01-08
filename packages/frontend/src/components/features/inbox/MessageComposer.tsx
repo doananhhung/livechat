@@ -1,6 +1,7 @@
 // src/components/features/inbox/MessageComposer.tsx
 
 import React, { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   useSendAgentReply,
   useNotifyAgentTyping,
@@ -15,6 +16,7 @@ interface MessageComposerProps {
 }
 
 const MessageComposer = ({ projectId, conversationId }: MessageComposerProps) => {
+  const { t } = useTranslation();
   const [content, setContent] = useState("");
   const { mutate: sendMessage, isPending } = useSendAgentReply();
   const { mutate: notifyTyping } = useNotifyAgentTyping();
@@ -168,7 +170,7 @@ const MessageComposer = ({ projectId, conversationId }: MessageComposerProps) =>
       )}
       <textarea
         ref={inputRef}
-        placeholder="Nhập tin nhắn... (Gõ / để dùng mẫu câu)"
+        placeholder={t("inbox.typeMessage")}
         className="flex-1 text-sm border rounded-md px-3 py-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary resize-none overflow-hidden min-h-[40px] max-h-[200px]"
         value={content}
         onChange={handleInputChange}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   UserMinus,
   Shield,
@@ -50,6 +51,7 @@ export const ProjectMembersDialog = ({
   open,
   onOpenChange,
 }: ProjectMembersDialogProps) => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [memberToRemove, setMemberToRemove] = useState<{
@@ -71,14 +73,14 @@ export const ProjectMembersDialog = ({
         queryKey: ["project-members", projectId],
       });
       toast({
-        title: "Thành công",
-        description: "Đã cập nhật vai trò thành viên",
+        title: t("common.success"),
+        description: t("members.roleUpdated"),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Lỗi",
-        description: error.message || "Không thể cập nhật vai trò",
+        title: t("common.error"),
+        description: error.message || t("members.roleUpdateError"),
         variant: "destructive",
       });
     },
@@ -91,14 +93,14 @@ export const ProjectMembersDialog = ({
         queryKey: ["project-members", projectId],
       });
       toast({
-        title: "Thành công",
-        description: "Đã xóa thành viên khỏi dự án",
+        title: t("common.success"),
+        description: t("members.memberRemoved"),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Lỗi",
-        description: error.message || "Không thể xóa thành viên",
+        title: t("common.error"),
+        description: error.message || t("members.removeError"),
         variant: "destructive",
       });
     },
@@ -109,14 +111,14 @@ export const ProjectMembersDialog = ({
       return (
         <Badge variant="default">
           <Shield className="h-3 w-3 mr-1" />
-          Quản lý viên
+          {t("members.manager")}
         </Badge>
       );
     }
     return (
       <Badge variant="secondary">
         <UserIcon className="h-3 w-3 mr-1" />
-        Nhân viên
+        {t("members.agent")}
       </Badge>
     );
   };
@@ -145,9 +147,9 @@ export const ProjectMembersDialog = ({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Quản lý thành viên</DialogTitle>
+            <DialogTitle>{t("members.manageMembers")}</DialogTitle>
             <DialogDescription>
-              Danh sách thành viên của dự án {projectName}
+              {t("members.memberListOf", { projectName })}
             </DialogDescription>
           </DialogHeader>
 
@@ -174,7 +176,7 @@ export const ProjectMembersDialog = ({
                             </p>
                             {isCurrentUser && (
                               <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                (Bạn)
+                                ({t("members.you")})
                               </span>
                             )}
                             <div className="flex-shrink-0">
@@ -185,7 +187,7 @@ export const ProjectMembersDialog = ({
                             {member.user.email}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Tham gia:{" "}
+                            {t("members.joined")}:{" "}
                             {new Date(member.createdAt).toLocaleDateString(
                               "vi-VN"
                             )}
@@ -207,8 +209,8 @@ export const ProjectMembersDialog = ({
                             }
                           >
                             {member.role === ProjectRoleEnum.MANAGER
-                              ? "Hạ vai trò"
-                              : "Thăng vai trò"}
+                              ? t("members.demote")
+                              : t("members.promote")}
                           </Button>
                           <Button
                             size="sm"
@@ -233,7 +235,7 @@ export const ProjectMembersDialog = ({
                 })
               ) : (
                 <p className="text-center text-muted-foreground py-8">
-                  Không có thành viên nào
+                  {t("members.noMembers")}
                 </p>
               )}
             </div>
@@ -252,19 +254,15 @@ export const ProjectMembersDialog = ({
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
                 <AlertTriangle className="h-5 w-5 text-destructive" />
               </div>
-              <AlertDialogTitle>Xác nhận xóa thành viên</AlertDialogTitle>
+              <AlertDialogTitle>{t("members.confirmRemoveTitle")}</AlertDialogTitle>
             </div>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn xóa{" "}
-              <span className="font-semibold text-foreground">
-                {memberToRemove?.userName}
-              </span>{" "}
-              khỏi dự án này không? Hành động này không thể hoàn tác.
+              {t("members.confirmRemoveDesc", { name: memberToRemove?.userName })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={removeMemberMutation.isPending}>
-              Hủy
+              {t("common.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmRemoveMember}
@@ -272,8 +270,8 @@ export const ProjectMembersDialog = ({
               disabled={removeMemberMutation.isPending}
             >
               {removeMemberMutation.isPending
-                ? "Đang xóa..."
-                : "Xóa thành viên"}
+                ? t("common.deleting")
+                : t("members.removeMember")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

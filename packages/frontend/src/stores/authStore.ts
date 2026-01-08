@@ -5,6 +5,7 @@ import api from "../lib/api";
 import { AxiosError } from "axios";
 import { queryClient } from "../lib/queryClient";
 import type { User, UserResponse } from "@live-chat/shared-types";
+import i18n from "../i18n";
 
 interface AuthState {
   user: UserResponse | null;
@@ -25,8 +26,12 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       accessToken: null,
       isAuthenticated: false,
-      login: (userData, token) =>
-        set({ user: userData, accessToken: token, isAuthenticated: true }),
+      login: (userData, token) => {
+        if (userData.language) {
+          i18n.changeLanguage(userData.language);
+        }
+        set({ user: userData, accessToken: token, isAuthenticated: true });
+      },
 
       logout: async () => {
         try {
@@ -51,7 +56,12 @@ export const useAuthStore = create<AuthState>()(
         });
       },
 
-      setUser: (userData) => set((state) => ({ ...state, user: userData })),
+      setUser: (userData) => {
+        if (userData.language) {
+          i18n.changeLanguage(userData.language);
+        }
+        set((state) => ({ ...state, user: userData }));
+      },
       setAccessToken: (token) =>
         set({ accessToken: token, isAuthenticated: !!token }),
 

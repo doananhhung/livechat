@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X, Plus } from "lucide-react";
 import { Button } from "../../ui/Button";
@@ -21,6 +22,7 @@ const domainRegex = /^(localhost|([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})(:\d{1,5})?$/;
 export const ProjectBasicSettingsForm = ({
   project,
 }: ProjectBasicSettingsFormProps) => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [projectName, setProjectName] = useState(project.name);
@@ -42,14 +44,14 @@ export const ProjectBasicSettingsForm = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast({
-        title: "Thành công",
-        description: "Đã cập nhật thông tin dự án",
+        title: t("common.success"),
+        description: t("toast.projectUpdated"),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Lỗi",
-        description: error.message || "Không thể cập nhật thông tin",
+        title: t("common.error"),
+        description: error.message || t("settings.updateError"),
         variant: "destructive",
       });
     },
@@ -75,8 +77,8 @@ export const ProjectBasicSettingsForm = ({
     const trimmedName = projectName.trim();
     if (!trimmedName) {
       toast({
-        title: "Lỗi",
-        description: "Tên dự án không được để trống",
+        title: t("common.error"),
+        description: t("settings.projectNameRequired"),
         variant: "destructive",
       });
       return;
@@ -88,8 +90,8 @@ export const ProjectBasicSettingsForm = ({
 
     if (finalDomains.length === 0) {
       toast({
-        title: "Lỗi",
-        description: "Phải có ít nhất một tên miền",
+        title: t("common.error"),
+        description: t("settings.domainRequired"),
         variant: "destructive",
       });
       return;
@@ -102,10 +104,8 @@ export const ProjectBasicSettingsForm = ({
 
     if (invalidDomains.length > 0) {
       toast({
-        title: "Lỗi định dạng tên miền",
-        description: `Các tên miền sau không hợp lệ (vui lòng xóa http:// hoặc https://): ${invalidDomains.join(
-          ", "
-        )}`,
+        title: t("settings.domainFormatError"),
+        description: t("settings.invalidDomains", { domains: invalidDomains.join(", ") }),
         variant: "destructive",
       });
       return;
@@ -114,8 +114,8 @@ export const ProjectBasicSettingsForm = ({
     const autoResolve = Number(autoResolveMinutes);
     if (isNaN(autoResolve) || autoResolve < 0) {
       toast({
-        title: "Lỗi",
-        description: "Thời gian tự động hoàn tất phải là số không âm",
+        title: t("common.error"),
+        description: t("settings.autoResolvePositive"),
         variant: "destructive",
       });
       return;
@@ -136,12 +136,12 @@ export const ProjectBasicSettingsForm = ({
           htmlFor="projectName"
           className="block text-sm font-medium text-foreground mb-2"
         >
-          Tên dự án <span className="text-destructive">*</span>
+          {t("settings.projectName")} <span className="text-destructive">*</span>
         </label>
         <Input
           id="projectName"
           type="text"
-          placeholder="Nhập tên dự án..."
+          placeholder={t("settings.projectNamePlaceholder")}
           value={projectName}
           onChange={(e) => setProjectName(e.target.value)}
           disabled={updateMutation.isPending}
@@ -155,10 +155,10 @@ export const ProjectBasicSettingsForm = ({
           htmlFor="autoResolveMinutes"
           className="block text-sm font-medium text-foreground mb-2"
         >
-          Tự động chuyển sang PENDING (phút)
+          {t("settings.autoResolve")}
         </label>
         <p className="text-xs text-muted-foreground mb-3">
-          Tự động chuyển hội thoại sang trạng thái Pending nếu khách hàng không trả lời sau khoảng thời gian này. Đặt 0 để tắt.
+          {t("settings.autoResolveHelp")}
         </p>
         <Input
           id="autoResolveMinutes"
@@ -173,18 +173,18 @@ export const ProjectBasicSettingsForm = ({
       {/* Whitelisted Domains */}
       <div>
         <label className="block text-sm font-medium text-foreground mb-2">
-          Danh sách tên miền được phép{" "}
+          {t("settings.whitelistedDomains")}{" "}
           <span className="text-destructive">*</span>
         </label>
         <p className="text-xs text-muted-foreground mb-3">
-          Chỉ các trang web từ các tên miền này mới có thể sử dụng widget (VD: example.com)
+          {t("settings.whitelistedDomainsHelp")}
         </p>
         <div className="space-y-2">
           {whitelistedDomains.map((domain, index) => (
             <div key={index} className="flex items-center gap-2">
               <Input
                 type="text"
-                placeholder="example.com (không cần https://)"
+                placeholder={t("settings.domainPlaceholder")}
                 value={domain}
                 onChange={(e) => handleDomainChange(index, e.target.value)}
                 disabled={updateMutation.isPending}
@@ -213,14 +213,14 @@ export const ProjectBasicSettingsForm = ({
           disabled={updateMutation.isPending}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Thêm tên miền
+          {t("settings.addDomain")}
         </Button>
       </div>
 
       {/* Submit Button */}
       <div className="flex justify-end pt-4 border-t">
         <Button type="submit" disabled={updateMutation.isPending}>
-          {updateMutation.isPending ? "Đang lưu..." : "Lưu thay đổi"}
+          {updateMutation.isPending ? t("common.saving") : t("common.save")}
         </Button>
       </div>
     </form>

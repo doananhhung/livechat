@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as projectApi from "../../services/projectApi";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Spinner } from "../../components/ui/Spinner";
@@ -15,6 +16,7 @@ import type { WidgetSettingsDto } from "@live-chat/shared-dtos";
 import { getWidgetSnippet } from "../../lib/widget";
 
 export const ProjectSettingsPage = () => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -74,14 +76,14 @@ export const ProjectSettingsPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast({
-        title: "Thành công",
-        description: "Đã cập nhật cài đặt widget",
+        title: t("common.success"),
+        description: t("toast.widgetUpdated"),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Lỗi",
-        description: error.message || "Không thể cập nhật cài đặt",
+        title: t("common.error"),
+        description: error.message || t("settings.updateError"),
         variant: "destructive",
       });
     },
@@ -120,9 +122,9 @@ export const ProjectSettingsPage = () => {
   if (!currentProject) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
-        <p className="text-muted-foreground mb-4">Không tìm thấy dự án</p>
+        <p className="text-muted-foreground mb-4">{t("settings.projectNotFound")}</p>
         <Button onClick={() => navigate("/settings")}>
-          Quay lại danh sách dự án
+          {t("settings.backToProjectList")}
         </Button>
       </div>
     );
@@ -139,10 +141,10 @@ export const ProjectSettingsPage = () => {
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Quay lại
+          {t("common.back")}
         </Button>
         <h1 className="text-2xl font-bold text-foreground">
-          Cài đặt dự án: {currentProject.name}
+          {t("settings.projectSettings")}: {currentProject.name}
         </h1>
       </div>
 
@@ -158,10 +160,10 @@ export const ProjectSettingsPage = () => {
               <Info className="h-5 w-5 text-muted-foreground" />
               <div className="text-left">
                 <h2 className="text-lg font-semibold text-foreground">
-                  Thông tin cơ bản
+                  {t("settings.basicInfo")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Tên dự án và cài đặt chung
+                  {t("settings.basicInfoDesc")}
                 </p>
               </div>
             </div>
@@ -178,7 +180,7 @@ export const ProjectSettingsPage = () => {
                 requiredRole={ProjectRole.MANAGER}
                 fallback={
                   <p className="text-sm text-muted-foreground py-4">
-                    Chỉ Project Manager mới có thể chỉnh sửa thông tin dự án
+                    {t("settings.managerOnlyBasic")}
                   </p>
                 }
               >
@@ -200,10 +202,10 @@ export const ProjectSettingsPage = () => {
               <Palette className="h-5 w-5 text-muted-foreground" />
               <div className="text-left">
                 <h2 className="text-lg font-semibold text-foreground">
-                  Cài đặt Widget
+                  {t("settings.widgetSettings")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Màu sắc, vị trí và nội dung
+                  {t("settings.widgetSettingsDesc")}
                 </p>
               </div>
             </div>
@@ -220,7 +222,7 @@ export const ProjectSettingsPage = () => {
                 requiredRole={ProjectRole.MANAGER}
                 fallback={
                   <p className="text-sm text-muted-foreground py-4">
-                    Chỉ Project Manager mới có thể chỉnh sửa cài đặt widget
+                    {t("settings.managerOnlyWidget")}
                   </p>
                 }
               >
@@ -228,7 +230,7 @@ export const ProjectSettingsPage = () => {
                   {/* History Visibility Mode */}
                   <div className="border p-3 rounded-md bg-muted/20">
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Lịch sử trò chuyện
+                      {t("settings.chatHistory")}
                     </label>
                     <div className="flex flex-col gap-2">
                       <div className="flex items-start space-x-2">
@@ -243,9 +245,9 @@ export const ProjectSettingsPage = () => {
                           className="mt-1"
                         />
                         <label htmlFor="mode-active-page" className="text-sm cursor-pointer">
-                          <span className="font-semibold block">Ticket Style (Mặc định)</span>
+                          <span className="font-semibold block">{t("settings.ticketStyleDefault")}</span>
                           <span className="text-muted-foreground">
-                            Chỉ hiện hội thoại đang mở. Hội thoại đã đóng (Solved) sẽ bị ẩn khi khách quay lại.
+                            {t("settings.ticketStyleDesc")}
                           </span>
                         </label>
                       </div>
@@ -261,9 +263,9 @@ export const ProjectSettingsPage = () => {
                           className="mt-1"
                         />
                         <label htmlFor="mode-forever-page" className="text-sm cursor-pointer">
-                          <span className="font-semibold block">Chat Style</span>
+                          <span className="font-semibold block">{t("settings.chatStyle")}</span>
                           <span className="text-muted-foreground">
-                            Luôn hiện lịch sử trò chuyện cũ. Tin nhắn mới sẽ mở lại hội thoại cũ.
+                            {t("settings.chatStyleDesc")}
                           </span>
                         </label>
                       </div>
@@ -272,7 +274,7 @@ export const ProjectSettingsPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Giao diện Widget
+                      {t("settings.widgetTheme")}
                     </label>
                     <select
                       value={theme}
@@ -282,18 +284,18 @@ export const ProjectSettingsPage = () => {
                       disabled={updateWidgetMutation.isPending}
                       className="w-full px-3 py-2 border border-input bg-background rounded-md"
                     >
-                      <option value={WidgetTheme.LIGHT}>Sáng</option>
-                      <option value={WidgetTheme.DARK}>Tối</option>
+                      <option value={WidgetTheme.LIGHT}>{t("settings.themeLight")}</option>
+                      <option value={WidgetTheme.DARK}>{t("settings.themeDark")}</option>
                     </select>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Tiêu đề Widget
+                      {t("settings.widgetHeader")}
                     </label>
                     <Input
                       type="text"
-                      placeholder="Chat với chúng tôi"
+                      placeholder={t("widget.enterTitle")}
                       value={headerText}
                       onChange={(e) => setHeaderText(e.target.value)}
                       disabled={updateWidgetMutation.isPending}
@@ -306,7 +308,7 @@ export const ProjectSettingsPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Màu chủ đạo
+                      {t("settings.primaryColor")}
                     </label>
                     <div className="flex items-center gap-2">
                     <div className="relative">
@@ -325,7 +327,7 @@ export const ProjectSettingsPage = () => {
                       onChange={(e) =>
                         setPrimaryColor(e.target.value)
                       }
-                      placeholder="Mặc định (Gradient)"
+                      placeholder={t("settings.default")}
                       className="flex-1"
                     />
                     <Button
@@ -333,16 +335,16 @@ export const ProjectSettingsPage = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => setPrimaryColor("")}
-                      title="Sử dụng màu mặc định"
+                      title={t("settings.useDefaultColor")}
                     >
-                      Mặc định
+                      {t("settings.default")}
                     </Button>
                   </div>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Font chữ
+                      {t("settings.fontFamily")}
                     </label>
                     <Input
                       type="text"
@@ -355,11 +357,11 @@ export const ProjectSettingsPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Tin nhắn chào mừng
+                      {t("settings.welcomeMessage")}
                     </label>
                     <Input
                       type="text"
-                      placeholder="Xin chào! Chúng tôi có thể giúp gì cho bạn?"
+                      placeholder={t("widget.enterGreeting")}
                       value={welcomeMessage}
                       onChange={(e) => setWelcomeMessage(e.target.value)}
                       disabled={updateWidgetMutation.isPending}
@@ -372,7 +374,7 @@ export const ProjectSettingsPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Vị trí Widget
+                      {t("settings.widgetPosition")}
                     </label>
                     <select
                       value={position}
@@ -383,17 +385,17 @@ export const ProjectSettingsPage = () => {
                       className="w-full px-3 py-2 border border-input bg-background rounded-md"
                     >
                       <option value={WidgetPosition.BOTTOM_RIGHT}>
-                        Góc dưới phải
+                        {t("settings.bottomRight")}
                       </option>
                       <option value={WidgetPosition.BOTTOM_LEFT}>
-                        Góc dưới trái
+                        {t("settings.bottomLeft")}
                       </option>
                     </select>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      URL Logo công ty
+                      {t("settings.companyLogoUrl")}
                     </label>
                     <Input
                       type="url"
@@ -406,11 +408,11 @@ export const ProjectSettingsPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Tên hiển thị Agent
+                      {t("settings.agentDisplayName")}
                     </label>
                     <Input
                       type="text"
-                      placeholder="Hỗ trợ viên"
+                      placeholder={t("members.agent")}
                       value={agentDisplayName}
                       onChange={(e) => setAgentDisplayName(e.target.value)}
                       disabled={updateWidgetMutation.isPending}
@@ -427,8 +429,8 @@ export const ProjectSettingsPage = () => {
                       disabled={updateWidgetMutation.isPending}
                     >
                       {updateWidgetMutation.isPending
-                        ? "Đang lưu..."
-                        : "Lưu thay đổi"}
+                        ? t("common.saving")
+                        : t("common.save")}
                     </Button>
                   </div>
                 </form>
@@ -447,10 +449,10 @@ export const ProjectSettingsPage = () => {
               <Code className="h-5 w-5 text-muted-foreground" />
               <div className="text-left">
                 <h2 className="text-lg font-semibold text-foreground">
-                  Mã nhúng Widget
+                  {t("settings.embedCode")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Copy code để tích hợp vào website
+                  {t("settings.embedCodeDesc")}
                 </p>
               </div>
             </div>
@@ -463,15 +465,7 @@ export const ProjectSettingsPage = () => {
           {expandedSections.snippet && (
             <div className="px-6 pb-6 border-t animate-slide-in pt-6">
               <p className="text-sm text-muted-foreground mb-4">
-                Copy đoạn mã sau và dán vào thẻ{" "}
-                <code className="bg-muted px-1 py-0.5 rounded">
-                  &lt;head&gt;
-                </code>{" "}
-                hoặc trước thẻ{" "}
-                <code className="bg-muted px-1 py-0.5 rounded">
-                  &lt;/body&gt;
-                </code>{" "}
-                của website:
+                {t("settings.embedInstructions")}
               </p>
               <pre className="bg-muted text-muted-foreground p-4 rounded-md text-sm overflow-x-auto">
                 <code>{getWidgetSnippet(currentProject.id)}</code>
@@ -485,12 +479,12 @@ export const ProjectSettingsPage = () => {
                     getWidgetSnippet(currentProject.id)
                   );
                   toast({
-                    title: "Đã copy",
-                    description: "Mã nhúng đã được copy vào clipboard",
+                    title: t("settings.copied"),
+                    description: t("settings.snippetCopied"),
                   });
                 }}
               >
-                Copy mã nhúng
+                {t("settings.copySnippet")}
               </Button>
             </div>
           )}
@@ -506,10 +500,10 @@ export const ProjectSettingsPage = () => {
               <MessageSquarePlus className="h-5 w-5 text-muted-foreground" />
               <div className="text-left">
                 <h2 className="text-lg font-semibold text-foreground">
-                  Mẫu câu trả lời
+                  {t("settings.cannedResponses")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Quản lý các phím tắt tin nhắn nhanh
+                  {t("settings.cannedResponsesDesc")}
                 </p>
               </div>
             </div>
@@ -527,10 +521,10 @@ export const ProjectSettingsPage = () => {
               <ShieldAlert className="h-5 w-5 text-muted-foreground" />
               <div className="text-left">
                 <h2 className="text-lg font-semibold text-foreground">
-                  Nhật ký hoạt động
+                  {t("settings.auditLogs")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Xem lịch sử thay đổi và bảo mật
+                  {t("settings.auditLogsDesc")}
                 </p>
               </div>
             </div>

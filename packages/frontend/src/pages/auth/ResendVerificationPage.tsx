@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { resendVerificationEmail } from "../../services/authApi";
 import AuthLayout from "../../components/layout/AuthLayout";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { useToast } from "../../components/ui/use-toast";
-import { Mail } from "lucide-react";
+import { Mail, Loader2, ArrowLeft } from "lucide-react";
 
 const ResendVerificationPage = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -18,8 +20,8 @@ const ResendVerificationPage = () => {
 
     if (!email.trim()) {
       toast({
-        title: "Lỗi",
-        description: "Vui lòng nhập địa chỉ email.",
+        title: t("common.error"),
+        description: t("auth.emailRequired"),
         variant: "destructive",
       });
       return;
@@ -29,24 +31,22 @@ const ResendVerificationPage = () => {
     try {
       const response = await resendVerificationEmail(email.trim());
       toast({
-        title: "Thành công",
-        description: response.message,
+        title: t("common.success"),
+        description: t("auth.resendSuccess"),
       });
       // Navigate to login after 2 seconds
       setTimeout(() => {
         navigate("/login", {
           state: {
-            message: "Email xác thực đã được gửi. Vui lòng kiểm tra hộp thư.",
+            message: t("auth.resendSuccess"), // Using the same translation key for consistency
             email: email.trim(),
           },
         });
       }, 2000);
     } catch (error: any) {
       toast({
-        title: "Lỗi",
-        description:
-          error.response?.data?.message ||
-          "Không thể gửi lại email xác thực. Vui lòng thử lại.",
+        title: t("common.error"),
+        description: error.response?.data?.message || t("auth.resendError"),
         variant: "destructive",
       });
     } finally {
@@ -55,34 +55,41 @@ const ResendVerificationPage = () => {
   };
 
   return (
-    <AuthLayout title="Gửi lại Email Xác Thực">
+    <AuthLayout title={t("auth.resendVerification")}>
       <div className="space-y-4">
-        <div className="flex items-center justify-center mb-4">
-          <Mail className="h-16 w-16 text-primary" />
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-bold">{t("auth.resendVerification")}</h1>
+          <p className="text-sm text-muted-foreground">
+            {t("auth.resendDescription")}
+          </p>
         </div>
-        <p className="text-center text-muted-foreground">
-          Nhập địa chỉ email của bạn để nhận email xác thực mới.
-        </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Địa chỉ email"
+            placeholder={t("auth.emailPlaceholder")}
             required
             disabled={isLoading}
           />
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Đang gửi..." : "Gửi lại email xác thực"}
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t("auth.sending")}
+              </>
+            ) : (
+              t("auth.resend")
+            )}
           </Button>
           <div className="text-center text-sm">
-            <button
-              type="button"
-              onClick={() => navigate("/login")}
-              className="text-primary hover:text-primary/90"
+            <Link
+              to="/login"
+              className="flex items-center justify-center text-sm text-muted-foreground hover:text-primary transition-colors"
             >
-              Quay lại đăng nhập
-            </button>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              {t("auth.backToLogin")}
+            </Link>
           </div>
         </form>
       </div>

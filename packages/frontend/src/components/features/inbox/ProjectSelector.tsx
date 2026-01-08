@@ -1,6 +1,7 @@
 // src/components/features/inbox/ProjectSelector.tsx
 
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { type ProjectWithRole, ProjectRole } from "@live-chat/shared-types";
 import { Select } from "../../../components/ui/Select";
 import { Badge } from "../../../components/ui/Badge";
@@ -16,6 +17,7 @@ export const ProjectSelector = ({
   projects,
   activeProjectId,
 }: ProjectSelectorProps) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const handleProjectChange = (projectId: string) => {
@@ -35,7 +37,7 @@ export const ProjectSelector = ({
   const userRole = currentProject?.myRole;
 
   const getRoleBadgeText = (role: ProjectRole) => {
-    return role === ProjectRole.MANAGER ? "Quản lý viên" : "Nhân viên";
+    return role === ProjectRole.MANAGER ? t("members.manager") : t("members.agent");
   };
 
   const getRoleBadgeVariant = (role: ProjectRole) => {
@@ -56,7 +58,7 @@ export const ProjectSelector = ({
       <div className="flex items-center justify-between gap-2">
         {userRole && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Vai trò:</span>
+            <span className="text-sm text-muted-foreground">{t("members.role")}:</span>
             <Badge variant={getRoleBadgeVariant(userRole)}>
               {getRoleBadgeText(userRole)}
             </Badge>
