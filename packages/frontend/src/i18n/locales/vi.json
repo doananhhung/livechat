@@ -17,7 +17,15 @@
         "na": "N/A",
         "automation": "Tự động hóa",
         "unknown": "Không rõ",
-        "copyright": "© {{year}} Live Chat. Tất cả quyền được bảo lưu."
+        "copyright": "© {{year}} Live Chat. Tất cả quyền được bảo lưu.",
+        "create": "Tạo",
+        "update": "Cập nhật",
+        "deleted": "Đã xóa",
+        "actions": "Hành động",
+        "view": "Xem",
+        "previous": "Trước",
+        "next": "Tiếp",
+        "pageOf": "Trang {{page}} trên {{total}}"
     },
     "conversations": {
         "status": {
@@ -463,5 +471,53 @@
         "yesterday": "Hôm qua",
         "thisWeek": "Tuần này",
         "at": "lúc"
+    },
+    "cannedResponses": {
+        "title": "Mẫu câu trả lời",
+        "description": "Quản lý phím tắt tin nhắn cho nhân viên.",
+        "add": "Thêm mẫu câu",
+        "searchPlaceholder": "Tìm kiếm phím tắt...",
+        "list": {
+            "shortcut": "Phím tắt",
+            "content": "Nội dung",
+            "noResponses": "Không tìm thấy mẫu câu nào.",
+            "deleteConfirm": "Bạn có chắc chắn muốn xóa mẫu câu này?",
+            "created": "Đã tạo mẫu câu mới",
+            "updated": "Đã cập nhật mẫu câu",
+            "createError": "Tạo thất bại",
+            "updateError": "Cập nhật thất bại"
+        },
+        "form": {
+            "addTitle": "Thêm mẫu câu mới",
+            "editTitle": "Chỉnh sửa mẫu câu",
+            "shortcutLabel": "Phím tắt",
+            "shortcutPlaceholder": "vd: xin_chao",
+            "shortcutHint": "Gõ /{{shortcut}} để sử dụng",
+            "contentLabel": "Nội dung",
+            "contentPlaceholder": "Xin chào! Tôi có thể giúp gì cho bạn?",
+            "lettersNumbersOnly": "Chỉ dùng chữ cái, số, gạch dưới và gạch ngang"
+        }
+    },
+    "auditLogs": {
+        "title": "Nhật ký hoạt động",
+        "description": "Xem các sự kiện bảo mật và hành động quan trọng của dự án.",
+        "table": {
+            "date": "Thời gian",
+            "actor": "Người thực hiện",
+            "action": "Hành động",
+            "entity": "Đối tượng",
+            "details": "Chi tiết",
+            "noLogs": "Không có nhật ký nào.",
+            "user": "Người dùng",
+            "allActions": "Tất cả hành động"
+        },
+        "dialog": {
+            "title": "Chi tiết nhật ký",
+            "action": "Hành động",
+            "actor": "Người thực hiện",
+            "date": "Thời gian",
+            "ipAddress": "Địa chỉ IP",
+            "metadata": "Dữ liệu chi tiết"
+        }
     }
 }

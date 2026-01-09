@@ -6,6 +6,7 @@ import { Spinner } from '../../ui/Spinner';
 import { Button } from '../../ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/Dialog';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 interface AuditLogTableProps {
   projectId: number;
@@ -34,6 +35,7 @@ const getActionBadgeColor = (action: AuditAction): string => {
 export const AuditLogTable: React.FC<AuditLogTableProps> = ({ projectId }) => {
   const [page, setPage] = useState(1);
   const [selectedLog, setSelectedLog] = useState<AuditLogDto | null>(null);
+  const { t } = useTranslation();
   
   // Basic filtering state (could be expanded)
   const [actionFilter, setActionFilter] = useState<AuditAction | undefined>(undefined);
@@ -55,7 +57,7 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ projectId }) => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium text-foreground">Audit Logs</h3>
+        <h3 className="text-lg font-medium text-foreground">{t("auditLogs.title")}</h3>
         <select 
           className="border rounded p-1 text-sm bg-background text-foreground border-input"
           value={actionFilter || ''}
@@ -65,7 +67,7 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ projectId }) => {
             setPage(1);
           }}
         >
-          <option value="">All Actions</option>
+          <option value="">{t("auditLogs.table.allActions")}</option>
           {Object.values(AuditAction).map(action => (
             <option key={action} value={action}>{action}</option>
           ))}
@@ -76,11 +78,11 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ projectId }) => {
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-muted">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actor</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Action</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Entity</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Details</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("auditLogs.table.date")}</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("auditLogs.table.actor")}</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("auditLogs.table.action")}</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("auditLogs.table.entity")}</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("auditLogs.table.details")}</th>
             </tr>
           </thead>
           <tbody className="bg-card divide-y divide-border">
@@ -91,7 +93,7 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ projectId }) => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                   {log.actorId ? (
-                    <span title={log.actorId}>User</span>
+                    <span title={log.actorId}>{t("auditLogs.table.user")}</span>
                   ) : (
                     <span className="text-muted-foreground italic">{log.actorType}</span>
                   )}
@@ -105,14 +107,14 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ projectId }) => {
                   {log.entity} <span className="text-xs text-muted-foreground/70">({log.entityId.substring(0, 8)}...)</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedLog(log)}>View</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedLog(log)}>{t("common.view")}</Button>
                 </td>
               </tr>
             ))}
             {logs.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-6 py-4 text-center text-sm text-muted-foreground">
-                  No logs found.
+                  {t("auditLogs.table.noLogs")}
                 </td>
               </tr>
             )}
@@ -128,16 +130,18 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ projectId }) => {
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page === 1}
           >
-            Previous
+            {t("common.previous")}
           </Button>
-          <span className="text-sm flex items-center text-muted-foreground">Page {page} of {totalPages}</span>
+          <span className="text-sm flex items-center text-muted-foreground">
+            {t("common.pageOf", { page, total: totalPages })}
+          </span>
           <Button 
             variant="outline" 
             size="sm" 
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
           >
-            Next
+            {t("common.next")}
           </Button>
         </div>
       )}
@@ -145,18 +149,18 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ projectId }) => {
       <Dialog open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Log Details</DialogTitle>
+            <DialogTitle>{t("auditLogs.dialog.title")}</DialogTitle>
           </DialogHeader>
           {selectedLog && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div><strong>Action:</strong> {selectedLog.action}</div>
-                <div><strong>Actor:</strong> {selectedLog.actorType} ({selectedLog.actorId || 'N/A'})</div>
-                <div><strong>Date:</strong> {new Date(selectedLog.createdAt).toLocaleString()}</div>
-                <div><strong>IP Address:</strong> {selectedLog.ipAddress || 'N/A'}</div>
+                <div><strong>{t("auditLogs.dialog.action")}:</strong> {selectedLog.action}</div>
+                <div><strong>{t("auditLogs.dialog.actor")}:</strong> {selectedLog.actorType} ({selectedLog.actorId || 'N/A'})</div>
+                <div><strong>{t("auditLogs.dialog.date")}:</strong> {new Date(selectedLog.createdAt).toLocaleString()}</div>
+                <div><strong>{t("auditLogs.dialog.ipAddress")}:</strong> {selectedLog.ipAddress || 'N/A'}</div>
               </div>
               <div>
-                <strong>Metadata:</strong>
+                <strong>{t("auditLogs.dialog.metadata")}:</strong>
                 <pre className="bg-muted p-4 rounded-md text-xs overflow-auto mt-2 max-h-96 text-foreground">
                   {JSON.stringify(selectedLog.metadata, null, 2)}
                 </pre>

@@ -7,6 +7,7 @@ import { Spinner } from '../../ui/Spinner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../ui/Dialog';
 import { Plus, Pencil, Trash2, Search } from 'lucide-react';
 import { useToast } from '../../ui/use-toast';
+import { useTranslation } from 'react-i18next';
 
 interface CannedResponseListProps {
   projectId: number;
@@ -18,6 +19,7 @@ export const CannedResponseList: React.FC<CannedResponseListProps> = ({ projectI
   const updateMutation = useUpdateCannedResponse();
   const deleteMutation = useDeleteCannedResponse();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingResponse, setEditingResponse] = useState<CannedResponse | null>(null);
@@ -38,10 +40,10 @@ export const CannedResponseList: React.FC<CannedResponseListProps> = ({ projectI
       onSuccess: () => {
         setIsCreateOpen(false);
         setFormData({ shortcut: '', content: '' });
-        toast({ title: 'Success', description: 'Canned response created' });
+        toast({ title: t("common.success"), description: t("cannedResponses.list.created") });
       },
       onError: (error: any) => {
-        toast({ title: 'Error', description: error.response?.data?.message || 'Failed to create', variant: 'destructive' });
+        toast({ title: t("common.error"), description: error.response?.data?.message || t("cannedResponses.list.createError"), variant: 'destructive' });
       }
     });
   };
@@ -57,18 +59,18 @@ export const CannedResponseList: React.FC<CannedResponseListProps> = ({ projectI
       onSuccess: () => {
         setEditingResponse(null);
         setFormData({ shortcut: '', content: '' });
-        toast({ title: 'Success', description: 'Canned response updated' });
+        toast({ title: t("common.success"), description: t("cannedResponses.list.updated") });
       },
       onError: (error: any) => {
-        toast({ title: 'Error', description: error.response?.data?.message || 'Failed to update', variant: 'destructive' });
+        toast({ title: t("common.error"), description: error.response?.data?.message || t("cannedResponses.list.updateError"), variant: 'destructive' });
       }
     });
   };
 
   const handleDelete = (id: string) => {
-    if (!confirm('Are you sure you want to delete this response?')) return;
+    if (!confirm(t("cannedResponses.list.deleteConfirm"))) return;
     deleteMutation.mutate({ projectId, id }, {
-      onSuccess: () => toast({ title: 'Success', description: 'Deleted' }),
+      onSuccess: () => toast({ title: t("common.success"), description: t("common.deleted") }),
     });
   };
 
@@ -80,14 +82,14 @@ export const CannedResponseList: React.FC<CannedResponseListProps> = ({ projectI
         <div className="relative w-64">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Search shortcuts..." 
+            placeholder={t("cannedResponses.searchPlaceholder")} 
             value={searchTerm} 
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-8"
           />
         </div>
         <Button onClick={() => { setIsCreateOpen(true); setFormData({ shortcut: '', content: '' }); }}>
-          <Plus className="h-4 w-4 mr-2" /> Add Response
+          <Plus className="h-4 w-4 mr-2" /> {t("cannedResponses.add")}
         </Button>
       </div>
 
@@ -95,9 +97,9 @@ export const CannedResponseList: React.FC<CannedResponseListProps> = ({ projectI
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-muted">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Shortcut</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Content</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("cannedResponses.list.shortcut")}</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("cannedResponses.list.content")}</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("common.actions")}</th>
             </tr>
           </thead>
           <tbody className="bg-card divide-y divide-border">
@@ -125,7 +127,7 @@ export const CannedResponseList: React.FC<CannedResponseListProps> = ({ projectI
             {filteredResponses.length === 0 && (
               <tr>
                 <td colSpan={3} className="px-6 py-4 text-center text-sm text-muted-foreground">
-                  No responses found.
+                  {t("cannedResponses.list.noResponses")}
                 </td>
               </tr>
             )}
@@ -137,34 +139,34 @@ export const CannedResponseList: React.FC<CannedResponseListProps> = ({ projectI
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Canned Response</DialogTitle>
+            <DialogTitle>{t("cannedResponses.form.addTitle")}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Shortcut</label>
+              <label className="text-sm font-medium">{t("cannedResponses.form.shortcutLabel")}</label>
               <Input 
                 value={formData.shortcut} 
                 onChange={(e) => setFormData({...formData, shortcut: e.target.value.replace(/[^a-zA-Z0-9_-]/g, '')})} 
-                placeholder="e.g. welcome"
+                placeholder={t("cannedResponses.form.shortcutPlaceholder")}
                 pattern="^[a-zA-Z0-9_-]+$"
-                title="Letters, numbers, underscores, and dashes only"
+                title={t("cannedResponses.form.lettersNumbersOnly")}
                 required
               />
-              <p className="text-xs text-muted-foreground mt-1">Trigger with /{formData.shortcut || 'shortcut'}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("cannedResponses.form.shortcutHint", { shortcut: formData.shortcut || 'shortcut' })}</p>
             </div>
             <div>
-              <label className="text-sm font-medium">Content</label>
+              <label className="text-sm font-medium">{t("cannedResponses.form.contentLabel")}</label>
               <textarea 
                 className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[100px]"
                 value={formData.content} 
                 onChange={(e) => setFormData({...formData, content: e.target.value})} 
-                placeholder="Hello! How can I help you?"
+                placeholder={t("cannedResponses.form.contentPlaceholder")}
                 required
               />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={createMutation.isPending}>Create</Button>
+              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>{t("common.cancel")}</Button>
+              <Button type="submit" disabled={createMutation.isPending}>{t("common.create")}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -174,11 +176,11 @@ export const CannedResponseList: React.FC<CannedResponseListProps> = ({ projectI
       <Dialog open={!!editingResponse} onOpenChange={(open) => !open && setEditingResponse(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Canned Response</DialogTitle>
+            <DialogTitle>{t("cannedResponses.form.editTitle")}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleUpdate} className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Shortcut</label>
+              <label className="text-sm font-medium">{t("cannedResponses.form.shortcutLabel")}</label>
               <Input 
                 value={formData.shortcut} 
                 onChange={(e) => setFormData({...formData, shortcut: e.target.value.replace(/[^a-zA-Z0-9_-]/g, '')})} 
@@ -187,7 +189,7 @@ export const CannedResponseList: React.FC<CannedResponseListProps> = ({ projectI
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Content</label>
+              <label className="text-sm font-medium">{t("cannedResponses.form.contentLabel")}</label>
               <textarea 
                 className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[100px]"
                 value={formData.content} 
@@ -196,8 +198,8 @@ export const CannedResponseList: React.FC<CannedResponseListProps> = ({ projectI
               />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditingResponse(null)}>Cancel</Button>
-              <Button type="submit" disabled={updateMutation.isPending}>Update</Button>
+              <Button type="button" variant="outline" onClick={() => setEditingResponse(null)}>{t("common.cancel")}</Button>
+              <Button type="submit" disabled={updateMutation.isPending}>{t("common.update")}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

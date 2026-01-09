@@ -17,7 +17,15 @@
         "na": "N/A",
         "automation": "Automation",
         "unknown": "Unknown",
-        "copyright": "© {{year}} Live Chat. All rights reserved."
+        "copyright": "© {{year}} Live Chat. All rights reserved.",
+        "create": "Create",
+        "update": "Update",
+        "deleted": "Deleted",
+        "actions": "Actions",
+        "view": "View",
+        "previous": "Previous",
+        "next": "Next",
+        "pageOf": "Page {{page}} of {{total}}"
     },
     "conversations": {
         "status": {
@@ -463,5 +471,53 @@
         "yesterday": "Yesterday",
         "thisWeek": "This week",
         "at": "at"
+    },
+    "cannedResponses": {
+        "title": "Canned Responses",
+        "description": "Manage text shortcuts for agents.",
+        "add": "Add Response",
+        "searchPlaceholder": "Search shortcuts...",
+        "list": {
+            "shortcut": "Shortcut",
+            "content": "Content",
+            "noResponses": "No responses found.",
+            "deleteConfirm": "Are you sure you want to delete this response?",
+            "created": "Canned response created",
+            "updated": "Canned response updated",
+            "createError": "Failed to create",
+            "updateError": "Failed to update"
+        },
+        "form": {
+            "addTitle": "Add Canned Response",
+            "editTitle": "Edit Canned Response",
+            "shortcutLabel": "Shortcut",
+            "shortcutPlaceholder": "e.g. welcome",
+            "shortcutHint": "Trigger with /{{shortcut}}",
+            "contentLabel": "Content",
+            "contentPlaceholder": "Hello! How can I help you?",
+            "lettersNumbersOnly": "Letters, numbers, underscores, and dashes only"
+        }
+    },
+    "auditLogs": {
+        "title": "Audit Logs",
+        "description": "View security events and critical actions for this project.",
+        "table": {
+            "date": "Date",
+            "actor": "Actor",
+            "action": "Action",
+            "entity": "Entity",
+            "details": "Details",
+            "noLogs": "No logs found.",
+            "user": "User",
+            "allActions": "All Actions"
+        },
+        "dialog": {
+            "title": "Log Details",
+            "action": "Action",
+            "actor": "Actor",
+            "date": "Date",
+            "ipAddress": "IP Address",
+            "metadata": "Metadata"
+        }
     }
 }
