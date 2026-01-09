@@ -192,18 +192,18 @@ const InviteMembersPage = () => {
         <h1 className="text-3xl font-bold">{t("members.invite.title")}</h1>
         {currentProject && (
           <p className="text-muted-foreground mt-2">
-            {t("common.project")}: <span className="font-medium">{currentProject.name}</span>
+            {t("members.invite.project")}: <span className="font-medium">{currentProject.name}</span>
           </p>
         )}
       </div>
 
       {/* Invitation Form */}
       <div className="bg-card border rounded-lg p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">{t("members.invite.sendInvitation")}</h2>
+        <h2 className="text-xl font-semibold mb-4">{t("members.invite.sendTitle")}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium mb-2">
-              {t("common.emailAddress")}
+              {t("members.invite.emailLabel")}
             </label>
             <Input
               id="email"
@@ -218,7 +218,7 @@ const InviteMembersPage = () => {
 
           <div>
             <label htmlFor="role" className="block text-sm font-medium mb-2">
-              {t("common.role")}
+              {t("members.invite.roleLabel")}
             </label>
             <select
               id="role"
@@ -227,21 +227,21 @@ const InviteMembersPage = () => {
               className="w-full px-3 py-2 border rounded-md bg-background"
               disabled={isSending}
             >
-              <option value="agent">{t("common.agent")}</option>
-              <option value="manager">{t("common.manager")}</option>
+              <option value="agent">{t("members.agent")}</option>
+              <option value="manager">{t("members.manager")}</option>
             </select>
           </div>
 
           <Button type="submit" disabled={isSending} className="w-full">
             <Mail className="h-4 w-4 mr-2" />
-            {isSending ? t("members.invite.sending") : t("members.invite.sendInvitation")}
+            {isSending ? t("members.invite.sending") : t("members.invite.sendButton")}
           </Button>
         </form>
       </div>
 
       {/* Invitations List */}
       <div className="bg-card border rounded-lg p-6">
-        <h2 className="text-xl font-semibold mb-4">{t("members.invite.invitationsList")}</h2>
+        <h2 className="text-xl font-semibold mb-4">{t("members.invite.listTitle")}</h2>
 
         {isLoading ? (
           <p className="text-center text-muted-foreground py-8">{t("common.loading")}</p>
@@ -256,14 +256,14 @@ const InviteMembersPage = () => {
                   <div className="flex items-center gap-2 mb-1">
                     <p className="font-medium">{invitation.email}</p>
                     <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">
-                      {invitation.role === "agent" ? t("common.agent") : t("common.manager")}
+                      {invitation.role === "agent" ? t("members.agent") : t("members.manager")}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     {getStatusIcon(invitation.status)}
                     <span>{getStatusText(invitation.status)}</span>
                     <span>•</span>
-                    <span>{t("members.invite.expires")}: {formatDate(invitation.expiresAt)}</span>
+                    <span>{t("members.invite.expiresAt")}: {formatDate(invitation.expiresAt)}</span>
                   </div>
                 </div>
 
