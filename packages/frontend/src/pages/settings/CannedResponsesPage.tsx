@@ -16,7 +16,7 @@ export const CannedResponsesPage = () => {
   if (!numericProjectId) return null;
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <div className="mb-6">
         <Button
           variant="ghost"
