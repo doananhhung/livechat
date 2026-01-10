@@ -83,6 +83,7 @@ export class ProjectService {
       name: membership.project.name,
       widgetSettings: membership.project.widgetSettings,
       whitelistedDomains: membership.project.whitelistedDomains,
+      autoResolveMinutes: membership.project.autoResolveMinutes,
       createdAt: membership.project.createdAt,
       members: membership.project.members.map((member) => ({
         userId: member.userId,

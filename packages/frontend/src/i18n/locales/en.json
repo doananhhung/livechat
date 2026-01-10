@@ -274,7 +274,7 @@
         "autoResolvePositive": "Auto-resolve time must be a non-negative number",
         "manage": "Manage",
         "quickWidgetSettings": "Quick Widget Settings",
-        "detailedSettings": "Detailed Settings",
+        "detailedSettings": "Detailed Settings for Project",
         "projectInfo": "Project Info",
         "menu": {
             "profile": "Profile",

@@ -151,7 +151,7 @@ export function SettingsLayout() {
 
       {/* Main Content */}
       <main className="flex-1 p-4 md:p-6 lg:p-8 bg-background overflow-auto mt-16 md:mt-0">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto pb-20">
           <Outlet />
         </div>
       </main>

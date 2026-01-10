@@ -131,7 +131,7 @@ export const ProjectSettingsPage = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto pb-20">
       {/* Header */}
       <div className="mb-6">
         <Button
