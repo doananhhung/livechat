@@ -18,14 +18,14 @@ export class MailController {
   @Post('test-send')
   @Roles(GlobalRole.ADMIN)
   async sendTestEmail(@Body('to') to: string) {
-    const subject = 'Email kiểm tra từ NestJS';
+    const subject = 'Test Email from NestJS';
     const html =
-      '<h1>Đây là email được gửi từ MailService!</h1><p>Nếu bạn nhận được email này, mọi thứ đã hoạt động thành công.</p>';
+      '<h1>This is a test email sent from MailService!</h1><p>If you received this email, everything is working correctly.</p>';
 
     await this.mailService.sendMail(to, subject, html);
 
     return {
-      message: `Đã gửi email kiểm tra tới ${to}`,
+      message: `Test email sent to ${to}`,
     };
   }
 }

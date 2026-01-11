@@ -31,13 +31,13 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
 
     // If PasswordService returns null, it means the information is invalid.
     if (!user) {
-      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác.');
+      throw new UnauthorizedException('Incorrect email or password.');
     }
 
     // Check if the user's email is verified.
     if (!user.isEmailVerified) {
       throw new ForbiddenException(
-        'Vui lòng xác thực email của bạn trước khi đăng nhập.'
+        'Please verify your email before logging in.'
       );
     }
 

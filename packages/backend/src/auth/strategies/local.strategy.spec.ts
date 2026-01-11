@@ -48,7 +48,7 @@ describe('LocalStrategy', () => {
 
       await expect(
         strategy.validate('test@example.com', 'password')
-      ).rejects.toThrow(new UnauthorizedException('Email hoặc mật khẩu không chính xác.'));
+      ).rejects.toThrow(new UnauthorizedException('Incorrect email or password.'));
     });
 
     it('should throw ForbiddenException if email is not verified', async () => {
@@ -59,7 +59,7 @@ describe('LocalStrategy', () => {
         strategy.validate('test@example.com', 'password')
       ).rejects.toThrow(
         new ForbiddenException(
-          'Vui lòng xác thực email của bạn trước khi đăng nhập.'
+          'Please verify your email before logging in.'
         )
       );
     });

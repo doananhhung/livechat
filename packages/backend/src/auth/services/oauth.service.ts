@@ -124,7 +124,7 @@ export class OAuthService {
     return this.entityManager.transaction(async (entityManager) => {
       const user = await this.userService.findOneById(userId);
       if (!user) {
-        throw new UnauthorizedException('Người dùng không tồn tại.');
+        throw new UnauthorizedException('User not found.');
       }
 
       const existingIdentity = await entityManager.findOne(UserIdentity, {
@@ -134,15 +134,15 @@ export class OAuthService {
 
       if (existingIdentity) {
         if (existingIdentity.user.id === userId) {
-          throw new ConflictException('Tài khoản Google này đã được liên kết với tài khoản của bạn.');
+          throw new ConflictException('This Google account is already linked to your account.');
         } else {
-          throw new ConflictException('Tài khoản Google này đã được liên kết với một tài khoản khác.');
+          throw new ConflictException('This Google account is already linked to another account.');
         }
       }
 
       if (user.email !== profile.email) {
         this.logger.warn(`⚠️ [LinkGoogleAccount] Email mismatch: user email ${user.email} vs Google email ${profile.email}`);
-        throw new BadRequestException('Email của tài khoản Google không khớp với email tài khoản hiện tại.');
+        throw new BadRequestException('Google account email does not match current account email.');
       }
 
       const newIdentity = entityManager.create(UserIdentity, {
@@ -171,7 +171,7 @@ export class OAuthService {
       }
 
       return {
-        message: 'Liên kết tài khoản Google thành công.',
+        message: 'Google account linked successfully.',
         user,
       };
     });
@@ -181,12 +181,12 @@ export class OAuthService {
     return this.entityManager.transaction(async (entityManager) => {
       const user = await this.userService.findOneById(userId);
       if (!user) {
-        throw new UnauthorizedException('Người dùng không tồn tại.');
+        throw new UnauthorizedException('User not found.');
       }
 
       if (!user.passwordHash) {
         throw new BadRequestException(
-          'Bạn cần đặt mật khẩu trước khi hủy liên kết tài khoản Google. Điều này đảm bảo bạn vẫn có thể đăng nhập vào tài khoản.',
+          'You must set a password before you can unlink your Google account.',
         );
       }
 
@@ -195,11 +195,11 @@ export class OAuthService {
       });
 
       if (!identity) {
-        throw new NotFoundException(`Không tìm thấy tài khoản ${provider} được liên kết.`);
+        throw new NotFoundException(`Linked ${provider} account not found.`);
       }
 
       await entityManager.remove(identity);
-      return { message: `Đã hủy liên kết tài khoản ${provider} thành công.` };
+      return { message: `Successfully unlinked ${provider} account.` };
     });
   }
 

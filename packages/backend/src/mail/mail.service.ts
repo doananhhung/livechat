@@ -84,11 +84,12 @@ export class MailService {
    * @param userName User's full name
    */
   async sendEmailChangeConfirmation(
+    user: User,
     oldEmail: string,
     newEmail: string,
     userName: string
   ) {
-    const { subject, html } = this.emailTemplateService.getEmailChangeConfirmationTemplate(oldEmail, newEmail, userName);
+    const { subject, html } = this.emailTemplateService.getEmailChangeConfirmationTemplate(user, oldEmail, newEmail);
     await this.sendMail(oldEmail, subject, html);
   }
 

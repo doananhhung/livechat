@@ -36,12 +36,12 @@ export class PasswordService {
     const user = await this.userService.findOneByEmail(email);
 
     if (!user) {
-      throw new ForbiddenException('Email hoặc mật khẩu không đúng.');
+      throw new ForbiddenException('Invalid email or password.');
     }
 
     if (user && user.passwordHash && (await bcrypt.compare(pass, user.passwordHash))) {
       if (user.status === UserStatus.SUSPENDED) {
-        throw new ForbiddenException('Tài khoản của bạn đã bị đình chỉ.');
+        throw new ForbiddenException('Your account has been suspended.');
       }
 
       if (user.status === UserStatus.INACTIVE) {
@@ -57,13 +57,13 @@ export class PasswordService {
     return await this.entityManager.transaction(async (entityManager) => {
       const user = await this.userService.findOneById(userId);
       if (!user) {
-        throw new UnauthorizedException('Người dùng không tồn tại.');
+        throw new UnauthorizedException('User not found.');
       }
 
       if (user.passwordHash) {
         if (!currentPassword) {
           throw new BadRequestException({
-            message: 'Mật khẩu hiện tại là bắt buộc khi bạn đã có mật khẩu.',
+            message: 'Current password is required when you already have a password.',
             errorCode: 'CURRENT_PASSWORD_REQUIRED',
           });
         }
@@ -71,7 +71,7 @@ export class PasswordService {
         const isPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
         if (!isPasswordValid) {
           throw new ForbiddenException({
-            message: 'Mật khẩu hiện tại không đúng.',
+            message: 'Current password is incorrect.',
             errorCode: 'WRONG_PASSWORD',
           });
         }
@@ -93,12 +93,12 @@ export class PasswordService {
     return await this.entityManager.transaction(async (entityManager) => {
       const user = await this.userService.findOneById(userId);
       if (!user) {
-        throw new UnauthorizedException('Người dùng không tồn tại.');
+        throw new UnauthorizedException('User not found.');
       }
 
       if (user.passwordHash) {
         throw new BadRequestException({
-          message: 'Bạn đã có mật khẩu. Vui lòng sử dụng chức năng đổi mật khẩu.',
+          message: 'You already have a password. Please use the change password function.',
           errorCode: 'PASSWORD_ALREADY_EXISTS',
         });
       }
@@ -118,14 +118,14 @@ export class PasswordService {
     if (!user) {
       this.logger.log(`ℹ️ [ForgotPassword] User not found for email: ${email}`);
       return {
-        message: 'Nếu email của bạn tồn tại trong hệ thống, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu.',
+        message: 'If your email exists in our system, you will receive password reset instructions.',
       };
     }
 
     if (!user.passwordHash) {
       this.logger.log(`⚠️ [ForgotPassword] User ${user.id} has no password (OAuth account)`);
       return {
-        message: 'Tài khoản này được đăng nhập bằng Google. Vui lòng sử dụng nút "Đăng nhập bằng Google" để truy cập.',
+        message: 'This account uses Google Login. Please use the "Login with Google" button.',
         isOAuthUser: true,
       };
     }
@@ -138,7 +138,7 @@ export class PasswordService {
     this.logger.log(`✅ [ForgotPassword] Reset email sent to: ${user.email}`);
 
     return {
-      message: 'Nếu email của bạn tồn tại trong hệ thống, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu.',
+      message: 'If your email exists in our system, you will receive password reset instructions.',
     };
   }
 
@@ -150,13 +150,13 @@ export class PasswordService {
 
     if (!userId) {
       this.logger.error(`❌ [ResetPassword] Token not found or expired`);
-      throw new BadRequestException('Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.');
+      throw new BadRequestException('Invalid or expired password reset token.');
     }
 
     return await this.entityManager.transaction(async (entityManager) => {
       const user = await this.userService.findOneById(userId);
       if (!user) {
-        throw new NotFoundException('Người dùng không tồn tại.');
+        throw new NotFoundException('User not found.');
       }
 
       const newHashedPassword = await bcrypt.hash(newPassword, BCRYPT_SALT_ROUNDS);
@@ -172,7 +172,7 @@ export class PasswordService {
       this.logger.log(`✅ [ResetPassword] Password updated and sessions logged out for user: ${userId}`);
 
       return {
-        message: 'Mật khẩu đã được đặt lại thành công. Vui lòng đăng nhập với mật khẩu mới.',
+        message: 'Password reset successfully. Please login with your new password.',
       };
     });
   }

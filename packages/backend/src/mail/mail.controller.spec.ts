@@ -42,7 +42,7 @@ describe('MailController', () => {
 
       expect(mailService.sendMail).toHaveBeenCalledWith(
         to,
-        'Email kiểm tra từ NestJS',
+        'Test Email from NestJS',
         expect.any(String)
       );
       expect(result.message).toContain(to);

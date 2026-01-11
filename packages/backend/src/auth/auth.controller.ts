@@ -226,8 +226,8 @@ export class AuthController {
     });
 
     const message = body.currentPassword
-      ? 'Mật khẩu đã được thay đổi thành công.'
-      : 'Mật khẩu đã được đặt thành công.';
+      ? 'Password changed successfully.'
+      : 'Password set successfully.';
 
     return {
       message,
@@ -270,7 +270,7 @@ export class AuthController {
       ),
     });
     return {
-      message: 'Mật khẩu đã được đặt thành công.',
+      message: 'Password set successfully.',
       accessToken: result.tokens.accessToken,
     };
   }
@@ -290,7 +290,7 @@ export class AuthController {
     response.clearCookie('refresh_token');
     response.clearCookie('2fa_secret');
     response.clearCookie('2fa_partial_token');
-    return { message: 'Đăng xuất thành công.' };
+    return { message: 'Logout successful.' };
   }
 
   @Auditable({ action: AuditAction.LOGOUT, entity: 'User' })
@@ -309,7 +309,7 @@ export class AuthController {
     response.clearCookie('refresh_token');
     response.clearCookie('2fa_secret');
     response.clearCookie('2fa_partial_token');
-    return { message: 'Đã đăng xuất khỏi tất cả các thiết bị.' };
+    return { message: 'Logged out from all devices.' };
   }
 
   @Get('google')
@@ -471,7 +471,7 @@ export class AuthController {
       const errorMessage = encodeURIComponent(
         error instanceof Error
           ? error.message
-          : 'Có lỗi xảy ra khi liên kết tài khoản.'
+          : 'An error occurred while linking the account.'
       );
       return res.redirect(
         `${frontendUrl}/settings/account?linkError=${errorMessage}`
@@ -512,7 +512,7 @@ export class AuthController {
 
     try {
       if (!token) {
-        throw new UnauthorizedException('Token không được cung cấp.');
+        throw new UnauthorizedException('Token not provided.');
       }
 
       const result = await this.emailChangeService.verifyEmailChange(token);
@@ -524,7 +524,7 @@ export class AuthController {
       const errorMessage = encodeURIComponent(
         error instanceof Error
           ? error.message
-          : 'Có lỗi xảy ra khi xác nhận thay đổi email.'
+          : 'An error occurred while confirming email change.'
       );
       return res.redirect(
         `${frontendUrl}/settings/security?emailChangeError=${errorMessage}`

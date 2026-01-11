@@ -36,27 +36,27 @@ describe('MailService', () => {
           provide: EmailTemplateService,
           useValue: {
             getUserConfirmationTemplate: jest.fn().mockReturnValue({
-              subject: 'Chào mừng - xác thực email',
+              subject: 'Welcome - Verify Email',
               html: '<p>Test HTML with confirm-token</p>',
             }),
             getPasswordResetTemplate: jest.fn().mockReturnValue({
-              subject: 'Đặt lại mật khẩu',
+              subject: 'Password Reset',
               html: '<p>Test HTML with reset-token</p>',
             }),
             getEmailChangeVerificationTemplate: jest.fn().mockReturnValue({
-              subject: 'Xác nhận thay đổi email',
+              subject: 'Verify Email Change',
               html: '<p>Email change verification</p>',
             }),
             getEmailChangeConfirmationTemplate: jest.fn().mockReturnValue({
-              subject: 'Email đã được thay đổi',
+              subject: 'Email Changed',
               html: '<p>Email change confirmation</p>',
             }),
             getEmailChangeNotificationTemplate: jest.fn().mockReturnValue({
-              subject: 'Thông báo thay đổi email',
+              subject: 'Email Change Notification',
               html: '<p>Email change notification</p>',
             }),
             getInvitationTemplate: jest.fn().mockReturnValue({
-              subject: 'Lời mời tham gia',
+              subject: 'Invitation to Join',
               html: '<p>Invitation</p>',
               invitationUrl: 'http://localhost:3000/invite',
             }),
@@ -108,7 +108,7 @@ describe('MailService', () => {
       expect(transporter.sendMail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: user.email,
-          subject: 'Chào mừng - xác thực email',
+          subject: 'Welcome - Verify Email',
         })
       );
     });
@@ -126,7 +126,7 @@ describe('MailService', () => {
       expect(transporter.sendMail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: user.email,
-          subject: 'Đặt lại mật khẩu',
+          subject: 'Password Reset',
         })
       );
     });

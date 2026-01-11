@@ -86,7 +86,7 @@ describe('UserController', () => {
       const result = await controller.deactivateAccount(req);
 
       expect(userService.deactivate).toHaveBeenCalledWith('1');
-      expect(result.message).toContain('vô hiệu hóa');
+      expect(result.message).toContain('Your account has been deactivated successfully.');
     });
   });
 
@@ -98,7 +98,7 @@ describe('UserController', () => {
         password: 'password',
       };
       emailChangeService.requestEmailChange.mockResolvedValue({
-        message: 'Yêu cầu thay đổi email đã được gửi đến email mới',
+        message: 'Email change request sent. Please check your new email to confirm.',
         newEmail: emailChangeDto.newEmail,
       });
 
@@ -109,7 +109,7 @@ describe('UserController', () => {
         emailChangeDto.newEmail,
         emailChangeDto.password
       );
-      expect(result.message).toContain('Yêu cầu thay đổi email đã được gửi');
+      expect(result.message).toContain('Email change request sent');
     });
   });
 });

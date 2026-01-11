@@ -37,7 +37,7 @@ export class RegistrationService {
     return await this.entityManager.transaction(async (entityManager) => {
       const existingUser = await this.userService.findOneByEmail(registerDto.email);
       if (existingUser) {
-        throw new ConflictException('Email này đã được sử dụng.');
+        throw new ConflictException('This email is already in use.');
       }
 
       const passwordHash = await bcrypt.hash(registerDto.password, BCRYPT_SALT_ROUNDS);
@@ -67,7 +67,7 @@ export class RegistrationService {
       }
 
       return {
-        message: 'Đăng ký thành công, vui lòng kiểm tra email để kích hoạt tài khoản.',
+        message: 'Registration successful. Please check your email to activate your account.',
       };
     });
   }
@@ -77,7 +77,7 @@ export class RegistrationService {
     const userId = await this.cacheManager.get<string>(tokenKey);
 
     if (!userId) {
-      throw new NotFoundException('Token xác thực không hợp lệ hoặc đã hết hạn.');
+      throw new NotFoundException('Invalid or expired verification token.');
     }
 
     await this.userService.markEmailAsVerified(userId);
@@ -88,12 +88,12 @@ export class RegistrationService {
 
     if (invitationToken) {
       return {
-        message: 'Xác thực email thành công.',
+        message: 'Email verification successful.',
         invitationToken,
       };
     }
 
-    return { message: 'Xác thực email thành công.' };
+    return { message: 'Email verification successful.' };
   }
 
   async resendVerificationEmail(resendVerificationDto: ResendVerificationDto): Promise<{ message: string }> {
@@ -101,12 +101,12 @@ export class RegistrationService {
 
     if (!user) {
       return {
-        message: 'Nếu tài khoản của bạn tồn tại, một email xác thực đã được gửi đi.',
+        message: 'If your account exists, a verification email has been sent.',
       };
     }
 
     if (user.isEmailVerified) {
-      throw new ConflictException('Email này đã được xác thực.');
+      throw new ConflictException('This email has already been verified.');
     }
 
     const verificationToken = crypto.randomBytes(32).toString('hex');
@@ -116,7 +116,7 @@ export class RegistrationService {
     await this.mailService.sendUserConfirmation(user, verificationToken);
 
     return {
-      message: 'Một email xác thực mới đã được gửi. Vui lòng kiểm tra hộp thư của bạn.',
+      message: 'A new verification email has been sent. Please check your inbox.',
     };
   }
 }

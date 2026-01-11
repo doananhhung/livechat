@@ -325,7 +325,7 @@ describe('AuthController', () => {
       expect(res.clearCookie).toHaveBeenCalledWith('refresh_token');
       expect(res.clearCookie).toHaveBeenCalledWith('2fa_secret');
       expect(res.clearCookie).toHaveBeenCalledWith('2fa_partial_token');
-      expect(result.message).toBe('Đăng xuất thành công.');
+      expect(result.message).toBe('Logout successful.');
     });
   });
 
@@ -341,7 +341,7 @@ describe('AuthController', () => {
       expect(res.clearCookie).toHaveBeenCalledWith('refresh_token');
       expect(res.clearCookie).toHaveBeenCalledWith('2fa_secret');
       expect(res.clearCookie).toHaveBeenCalledWith('2fa_partial_token');
-      expect(result.message).toBe('Đã đăng xuất khỏi tất cả các thiết bị.');
+      expect(result.message).toBe('Logged out from all devices.');
     });
   });
 

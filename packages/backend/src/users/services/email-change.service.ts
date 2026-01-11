@@ -49,7 +49,7 @@ export class EmailChangeService {
         `[requestEmailChange] User ${userId} has no password set`
       );
       throw new BadRequestException(
-        'Bạn cần đặt mật khẩu trước khi có thể thay đổi email.'
+        'You must set a password before you can change your email.'
       );
     }
 
@@ -62,14 +62,14 @@ export class EmailChangeService {
       this.logger.warn(
         `[requestEmailChange] Invalid password for user: ${userId}`
       );
-      throw new UnauthorizedException('Mật khẩu hiện tại không đúng.');
+      throw new UnauthorizedException('Current password is incorrect.');
     }
 
     if (user.email === newEmail) {
       this.logger.warn(
         `[requestEmailChange] New email same as current for user: ${userId}`
       );
-      throw new BadRequestException('Email mới phải khác với email hiện tại.');
+      throw new BadRequestException('New email must be different from current email.');
     }
 
     const isEmailTaken = await this.userRepository.findOne({
@@ -79,7 +79,7 @@ export class EmailChangeService {
       this.logger.warn(
         `[requestEmailChange] Email ${newEmail} is already taken`
       );
-      throw new BadRequestException('Email này đã được sử dụng.');
+      throw new BadRequestException('This email is already in use.');
     }
 
     const userWithIdentities = await this.userRepository.findOne({
@@ -91,7 +91,7 @@ export class EmailChangeService {
       userWithIdentities?.identities &&
       userWithIdentities.identities.length > 0;
     const oauthWarning = hasLinkedOAuth
-      ? 'Lưu ý: Tất cả tài khoản liên kết (Google, v.v.) sẽ bị hủy liên kết sau khi thay đổi email vì email không còn khớp.'
+      ? 'Note: All linked accounts (Google, etc.) will be unlinked after email change because the email no longer matches.'
       : undefined;
 
     const existingRequest = await this.emailChangeRequestRepository.findOne({
@@ -108,7 +108,7 @@ export class EmailChangeService {
         `[requestEmailChange] Found existing pending request for user: ${userId}`
       );
       throw new BadRequestException(
-        'Bạn đã có một yêu cầu thay đổi email đang chờ xử lý. Vui lòng kiểm tra email hoặc hủy yêu cầu cũ.'
+        'You already have a pending email change request. Please check your email or cancel the old request.'
       );
     }
 
@@ -148,13 +148,13 @@ export class EmailChangeService {
         error
       );
       throw new BadRequestException(
-        'Không thể gửi email xác nhận. Vui lòng thử lại sau.'
+        'Could not send verification email. Please try again later.'
       );
     }
 
     return {
       message:
-        'Yêu cầu thay đổi email đã được gửi. Vui lòng kiểm tra email mới để xác nhận.',
+        'Email change request sent. Please check your new email to confirm.',
       newEmail,
       warning: oauthWarning,
     };
@@ -178,7 +178,7 @@ export class EmailChangeService {
 
     if (!request) {
       this.logger.warn(`[verifyEmailChange] Invalid or used token: ${token}`);
-      throw new BadRequestException('Token không hợp lệ hoặc đã được sử dụng.');
+      throw new BadRequestException('Invalid or used token.');
     }
 
     if (new Date() > request.expiresAt) {
@@ -186,7 +186,7 @@ export class EmailChangeService {
         `[verifyEmailChange] Token expired for user: ${request.userId}`
       );
       throw new BadRequestException(
-        'Token đã hết hạn. Vui lòng yêu cầu thay đổi email mới.'
+        'Token has expired. Please request a new email change.'
       );
     }
 
@@ -198,7 +198,7 @@ export class EmailChangeService {
         `[verifyEmailChange] Email ${request.newEmail} is now taken by another user`
       );
       throw new BadRequestException(
-        'Email này đã được sử dụng bởi người khác.'
+        'This email is already in use by another user.'
       );
     }
 
@@ -209,7 +209,7 @@ export class EmailChangeService {
       });
 
       if (!user) {
-        throw new BadRequestException('Người dùng không tồn tại.');
+        throw new BadRequestException('User not found.');
       }
 
       const hasLinkedOAuth = user.identities && user.identities.length > 0;
@@ -237,6 +237,7 @@ export class EmailChangeService {
 
     try {
       await this.mailService.sendEmailChangeConfirmation(
+        request.user,
         request.oldEmail,
         request.newEmail,
         request.user.fullName
@@ -250,7 +251,7 @@ export class EmailChangeService {
 
     return {
       message:
-        'Email đã được thay đổi thành công. Vui lòng đăng nhập lại bằng email mới.',
+        'Email changed successfully. Please log in again with your new email.',
       newEmail: request.newEmail,
     };
   }
@@ -270,7 +271,7 @@ export class EmailChangeService {
 
     if (!request) {
       throw new BadRequestException(
-        'Không tìm thấy yêu cầu thay đổi email đang chờ xử lý.'
+        'No pending email change request found.'
       );
     }
 
@@ -281,7 +282,7 @@ export class EmailChangeService {
     await this.cacheManager.del(tokenKey);
 
     return {
-      message: 'Yêu cầu thay đổi email đã được hủy.',
+      message: 'Email change request cancelled.',
     };
   }
 

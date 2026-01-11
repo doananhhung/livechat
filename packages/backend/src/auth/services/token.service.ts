@@ -227,7 +227,7 @@ export class TokenService {
       }
     } catch (error) {
       if (error instanceof UnauthorizedException) {
-        throw new UnauthorizedException('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.');
+        throw new UnauthorizedException('Session expired. Please log in again.');
       }
       throw error;
     }

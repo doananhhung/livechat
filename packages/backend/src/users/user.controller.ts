@@ -65,7 +65,7 @@ export class UserController {
   async deactivateAccount(@Request() req): Promise<{ message: string }> {
     const userId = req.user.id;
     await this.userService.deactivate(userId);
-    return { message: 'Tài khoản của bạn đã được vô hiệu hóa thành công.' };
+    return { message: 'Your account has been deactivated successfully.' };
   }
 
   @Auditable({ action: AuditAction.UPDATE, entity: 'UserEmail' })
