@@ -1,9 +1,12 @@
+import type { VisitorSessionMetadata } from "@live-chat/shared-types";
+
 export class VisitorMessageReceivedEvent {
   tempId: string;
   content: string;
   visitorUid: string;
   projectId: number;
   socketId: string;
+  sessionMetadata?: VisitorSessionMetadata;
 }
 
 export class VisitorIdentifiedEvent {

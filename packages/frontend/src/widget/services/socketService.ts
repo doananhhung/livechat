@@ -11,7 +11,8 @@ import {
   type VisitorTypingPayload,
   type UpdateContextPayload,
   type AgentTypingPayload,
-  type MessageSentPayload
+  type MessageSentPayload,
+  type VisitorSessionMetadata
 } from "@live-chat/shared-types";
 
 // Socket.IO runs on the root domain, not /api/v1
@@ -241,10 +242,10 @@ class SocketService {
 
   // --- Methods to send events to the Server ---
 
-  public emitSendMessage(content: string, tempId: string): void {
+  public emitSendMessage(content: string, tempId: string, sessionMetadata?: VisitorSessionMetadata): void {
     if (this.socket?.connected) {
       logWithTime(this.instanceId, `📤 Emitting sendMessage`);
-      const payload: SendMessagePayload = { content, tempId };
+      const payload: SendMessagePayload = { content, tempId, sessionMetadata };
       this.socket.emit(WebSocketEvent.SEND_MESSAGE, payload);
     } else {
       errorWithTime(
@@ -327,3 +328,4 @@ class SocketService {
 
 // Export a single instance (singleton) for the entire widget to use
 export const socketService = new SocketService();
+

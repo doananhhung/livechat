@@ -1,6 +1,7 @@
 // vitest.setup.ts
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import './src/i18n'; // Initialize i18n for tests
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

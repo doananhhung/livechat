@@ -1,5 +1,5 @@
-
 import { Message, MessageStatus } from './message.types';
+import { VisitorSessionMetadata } from './conversation.types';
 
 export enum WebSocketEvent {
   // Client (Widget/Frontend) -> Server
@@ -32,6 +32,7 @@ export interface IdentifyPayload {
 export interface SendMessagePayload {
   content: string;
   tempId: string;
+  sessionMetadata?: VisitorSessionMetadata;
 }
 
 export interface VisitorTypingPayload {

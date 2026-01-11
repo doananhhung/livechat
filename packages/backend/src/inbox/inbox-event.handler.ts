@@ -148,6 +148,7 @@ export class InboxEventHandlerService {
         visitorUid: payload.visitorUid,
         projectId: payload.projectId,
         socketId: payload.socketId,
+        sessionMetadata: payload.sessionMetadata,
       },
       timestamp: new Date().toISOString(),
     };

@@ -1,14 +1,16 @@
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { AppModule } from '../../src/app.module';
 import { EventConsumerModule } from '../../src/event-consumer/event-consumer.module';
 import { MailService } from '../../src/mail/mail.service';
 import { ScreenshotService } from '../../src/screenshot/screenshot.service';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import { User } from '../../src/database/entities';
 import cookieParser from 'cookie-parser';
-import { REDIS_PUBLISHER_CLIENT, REDIS_SUBSCRIBER_CLIENT } from '../../src/redis/redis.module';
+import {
+  REDIS_PUBLISHER_CLIENT,
+  REDIS_SUBSCRIBER_CLIENT,
+} from '../../src/redis/redis.module';
 import Redis from 'ioredis';
 import { getQueueToken } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -26,26 +28,38 @@ export class MailServiceMock {
   }
 
   async sendInvitationEmail(invitation: any, project: any, existingUser?: any) {
-    this.sentEmails.push({ type: 'INVITATION', to: invitation.email, token: invitation.token });
+    this.sentEmails.push({
+      type: 'INVITATION',
+      to: invitation.email,
+      token: invitation.token,
+    });
   }
 
   async sendPasswordResetEmail(user: User, token: string) {
     this.sentEmails.push({ type: 'PASSWORD_RESET', to: user.email, token });
   }
-  
-  async sendEmailChangeVerification(user: User, newEmail: string, token: string) {
+
+  async sendEmailChangeVerification(
+    user: User,
+    newEmail: string,
+    token: string
+  ) {
     this.sentEmails.push({ type: 'EMAIL_CHANGE', to: newEmail, token });
   }
 
   async sendEmailChangeNotification(user: User, newEmail: string) {}
-  async sendEmailChangeConfirmation(oldEmail: string, newEmail: string, userName: string) {}
+  async sendEmailChangeConfirmation(
+    oldEmail: string,
+    newEmail: string,
+    userName: string
+  ) {}
 
   getLastEmail() {
     return this.sentEmails[this.sentEmails.length - 1];
   }
 
   findEmailByType(type: string) {
-    return this.sentEmails.filter(e => e.type === type).pop();
+    return this.sentEmails.filter((e) => e.type === type).pop();
   }
 
   clear() {
@@ -64,7 +78,10 @@ export class ScreenshotServiceMock {
  * Prevents cache-manager-redis-store from blocking test initialization.
  */
 export class MemoryCacheMock {
-  private store = new Map<string, { value: any; ttl: number; createdAt: number }>();
+  private store = new Map<
+    string,
+    { value: any; ttl: number; createdAt: number }
+  >();
 
   async get<T>(key: string): Promise<T | undefined> {
     const item = this.store.get(key);
@@ -94,6 +111,7 @@ export class TestHarness {
   public workerApp: INestApplication;
   public mailService: MailServiceMock;
   public dataSource: DataSource;
+  public entityManager: EntityManager; // Add entityManager directly
 
   async bootstrap() {
     this.mailService = new MailServiceMock();
@@ -111,13 +129,16 @@ export class TestHarness {
       .compile();
 
     this.app = moduleFixture.createNestApplication();
-    
+
     // Replicate main.ts configuration
-    this.app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    this.app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true })
+    );
     this.app.use(cookieParser());
-    
+
     await this.app.init();
     this.dataSource = this.app.get(DataSource);
+    this.entityManager = this.dataSource.manager; // Initialize entityManager
   }
 
   /**
@@ -128,7 +149,7 @@ export class TestHarness {
   async bootstrapWithWorker() {
     // Lazy import to avoid circular dependency
     const { E2ETestModule } = await import('./e2e-test.module');
-    
+
     this.mailService = new MailServiceMock();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -143,12 +164,15 @@ export class TestHarness {
       .compile();
 
     this.app = moduleFixture.createNestApplication();
-    
-    this.app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+
+    this.app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true })
+    );
     this.app.use(cookieParser());
-    
+
     await this.app.init();
     this.dataSource = this.app.get(DataSource);
+    this.entityManager = this.dataSource.manager; // Initialize entityManager
   }
 
   async bootstrapWorker() {
@@ -164,10 +188,14 @@ export class TestHarness {
     if (!this.dataSource || !this.dataSource.isInitialized) return;
 
     const entities = this.dataSource.entityMetadatas;
-    const tableNames = entities.map((entity) => `"${entity.tableName}"`).join(', ');
+    const tableNames = entities
+      .map((entity) => `"${entity.tableName}"`)
+      .join(', ');
 
     if (tableNames.length > 0) {
-      await this.dataSource.query(`TRUNCATE ${tableNames} RESTART IDENTITY CASCADE;`);
+      await this.dataSource.query(
+        `TRUNCATE ${tableNames} RESTART IDENTITY CASCADE;`
+      );
     }
   }
 
@@ -185,7 +213,9 @@ export class TestHarness {
 
       // Close BullMQ queue connections
       try {
-        const queue = this.app.get<Queue>(getQueueToken('live-chat-events-queue'));
+        const queue = this.app.get<Queue>(
+          getQueueToken('live-chat-events-queue')
+        );
         await queue?.close();
       } catch {
         // Queue may not be registered in all test configurations

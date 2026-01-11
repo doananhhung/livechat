@@ -9,6 +9,20 @@ export enum ConversationStatus {
   SPAM = "spam"
 }
 
+export interface NavigationEntry {
+  url: string;
+  title: string;
+  timestamp: string; // ISO 8601
+}
+
+export interface VisitorSessionMetadata {
+  referrer: string | null;     // e.g., "https://google.com" or null (direct)
+  landingPage: string;         // The first page they hit
+  urlHistory: NavigationEntry[];
+  browser?: string;            // User-Agent summary (optional future proofing)
+  os?: string;                 // OS summary (optional future proofing)
+}
+
 export interface Conversation {
   /** Can be string when BigInt values are serialized from database */
   id: number | string;
@@ -28,4 +42,5 @@ export interface Conversation {
   createdAt: Date | string;
   /** Date on backend, string after JSON serialization on frontend */
   updatedAt: Date | string;
+  metadata?: VisitorSessionMetadata | null;
 }

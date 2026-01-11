@@ -4,10 +4,12 @@ import { RealtimeSessionService } from '../realtime-session/realtime-session.ser
 import { REDIS_SUBSCRIBER_CLIENT } from '../redis/redis.module';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Server, Socket } from 'socket.io';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt'
 import { UserService } from '../users/user.service';
 import { ProjectService } from '../projects/project.service';
 import { ConfigService } from '@nestjs/config';
+import { ConversationPersistenceService } from '../inbox/services/persistence/conversation.persistence.service';
+import { EntityManager } from 'typeorm';
 
 describe('EventsGateway', () => {
   let gateway: EventsGateway;
@@ -16,8 +18,14 @@ describe('EventsGateway', () => {
   let eventEmitter: jest.Mocked<EventEmitter2>;
   let server: jest.Mocked<Server>;
   let client: jest.Mocked<Socket>;
+  let entityManager: jest.Mocked<EntityManager>;
 
   beforeEach(async () => {
+    const mockConversationRepo = {
+      findOne: jest.fn().mockResolvedValue(null),
+      save: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EventsGateway,
@@ -67,6 +75,18 @@ describe('EventsGateway', () => {
               if (key === 'FRONTEND_URL') return 'http://localhost:3000';
               return null;
             }),
+          },
+        },
+        {
+          provide: ConversationPersistenceService,
+          useValue: {
+            findOrCreateByVisitorId: jest.fn(),
+          },
+        },
+        {
+          provide: EntityManager,
+          useValue: {
+            getRepository: jest.fn().mockReturnValue(mockConversationRepo),
           },
         },
       ],

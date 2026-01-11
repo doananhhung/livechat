@@ -7,7 +7,7 @@ import {
   useGetVisitor,
   useUpdateConversationStatus,
 } from "../../../services/inboxApi";
-import type { Conversation, Message } from "@live-chat/shared-types";
+import type { Conversation, Message, NavigationEntry, VisitorSessionMetadata } from "@live-chat/shared-types";
 import { ConversationStatus } from "@live-chat/shared-types";
 import MessageComposer from "./MessageComposer";
 import { Spinner } from "../../../components/ui/Spinner";
@@ -37,10 +37,11 @@ import { VisitorNoteList } from "./VisitorNoteList";
 /**
  * Component displaying detailed visitor information.
  */
-const VisitorContextPanel = ({ projectId, visitorId }: { projectId: number; visitorId: number }) => {
+const VisitorContextPanel = ({ conversation }: { conversation: Conversation }) => { // Updated props
   const { t } = useTranslation();
-  const { data: visitor, isLoading } = useGetVisitor(projectId, visitorId);
+  const { data: visitor, isLoading } = useGetVisitor(conversation.projectId, Number(conversation.visitorId)); // Use conversation.projectId and conversation.visitorId
   const [isScreenshotModalOpen, setScreenshotModalOpen] = useState(false);
+  const [showFullHistory, setShowFullHistory] = useState(false);
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -50,6 +51,13 @@ const VisitorContextPanel = ({ projectId, visitorId }: { projectId: number; visi
           visitor.currentUrl
         )}`
       : null;
+
+  const metadata: VisitorSessionMetadata | undefined = conversation.metadata || undefined;
+  const urlHistory = metadata?.urlHistory || [];
+  // Display history in reverse chronological order (newest first)
+  const sortedHistory = [...urlHistory].reverse(); 
+  const displayedHistory = showFullHistory ? sortedHistory : sortedHistory.slice(0, 5);
+
 
   return (
     <aside className="w-64 bg-card border-l hidden lg:flex flex-col h-full">
@@ -78,6 +86,53 @@ const VisitorContextPanel = ({ projectId, visitorId }: { projectId: number; visi
                 {visitor.currentUrl || t("common.unknown")}
               </a>
             </div>
+
+            {metadata?.referrer && (
+              <div>
+                <p className="font-medium text-muted-foreground">Referrer:</p>
+                <a
+                  href={metadata.referrer}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary break-all hover:underline"
+                  title={metadata.referrer}
+                >
+                  {metadata.referrer}
+                </a>
+              </div>
+            )}
+
+            {urlHistory.length > 0 && (
+              <div>
+                <h4 className="font-medium text-muted-foreground mb-2">Session History:</h4>
+                <ul className="space-y-1 text-xs">
+                  {displayedHistory.map((entry, index) => (
+                    <li key={index} className="flex items-start">
+                      <span className="mr-2 text-muted-foreground">[{new Date(entry.timestamp).toLocaleTimeString()}]</span>
+                      <a
+                        href={entry.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary break-all hover:underline leading-tight"
+                        title={entry.title}
+                      >
+                        {entry.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+                {urlHistory.length > 5 && (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    onClick={() => setShowFullHistory(!showFullHistory)}
+                    className="p-0 h-auto mt-2"
+                  >
+                    {showFullHistory ? "Show Less" : `View all ${urlHistory.length} pages`}
+                  </Button>
+                )}
+              </div>
+            )}
 
             {/* === SCREENSHOT BLOCK === */}
             {screenshotUrl && (
@@ -125,7 +180,7 @@ const VisitorContextPanel = ({ projectId, visitorId }: { projectId: number; visi
           </DialogContent>
         </Dialog>
       </div>
-      <VisitorNoteList projectId={projectId} visitorId={visitorId} />
+      <VisitorNoteList projectId={conversation.projectId} visitorId={Number(conversation.visitorId)} />
     </aside>
   );
 };
@@ -411,8 +466,8 @@ export const MessagePane = () => {
         )}
       </div>
 
-      {conversation && conversation.visitor?.id && numericProjectId && (
-        <VisitorContextPanel projectId={numericProjectId} visitorId={conversation.visitor.id} />
+      {conversation && ( // Pass the full conversation object
+        <VisitorContextPanel conversation={conversation} />
       )}
     </div>
   );

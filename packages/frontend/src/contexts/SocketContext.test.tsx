@@ -22,6 +22,7 @@ vi.mock("react-router-dom", async (importOriginal) => {
   return {
     ...actual,
     useLocation: () => ({ pathname: "/test-path" }),
+    useNavigate: () => vi.fn(),
   };
 });
 vi.mock("../services/inboxApi"); // Mock updateConversationStatus

@@ -13,7 +13,7 @@ import { Message } from "./message.entity";
 import { Project } from "./project.entity";
 import { Visitor } from "./visitor.entity";
 import { User } from "./user.entity";
-import { ConversationStatus } from "@live-chat/shared-types";
+import { ConversationStatus, VisitorSessionMetadata } from "@live-chat/shared-types";
 
 @Entity("conversations")
 export class Conversation {
@@ -74,6 +74,9 @@ export class Conversation {
 
   @OneToMany(() => Message, (message) => message.conversation)
   messages: Message[];
+
+  @Column({ type: 'jsonb', nullable: true })
+  metadata: VisitorSessionMetadata | null;
 
   @CreateDateColumn({ type: "timestamptz", name: "created_at" })
   createdAt: Date;

@@ -23,11 +23,13 @@ import {
   VisitorMessageReceivedEvent,
 } from '../inbox/events';
 import { Conversation, Visitor } from '../database/entities';
-import { MessageStatus, WidgetMessageDto, WebSocketEvent } from '@live-chat/shared-types';
+import { MessageStatus, WidgetMessageDto, WebSocketEvent, NavigationEntry, VisitorSessionMetadata } from '@live-chat/shared-types';
 import { ProjectService } from '../projects/project.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../users/user.service';
+import { ConversationPersistenceService } from '../inbox/services/persistence/conversation.persistence.service';
+import { EntityManager } from 'typeorm';
 import { 
   IdentifyPayload, 
   SendMessagePayload, 
@@ -41,6 +43,8 @@ import {
 } from '@live-chat/shared-types';
 
 const NEW_MESSAGE_CHANNEL = 'new_message_channel';
+
+const MAX_URL_HISTORY_LENGTH = 50; // Defined in design
 
 @UseGuards(WsJwtAuthGuard)
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
@@ -60,7 +64,9 @@ export class EventsGateway
     private readonly projectService: ProjectService,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
-    private readonly userService: UserService
+    private readonly userService: UserService,
+    private readonly conversationPersistenceService: ConversationPersistenceService,
+    private readonly entityManager: EntityManager
   ) {}
 
   public emitToProject(projectId: number, event: string, payload: any) {
@@ -299,6 +305,7 @@ export class EventsGateway
     event.visitorUid = client.data.visitorUid;
     event.projectId = client.data.projectId;
     event.socketId = client.id;
+    event.sessionMetadata = data.sessionMetadata; // Pass sessionMetadata
     this.eventEmitter.emit('visitor.message.received', event);
   }
 
@@ -323,42 +330,107 @@ export class EventsGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: UpdateContextPayload
   ): Promise<void> {
-    const { projectId, conversationId, visitorUid } = client.data;
+    const { projectId, visitorUid } = client.data;
+    let { conversationId } = client.data;
+    
     this.logger.debug(
       `updateContext event from client ${client.id} for visitorUid: ${visitorUid} in projectId: ${projectId}`
     );
 
-    let missingData = false;
+    // Validate required fields
     if (!projectId) {
       this.logger.warn(
         `Missing projectId for socket ${client.id} in handleUpdateContext`
       );
-      missingData = true;
-    }
-    if (!conversationId) {
-      this.logger.warn(
-        `Missing conversationId for socket ${client.id} in handleUpdateContext`
-      );
-      missingData = true;
+      return;
     }
     if (!visitorUid) {
       this.logger.warn(
         `Missing visitorUid for socket ${client.id} in handleUpdateContext`
       );
-      missingData = true;
-    }
-
-    if (missingData) {
       return;
     }
 
-    // Store currentUrl in Redis
+    // Handle lazy conversation creation: conversationId might be missing if
+    // the conversation was created on first message after the socket connected.
+    // Look it up by visitorUid and cache it on the socket for future calls.
+    if (!conversationId) {
+      this.logger.debug(
+        `conversationId missing on socket ${client.id}, looking up by visitorUid: ${visitorUid}`
+      );
+      
+      const conversation = await this.entityManager.getRepository(Conversation).findOne({
+        where: { visitor: { visitorUid } },
+        select: ['id'],
+      });
+      
+      if (conversation) {
+        conversationId = conversation.id;
+        client.data.conversationId = conversationId; // Cache for future calls
+        this.logger.debug(
+          `Found and cached conversationId ${conversationId} for socket ${client.id}`
+        );
+      } else {
+        this.logger.debug(
+          `No conversation found for visitorUid ${visitorUid}, skipping updateContext`
+        );
+        return;
+      }
+    }
+
+    // Store currentUrl in Redis (existing logic)
     await this.realtimeSessionService.setVisitorCurrentUrl(
       visitorUid,
       payload.currentUrl
     );
 
-    // Broadcast to agents
+    // Update conversation metadata with new URL
+    try {
+      const conversation = await this.entityManager.getRepository(Conversation).findOne({
+        where: { id: conversationId as string }, // conversationId from client.data is string
+      });
+
+      if (conversation) {
+        // Ensure metadata structure exists
+        if (!conversation.metadata) {
+          conversation.metadata = {
+            referrer: null, // Should be set on first message, but fallback
+            landingPage: payload.currentUrl, // Fallback if metadata was missing
+            urlHistory: [],
+          };
+        }
+
+        // Create new navigation entry
+        const newEntry: NavigationEntry = {
+          url: payload.currentUrl,
+          title: payload.currentUrl, // Frontend should ideally send the title
+          timestamp: new Date().toISOString(),
+        };
+
+        // Add to history and maintain FIFO limit
+        conversation.metadata.urlHistory.push(newEntry);
+        if (conversation.metadata.urlHistory.length > MAX_URL_HISTORY_LENGTH) {
+          conversation.metadata.urlHistory.shift(); // Remove oldest entry
+        }
+
+        await this.entityManager.getRepository(Conversation).save(conversation);
+
+        // Emit conversationUpdated event to agents for real-time visualization
+        this.emitConversationUpdated(conversation.projectId, {
+          conversationId: conversation.id,
+          fields: {
+            metadata: conversation.metadata, // Send updated metadata
+          },
+        });
+      }
+    } catch (error) {
+      this.logger.error(
+        `Error updating conversation metadata for conversationId ${conversationId}:`,
+        error
+      );
+    }
+
+    // Broadcast to agents (existing logic)
     this.logger.log(`Emitting visitorContextUpdated to project ${projectId}`);
     const broadcastPayload: VisitorContextUpdatedPayload = {
       conversationId,

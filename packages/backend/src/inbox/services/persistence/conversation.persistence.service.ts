@@ -2,7 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import { EntityManager, In, Not } from 'typeorm';
 import { Conversation } from '../../../database/entities';
-import { ConversationStatus, HistoryVisibilityMode } from '@live-chat/shared-types';
+import { ConversationStatus, HistoryVisibilityMode, VisitorSessionMetadata } from '@live-chat/shared-types';
 
 @Injectable()
 export class ConversationPersistenceService {
@@ -64,13 +64,15 @@ export class ConversationPersistenceService {
    * @param visitorId - The ID of the visitor.
    * @param manager - The EntityManager from the transaction.
    * @param mode - The history visibility mode.
+   * @param metadata - Optional visitor session metadata to be saved with the conversation.
    * @returns The found or newly created Conversation.
    */
   async findOrCreateByVisitorId(
     projectId: number,
     visitorId: number,
     manager: EntityManager,
-    mode: HistoryVisibilityMode = 'limit_to_active'
+    mode: HistoryVisibilityMode = 'limit_to_active',
+    metadata?: VisitorSessionMetadata // New parameter
   ): Promise<Conversation> {
     const conversationRepo = manager.getRepository(Conversation);
 
@@ -102,7 +104,14 @@ export class ConversationPersistenceService {
         project: { id: projectId },
         visitor: { id: visitorId },
         status: ConversationStatus.OPEN,
+        metadata: metadata || null, // Assign metadata if provided
       });
+      await conversationRepo.save(conversation);
+    } else if (metadata) { // If conversation exists and new metadata is provided
+      // Always update metadata if provided, regardless of whether it existed before.
+      // The design states "First Message" sets it, so this will ensure it's always applied
+      // if metadata is present in the sendMessage payload.
+      conversation.metadata = metadata;
       await conversationRepo.save(conversation);
     }
 
@@ -154,3 +163,4 @@ export class ConversationPersistenceService {
     );
   }
 }
+

@@ -2,6 +2,7 @@ import { useChatStore } from "./store/useChatStore";
 import { Launcher } from "./components/Launcher";
 import { ChatWindow } from "./components/ChatWindow";
 import { socketService } from "./services/socketService";
+import { historyTracker } from "./services/historyTracker"; // Import historyTracker
 import {
   MessageStatus,
   type WidgetMessageDto as Message,
@@ -36,18 +37,25 @@ const App = () => {
 
   const lastUrl = useRef(window.location.href);
 
-  // Effect to handle URL changes for live context updates
+  // Initialize history tracker and handle URL changes
   useEffect(() => {
+    historyTracker.init(); // Initialize on component mount
+
     const handleUrlChange = () => {
       const currentUrl = window.location.href;
+      const currentTitle = document.title;
+
       if (currentUrl === lastUrl.current) {
-        return; // URL hasn't changed
+        // If URL hasn't changed, but title might have, update it in history
+        historyTracker.push(currentUrl, currentTitle);
+        return; 
       }
 
       logWithTime("App", `🔗 URL CHANGED: ${lastUrl.current} → ${currentUrl}`);
       lastUrl.current = currentUrl;
+      historyTracker.push(currentUrl, currentTitle); // Push new URL to tracker
 
-      // Only send update if the session is confirmed ready by the backend
+      // Only send update to backend if the session is confirmed ready
       if (useChatStore.getState().isSessionReady) {
         socketService.emitUpdateContext(currentUrl);
       } else {
@@ -63,13 +71,14 @@ const App = () => {
     window.addEventListener("hashchange", handleUrlChange);
     window.addEventListener("urlchange", handleUrlChange); // Custom event
 
-    // Cleanup listeners
+    // Cleanup listeners and clear history tracker
     return () => {
       window.removeEventListener("popstate", handleUrlChange);
       window.removeEventListener("hashchange", handleUrlChange);
       window.removeEventListener("urlchange", handleUrlChange);
+      historyTracker.clear(); // Clear history when component unmounts (widget removed)
     };
-  }, []); // Empty dependency array, runs only on mount
+  }, []); // Empty dependency array, runs only on mount/unmount
 
   // Effect to send initial context only when the session is ready
   useEffect(() => {
@@ -78,6 +87,8 @@ const App = () => {
         "App",
         `✅ Session is ready, sending initial context: ${window.location.href}`
       );
+      // Ensure initial page view is recorded and then sent
+      historyTracker.push(window.location.href, document.title);
       socketService.emitUpdateContext(window.location.href);
     }
   }, [isSessionReady]);
@@ -91,6 +102,8 @@ const App = () => {
       const visitorUid = localStorage.getItem("visitor_uid");
       if (visitorUid) {
         socketService.emitIdentify(widgetConfig.projectId, visitorUid);
+        // Ensure the current URL is pushed and then sent as context
+        historyTracker.push(window.location.href, document.title);
         socketService.emitUpdateContext(window.location.href);
       }
     }
@@ -115,7 +128,8 @@ const App = () => {
       };
 
       addMessage(optimisticMessage);
-      socketService.emitSendMessage(content, tempId);
+      const sessionMetadata = historyTracker.getMetadata(); // Get current metadata
+      socketService.emitSendMessage(content, tempId, sessionMetadata); // Pass metadata
     },
     [addMessage]
   );

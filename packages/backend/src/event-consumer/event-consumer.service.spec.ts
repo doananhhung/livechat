@@ -7,6 +7,7 @@ import {
   WorkerEventTypes,
   WorkerEvent,
   NewMessageFromVisitorPayload,
+  VisitorSessionMetadata, // Added import
 } from '@live-chat/shared-types';
 import { VisitorPersistenceService } from '../inbox/services/persistence/visitor.persistence.service';
 import { ConversationPersistenceService } from '../inbox/services/persistence/conversation.persistence.service';
@@ -117,13 +118,22 @@ describe('EventConsumerService', () => {
   });
 
   describe('handleNewMessageFromVisitor', () => {
-    it('should create entities and insert outbox event', async () => {
+    it('should create entities and insert outbox event with sessionMetadata', async () => {
+      const sessionMetadata: VisitorSessionMetadata = {
+        referrer: 'https://example.com/referrer',
+        landingPage: 'https://example.com/landing',
+        urlHistory: [
+          { url: 'https://example.com/landing', title: 'Landing Page', timestamp: new Date().toISOString() },
+        ],
+      };
+
       const payload: NewMessageFromVisitorPayload = {
         tempId: 'temp-1',
         content: 'Hello',
         visitorUid: 'visitor-123',
         projectId: 1,
         socketId: 'socket-abc',
+        sessionMetadata, // Include sessionMetadata in payload
       };
 
       const visitor = new Visitor();
@@ -161,7 +171,7 @@ describe('EventConsumerService', () => {
 
       expect(
         conversationPersistenceService.findOrCreateByVisitorId
-      ).toHaveBeenCalledWith(payload.projectId, visitor.id, expect.anything(), 'limit_to_active');
+      ).toHaveBeenCalledWith(payload.projectId, visitor.id, expect.anything(), 'limit_to_active', sessionMetadata); // Assert sessionMetadata is passed
       
       expect(messagePersistenceService.createMessage).toHaveBeenCalledWith(
         payload.tempId,

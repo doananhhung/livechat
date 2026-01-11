@@ -34,6 +34,6 @@ import { WorkflowModule } from '../modules/workflow/workflow.module';
     InboxEventHandlerService,
   ],
   controllers: [InboxController, AssignmentsController],
-  exports: [ConversationService, MessageService, VisitorService],
+  exports: [ConversationService, MessageService, VisitorService, InboxPersistenceModule], // Export InboxPersistenceModule
 })
 export class InboxModule {}

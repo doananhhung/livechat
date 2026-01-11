@@ -1,3 +1,5 @@
+import { VisitorSessionMetadata } from './conversation.types';
+
 /**
  * Event types used for communication between the API server (producer)
  * and the Worker process (consumer).
@@ -23,6 +25,7 @@ export interface NewMessageFromVisitorPayload {
   visitorUid: string;
   projectId: number;
   socketId: string;
+  sessionMetadata?: VisitorSessionMetadata;
 }
 
 /**

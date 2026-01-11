@@ -55,39 +55,39 @@ export class EventConsumerService {
     payload: NewMessageFromVisitorPayload
   ): Promise<void> {
     this.logger.log(`Handling new message from visitor: ${payload.visitorUid}`);
-    const { tempId, visitorUid, projectId, content } = payload;
-
-    await this.entityManager.transaction(async (manager) => {
-      this.logger.log(`[Transaction] Started for visitor: ${visitorUid}`);
-
-      const visitor = await this.visitorPersistenceService.findOrCreateByUid(
-        projectId,
-        visitorUid,
-        manager
-      );
-      this.logger.log(`[Transaction] Found or created visitor: ${visitor.id}`);
-
-      // Fetch project settings to determine history visibility
-      const projectRepo = manager.getRepository(Project);
-      const project = await projectRepo.findOne({
-        where: { id: projectId },
-        select: ['id', 'widgetSettings'],
-      });
-
-      const historyMode: HistoryVisibilityMode = 
-        project?.widgetSettings?.historyVisibility || 'limit_to_active';
-
-      const conversation =
-        await this.conversationPersistenceService.findOrCreateByVisitorId(
-          projectId,
-          visitor.id,
-          manager,
-          historyMode
-        );
-      this.logger.log(
-        `[Transaction] Found or created conversation: ${conversation.id}`
-      );
-
+          const { tempId, visitorUid, projectId, content, sessionMetadata } = payload;
+    
+        await this.entityManager.transaction(async (manager) => {
+          this.logger.log(`[Transaction] Started for visitor: ${visitorUid}`);
+    
+          const visitor = await this.visitorPersistenceService.findOrCreateByUid(
+            projectId,
+            visitorUid,
+            manager
+          );
+          this.logger.log(`[Transaction] Found or created visitor: ${visitor.id}`);
+    
+          // Fetch project settings to determine history visibility
+          const projectRepo = manager.getRepository(Project);
+          const project = await projectRepo.findOne({
+            where: { id: projectId },
+            select: ['id', 'widgetSettings'],
+          });
+    
+          const historyMode: HistoryVisibilityMode = 
+            project?.widgetSettings?.historyVisibility || 'limit_to_active';
+    
+          const conversation =
+            await this.conversationPersistenceService.findOrCreateByVisitorId(
+              projectId,
+              visitor.id,
+              manager,
+              historyMode,
+              sessionMetadata // Pass sessionMetadata here
+            );
+          this.logger.log(
+            `[Transaction] Found or created conversation: ${conversation.id}`
+          );
       const savedMessage = await this.messagePersistenceService.createMessage(
         tempId,
         visitorUid,
