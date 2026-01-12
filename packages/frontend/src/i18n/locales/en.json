@@ -215,7 +215,11 @@
         "loadingNotes": "Loading notes...",
         "internalNotes": "Internal Notes",
         "noNotes": "No notes yet.",
-        "addNotePlaceholder": "Add a note..."
+        "addNotePlaceholder": "Add a note...",
+        "sessionHistory": "Session History",
+        "referrer": "Referrer",
+        "viewAllPages": "View all {{count}} pages",
+        "showLess": "Show Less"
     },
     "settings": {
         "title": "Settings",

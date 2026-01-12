@@ -89,7 +89,7 @@ const VisitorContextPanel = ({ conversation }: { conversation: Conversation }) =
 
             {metadata?.referrer && (
               <div>
-                <p className="font-medium text-muted-foreground">Referrer:</p>
+                <p className="font-medium text-muted-foreground">{t("visitor.referrer")}:</p>
                 <a
                   href={metadata.referrer}
                   target="_blank"
@@ -104,7 +104,7 @@ const VisitorContextPanel = ({ conversation }: { conversation: Conversation }) =
 
             {urlHistory.length > 0 && (
               <div>
-                <h4 className="font-medium text-muted-foreground mb-2">Session History:</h4>
+                <h4 className="font-medium text-muted-foreground mb-2">{t("visitor.sessionHistory")}:</h4>
                 <ul className="space-y-1 text-xs">
                   {displayedHistory.map((entry, index) => (
                     <li key={index} className="flex items-start">
@@ -128,7 +128,7 @@ const VisitorContextPanel = ({ conversation }: { conversation: Conversation }) =
                     onClick={() => setShowFullHistory(!showFullHistory)}
                     className="p-0 h-auto mt-2"
                   >
-                    {showFullHistory ? "Show Less" : `View all ${urlHistory.length} pages`}
+                    {showFullHistory ? t("visitor.showLess") : t("visitor.viewAllPages", { count: urlHistory.length })}
                   </Button>
                 )}
               </div>

@@ -215,7 +215,11 @@
         "loadingNotes": "Đang tải ghi chú...",
         "internalNotes": "Ghi chú nội bộ",
         "noNotes": "Chưa có ghi chú.",
-        "addNotePlaceholder": "Thêm ghi chú..."
+        "addNotePlaceholder": "Thêm ghi chú...",
+        "sessionHistory": "Lịch sử phiên",
+        "referrer": "Nguồn giới thiệu",
+        "viewAllPages": "Xem tất cả {{count}} trang",
+        "showLess": "Thu gọn"
     },
     "settings": {
         "title": "Cài đặt",
