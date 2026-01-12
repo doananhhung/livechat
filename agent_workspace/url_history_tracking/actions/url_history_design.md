@@ -30,13 +30,15 @@ Implemented full stack support for tracking visitor URL history and referrer inf
 *   **Integration:**
     *   Updated `App.tsx` to initialize `HistoryTracker`, track route changes, and send initial context.
     *   Updated `socketService.emitSendMessage` to attach the full history metadata on the first message.
+    *   Added `MutationObserver` to `App.tsx` to robustly capture page title updates in SPA environments.
 
 ### 4. Frontend (Agent Dashboard)
 *   **UI:** Updated `VisitorContextPanel` in `MessagePane.tsx` to:
     *   Display the **Referrer** link.
     *   Display the **Session History** list.
-    *   Show the **last 5 visited pages** by default (Newest first).
+    *   Show the **last 3 visited pages** by default (Newest first).
     *   Provide a **"View all X pages"** toggle to expand the full history.
+*   **I18n:** Added new translation keys (`sessionHistory`, `referrer`, `viewAllPages`, `showLess`) to `en.json` and `vi.json` and updated components to use them.
 *   **State:** The component receives real-time updates via `conversation` prop which is updated by React Query (cache invalidation/updates triggered by socket events).
 
 ## Verification
@@ -46,7 +48,7 @@ Implemented full stack support for tracking visitor URL history and referrer inf
 *   **Frontend Unit Tests:**
     *   `src/widget/services/historyTracker.test.ts`: **Passed**. Verified storage logic, FIFO limit, and sanitization.
 *   **Frontend Component Tests:**
-    *   `src/components/features/inbox/MessagePane.test.tsx`: **Passed**. Verified rendering of referrer, history list, and "Show All" toggle.
+    *   `src/components/features/inbox/MessagePane.test.tsx`: **Passed**. Verified rendering of referrer, history list, and "Show All" toggle with I18n keys.
 *   **Backend E2E Tests:**
     *   `test/chat.e2e-spec.ts`: **Passed**. Verified full flow:
         *   `sendMessage` saves session metadata to DB.
@@ -68,3 +70,8 @@ Implemented full stack support for tracking visitor URL history and referrer inf
     *   **Backend Test Logic:** Updated `conversation.persistence.service.spec.ts` to expect metadata updates instead of ignoring them (aligned with "latest wins" strategy).
     *   **Frontend Type Safety:** Fixed `import type` usage and resolved strict type mismatches in `MessagePane.test.tsx` and `historyTracker.test.ts`.
     *   **Test Reliability:** Verified all tests pass with strict type checking enabled.
+
+## Fixes (Attempt 3)
+*   **SPA Title Tracking:** Added `MutationObserver` to `App.tsx` to capture title changes that occur after route transitions.
+*   **UI Tweaks:** Changed default history display limit from 5 to 3 items.
+*   **I18n Compliance:** Replaced hardcoded strings in `MessagePane.tsx` with I18n keys and updated tests to match.
