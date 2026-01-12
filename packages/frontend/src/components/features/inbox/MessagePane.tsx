@@ -56,7 +56,7 @@ const VisitorContextPanel = ({ conversation }: { conversation: Conversation }) =
   const urlHistory = metadata?.urlHistory || [];
   // Display history in reverse chronological order (newest first)
   const sortedHistory = [...urlHistory].reverse(); 
-  const displayedHistory = showFullHistory ? sortedHistory : sortedHistory.slice(0, 5);
+  const displayedHistory = showFullHistory ? sortedHistory : sortedHistory.slice(0, 3);
 
 
   return (

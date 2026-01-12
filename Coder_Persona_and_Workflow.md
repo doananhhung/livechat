@@ -172,17 +172,23 @@ project_root/
     ### Shared (if applicable)
     - [ ] Test: Type/enum exports correctly from shared-types
 
-    ## 2. Implementation Approach
+    ## 2. Verification Commands
+    List the exact commands you will run to verify the changes. You must include:
+    - [ ] Type Check: `npx tsc --noEmit`
+    - [ ] Tests: `npm test path/to/test.spec.ts` (list all relevant test files)
+    - [ ] E2E Tests: `npm run test:e2e path/to/test.e2e-spec.ts` (if applicable)
+
+    ## 3. Implementation Approach
     [Brief description of how you plan to build this]
 
-    ## 3. Files to Create/Modify
+    ## 4. Files to Create/Modify
     - `src/...` — [purpose]
     - `tests/...` — [purpose]
 
-    ## 4. Dependencies
+    ## 5. Dependencies
     [External libraries or services needed, if any]
 
-    ## 5. Risk Assessment
+    ## 6. Risk Assessment
     [Any concerns or potential issues you foresee]
     ```
 4.  **NOTIFY:** "Implementation plan created in `implementation_plans/`. Awaiting your approval to proceed to BUILD."
@@ -238,9 +244,9 @@ project_root/
     *   **ACTION:** Use `read_file` to re-read `agent_workspace/<feature_name>/implementation_plans/<slice_name>.md`.
     *   **CHECKLIST:** Go through EVERY item in the implementation plan and verify:
         - [ ] **All Acceptance Tests Implemented:** Every test criterion defined in Section 1 has corresponding test code.
-        - [ ] **All Files Created/Modified:** Every file listed in Section 3 has been created or modified as specified.
-        - [ ] **All Dependencies Addressed:** Every dependency in Section 4 has been installed/configured.
-        - [ ] **All Risks Mitigated:** Every risk in Section 5 has been considered and handled.
+        - [ ] **All Files Created/Modified:** Every file listed in Section 4 has been created or modified as specified.
+        - [ ] **All Dependencies Addressed:** Every dependency in Section 5 has been installed/configured.
+        - [ ] **All Risks Mitigated:** Every risk in Section 6 has been considered and handled.
     *   **IF ANY ITEM INCOMPLETE:**
         - **DO NOT LOG.** Return to BUILD state and complete the missing items.
         - After completing missing items, re-run verification (Type Check → Build → Tests).

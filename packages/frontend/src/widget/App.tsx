@@ -71,11 +71,26 @@ const App = () => {
     window.addEventListener("hashchange", handleUrlChange);
     window.addEventListener("urlchange", handleUrlChange); // Custom event
 
+    // Observe title changes to update history entry if title changes after navigation (SPA behavior)
+    let titleObserver: MutationObserver | null = null;
+    const titleElement = document.querySelector('title');
+    if (titleElement) {
+      titleObserver = new MutationObserver(() => {
+        const currentUrl = window.location.href;
+        const currentTitle = document.title;
+        historyTracker.push(currentUrl, currentTitle);
+      });
+      titleObserver.observe(titleElement, { childList: true, subtree: true, characterData: true });
+    }
+
     // Cleanup listeners and clear history tracker
     return () => {
       window.removeEventListener("popstate", handleUrlChange);
       window.removeEventListener("hashchange", handleUrlChange);
       window.removeEventListener("urlchange", handleUrlChange);
+      if (titleObserver) {
+        titleObserver.disconnect();
+      }
       historyTracker.clear(); // Clear history when component unmounts (widget removed)
     };
   }, []); // Empty dependency array, runs only on mount/unmount
