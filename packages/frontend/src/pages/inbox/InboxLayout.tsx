@@ -150,8 +150,8 @@ export const InboxLayout = () => {
   // REMOVED nested SocketProvider to prevent duplicate socket connections
   // Socket is already provided at root level in main.tsx
   return (
-    <div className="flex h-[calc(100vh-5rem)] bg-muted/40">
-      <aside className="flex flex-col w-full md:w-1/3 max-w-sm border-r bg-card">
+    <div className="flex h-full bg-muted/40">
+      <aside className="flex flex-col w-full sm:w-80 border-r bg-card h-full">
         <header className="p-4 border-b">
           <ProjectSelector projects={projects} activeProjectId={projectId} />
         </header>

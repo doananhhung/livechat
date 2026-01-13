@@ -13,8 +13,13 @@ import { Avatar } from "../../components/ui/Avatar";
 import { Button } from "../ui/Button";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Settings } from "lucide-react";
+import { cn } from "../../lib/utils";
 
-export const UserNav = () => {
+interface UserNavProps {
+  isCollapsed?: boolean;
+}
+
+export const UserNav = ({ isCollapsed = false }: UserNavProps) => {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
@@ -35,20 +40,30 @@ export const UserNav = () => {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size="icon"
-          className="relative rounded-full h-11 w-11 p-0"
+          className={cn(
+            "relative",
+            isCollapsed ? "h-9 w-9 rounded-full p-0" : "h-auto w-full justify-start gap-2 px-2"
+          )}
         >
           <Avatar
             name={user.fullName}
             src={user.avatarUrl}
-            className="h-10 w-10 ring-2 ring-border ring-offset-2 ring-offset-background"
+            className="h-8 w-8 ring-2 ring-border ring-offset-2 ring-offset-background"
           />
+          {!isCollapsed && (
+            <div className="flex flex-col space-y-1 text-left">
+              <p className="text-sm font-medium leading-none">{user.fullName}</p>
+              <p className="text-xs leading-none text-muted-foreground truncate max-w-[150px]">
+                {user.email}
+              </p>
+            </div>
+          )}
         </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
         className="w-56"
-        align="end"
+        align={isCollapsed ? "end" : "start"}
         forceMount
         onCloseAutoFocus={(event) => event.preventDefault()}
       >
@@ -61,9 +76,9 @@ export const UserNav = () => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => navigate("/settings")}>
+        <DropdownMenuItem onClick={() => navigate("/settings/profile")}>
           <Settings className="mr-2 h-4 w-4" />
-          <span>Settings</span>
+          <span>My Profile</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>

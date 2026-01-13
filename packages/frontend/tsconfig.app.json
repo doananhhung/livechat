@@ -11,7 +11,11 @@
     "jsx": "react-jsx",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "paths": {}
+    "esModuleInterop": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "types": ["vitest/globals"]
   },
   "include": ["src"]
 }

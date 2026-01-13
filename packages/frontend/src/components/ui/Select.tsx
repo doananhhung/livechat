@@ -47,7 +47,7 @@ const Select = ({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         className="w-[--radix-dropdown-menu-trigger-width]"
-        onCloseAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e: Event) => e.preventDefault()}
       >
         {options.map((option) => (
           <DropdownMenuItem
