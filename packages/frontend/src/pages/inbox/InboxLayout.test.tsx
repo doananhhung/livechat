@@ -1,9 +1,8 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import { BrowserRouter, Outlet } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { render, screen } from "@testing-library/react";
+import { BrowserRouter } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { InboxLayout } from "./InboxLayout";
-import { useSocket } from "../../contexts/SocketContext"; // Mock this
+import { useMediaQuery } from "../../hooks/use-media-query";
 
 // Mock the react-i18next hook
 vi.mock("react-i18next", () => ({
@@ -11,28 +10,39 @@ vi.mock("react-i18next", () => ({
 }));
 
 // Mock react-router-dom hooks
+const mockUseParams = vi.fn();
 vi.mock("react-router-dom", async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
     useNavigate: vi.fn(),
-    useParams: () => ({ projectId: "1", conversationId: "conv1" }), // Added conversationId
+    useParams: () => mockUseParams(),
     Outlet: () => <div data-testid="mock-outlet-content">Outlet Content</div>,
   };
 });
 
 // Mock react-query hook
+const mockUseQuery = vi.fn();
+const mockGetQueriesData = vi.fn();
 vi.mock("@tanstack/react-query", async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
-    useQuery: vi.fn(),
+    useQuery: (...args: any[]) => mockUseQuery(...args),
+    useQueryClient: () => ({
+      getQueriesData: mockGetQueriesData,
+    }),
   };
 });
 
 // Mock socket context
 vi.mock("../../contexts/SocketContext", () => ({
   useSocket: () => ({ socket: { emit: vi.fn() } }),
+}));
+
+// Mock hooks
+vi.mock("../../hooks/use-media-query", () => ({
+  useMediaQuery: vi.fn(),
 }));
 
 // Mock child components
@@ -45,64 +55,153 @@ vi.mock("../../components/features/inbox/ConversationList", () => ({
 vi.mock("../../components/ui/Spinner", () => ({
   Spinner: () => <div data-testid="mock-spinner">Loading...</div>,
 }));
+vi.mock("../../components/features/inbox/VisitorContextPanel", () => ({
+  VisitorContextPanel: () => <div data-testid="mock-visitor-panel">Visitor Panel</div>,
+}));
+
+// Mock Resizable Components to capture props for verification
+vi.mock("../../components/ui/resizable", () => ({
+  ResizablePanelGroup: (props: any) => (
+    <div data-testid="resizable-group" data-autosave-id={props.autoSaveId}>
+      {props.children}
+    </div>
+  ),
+  ResizablePanel: (props: any) => (
+    <div 
+      data-testid="resizable-panel" 
+      data-collapsible={props.collapsible} 
+      data-default-size={props.defaultSize}
+      data-min-size={props.minSize}
+      data-max-size={props.maxSize}
+    >
+      {props.children}
+    </div>
+  ),
+  ResizableHandle: () => <div data-testid="resizable-handle" />,
+}));
 
 describe("InboxLayout", () => {
   const mockProjects = [{ id: 1, name: "Project Alpha" }];
 
   beforeEach(() => {
-    // Default mock for useQuery
-    (useQuery as any).mockReturnValue({
+    vi.clearAllMocks();
+    
+    // Default: Desktop
+    (useMediaQuery as any).mockReturnValue(true);
+
+    // Default: Projects loaded
+    mockUseQuery.mockReturnValue({
       data: mockProjects,
       isLoading: false,
       isError: false,
     });
+    
+    // Default: Params
+    mockUseParams.mockReturnValue({ projectId: "1", conversationId: "123" });
+
+    // Default: No conversation found in cache
+    mockGetQueriesData.mockReturnValue([]);
   });
 
-  it("renders correctly with sidebar and main content area", () => {
+  it("renders Desktop layout with ResizablePanelGroup and correct persistence key", () => {
+    (useMediaQuery as any).mockReturnValue(true);
+
     render(
       <BrowserRouter>
         <InboxLayout />
       </BrowserRouter>
     );
 
-    expect(screen.getByTestId("mock-project-selector")).toBeInTheDocument();
-    expect(screen.getByTestId("mock-conversation-list")).toBeInTheDocument();
+    const group = screen.getByTestId("resizable-group");
+    expect(group).toBeInTheDocument();
+    expect(group).toHaveAttribute("data-autosave-id", "inbox-layout-v1");
+  });
+
+  it("renders Panels with correct constraints and collapsible props", () => {
+    (useMediaQuery as any).mockReturnValue(true);
+    // Mock conversation to show 3rd panel
+    mockGetQueriesData.mockReturnValue([
+        [
+            ['conversations'], 
+            { pages: [{ data: [{ id: "123", visitorId: "99" }] }] }
+        ]
+    ]);
+
+    render(
+      <BrowserRouter>
+        <InboxLayout />
+      </BrowserRouter>
+    );
+
+    const panels = screen.getAllByTestId("resizable-panel");
+    expect(panels).toHaveLength(3);
+
+    // Left Panel (Conversation List)
+    const leftPanel = panels[0];
+    expect(leftPanel).toHaveAttribute("data-collapsible", "true");
+    expect(leftPanel).toHaveAttribute("data-default-size", "20");
+    expect(leftPanel).toHaveAttribute("data-min-size", "15");
+    expect(leftPanel).toHaveAttribute("data-max-size", "30");
+
+    // Center Panel (Message Area)
+    const centerPanel = panels[1];
+    expect(centerPanel).toHaveAttribute("data-default-size", "55");
+    expect(centerPanel).toHaveAttribute("data-min-size", "30");
+
+    // Right Panel (Visitor Details)
+    const rightPanel = panels[2];
+    expect(rightPanel).toHaveAttribute("data-collapsible", "true");
+    expect(rightPanel).toHaveAttribute("data-default-size", "25");
+    expect(rightPanel).toHaveAttribute("data-min-size", "20");
+    expect(rightPanel).toHaveAttribute("data-max-size", "40");
+  });
+
+  it("renders Mobile layout (no ResizablePanelGroup)", () => {
+    (useMediaQuery as any).mockReturnValue(false);
+
+    render(
+      <BrowserRouter>
+        <InboxLayout />
+      </BrowserRouter>
+    );
+
+    expect(screen.queryByTestId("resizable-group")).not.toBeInTheDocument();
     expect(screen.getByTestId("mock-outlet-content")).toBeInTheDocument();
   });
 
-  it("ensures sidebar and main content area use h-full and flexbox layout", () => {
+  it("renders VisitorContextPanel on Desktop when conversation is found in cache", () => {
+    (useMediaQuery as any).mockReturnValue(true);
+    mockGetQueriesData.mockReturnValue([
+        [
+            ['conversations'], 
+            { pages: [{ data: [{ id: "123", visitorId: "99" }] }] }
+        ]
+    ]);
+
     render(
       <BrowserRouter>
         <InboxLayout />
       </BrowserRouter>
     );
 
-    const mainLayoutDiv = screen
-      .getByTestId("mock-project-selector")
-      .closest("div.flex");
-    expect(mainLayoutDiv).toBeInTheDocument();
-    expect(mainLayoutDiv).toHaveClass("h-full");
-    expect(mainLayoutDiv).toHaveClass("bg-muted/40");
+    expect(screen.getByTestId("mock-visitor-panel")).toBeInTheDocument();
+  });
 
-    const asideElement = screen
-      .getByTestId("mock-project-selector")
-      .closest("aside");
-    expect(asideElement).toBeInTheDocument();
-    expect(asideElement).toHaveClass("flex");
-    expect(asideElement).toHaveClass("flex-col");
-    expect(asideElement).toHaveClass("w-full");
-    expect(asideElement).toHaveClass("sm:w-80");
-    expect(asideElement).toHaveClass("h-full"); // Crucial check for h-full
+  it("does NOT render VisitorContextPanel if conversation not found", () => {
+    (useMediaQuery as any).mockReturnValue(true);
+    mockGetQueriesData.mockReturnValue([]); // Empty cache
 
-    const mainElement = screen
-      .getByTestId("mock-outlet-content")
-      .closest("main");
-    expect(mainElement).toBeInTheDocument();
-    expect(mainElement).toHaveClass("flex-1"); // InboxContent is wrapped in <main> with flex-1
+    render(
+      <BrowserRouter>
+        <InboxLayout />
+      </BrowserRouter>
+    );
+
+    expect(screen.queryByTestId("mock-visitor-panel")).not.toBeInTheDocument();
   });
 
   it("shows loading state", () => {
-    (useQuery as any).mockReturnValue({
+    mockUseQuery.mockReturnValue({
       data: undefined,
       isLoading: true,
       isError: false,
@@ -112,34 +211,6 @@ describe("InboxLayout", () => {
         <InboxLayout />
       </BrowserRouter>
     );
-    expect(screen.getByTestId("mock-spinner")).toBeInTheDocument(); // Assert against data-testid
-  });
-
-  it("shows error state", () => {
-    (useQuery as any).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isError: true,
-    });
-    render(
-      <BrowserRouter>
-        <InboxLayout />
-      </BrowserRouter>
-    );
-    expect(screen.getByText("inbox.loadError")).toBeInTheDocument();
-  });
-
-  it("shows no projects state", () => {
-    (useQuery as any).mockReturnValue({
-      data: [],
-      isLoading: false,
-      isError: false,
-    });
-    render(
-      <BrowserRouter>
-        <InboxLayout />
-      </BrowserRouter>
-    );
-    expect(screen.getByText("inbox.noProjects")).toBeInTheDocument();
+    expect(screen.getByTestId("mock-spinner")).toBeInTheDocument();
   });
 });

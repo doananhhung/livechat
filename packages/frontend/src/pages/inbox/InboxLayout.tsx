@@ -1,7 +1,7 @@
 // src/pages/inbox/InboxLayout.tsx
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { MessageSquare, AlertTriangle } from "lucide-react";
 import * as projectApi from "../../services/projectApi";
@@ -10,6 +10,14 @@ import { ConversationList } from "../../components/features/inbox/ConversationLi
 import { Spinner } from "../../components/ui/Spinner";
 import { Button } from "../../components/ui/Button";
 import { useSocket } from "../../contexts/SocketContext";
+import { useMediaQuery } from "../../hooks/use-media-query";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "../../components/ui/resizable";
+import { VisitorContextPanel } from "../../components/features/inbox/VisitorContextPanel";
+import type { Conversation } from "@live-chat/shared-types";
 
 const InboxContent = () => {
   const { t } = useTranslation();
@@ -22,21 +30,14 @@ const InboxContent = () => {
   const { socket } = useSocket();
 
   useEffect(() => {
-    console.log("InboxContent: socket or projectId changed");
     if (!socket) {
-      console.log("Socket is not initialized yet.");
       return;
     }
     if (!projectId) {
-      console.log("No projectId available in URL params.");
       return;
     }
     const payload = { projectId: Number(projectId) };
 
-    console.log("socket:", socket);
-
-    // Add the callback function as the third argument
-    console.log("[Socket.IO] Emitting joinProjectRoom", payload);
     socket.emit(
       "joinProjectRoom",
       payload,
@@ -51,8 +52,6 @@ const InboxContent = () => {
 
     // Cleanup function to leave room
     return () => {
-      // Also add it to the cleanup function
-      console.log("[Socket.IO] Emitting leaveProjectRoom", payload);
       socket.emit(
         "leaveProjectRoom",
         payload,
@@ -67,23 +66,22 @@ const InboxContent = () => {
   }, [socket, projectId]);
 
   // The original JSX for the content goes here.
+  // Note: We removed the responsive utility classes here because the parent layout handles visibility
   return (
-    <main
-      className={`flex-1 hidden ${
-        conversationId ? "md:flex" : "md:grid place-items-center"
-      }`}
-    >
+    <main className="flex-1 h-full flex flex-col bg-background">
       {conversationId ? (
         <Outlet />
       ) : (
-        <div className="text-center text-muted-foreground">
-          <MessageSquare className="mx-auto h-12 w-12" />
-          <h2 className="mt-4 text-xl font-semibold text-foreground">
-            {t("inbox.welcome")}
-          </h2>
-          <p className="mt-2 text-sm">
-            {t("inbox.selectConversation")}
-          </p>
+        <div className="flex-1 grid place-items-center h-full">
+          <div className="text-center text-muted-foreground">
+            <MessageSquare className="mx-auto h-12 w-12" />
+            <h2 className="mt-4 text-xl font-semibold text-foreground">
+              {t("inbox.welcome")}
+            </h2>
+            <p className="mt-2 text-sm">
+              {t("inbox.selectConversation")}
+            </p>
+          </div>
         </div>
       )}
     </main>
@@ -93,10 +91,21 @@ const InboxContent = () => {
 export const InboxLayout = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { projectId } = useParams<{
+  const { projectId, conversationId } = useParams<{
     projectId: string;
     conversationId: string;
   }>();
+  
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const queryClient = useQueryClient();
+
+  // Find the conversation from the infinite query cache to pass to VisitorContextPanel
+  const conversation = queryClient
+    .getQueriesData<InfiniteData<{ data: Conversation[] }>>({
+      queryKey: ["conversations"],
+    })
+    .flatMap(([, cacheData]) => cacheData?.pages.flatMap((page) => page.data))
+    .find((c) => c && Number(c.id) === Number(conversationId));
 
   const {
     data: projects,
@@ -147,11 +156,59 @@ export const InboxLayout = () => {
     );
   }
 
-  // REMOVED nested SocketProvider to prevent duplicate socket connections
-  // Socket is already provided at root level in main.tsx
+  // If projects exist but no projectId is set, we are about to redirect in the useEffect.
+  // Show spinner to avoid flashing the empty state/select prompt.
+  if (projects && projects.length > 0 && !projectId) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <Spinner />
+      </div>
+    );
+  }
+
+  // === Desktop Layout (Resizable Panels) ===
+  if (isDesktop) {
+    return (
+      <div className="h-full bg-muted/40 overflow-hidden">
+        <ResizablePanelGroup direction="horizontal" autoSaveId="inbox-layout-v1">
+          {/* Left: Conversation List */}
+          <ResizablePanel defaultSize={20} minSize={15} maxSize={30} collapsible={true}>
+            <aside className="flex flex-col h-full border-r bg-card">
+              <header className="p-4 border-b">
+                <ProjectSelector projects={projects} activeProjectId={projectId} />
+              </header>
+              <main className="flex-1 overflow-y-auto">
+                <ConversationList />
+              </main>
+            </aside>
+          </ResizablePanel>
+
+          <ResizableHandle withHandle />
+
+          {/* Center: Message Area */}
+          <ResizablePanel defaultSize={55} minSize={30}>
+            <InboxContent />
+          </ResizablePanel>
+
+          {/* Right: Visitor Details (Conditional) */}
+          {conversationId && conversation && (
+            <>
+              <ResizableHandle withHandle />
+              <ResizablePanel defaultSize={25} minSize={20} maxSize={40} collapsible={true}>
+                 <VisitorContextPanel conversation={conversation} />
+              </ResizablePanel>
+            </>
+          )}
+        </ResizablePanelGroup>
+      </div>
+    );
+  }
+
+  // === Mobile Layout (Stacked/Swapped) ===
+  // If conversation selected, show Chat. Else show List.
   return (
     <div className="flex h-full bg-muted/40">
-      <aside className="flex flex-col w-full sm:w-80 border-r bg-card h-full">
+      <aside className={`flex flex-col w-full border-r bg-card h-full ${conversationId ? 'hidden' : 'flex'}`}>
         <header className="p-4 border-b">
           <ProjectSelector projects={projects} activeProjectId={projectId} />
         </header>
@@ -159,7 +216,9 @@ export const InboxLayout = () => {
           <ConversationList />
         </main>
       </aside>
-      <InboxContent />
+      <div className={`flex-1 flex flex-col h-full ${conversationId ? 'flex' : 'hidden'}`}>
+        <InboxContent />
+      </div>
     </div>
   );
 };
