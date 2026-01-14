@@ -169,7 +169,8 @@
         "loadMore": "Tải thêm",
         "assignedToMe": "Đã nhận xử lý",
         "clickToUnassign": "Nhấp để bỏ chỉ định",
-        "agent": "Nhân viên"
+        "agent": "Nhân viên",
+        "selectConversationForDetails": "Chọn cuộc trò chuyện để xem chi tiết khách"
     },
     "project": {
         "info": {

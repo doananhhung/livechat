@@ -120,10 +120,12 @@ export class ConversationPersistenceService {
 
   /**
    * Updates the conversation's metadata after a new message is received.
+   * Uses save() to ensure @UpdateDateColumn (updatedAt) is triggered.
    * Intended to be called within a transaction.
    * @param conversationId - The ID of the conversation to update.
    * @param lastMessageSnippet - A snippet of the last message.
    * @param lastMessageTimestamp - The timestamp of the last message.
+   * @param lastMessageId - The ID of the last message.
    * @param manager - The EntityManager from the transaction.
    */
   async updateLastMessage(
@@ -149,18 +151,15 @@ export class ConversationPersistenceService {
       ? ConversationStatus.SPAM // Keep as SPAM
       : ConversationStatus.OPEN; // Re-open
 
-    // Increment unread count by 1 for new incoming messages
-    await conversationRepo.increment({ id: conversationId }, 'unreadCount', 1);
+    // Update conversation properties
+    conversation.lastMessageSnippet = lastMessageSnippet.substring(0, 100);
+    conversation.lastMessageTimestamp = lastMessageTimestamp;
+    conversation.lastMessageId = lastMessageId;
+    conversation.status = newStatus;
+    conversation.unreadCount += 1;
 
-    await conversationRepo.update(
-      { id: conversationId },
-      {
-        lastMessageSnippet: lastMessageSnippet.substring(0, 100),
-        lastMessageTimestamp,
-        lastMessageId,
-        status: newStatus,
-      }
-    );
+    // Use save() to trigger @UpdateDateColumn
+    await conversationRepo.save(conversation);
   }
 }
 

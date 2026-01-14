@@ -38,7 +38,11 @@ const ConversationTime = ({ date }: { date: Date | string }) => {
   return <>{timeAgo}</>;
 };
 
-export const ConversationList = () => {
+interface ConversationListProps {
+  overrideProjectId?: string;
+}
+
+export const ConversationList = ({ overrideProjectId }: ConversationListProps) => {
   const { t } = useTranslation();
   const { projectId, conversationId: activeConversationId } = useParams<{
     projectId: string;
@@ -88,16 +92,18 @@ export const ConversationList = () => {
 
   // Set the current project ID in the global store
   useEffect(() => {
-    const numericProjectId = projectId ? parseInt(projectId, 10) : null;
+    const targetProjectId = overrideProjectId || projectId;
+    const numericProjectId = targetProjectId ? parseInt(targetProjectId, 10) : null;
     setCurrentProjectId(numericProjectId);
 
     // On cleanup, reset the project ID
     return () => {
       setCurrentProjectId(null);
     };
-  }, [projectId, setCurrentProjectId]);
+  }, [projectId, overrideProjectId, setCurrentProjectId]);
 
-  const numericProjectId = projectId ? parseInt(projectId, 10) : undefined;
+  const targetProjectId = overrideProjectId || projectId;
+  const numericProjectId = targetProjectId ? parseInt(targetProjectId, 10) : undefined;
   const { typingStatus } = useTypingStore();
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -193,7 +199,7 @@ export const ConversationList = () => {
             return (
               <NavLink
                 key={conversation.id}
-                to={`/inbox/projects/${projectId}/conversations/${conversation.id}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
+                to={`/inbox/projects/${targetProjectId}/conversations/${conversation.id}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
                 className={({ isActive }) =>
                   cn(
                     "block p-4 pr-2 border-b transition-all duration-200 group",

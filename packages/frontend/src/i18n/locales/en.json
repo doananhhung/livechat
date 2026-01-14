@@ -169,7 +169,8 @@
         "loadMore": "Load more",
         "assignedToMe": "Assigned to Me",
         "clickToUnassign": "Click to unassign",
-        "agent": "Agent"
+        "agent": "Agent",
+        "selectConversationForDetails": "Select a conversation to view visitor details"
     },
     "project": {
         "info": {

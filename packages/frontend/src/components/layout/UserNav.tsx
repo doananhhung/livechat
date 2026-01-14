@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from "../../components/ui/DropdownMenu";
 import { Avatar } from "../../components/ui/Avatar";
-import { Button } from "../ui/Button";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Settings } from "lucide-react";
 import { cn } from "../../lib/utils";
@@ -38,32 +37,37 @@ export const UserNav = ({ isCollapsed = false }: UserNavProps) => {
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
+        {/* Using native button for better click handling */}
+        <button
+          type="button"
           className={cn(
-            "relative",
-            isCollapsed ? "h-9 w-9 rounded-full p-0" : "h-auto w-full justify-start gap-2 px-2"
+            "flex items-center justify-center rounded-full transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+            isCollapsed 
+              ? "h-12 w-12" 
+              : "w-full gap-2 px-2 py-2 justify-start rounded-md"
           )}
         >
           <Avatar
             name={user.fullName}
             src={user.avatarUrl}
-            className="h-8 w-8 ring-2 ring-border ring-offset-2 ring-offset-background"
+            size="sm"
+            className="ring-2 ring-border ring-offset-2 ring-offset-background flex-shrink-0"
           />
           {!isCollapsed && (
-            <div className="flex flex-col space-y-1 text-left">
-              <p className="text-sm font-medium leading-none">{user.fullName}</p>
-              <p className="text-xs leading-none text-muted-foreground truncate max-w-[150px]">
+            <div className="flex flex-col space-y-1 text-left min-w-0">
+              <p className="text-sm font-medium leading-none truncate">{user.fullName}</p>
+              <p className="text-xs leading-none text-muted-foreground truncate">
                 {user.email}
               </p>
             </div>
           )}
-        </Button>
+        </button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
         className="w-56"
         align={isCollapsed ? "end" : "start"}
+        side={isCollapsed ? "right" : "top"}
         forceMount
         onCloseAutoFocus={(event) => event.preventDefault()}
       >

@@ -55,9 +55,9 @@ const NavItem = ({ to, icon, label, isCollapsed }: NavItemProps) => {
 
 export function GlobalSidebarContent({ isCollapsed }: { isCollapsed: boolean }) {
   return (
-    <>
+    <div className="flex flex-col h-full relative">
       {/* Header/Logo */}
-      <div className={cn("flex h-[52px] items-center", isCollapsed ? "justify-center" : "justify-start px-4")}>
+      <div className={cn("flex h-[52px] items-center flex-shrink-0", isCollapsed ? "justify-center" : "justify-start px-4")}>
         <Link to="/" className="flex items-center gap-2 font-bold">
           <MessageSquare className="h-6 w-6" />
           {!isCollapsed && <span>Live Chat</span>}
@@ -65,7 +65,7 @@ export function GlobalSidebarContent({ isCollapsed }: { isCollapsed: boolean }) 
       </div>
 
       {/* Navigation */}
-      <nav className={cn("flex-1 space-y-2 py-4", isCollapsed ? "px-2" : "px-4")}>
+      <nav className={cn("flex-1 space-y-2 py-4 overflow-y-auto pb-24", isCollapsed ? "px-2" : "px-4")}>
         <NavItem
           to="/inbox"
           icon={<MessageSquare className="h-5 w-5" />}
@@ -81,10 +81,10 @@ export function GlobalSidebarContent({ isCollapsed }: { isCollapsed: boolean }) 
       </nav>
 
       {/* Footer / User Controls */}
-      <div className={cn("mt-auto p-4", isCollapsed && "p-2 flex justify-center")}>
+      <div className={cn("absolute bottom-0 left-0 right-0 p-4 bg-muted/40", isCollapsed && "p-2 flex justify-center")}>
         <UserNav isCollapsed={isCollapsed} />
       </div>
-    </>
+    </div>
   );
 }
 
@@ -108,7 +108,7 @@ export function GlobalSidebar({ className }: GlobalSidebarProps) {
     <TooltipProvider>
       <aside
         className={cn(
-          'relative hidden flex-col border-r bg-muted/40 transition-all duration-300 ease-in-out md:flex',
+          'relative hidden flex-col border-r bg-muted/40 transition-all duration-300 ease-in-out md:flex z-30 h-full',
           isCollapsed ? 'w-16' : 'w-64',
           className
         )}

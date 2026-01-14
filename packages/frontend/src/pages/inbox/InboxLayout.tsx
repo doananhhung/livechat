@@ -99,6 +99,34 @@ export const InboxLayout = () => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const queryClient = useQueryClient();
 
+  // Force re-render when conversations cache updates to 'success'
+  // Only trigger on 'updated' type with 'success' action to avoid infinite loops
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+      if (
+        event.type === 'updated' &&
+        event.query.queryKey[0] === 'conversations' &&
+        event.action?.type === 'success'
+      ) {
+        setTick((t) => t + 1);
+      }
+    });
+    return unsubscribe;
+  }, [queryClient]);
+
+  // DEBUG: Log localStorage for resizable panels
+  useEffect(() => {
+    const logStorage = () => {
+      const saved = localStorage.getItem("react-resizable-panels:inbox-layout-v1");
+      console.log("[InboxLayout] localStorage 'inbox-layout-v1':", saved);
+    };
+    logStorage();
+    // Also log on storage events (from other tabs)
+    window.addEventListener("storage", logStorage);
+    return () => window.removeEventListener("storage", logStorage);
+  }, []);
+
   // Find the conversation from the infinite query cache to pass to VisitorContextPanel
   const conversation = queryClient
     .getQueriesData<InfiniteData<{ data: Conversation[] }>>({
@@ -157,28 +185,24 @@ export const InboxLayout = () => {
   }
 
   // If projects exist but no projectId is set, we are about to redirect in the useEffect.
-  // Show spinner to avoid flashing the empty state/select prompt.
-  if (projects && projects.length > 0 && !projectId) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <Spinner />
-      </div>
-    );
-  }
+  // Optimistic rendering: Show the first project layout immediately.
+  const effectiveProjectId = projectId || (projects && projects.length > 0 ? projects[0].id.toString() : undefined);
 
   // === Desktop Layout (Resizable Panels) ===
+  // IMPORTANT: Always render all 3 panels to maintain consistent layout for react-resizable-panels.
+  // The library uses panel IDs to match saved layouts. If panel count changes, layouts cannot be restored.
   if (isDesktop) {
     return (
       <div className="h-full bg-muted/40 overflow-hidden">
         <ResizablePanelGroup direction="horizontal" autoSaveId="inbox-layout-v1">
           {/* Left: Conversation List */}
-          <ResizablePanel defaultSize={20} minSize={15} maxSize={30} collapsible={true}>
+          <ResizablePanel id="left" order={1} defaultSize={20} minSize={15} maxSize={30} collapsible={true}>
             <aside className="flex flex-col h-full border-r bg-card">
               <header className="p-4 border-b">
-                <ProjectSelector projects={projects} activeProjectId={projectId} />
+                <ProjectSelector projects={projects} activeProjectId={effectiveProjectId} />
               </header>
               <main className="flex-1 overflow-y-auto">
-                <ConversationList />
+                <ConversationList overrideProjectId={effectiveProjectId} />
               </main>
             </aside>
           </ResizablePanel>
@@ -186,19 +210,26 @@ export const InboxLayout = () => {
           <ResizableHandle withHandle />
 
           {/* Center: Message Area */}
-          <ResizablePanel defaultSize={55} minSize={30}>
+          <ResizablePanel id="center" order={2} defaultSize={55} minSize={30}>
             <InboxContent />
           </ResizablePanel>
 
-          {/* Right: Visitor Details (Conditional) */}
-          {conversationId && conversation && (
-            <>
-              <ResizableHandle withHandle />
-              <ResizablePanel defaultSize={25} minSize={20} maxSize={40} collapsible={true}>
-                 <VisitorContextPanel conversation={conversation} />
-              </ResizablePanel>
-            </>
-          )}
+          <ResizableHandle withHandle />
+
+          {/* Right: Visitor Details - Always rendered, content conditional */}
+          <ResizablePanel id="right" order={3} defaultSize={25} minSize={20} maxSize={40} collapsible={true}>
+            {conversation ? (
+              <VisitorContextPanel conversation={conversation} />
+            ) : (
+              <div className="h-full flex items-center justify-center bg-card text-muted-foreground text-sm">
+                {conversationId ? (
+                  <Spinner />
+                ) : (
+                  <p>{t("inbox.selectConversationForDetails")}</p>
+                )}
+              </div>
+            )}
+          </ResizablePanel>
         </ResizablePanelGroup>
       </div>
     );
@@ -210,10 +241,10 @@ export const InboxLayout = () => {
     <div className="flex h-full bg-muted/40">
       <aside className={`flex flex-col w-full border-r bg-card h-full ${conversationId ? 'hidden' : 'flex'}`}>
         <header className="p-4 border-b">
-          <ProjectSelector projects={projects} activeProjectId={projectId} />
+          <ProjectSelector projects={projects} activeProjectId={effectiveProjectId} />
         </header>
         <main className="flex-1 overflow-y-auto">
-          <ConversationList />
+          <ConversationList overrideProjectId={effectiveProjectId} />
         </main>
       </aside>
       <div className={`flex-1 flex flex-col h-full ${conversationId ? 'flex' : 'hidden'}`}>

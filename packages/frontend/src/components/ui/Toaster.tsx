@@ -7,12 +7,12 @@ export const Toaster = () => {
   const { toasts } = useToast();
 
   return (
-    <div className="fixed bottom-4 left-4 p-4 space-y-2 z-50">
+    <div className="fixed bottom-4 left-4 p-4 space-y-2 z-50 pointer-events-none">
       {toasts.map(({ id, title, description, variant }) => (
         <div
           key={id}
           className={cn(
-            "p-4 rounded-lg shadow-lg w-full max-w-sm border",
+            "p-4 rounded-lg shadow-lg w-full max-w-sm border pointer-events-auto",
             "bg-card text-card-foreground",
             "flex items-start gap-4"
           )}

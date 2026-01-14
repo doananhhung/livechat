@@ -82,10 +82,10 @@ export const VisitorNoteList: React.FC<VisitorNoteListProps> = ({ projectId, vis
   if (isLoading) return <div className="p-4 text-center text-muted-foreground">{t('visitor.loadingNotes')}</div>;
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 bg-card border-t mt-4 pt-4">
-      <h3 className="font-semibold px-4 mb-2 text-foreground">{t('visitor.internalNotes')}</h3>
+    <div className="flex flex-col h-full bg-card border-t">
+      <h3 className="font-semibold px-4 py-3 text-foreground border-b">{t('visitor.internalNotes')}</h3>
       
-      <div className="flex-1 overflow-y-auto px-4 space-y-4 max-h-64">
+      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4 min-h-0">
         {notes?.length === 0 && <p className="text-sm text-muted-foreground italic">{t('visitor.noNotes')}</p>}
         {notes?.map((note) => (
           <div key={note.id} className="group text-sm border rounded-md p-3 bg-muted/30 hover:bg-muted/50 transition-colors">
