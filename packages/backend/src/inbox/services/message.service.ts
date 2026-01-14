@@ -12,7 +12,7 @@ import {
   User,
   Project,
 } from '../../database/entities';
-import { MessageStatus } from '@live-chat/shared-types';
+import { MessageStatus, WebSocketEvent } from '@live-chat/shared-types';
 import { EventsGateway } from '../../gateway/events.gateway';
 import {
   Injectable,
@@ -111,13 +111,14 @@ export class MessageService {
         });
         const saved = await transactionalEntityManager.save(message);
 
-        // Update conversation last message and ID
+        // Update conversation last message and ID (don't increment unread for agent messages)
         await this.conversationService.updateLastMessage(
             conversationId,
             replyText,
             saved.createdAt,
             saved.id,
-            transactionalEntityManager
+            transactionalEntityManager,
+            false // Agent messages should not increment unread count
         );
 
         return { savedMessage: saved, project: conversation.project };
@@ -143,6 +144,11 @@ export class MessageService {
     this.logger.log(
       `Agent reply message ${savedMessage.id} status updated to ${savedMessage.status}`
     );
+
+    // Step 4b: Broadcast to project room for agent dashboard real-time updates
+    this.eventsGateway.server
+      .to(`project:${project.id}`)
+      .emit(WebSocketEvent.NEW_MESSAGE, savedMessage);
     
     const updatedMessage = await this.entityManager.save(savedMessage);
 

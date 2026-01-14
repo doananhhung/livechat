@@ -127,13 +127,15 @@ export class ConversationPersistenceService {
    * @param lastMessageTimestamp - The timestamp of the last message.
    * @param lastMessageId - The ID of the last message.
    * @param manager - The EntityManager from the transaction.
+   * @param incrementUnread - Whether to increment the unread count (default: true). Set to false for agent messages.
    */
   async updateLastMessage(
     conversationId: string,
     lastMessageSnippet: string,
     lastMessageTimestamp: Date,
     lastMessageId: string,
-    manager: EntityManager
+    manager: EntityManager,
+    incrementUnread: boolean = true
   ): Promise<void> {
     const conversationRepo = manager.getRepository(Conversation);
 
@@ -156,7 +158,11 @@ export class ConversationPersistenceService {
     conversation.lastMessageTimestamp = lastMessageTimestamp;
     conversation.lastMessageId = lastMessageId;
     conversation.status = newStatus;
-    conversation.unreadCount += 1;
+    
+    // Only increment unread count for visitor messages
+    if (incrementUnread) {
+      conversation.unreadCount += 1;
+    }
 
     // Use save() to trigger @UpdateDateColumn
     await conversationRepo.save(conversation);

@@ -26,7 +26,10 @@ describe('MessageService', () => {
   };
 
   const mockEventsGateway = {
-    server: {},
+    server: {
+      to: jest.fn().mockReturnThis(),
+      emit: jest.fn(),
+    },
     sendReplyToVisitor: jest.fn(),
   };
 

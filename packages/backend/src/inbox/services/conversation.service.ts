@@ -75,20 +75,23 @@ export class ConversationService {
    * @param lastMessageSnippet - A snippet of the last message.
    * @param lastMessageTimestamp - The timestamp of the last message.
    * @param manager - The EntityManager from the transaction.
+   * @param incrementUnread - Whether to increment the unread count (default: true). Set to false for agent messages.
    */
   async updateLastMessage(
     conversationId: string,
     lastMessageSnippet: string,
     lastMessageTimestamp: Date,
     lastMessageId: string,
-    manager: EntityManager
+    manager: EntityManager,
+    incrementUnread: boolean = true
   ): Promise<void> {
     return this.conversationPersistenceService.updateLastMessage(
       conversationId,
       lastMessageSnippet,
       lastMessageTimestamp,
       lastMessageId,
-      manager
+      manager,
+      incrementUnread
     );
   }
 
