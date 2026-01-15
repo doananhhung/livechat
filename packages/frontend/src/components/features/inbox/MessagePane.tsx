@@ -248,11 +248,11 @@ export const MessagePane = () => {
           <Avatar name={conversation?.visitor?.displayName} size="md" />
           <div>
             <h2 className="font-semibold text-foreground">
-              {conversation?.visitor?.displayName || "Visitor"}
+              {conversation?.visitor?.displayName || t("visitor.guest")}
             </h2>
             {conversation && (
               <p className="text-xs text-muted-foreground flex items-center gap-1">
-                Status: <span className="font-medium">{getStatusLabel(conversation.status)}</span>
+                {t("inbox.statusLabel")}: <span className="font-medium">{getStatusLabel(conversation.status)}</span>
               </p>
             )}
           </div>
@@ -268,7 +268,7 @@ export const MessagePane = () => {
           )}
 
           {conversation && !conversation.status && (
-            <span className="text-sm text-yellow-500">⚠️ No status</span>
+            <span className="text-sm text-yellow-500">⚠️ {t("inbox.noStatus")}</span>
           )}
 
           {conversation && (

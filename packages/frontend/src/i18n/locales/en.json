@@ -170,7 +170,10 @@
         "assignedToMe": "Assigned to Me",
         "clickToUnassign": "Click to unassign",
         "agent": "Agent",
-        "selectConversationForDetails": "Select a conversation to view visitor details"
+        "selectConversationForDetails": "Select a conversation to view visitor details",
+        "renameVisitor": "Rename visitor",
+        "statusLabel": "Status",
+        "noStatus": "No status"
     },
     "project": {
         "info": {
@@ -220,7 +223,19 @@
         "sessionHistory": "Session History",
         "referrer": "Referrer",
         "viewAllPages": "View all {{count}} pages",
-        "showLess": "Show Less"
+        "showLess": "Show Less",
+        "rename": {
+            "title": "Rename Visitor",
+            "description": "Make changes to the visitor's display name here. Click save when you're done.",
+            "nameLabel": "Name",
+            "validationError": "Validation Error",
+            "validationDescription": "Display name must be between 1 and 50 characters.",
+            "updateSuccess": "Visitor name updated.",
+            "updateError": "Failed to update visitor name.",
+            "editAriaLabel": "Edit visitor name",
+            "saveAriaLabel": "Save name",
+            "cancelAriaLabel": "Cancel editing"
+        }
     },
     "settings": {
         "title": "Settings",

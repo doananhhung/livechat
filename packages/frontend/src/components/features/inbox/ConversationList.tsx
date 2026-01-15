@@ -298,7 +298,7 @@ export const ConversationList = ({ overrideProjectId }: ConversationListProps) =
                           <span className="sr-only">More options</span>
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
                         <DropdownMenuItem
                           className="cursor-pointer"
                           onClick={(e) => handleRenameClick(e, conversation)}

@@ -170,7 +170,10 @@
         "assignedToMe": "Đã nhận xử lý",
         "clickToUnassign": "Nhấp để bỏ chỉ định",
         "agent": "Nhân viên",
-        "selectConversationForDetails": "Chọn cuộc trò chuyện để xem chi tiết khách"
+        "selectConversationForDetails": "Chọn cuộc trò chuyện để xem chi tiết khách",
+        "renameVisitor": "Đổi tên khách",
+        "statusLabel": "Trạng thái",
+        "noStatus": "Chưa có trạng thái"
     },
     "project": {
         "info": {
@@ -220,7 +223,19 @@
         "sessionHistory": "Lịch sử phiên",
         "referrer": "Nguồn giới thiệu",
         "viewAllPages": "Xem tất cả {{count}} trang",
-        "showLess": "Thu gọn"
+        "showLess": "Thu gọn",
+        "rename": {
+            "title": "Đổi tên Khách",
+            "description": "Thay đổi tên hiển thị của khách tại đây. Nhấn lưu khi hoàn tất.",
+            "nameLabel": "Tên",
+            "validationError": "Lỗi xác thực",
+            "validationDescription": "Tên hiển thị phải từ 1 đến 50 ký tự.",
+            "updateSuccess": "Đã cập nhật tên khách.",
+            "updateError": "Không thể cập nhật tên khách.",
+            "editAriaLabel": "Chỉnh sửa tên khách",
+            "saveAriaLabel": "Lưu tên",
+            "cancelAriaLabel": "Hủy chỉnh sửa"
+        }
     },
     "settings": {
         "title": "Cài đặt",

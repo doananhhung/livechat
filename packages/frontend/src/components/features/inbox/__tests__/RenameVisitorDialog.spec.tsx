@@ -5,6 +5,11 @@ import { useUpdateVisitor } from '../../../../features/inbox/hooks/useUpdateVisi
 import { useToast } from '../../../ui/use-toast';
 import { vi } from 'vitest';
 
+// Mock react-i18next
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
+
 // Mock useUpdateVisitor hook
 vi.mock('../../../../features/inbox/hooks/useUpdateVisitor', () => ({
   useUpdateVisitor: vi.fn(),
@@ -66,7 +71,7 @@ describe('RenameVisitorDialog', () => {
 
   it('renders the dialog with the current visitor name', () => {
     renderComponent();
-    expect(screen.getByRole('dialog', { name: /Rename Visitor/i })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: /visitor.rename.title/i })).toBeInTheDocument();
     expect(screen.getByDisplayValue('Original Name')).toBeInTheDocument();
   });
 
@@ -82,7 +87,7 @@ describe('RenameVisitorDialog', () => {
     renderComponent();
     const input = screen.getByDisplayValue('Original Name');
     fireEvent.change(input, { target: { value: 'New Name' } });
-    fireEvent.click(screen.getByRole('button', { name: /Save changes/i }));
+    fireEvent.click(screen.getByRole('button', { name: /common.save/i }));
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalledWith({
@@ -91,13 +96,13 @@ describe('RenameVisitorDialog', () => {
         displayName: 'New Name',
       });
       expect(mockOnClose).toHaveBeenCalledTimes(1);
-      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Success' }));
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: 'common.success' }));
     });
   });
 
   it('closes dialog on cancel button click', () => {
     renderComponent();
-    fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
+    fireEvent.click(screen.getByRole('button', { name: /common.cancel/i }));
     expect(mockOnClose).toHaveBeenCalledTimes(1);
   });
 
@@ -106,8 +111,7 @@ describe('RenameVisitorDialog', () => {
     const input = screen.getByDisplayValue('Original Name');
     fireEvent.change(input, { target: { value: '   ' } });
     
-    // Save button should be disabled for empty name
-    const saveButton = screen.getByRole('button', { name: /Save changes/i });
+    const saveButton = screen.getByRole('button', { name: /common.save/i });
     expect(saveButton).toBeDisabled();
     expect(mockMutateAsync).not.toHaveBeenCalled();
   });
@@ -117,8 +121,7 @@ describe('RenameVisitorDialog', () => {
     const input = screen.getByDisplayValue('Original Name');
     fireEvent.change(input, { target: { value: 'a'.repeat(51) } });
     
-    // Save button should be disabled for too long name
-    const saveButton = screen.getByRole('button', { name: /Save changes/i });
+    const saveButton = screen.getByRole('button', { name: /common.save/i });
     expect(saveButton).toBeDisabled();
     expect(mockMutateAsync).not.toHaveBeenCalled();
   });
@@ -128,11 +131,11 @@ describe('RenameVisitorDialog', () => {
     renderComponent();
     const input = screen.getByDisplayValue('Original Name');
     fireEvent.change(input, { target: { value: 'Valid Name' } });
-    fireEvent.click(screen.getByRole('button', { name: /Save changes/i }));
+    fireEvent.click(screen.getByRole('button', { name: /common.save/i }));
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalled();
-      expect(mockOnClose).not.toHaveBeenCalled(); // Dialog should not close on error
+      expect(mockOnClose).not.toHaveBeenCalled();
       expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ variant: 'destructive' }));
     });
   });

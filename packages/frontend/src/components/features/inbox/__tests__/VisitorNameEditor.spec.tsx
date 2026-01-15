@@ -5,13 +5,18 @@ import { useUpdateVisitor } from '../../../../features/inbox/hooks/useUpdateVisi
 import { useToast } from '../../../ui/use-toast';
 import { vi } from 'vitest';
 
+// Mock react-i18next
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
+
 // Mock useUpdateVisitor hook
 vi.mock('../../../../features/inbox/hooks/useUpdateVisitor', () => ({
   useUpdateVisitor: vi.fn(),
 }));
 
 vi.mock('../../../ui/use-toast', () => ({
-  useToast: vi.fn(), // Mock directly as a jest function if relying on import
+  useToast: vi.fn(),
 }));
 
 const queryClient = new QueryClient();
@@ -54,20 +59,20 @@ describe('VisitorNameEditor', () => {
   it('displays the visitor name and pencil icon initially', () => {
     renderComponent();
     expect(screen.getByText('Original Name')).toBeInTheDocument();
-    expect(screen.getByLabelText('Edit visitor name')).toBeInTheDocument();
+    expect(screen.getByLabelText('visitor.rename.editAriaLabel')).toBeInTheDocument();
   });
 
   it('enters edit mode when pencil icon is clicked', () => {
     renderComponent();
-    fireEvent.click(screen.getByLabelText('Edit visitor name'));
+    fireEvent.click(screen.getByLabelText('visitor.rename.editAriaLabel'));
     expect(screen.getByDisplayValue('Original Name')).toBeInTheDocument();
-    expect(screen.getByLabelText('Save name')).toBeInTheDocument();
-    expect(screen.getByLabelText('Cancel editing')).toBeInTheDocument();
+    expect(screen.getByLabelText('visitor.rename.saveAriaLabel')).toBeInTheDocument();
+    expect(screen.getByLabelText('visitor.rename.cancelAriaLabel')).toBeInTheDocument();
   });
 
   it('updates draft name on input change', () => {
     renderComponent();
-    fireEvent.click(screen.getByLabelText('Edit visitor name'));
+    fireEvent.click(screen.getByLabelText('visitor.rename.editAriaLabel'));
     const input = screen.getByDisplayValue('Original Name');
     fireEvent.change(input, { target: { value: 'New Name' } });
     expect(screen.getByDisplayValue('New Name')).toBeInTheDocument();
@@ -76,10 +81,10 @@ describe('VisitorNameEditor', () => {
   it('calls mutateAsync and exits edit mode on save', async () => {
     mockMutateAsync.mockResolvedValueOnce({});
     renderComponent();
-    fireEvent.click(screen.getByLabelText('Edit visitor name'));
+    fireEvent.click(screen.getByLabelText('visitor.rename.editAriaLabel'));
     const input = screen.getByDisplayValue('Original Name');
     fireEvent.change(input, { target: { value: 'New Name' } });
-    fireEvent.click(screen.getByLabelText('Save name'));
+    fireEvent.click(screen.getByLabelText('visitor.rename.saveAriaLabel'));
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalledWith({
@@ -88,40 +93,38 @@ describe('VisitorNameEditor', () => {
         displayName: 'New Name',
       });
       expect(screen.queryByDisplayValue('New Name')).not.toBeInTheDocument();
-      expect(screen.getByText('Original Name')).toBeInTheDocument(); // Name should update via react-query invalidate
+      expect(screen.getByText('Original Name')).toBeInTheDocument();
     });
   });
 
   it('resets draft name and exits edit mode on cancel', () => {
     renderComponent();
-    fireEvent.click(screen.getByLabelText('Edit visitor name'));
+    fireEvent.click(screen.getByLabelText('visitor.rename.editAriaLabel'));
     const input = screen.getByDisplayValue('Original Name');
     fireEvent.change(input, { target: { value: 'New Name' } });
-    fireEvent.click(screen.getByLabelText('Cancel editing'));
+    fireEvent.click(screen.getByLabelText('visitor.rename.cancelAriaLabel'));
     expect(screen.queryByDisplayValue('New Name')).not.toBeInTheDocument();
     expect(screen.getByText('Original Name')).toBeInTheDocument();
   });
 
   it('disables save button for empty name', () => {
     renderComponent();
-    fireEvent.click(screen.getByLabelText('Edit visitor name'));
+    fireEvent.click(screen.getByLabelText('visitor.rename.editAriaLabel'));
     const input = screen.getByDisplayValue('Original Name');
     fireEvent.change(input, { target: { value: '   ' } });
     
-    // Save button should be disabled for empty name
-    const saveButton = screen.getByLabelText('Save name');
+    const saveButton = screen.getByLabelText('visitor.rename.saveAriaLabel');
     expect(saveButton).toBeDisabled();
     expect(mockMutateAsync).not.toHaveBeenCalled();
   });
 
   it('disables save button for too long name', () => {
     renderComponent();
-    fireEvent.click(screen.getByLabelText('Edit visitor name'));
+    fireEvent.click(screen.getByLabelText('visitor.rename.editAriaLabel'));
     const input = screen.getByDisplayValue('Original Name');
     fireEvent.change(input, { target: { value: 'a'.repeat(51) } });
     
-    // Save button should be disabled for too long name
-    const saveButton = screen.getByLabelText('Save name');
+    const saveButton = screen.getByLabelText('visitor.rename.saveAriaLabel');
     expect(saveButton).toBeDisabled();
     expect(mockMutateAsync).not.toHaveBeenCalled();
   });
@@ -129,10 +132,10 @@ describe('VisitorNameEditor', () => {
   it('shows error toast on mutateAsync failure', async () => {
     mockMutateAsync.mockRejectedValueOnce(new Error('API Error'));
     renderComponent();
-    fireEvent.click(screen.getByLabelText('Edit visitor name'));
+    fireEvent.click(screen.getByLabelText('visitor.rename.editAriaLabel'));
     const input = screen.getByDisplayValue('Original Name');
     fireEvent.change(input, { target: { value: 'Valid Name' } });
-    fireEvent.click(screen.getByLabelText('Save name'));
+    fireEvent.click(screen.getByLabelText('visitor.rename.saveAriaLabel'));
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalled();

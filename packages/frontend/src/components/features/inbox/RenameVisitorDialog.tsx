@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../../components/ui/Button';
 import {
   Dialog,
@@ -26,6 +27,7 @@ export const RenameVisitorDialog: React.FC<RenameVisitorDialogProps> = ({
   visitor,
   projectId,
 }) => {
+  const { t } = useTranslation();
   const [draftName, setDraftName] = useState(visitor.displayName || '');
   const { toast } = useToast();
   const updateVisitorMutation = useUpdateVisitor();
@@ -38,8 +40,8 @@ export const RenameVisitorDialog: React.FC<RenameVisitorDialogProps> = ({
   const handleSave = async () => {
     if (draftName.trim().length === 0 || draftName.length > 50) {
       toast({
-        title: 'Validation Error',
-        description: 'Display name must be between 1 and 50 characters.',
+        title: t('visitor.rename.validationError'),
+        description: t('visitor.rename.validationDescription'),
         variant: 'destructive',
       });
       return;
@@ -52,15 +54,15 @@ export const RenameVisitorDialog: React.FC<RenameVisitorDialogProps> = ({
         displayName: draftName,
       });
       toast({
-        title: 'Success',
-        description: 'Visitor name updated.',
+        title: t('common.success'),
+        description: t('visitor.rename.updateSuccess'),
       });
       onClose();
     } catch (error: any) {
       console.error('Failed to update visitor name:', error);
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to update visitor name.',
+        title: t('common.error'),
+        description: error.message || t('visitor.rename.updateError'),
         variant: 'destructive',
       });
     }
@@ -70,15 +72,15 @@ export const RenameVisitorDialog: React.FC<RenameVisitorDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Rename Visitor</DialogTitle>
+          <DialogTitle>{t('visitor.rename.title')}</DialogTitle>
           <DialogDescription>
-            Make changes to the visitor's display name here. Click save when you're done.
+            {t('visitor.rename.description')}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <label htmlFor="name" className="text-right">
-              Name
+              {t('visitor.rename.nameLabel')}
             </label>
             <Input
               id="name"
@@ -91,14 +93,14 @@ export const RenameVisitorDialog: React.FC<RenameVisitorDialogProps> = ({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={updateVisitorMutation.isPending}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             type="submit"
             onClick={handleSave}
             disabled={updateVisitorMutation.isPending || draftName.trim().length === 0 || draftName.length > 50}
           >
-            Save changes
+            {t('common.save')}
           </Button>
         </DialogFooter>
       </DialogContent>
