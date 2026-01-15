@@ -41,6 +41,7 @@ describe('RenameVisitorDialog', () => {
     projectId: 1,
     createdAt: new Date(),
     updatedAt: new Date(),
+    lastSeenAt: new Date(), // ADDED
   };
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },

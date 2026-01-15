@@ -10,6 +10,7 @@ import { useGetVisitor } from "../../../services/inboxApi";
 import type { Conversation, VisitorSessionMetadata } from "@live-chat/shared-types";
 import { VisitorNoteList } from "./VisitorNoteList";
 import { VisitorNameEditor } from './VisitorNameEditor'; // Move import to top
+import { formatDistanceToNow } from 'date-fns'; // ADDED
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -56,19 +57,39 @@ export const VisitorContextPanel = ({ conversation }: { conversation: Conversati
                 <div className="flex items-center space-x-3">
                   <Avatar name={visitor.displayName} />
                   <VisitorNameEditor visitor={visitor} projectId={conversation.projectId} />
+                  {/* Online status indicator */}
+                  {visitor.isOnline !== null && (
+                    <span
+                      className={`h-2 w-2 rounded-full ${
+                        visitor.isOnline ? 'bg-green-500' : 'bg-gray-400'
+                      }`}
+                      title={visitor.isOnline ? t("visitor.status.online") : t("visitor.status.offline")}
+                    />
+                  )}
                 </div>
-                <div>
-                  <p className="font-medium text-muted-foreground">{t("visitor.currentPage")}:</p>
-                  <a
-                    href={visitor.currentUrl ?? "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary break-all hover:underline"
-                    title={visitor.currentUrl || t("common.unknown")}
-                  >
-                    {visitor.currentUrl || t("common.unknown")}
-                  </a>
-                </div>
+
+                {/* Status Text / Last Seen */}
+                {!visitor.isOnline && visitor.lastSeenAt && (
+                  <div className="text-xs text-muted-foreground">
+                    {t("visitor.status.offline")} • {t("visitor.lastSeen", { time: formatDistanceToNow(new Date(visitor.lastSeenAt), { addSuffix: true }) })}
+                  </div>
+                )}
+
+                {/* Current Page - Only visible if Online */}
+                {visitor.isOnline && (
+                  <div>
+                    <p className="font-medium text-muted-foreground">{t("visitor.currentPage")}:</p>
+                    <a
+                      href={visitor.currentUrl ?? "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary break-all hover:underline"
+                      title={visitor.currentUrl || t("common.unknown")}
+                    >
+                      {visitor.currentUrl || t("common.unknown")}
+                    </a>
+                  </div>
+                )}
 
                 {metadata?.referrer && (
                   <div>
@@ -85,7 +106,8 @@ export const VisitorContextPanel = ({ conversation }: { conversation: Conversati
                   </div>
                 )}
 
-                {urlHistory.length > 0 && (
+                {/* Session History - Only visible if Online */}
+                {visitor.isOnline && urlHistory.length > 0 && (
                   <div>
                     <h4 className="font-medium text-muted-foreground mb-2">{t("visitor.sessionHistory")}:</h4>
                     <ul className="space-y-1 text-xs">
@@ -118,7 +140,8 @@ export const VisitorContextPanel = ({ conversation }: { conversation: Conversati
                 )}
 
                 {/* === SCREENSHOT BLOCK === */}
-                {screenshotUrl && (
+                {/* Only show screenshot if visitor is online */}
+                {visitor.isOnline && screenshotUrl && (
                   <div className="space-y-2">
                     <p className="font-medium text-muted-foreground">
                       {t("visitor.pagePreview")}:

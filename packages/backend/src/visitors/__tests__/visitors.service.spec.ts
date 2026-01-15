@@ -6,11 +6,14 @@ import { Repository } from 'typeorm';
 import { EventsGateway } from '../../gateway/events.gateway';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { UpdateVisitorDto } from '../dto/update-visitor.dto';
+import { RealtimeSessionService } from '../../realtime-session/realtime-session.service'; // ADDED
+import { Visitor as SharedVisitorType } from '@live-chat/shared-types'; // ADDED
 
 describe('VisitorsService', () => {
   let service: VisitorsService;
   let visitorRepository: Repository<Visitor>;
   let eventsGateway: EventsGateway;
+  let realtimeSessionService: RealtimeSessionService; // ADDED
 
   const mockVisitorRepository = {
     findOne: jest.fn(),
@@ -22,6 +25,11 @@ describe('VisitorsService', () => {
       to: jest.fn().mockReturnThis(),
       emit: jest.fn(),
     },
+  };
+
+  const mockRealtimeSessionService = { // ADDED
+    isVisitorOnline: jest.fn(),
+    getManyVisitorOnlineStatus: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -37,22 +45,78 @@ describe('VisitorsService', () => {
           provide: EventsGateway,
           useValue: mockEventsGateway,
         },
+        { // ADDED
+          provide: RealtimeSessionService,
+          useValue: mockRealtimeSessionService,
+        },
       ],
     }).compile();
 
     service = module.get<VisitorsService>(VisitorsService);
     visitorRepository = module.get<Repository<Visitor>>(getRepositoryToken(Visitor));
     eventsGateway = module.get<EventsGateway>(EventsGateway);
+    realtimeSessionService = module.get<RealtimeSessionService>(RealtimeSessionService); // ADDED
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
+  describe('findOne', () => { // ADDED
+    const projectId = 1;
+    const visitorId = 10;
+    const visitorEntity: Visitor = {
+      id: visitorId,
+      projectId: projectId,
+      visitorUid: 'some-unique-uuid-123',
+      displayName: 'Test Visitor',
+      metadata: {},
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastSeenAt: new Date(),
+      project: { id: projectId } as any, // FIXED: provide a mock Project object
+      currentUrl: null,
+      conversations: [],
+      notes: [],
+    };
+
+    const expectedSharedVisitor: SharedVisitorType = { // ADDED
+      id: visitorId,
+      projectId: projectId,
+      visitorUid: 'some-unique-uuid-123',
+      displayName: 'Test Visitor',
+      email: null,
+      phone: null,
+      customData: null,
+      currentUrl: null,
+      lastSeenAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isOnline: true,
+    };
+
+    it('should return a visitor with online status', async () => {
+      mockVisitorRepository.findOne.mockResolvedValue(visitorEntity);
+      mockRealtimeSessionService.isVisitorOnline.mockResolvedValue(true);
+
+      const result = await service.findOne(projectId, visitorId);
+
+      expect(visitorRepository.findOne).toHaveBeenCalledWith({ where: { id: visitorId, projectId: projectId } });
+      expect(mockRealtimeSessionService.isVisitorOnline).toHaveBeenCalledWith(visitorEntity.visitorUid);
+      expect(result).toEqual(expectedSharedVisitor); // UPDATED
+    });
+
+    it('should throw NotFoundException if visitor is not found', async () => {
+      mockVisitorRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.findOne(projectId, visitorId)).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe('updateDisplayName', () => {
     const projectId = 1;
     const visitorId = 10;
-    const initialVisitor: Visitor = {
+    const initialVisitorEntity: Visitor = {
       id: visitorId,
       projectId: projectId,
       visitorUid: 'some-unique-uuid-123',
@@ -61,28 +125,49 @@ describe('VisitorsService', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
       lastSeenAt: new Date(),
-      project: { id: projectId } as any, // Mock as a partial Project object
+      project: { id: projectId } as any, // FIXED: provide a mock Project object
       currentUrl: null,
       conversations: [],
       notes: [],
     };
+    const initialSharedVisitor: SharedVisitorType = { // UPDATED TO MATCH findOne mapping
+      id: visitorId,
+      projectId: projectId,
+      visitorUid: 'some-unique-uuid-123',
+      displayName: 'Old Name',
+      email: null,
+      phone: null,
+      customData: null,
+      currentUrl: null,
+      lastSeenAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isOnline: true,
+    };
 
     it('should successfully update a visitor\'s display name and emit event', async () => {
       const updateDto: UpdateVisitorDto = { displayName: 'New Name' };
-      mockVisitorRepository.findOne.mockResolvedValue(initialVisitor);
-      mockVisitorRepository.save.mockResolvedValue({ ...initialVisitor, displayName: 'New Name' });
+      const updatedVisitorEntity = { ...initialVisitorEntity, displayName: 'New Name' };
+      const updatedSharedVisitor: SharedVisitorType = { ...initialSharedVisitor, displayName: 'New Name' }; // UPDATED
+
+      mockVisitorRepository.findOne
+        .mockResolvedValueOnce(initialVisitorEntity) // For service.updateDisplayName -> visitorRepository.findOne
+        .mockResolvedValueOnce(updatedVisitorEntity); // For service.updateDisplayName -> service.findOne -> visitorRepository.findOne
+
+      mockVisitorRepository.save.mockResolvedValue(updatedVisitorEntity);
+      mockRealtimeSessionService.isVisitorOnline.mockResolvedValue(true); // ADDED
 
       const result = await service.updateDisplayName(projectId, visitorId, updateDto);
 
       expect(visitorRepository.findOne).toHaveBeenCalledWith({ where: { id: visitorId, projectId: projectId } });
-      expect(visitorRepository.save).toHaveBeenCalledWith({ ...initialVisitor, displayName: 'New Name' });
+      expect(visitorRepository.save).toHaveBeenCalledWith(expect.objectContaining({ displayName: 'New Name' })); // Use expect.objectContaining
       expect(eventsGateway.server.to).toHaveBeenCalledWith(`project.${projectId}`);
       expect(eventsGateway.server.emit).toHaveBeenCalledWith('visitorUpdated', {
         projectId: projectId,
         visitorId: visitorId,
-        visitor: { ...initialVisitor, displayName: 'New Name' },
+        visitor: updatedSharedVisitor, // UPDATED
       });
-      expect(result.displayName).toEqual('New Name');
+      expect(result).toEqual(updatedSharedVisitor); // UPDATED
     });
 
     it('should throw NotFoundException if visitor is not found', async () => {
@@ -117,12 +202,19 @@ describe('VisitorsService', () => {
 
     it('should update visitor if displayName has leading/trailing spaces and trim it internally', async () => {
       const updateDto: UpdateVisitorDto = { displayName: '  Trimmed Name  ' };
-      mockVisitorRepository.findOne.mockResolvedValue(initialVisitor);
-      mockVisitorRepository.save.mockResolvedValue({ ...initialVisitor, displayName: '  Trimmed Name  ' }); // Service will save as is
+      const updatedVisitorEntity = { ...initialVisitorEntity, displayName: '  Trimmed Name  ' };
+      const updatedSharedVisitor: SharedVisitorType = { ...initialSharedVisitor, displayName: '  Trimmed Name  ' }; // UPDATED
+
+      mockVisitorRepository.findOne
+        .mockResolvedValueOnce(initialVisitorEntity) // For service.updateDisplayName -> visitorRepository.findOne
+        .mockResolvedValueOnce(updatedVisitorEntity); // For service.updateDisplayName -> service.findOne -> visitorRepository.findOne
+
+      mockVisitorRepository.save.mockResolvedValue(updatedVisitorEntity);
+      mockRealtimeSessionService.isVisitorOnline.mockResolvedValue(true); // ADDED
 
       const result = await service.updateDisplayName(projectId, visitorId, updateDto);
-      expect(visitorRepository.save).toHaveBeenCalledWith({ ...initialVisitor, displayName: '  Trimmed Name  ' });
-      expect(result.displayName).toEqual('  Trimmed Name  ');
+      expect(visitorRepository.save).toHaveBeenCalledWith(expect.objectContaining({ displayName: '  Trimmed Name  ' }));
+      expect(result).toEqual(updatedSharedVisitor); // UPDATED
     });
   });
 });

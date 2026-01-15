@@ -235,7 +235,12 @@
             "editAriaLabel": "Chỉnh sửa tên khách",
             "saveAriaLabel": "Lưu tên",
             "cancelAriaLabel": "Hủy chỉnh sửa"
-        }
+        },
+        "status": {
+            "online": "Trực tuyến",
+            "offline": "Ngoại tuyến"
+        },
+        "lastSeen": "Truy cập lần cuối {{time}}"
     },
     "settings": {
         "title": "Cài đặt",

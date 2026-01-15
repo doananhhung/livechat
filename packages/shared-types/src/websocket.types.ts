@@ -22,8 +22,26 @@ export enum WebSocketEvent {
   VISITOR_NOTE_ADDED = 'visitorNoteAdded',
   VISITOR_NOTE_UPDATED = 'visitorNoteUpdated',
   VISITOR_NOTE_DELETED = 'visitorNoteDeleted',
+
+  // NEW: Visitor Online Status
+  VISITOR_STATUS_CHANGED = 'visitorStatusChanged',
+  VISITOR_UPDATED = 'visitorUpdated', // ADDED
 }
 
+// NEW: Visitor Online Status Payload
+export interface VisitorStatusChangedPayload {
+  visitorUid: string;
+  projectId: number;
+  isOnline: boolean;
+}
+
+export interface VisitorUpdatedPayload { // ADDED
+  projectId: number;
+  visitorId: number;
+  visitor: any; // Type 'Visitor' - preventing circular dependency or strict type issues
+}
+
+// Existing payloads
 export interface IdentifyPayload {
   projectId: number;
   visitorUid: string;

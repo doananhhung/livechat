@@ -10,6 +10,7 @@ import { ProjectService } from '../projects/project.service';
 import { ConfigService } from '@nestjs/config';
 import { ConversationPersistenceService } from '../inbox/services/persistence/conversation.persistence.service';
 import { EntityManager } from 'typeorm';
+import { VisitorsService } from '../visitors/visitors.service'; // ADDED
 
 describe('EventsGateway', () => {
   let gateway: EventsGateway;
@@ -19,6 +20,7 @@ describe('EventsGateway', () => {
   let server: jest.Mocked<Server>;
   let client: jest.Mocked<Socket>;
   let entityManager: jest.Mocked<EntityManager>;
+  let visitorsService: jest.Mocked<VisitorsService>; // ADDED
 
   beforeEach(async () => {
     const mockConversationRepo = {
@@ -89,6 +91,12 @@ describe('EventsGateway', () => {
             getRepository: jest.fn().mockReturnValue(mockConversationRepo),
           },
         },
+        {
+          provide: VisitorsService, // ADDED
+          useValue: {
+            updateLastSeenAtByUid: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
     }).compile();
 
@@ -96,6 +104,7 @@ describe('EventsGateway', () => {
     realtimeSessionService = module.get(RealtimeSessionService);
     redisSubscriber = module.get(REDIS_SUBSCRIBER_CLIENT);
     eventEmitter = module.get(EventEmitter2);
+    visitorsService = module.get(VisitorsService); // ADDED
 
     server = { to: jest.fn().mockReturnThis(), emit: jest.fn(), use: jest.fn() } as unknown as jest.Mocked<Server>;
     client = {
@@ -106,6 +115,7 @@ describe('EventsGateway', () => {
     } as unknown as jest.Mocked<Socket>;
 
     gateway.server = server;
+    jest.spyOn(gateway, 'emitVisitorStatusChanged');
   });
 
   it('should be defined', () => {
@@ -113,12 +123,15 @@ describe('EventsGateway', () => {
   });
 
   describe('handleDisconnect', () => {
-    it('should delete visitor session on disconnect', () => {
+    it('should delete visitor session on disconnect, emit status changed event, and update lastSeenAt', () => {
       client.data.visitorUid = 'visitor-123';
+      client.data.projectId = 1;
       gateway.handleDisconnect(client);
       expect(
         realtimeSessionService.deleteVisitorSession
       ).toHaveBeenCalledWith('visitor-123', 'socket-id');
+      expect(gateway.emitVisitorStatusChanged).toHaveBeenCalledWith(1, 'visitor-123', false);
+      expect(visitorsService.updateLastSeenAtByUid).toHaveBeenCalledWith('visitor-123'); // ADDED
     });
   });
 
@@ -133,13 +146,15 @@ describe('EventsGateway', () => {
   });
 
   describe('handleIdentify', () => {
-    it('should emit a visitor.identified event', async () => {
+    it('should emit a visitor.identified event, emit status changed event, and update lastSeenAt', async () => {
       const payload = { projectId: 1, visitorUid: 'visitor-123' };
       await gateway.handleIdentify(client, payload);
       expect(eventEmitter.emit).toHaveBeenCalledWith(
         'visitor.identified',
         expect.objectContaining(payload)
       );
+      expect(gateway.emitVisitorStatusChanged).toHaveBeenCalledWith(1, 'visitor-123', true);
+      expect(visitorsService.updateLastSeenAtByUid).toHaveBeenCalledWith('visitor-123'); // ADDED
     });
   });
 

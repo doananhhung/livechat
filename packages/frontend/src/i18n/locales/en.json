@@ -235,7 +235,12 @@
             "editAriaLabel": "Edit visitor name",
             "saveAriaLabel": "Save name",
             "cancelAriaLabel": "Cancel editing"
-        }
+        },
+        "status": {
+            "online": "Online",
+            "offline": "Offline"
+        },
+        "lastSeen": "Last seen {{time}}"
     },
     "settings": {
         "title": "Settings",

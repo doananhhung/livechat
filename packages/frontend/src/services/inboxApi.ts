@@ -181,11 +181,20 @@ export const useSendAgentReply = () => {
     },
     onSuccess: (finalMessage, variables, context) => {
       const queryKey = ["messages", variables.projectId, variables.conversationId];
-      queryClient.setQueryData<Message[]>(queryKey, (oldData = []) =>
-        oldData.map((msg) =>
-          msg.id === context?.optimisticMessageId ? finalMessage : msg
-        )
-      );
+      queryClient.setQueryData<Message[]>(queryKey, (oldData = []) => {
+        // Check if the final message already exists (e.g., received via socket)
+        const exists = oldData.some(msg => msg.id === finalMessage.id);
+        
+        if (exists) {
+           // If it exists, just remove the optimistic one to avoid duplicates
+           return oldData.filter(msg => msg.id !== context?.optimisticMessageId);
+        } else {
+           // Otherwise, replace optimistic with final
+           return oldData.map((msg) =>
+             msg.id === context?.optimisticMessageId ? finalMessage : msg
+           );
+        }
+      });
       console.log("Message sent successfully:", finalMessage);
     },
     onError: (_err, variables, context) => {

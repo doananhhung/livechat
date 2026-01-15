@@ -18,6 +18,8 @@ describe('RealtimeSessionService', () => {
             get: jest.fn(),
             del: jest.fn(),
             expire: jest.fn(),
+            exists: jest.fn(), // ADDED
+            mget: jest.fn(), // ADDED
           },
         },
       ],
@@ -80,6 +82,63 @@ describe('RealtimeSessionService', () => {
 
       expect(redisClient.get).toHaveBeenCalledWith(expectedKey);
       expect(redisClient.del).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('isVisitorOnline', () => {
+    it('should return true if session exists in Redis', async () => {
+      const visitorUid = 'visitor-123';
+      redisClient.exists.mockResolvedValue(1);
+
+      const result = await service.isVisitorOnline(visitorUid);
+      expect(redisClient.exists).toHaveBeenCalledWith(`session:visitor:${visitorUid}`);
+      expect(result).toBe(true);
+    });
+
+    it('should return false if session does not exist in Redis', async () => {
+      const visitorUid = 'visitor-123';
+      redisClient.exists.mockResolvedValue(0);
+
+      const result = await service.isVisitorOnline(visitorUid);
+      expect(result).toBe(false);
+    });
+
+    it('should return false if Redis throws an error', async () => {
+      const visitorUid = 'visitor-123';
+      redisClient.exists.mockRejectedValue(new Error('Redis connection failed'));
+
+      const result = await service.isVisitorOnline(visitorUid);
+      expect(result).toBe(false); // Updated expectation
+    });
+  });
+
+  describe('getManyVisitorOnlineStatus', () => {
+    it('should return correct map of online statuses', async () => {
+      const visitorUids = ['v1', 'v2', 'v3'];
+      const keys = visitorUids.map(uid => `session:visitor:${uid}`);
+      // mget returns array of values or nulls
+      (redisClient as any).mget.mockResolvedValue(['socket-1', null, 'socket-3']);
+
+      const result = await service.getManyVisitorOnlineStatus(visitorUids);
+
+      expect((redisClient as any).mget).toHaveBeenCalledWith(keys);
+      expect(result.get('v1')).toBe(true);
+      expect(result.get('v2')).toBe(false);
+      expect(result.get('v3')).toBe(true);
+    });
+
+    it('should return empty map for empty input', async () => {
+      const result = await service.getManyVisitorOnlineStatus([]);
+      expect((redisClient as any).mget).not.toHaveBeenCalled();
+      expect(result.size).toBe(0);
+    });
+
+    it('should return empty map if Redis throws error', async () => {
+      const visitorUids = ['v1'];
+      (redisClient as any).mget.mockRejectedValue(new Error('Redis error'));
+
+      const result = await service.getManyVisitorOnlineStatus(visitorUids);
+      expect(result.size).toBe(0);
     });
   });
 

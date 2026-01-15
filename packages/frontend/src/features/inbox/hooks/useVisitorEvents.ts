@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Visitor } from '@live-chat/shared-types';
+import { WebSocketEvent, type VisitorStatusChangedPayload } from '@live-chat/shared-types'; // ADDED 'type' keyword
 
 interface VisitorUpdatedPayload {
   projectId: number;
@@ -47,7 +48,27 @@ export const useVisitorEvents = (projectId?: number) => {
       // Invalidate relevant queries to refetch data
       queryClient.invalidateQueries({ queryKey: ['conversations', payload.projectId] });
       queryClient.invalidateQueries({ queryKey: ['visitor', payload.visitorId] });
-      queryClient.invalidateQueries({ queryKey: ['visitor', payload.visitor.visitorUid] }); // Assuming there might be a query by visitorUid
+      // queryClient.invalidateQueries({ queryKey: ['visitor', payload.visitor.visitorUid] }); // This key might not be used
+    });
+
+    // NEW: Listener for VISITOR_STATUS_CHANGED event
+    socket.on(WebSocketEvent.VISITOR_STATUS_CHANGED, (payload: VisitorStatusChangedPayload) => {
+      console.log(`Received VISITOR_STATUS_CHANGED event for visitorUid: ${payload.visitorUid}, isOnline: ${payload.isOnline}`);
+
+      // Find all queries that fetch 'visitor' data and update their 'isOnline' status
+      const visitorQueries = queryClient.getQueryCache().findAll({ queryKey: ['visitor'] });
+
+      visitorQueries.forEach(query => {
+        const cachedVisitor = query.state.data as Visitor | undefined;
+        if (cachedVisitor && cachedVisitor.visitorUid === payload.visitorUid) {
+          queryClient.setQueryData(query.queryKey, (old: Visitor | undefined) => {
+            if (old) {
+              return { ...old, isOnline: payload.isOnline };
+            }
+            return old;
+          });
+        }
+      });
     });
 
     return () => {
@@ -56,6 +77,7 @@ export const useVisitorEvents = (projectId?: number) => {
       socket.off('disconnect');
       socket.off('connect_error');
       socket.off('visitorUpdated');
+      socket.off(WebSocketEvent.VISITOR_STATUS_CHANGED); // CLEANUP ADDED
       socket.disconnect();
     };
   }, [projectId, queryClient]); // Re-run effect if projectId or queryClient changes

@@ -19,8 +19,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../rbac/roles.guard';
 import { Roles } from '../rbac/roles.decorator';
 import { ProjectRole, AuditAction } from '@live-chat/shared-types'; // Import AuditAction
-import { Visitor } from '../database/entities/visitor.entity';
+import { Visitor as SharedVisitorType } from '@live-chat/shared-types'; // ADDED SharedVisitorType
 import { Auditable } from '../audit-logs/auditable.decorator'; // Import Auditable
+import { VisitorResponseDto } from './dto/visitor-response.dto'; // ADDED
 
 @ApiTags('visitors')
 @ApiBearerAuth()
@@ -34,7 +35,7 @@ export class VisitorsController {
   @Auditable({
     action: AuditAction.UPDATE, // Use generic UPDATE action
     entity: 'Visitor',
-    entityIdExtractor: (data: unknown) => (data as Visitor).id.toString(), // Extract visitorId from the returned visitor
+    entityIdExtractor: (data: unknown) => (data as SharedVisitorType).id.toString(), // Updated to SharedVisitorType
     metadataExtractor: (req: any) => ({
       visitorId: req.params.visitorId,
       newDisplayName: req.body.displayName,
@@ -44,7 +45,7 @@ export class VisitorsController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'The visitor display name has been successfully updated.',
-    type: Visitor,
+    type: VisitorResponseDto, // Updated to VisitorResponseDto
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
@@ -60,7 +61,7 @@ export class VisitorsController {
     @Param('projectId', ParseIntPipe) projectId: number,
     @Param('visitorId', ParseIntPipe) visitorId: number,
     @Body() updateVisitorDto: UpdateVisitorDto,
-  ): Promise<Visitor> {
+  ): Promise<SharedVisitorType> { // Updated return type to SharedVisitorType
     return this.visitorsService.updateDisplayName(
       projectId,
       visitorId,

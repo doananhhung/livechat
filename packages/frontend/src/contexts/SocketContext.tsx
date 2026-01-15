@@ -10,7 +10,7 @@ import {
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "../stores/authStore";
 import { useQueryClient } from "@tanstack/react-query";
-import { type Message, WebSocketEvent, type VisitorContextUpdatedPayload, type VisitorTypingBroadcastPayload, type ConversationUpdatedPayload, type VisitorNotePayload, type VisitorNoteDeletedPayload } from "@live-chat/shared-types";
+import { type Message, WebSocketEvent, type VisitorContextUpdatedPayload, type VisitorTypingBroadcastPayload, type ConversationUpdatedPayload, type VisitorNotePayload, type VisitorNoteDeletedPayload, type VisitorStatusChangedPayload, type VisitorUpdatedPayload } from "@live-chat/shared-types";
 import { useTypingStore } from "../stores/typingStore";
 import { useProjectStore } from "../stores/projectStore";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -169,6 +169,95 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       }
     };
 
+    // NEW: Handle Visitor Status Changed (Online/Offline)
+    const handleVisitorStatusChanged = (payload: VisitorStatusChangedPayload) => {
+      console.log('[SocketContext] Received visitorStatusChanged:', payload);
+
+      // Update conversations cache (visitor.isOnline)
+      queryClient.setQueriesData<any>(
+        { queryKey: ["conversations"] },
+        (oldData: any) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              data: page.data.map((conversation: any) => {
+                if (conversation.visitor && conversation.visitor.visitorUid === payload.visitorUid) {
+                  return {
+                    ...conversation,
+                    visitor: {
+                      ...conversation.visitor,
+                      isOnline: payload.isOnline,
+                    },
+                  };
+                }
+                return conversation;
+              }),
+            })),
+          };
+        }
+      );
+
+      // Find visitor ID to update specific visitor cache
+      // Ideally payload should have visitorId, but it has visitorUid. We try to find match in conversations.
+      const allConversations = queryClient
+        .getQueriesData<any>({ queryKey: ["conversations"] })
+        .flatMap(([, cacheData]) =>
+          cacheData?.pages.flatMap((page: any) => page.data)
+        );
+
+      const visitorId = allConversations.find(
+        (c: any) => c?.visitor?.visitorUid === payload.visitorUid
+      )?.visitor?.id;
+
+      if (visitorId && currentProjectId) {
+        queryClient.setQueryData(
+          ["visitor", currentProjectId, visitorId],
+          (oldVisitor: any) => {
+            if (!oldVisitor) return oldVisitor;
+            return { ...oldVisitor, isOnline: payload.isOnline };
+          }
+        );
+      }
+    };
+
+    // NEW: Handle Visitor Updated (e.g. Name Change)
+    const handleVisitorUpdated = (payload: VisitorUpdatedPayload) => {
+      console.log('[SocketContext] Received visitorUpdated:', payload);
+
+      // Update conversations cache
+      queryClient.setQueriesData<any>(
+        { queryKey: ["conversations"] },
+        (oldData: any) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              data: page.data.map((conversation: any) => {
+                if (Number(conversation.visitorId) === Number(payload.visitorId)) {
+                  return {
+                    ...conversation,
+                    visitor: payload.visitor,
+                  };
+                }
+                return conversation;
+              }),
+            })),
+          };
+        }
+      );
+
+      // Update specific visitor cache
+      if (currentProjectId) {
+        queryClient.setQueryData(
+          ["visitor", currentProjectId, payload.visitorId],
+          payload.visitor
+        );
+      }
+    };
+
     const handleConversationUpdated = (payload: ConversationUpdatedPayload) => {
       console.log('[SocketContext] Received conversationUpdated:', payload);
 
@@ -242,6 +331,8 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
     socket.on(WebSocketEvent.VISITOR_NOTE_ADDED, handleVisitorNoteAdded);
     socket.on(WebSocketEvent.VISITOR_NOTE_UPDATED, handleVisitorNoteUpdated);
     socket.on(WebSocketEvent.VISITOR_NOTE_DELETED, handleVisitorNoteDeleted);
+    socket.on(WebSocketEvent.VISITOR_STATUS_CHANGED, handleVisitorStatusChanged); // ADDED
+    socket.on(WebSocketEvent.VISITOR_UPDATED, handleVisitorUpdated); // ADDED
     socket.on('automation.triggered', handleAutomationTriggered);
 
     // CRITICAL: Always cleanup listeners on unmount or when dependencies change
@@ -254,6 +345,8 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       socket.off(WebSocketEvent.VISITOR_NOTE_ADDED, handleVisitorNoteAdded);
       socket.off(WebSocketEvent.VISITOR_NOTE_UPDATED, handleVisitorNoteUpdated);
       socket.off(WebSocketEvent.VISITOR_NOTE_DELETED, handleVisitorNoteDeleted);
+      socket.off(WebSocketEvent.VISITOR_STATUS_CHANGED, handleVisitorStatusChanged); // ADDED
+      socket.off(WebSocketEvent.VISITOR_UPDATED, handleVisitorUpdated); // ADDED
       socket.off('automation.triggered', handleAutomationTriggered);
     };
   }, [

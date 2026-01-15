@@ -82,6 +82,7 @@ describe('MessagePane Component', () => {
       visitorUid: 'uid-123',
       createdAt: new Date(),
       updatedAt: new Date(),
+      lastSeenAt: new Date(), // ADDED
     },
     metadata: {
       referrer: null,

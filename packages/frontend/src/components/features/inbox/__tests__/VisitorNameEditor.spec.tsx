@@ -30,6 +30,7 @@ const mockVisitor = {
   metadata: {},
   createdAt: new Date(),
   updatedAt: new Date(),
+  lastSeenAt: new Date(), // ADDED
   sessions: [],
   notes: [],
 };

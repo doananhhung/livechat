@@ -8,6 +8,7 @@ import { EventProducerModule } from '../event-producer/event-producer.module';
 import { RealtimeSessionModule } from '../realtime-session/realtime-session.module';
 import { ProjectModule } from '../projects/project.module';
 import { InboxModule } from '../inbox/inbox.module'; // Import InboxModule
+import { VisitorsModule } from '../visitors/visitors.module'; // ADDED
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { InboxModule } from '../inbox/inbox.module'; // Import InboxModule
     RealtimeSessionModule,
     ProjectModule,
     forwardRef(() => InboxModule), // Use forwardRef to resolve circular dependency
+    forwardRef(() => VisitorsModule), // ADDED
   ],
   providers: [EventsGateway, WsJwtAuthGuard],
   exports: [EventsGateway],

@@ -48,6 +48,8 @@ describe('VisitorContextPanel', () => {
       visitorUid: 'uid-123',
       createdAt: new Date(),
       updatedAt: new Date(),
+      lastSeenAt: new Date(),
+      isOnline: true, // ADDED: Default to online for history tests
     },
     metadata: {
       referrer: 'https://google.com',
@@ -107,6 +109,74 @@ describe('VisitorContextPanel', () => {
 
     // Not shown
     expect(screen.queryByText('Docs')).not.toBeInTheDocument();
+  });
+
+  describe('Online Status Indicator', () => {
+    it('should render green dot, "online" title, and Current Page when visitor is online', () => {
+      const onlineVisitor = { ...mockConversation.visitor, isOnline: true, currentUrl: 'https://test.com' };
+      vi.mocked(inboxApi.useGetVisitor).mockReturnValue({
+        data: onlineVisitor,
+        isLoading: false,
+      } as any);
+
+      render(
+        <QueryClientProvider client={queryClient}>
+          <VisitorContextPanel conversation={mockConversation} />
+        </QueryClientProvider>
+      );
+
+      // Status Indicator
+      const statusIndicator = screen.getByTitle('visitor.status.online');
+      expect(statusIndicator).toBeInTheDocument();
+      expect(statusIndicator).toHaveClass('bg-green-500');
+
+      // Current Page (Visible)
+      expect(screen.getByText('visitor.currentPage:')).toBeInTheDocument();
+      expect(screen.getByText('https://test.com')).toBeInTheDocument();
+    });
+
+    it('should render gray dot, "offline" title, Last Seen text, and HIDE Current Page when visitor is offline', () => {
+      const offlineVisitor = { ...mockConversation.visitor, isOnline: false, currentUrl: 'https://test.com', lastSeenAt: new Date() };
+      vi.mocked(inboxApi.useGetVisitor).mockReturnValue({
+        data: offlineVisitor,
+        isLoading: false,
+      } as any);
+
+      render(
+        <QueryClientProvider client={queryClient}>
+          <VisitorContextPanel conversation={mockConversation} />
+        </QueryClientProvider>
+      );
+
+      // Status Indicator
+      const statusIndicator = screen.getByTitle('visitor.status.offline');
+      expect(statusIndicator).toBeInTheDocument();
+      expect(statusIndicator).toHaveClass('bg-gray-400');
+
+      // Last Seen Text (Visible)
+      expect(screen.getByText(/visitor.lastSeen/)).toBeInTheDocument();
+
+      // Current Page (Hidden)
+      expect(screen.queryByText('visitor.currentPage:')).not.toBeInTheDocument();
+      expect(screen.queryByText('https://test.com')).not.toBeInTheDocument();
+    });
+
+    it('should NOT render status indicator when isOnline is null (unknown)', () => {
+      const unknownVisitor = { ...mockConversation.visitor, isOnline: null };
+      vi.mocked(inboxApi.useGetVisitor).mockReturnValue({
+        data: unknownVisitor,
+        isLoading: false,
+      } as any);
+
+      render(
+        <QueryClientProvider client={queryClient}>
+          <VisitorContextPanel conversation={mockConversation} />
+        </QueryClientProvider>
+      );
+
+      expect(screen.queryByTitle('visitor.status.online')).not.toBeInTheDocument();
+      expect(screen.queryByTitle('visitor.status.offline')).not.toBeInTheDocument();
+    });
   });
 
   it('should show all items when "View all" is clicked', async () => {

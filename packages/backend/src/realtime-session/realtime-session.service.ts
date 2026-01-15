@@ -49,6 +49,51 @@ export class RealtimeSessionService {
     }
   }
 
+  /**
+   * Checks if a visitor has an active session.
+   * @returns true if session exists, false otherwise, or null if Redis is unavailable.
+   */
+  async isVisitorOnline(visitorUid: string): Promise<boolean | null> {
+    const key = this.getKey(visitorUid);
+    try {
+      const exists = await this.redis.exists(key);
+      return exists === 1;
+    } catch (error: unknown) { // ADDED unknown type for safety
+      this.logger.error(`Redis unavailable for isVisitorOnline(${visitorUid}): ${(error as Error).message}`);
+      return false; // Default to offline on error per design
+    }
+  }
+
+  /**
+   * Bulk check online status for multiple visitors.
+   * Uses Redis MGET for O(1) round-trip.
+   *
+   * @param visitorUids - Array of visitor UIDs to check status for.
+   * @returns Map of visitorUid to their online status. (true if online, false if offline).
+   *          If Redis is unavailable, returns an empty map or partially populated map.
+   */
+  async getManyVisitorOnlineStatus(
+    visitorUids: string[]
+  ): Promise<Map<string, boolean>> {
+    if (visitorUids.length === 0) {
+      return new Map();
+    }
+
+    try {
+      const keys = visitorUids.map((uid) => this.getKey(uid));
+      const values = await (this.redis as any).mget(keys); // RedisClientType might not have mget directly typed
+
+      const result = new Map<string, boolean>();
+      visitorUids.forEach((uid, index) => {
+        result.set(uid, values[index] !== null);
+      });
+      return result;
+    } catch (error: unknown) { // ADDED unknown type for safety
+      this.logger.error(`Redis unavailable for getManyVisitorOnlineStatus: ${(error as Error).message}`);
+      return new Map(); // Return empty map on error for graceful degradation
+    }
+  }
+
   private getCurrentUrlKey(visitorUid: string): string {
     return `session:visitor:${visitorUid}:currentUrl`;
   }

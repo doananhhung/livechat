@@ -12,7 +12,7 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, Inject, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Logger, Inject, UseGuards, UsePipes, ValidationPipe, forwardRef } from '@nestjs/common';
 import { RealtimeSessionService } from '../realtime-session/realtime-session.service';
 import { type Redis } from 'ioredis';
 import { REDIS_SUBSCRIBER_CLIENT } from '../redis/redis.module';
@@ -39,8 +39,11 @@ import {
   AgentTypingPayload,
   VisitorTypingBroadcastPayload,
   VisitorContextUpdatedPayload,
-  ConversationUpdatedPayload
+  ConversationUpdatedPayload,
+  VisitorStatusChangedPayload // ADDED
 } from '@live-chat/shared-types';
+
+import { VisitorsService } from '../visitors/visitors.service'; // ADDED
 
 const NEW_MESSAGE_CHANNEL = 'new_message_channel';
 
@@ -66,7 +69,8 @@ export class EventsGateway
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
     private readonly conversationPersistenceService: ConversationPersistenceService,
-    private readonly entityManager: EntityManager
+    private readonly entityManager: EntityManager,
+    @Inject(forwardRef(() => VisitorsService)) private readonly visitorsService: VisitorsService // ADDED with forwardRef to avoid circular dependency if VisitorsService uses Gateway
   ) {}
 
   public emitToProject(projectId: number, event: string, payload: any) {
@@ -82,6 +86,18 @@ export class EventsGateway
   public emitConversationDeleted(projectId: number, conversationId: string) {
     this.logger.log(`Emitting conversationDeleted to project:${projectId}`);
     this.server.to(`project:${projectId}`).emit(WebSocketEvent.CONVERSATION_DELETED, { conversationId });
+  }
+
+  /**
+   * Emits a VISITOR_STATUS_CHANGED event to all clients in the project room.
+   * @param projectId The ID of the project.
+   * @param visitorUid The UID of the visitor whose status changed.
+   * @param isOnline The new online status of the visitor.
+   */
+  public emitVisitorStatusChanged(projectId: number, visitorUid: string, isOnline: boolean) {
+    this.logger.log(`Emitting VISITOR_STATUS_CHANGED for visitorUid:${visitorUid} (isOnline: ${isOnline}) to project:${projectId}`);
+    const payload: VisitorStatusChangedPayload = { visitorUid, projectId, isOnline };
+    this.server.to(`project:${projectId}`).emit(WebSocketEvent.VISITOR_STATUS_CHANGED, payload);
   }
 
   async handleConnection(client: Socket) {
@@ -180,9 +196,15 @@ export class EventsGateway
 
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
-    if (client.data.visitorUid) {
-      // Pass the socket ID to ensure we only delete the session if it belongs to this specific connection
+    if (client.data.visitorUid && client.data.projectId) {
       this.realtimeSessionService.deleteVisitorSession(client.data.visitorUid, client.id);
+      // Emit visitor offline status change
+      this.emitVisitorStatusChanged(client.data.projectId, client.data.visitorUid, false);
+      
+      // Update lastSeenAt
+      this.visitorsService.updateLastSeenAtByUid(client.data.visitorUid).catch(err => 
+        this.logger.error(`Failed to update lastSeenAt for visitorUid ${client.data.visitorUid}`, err)
+      );
     }
   }
 
@@ -288,6 +310,14 @@ export class EventsGateway
     event.visitorUid = payload.visitorUid;
     event.socketId = client.id;
     this.eventEmitter.emit('visitor.identified', event);
+    
+    // Emit visitor online status change
+    this.emitVisitorStatusChanged(payload.projectId, payload.visitorUid, true);
+
+    // Update lastSeenAt
+    this.visitorsService.updateLastSeenAtByUid(payload.visitorUid).catch(err => 
+      this.logger.error(`Failed to update lastSeenAt for visitorUid ${payload.visitorUid}`, err)
+    );
   }
 
   @SubscribeMessage(WebSocketEvent.SEND_MESSAGE)
