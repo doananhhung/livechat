@@ -97,7 +97,7 @@ describe('MainLayout', () => {
     expect(mainContentArea).toHaveClass('flex');
     expect(mainContentArea).toHaveClass('flex-col');
     expect(mainContentArea).toHaveClass('flex-1');
-    expect(mainContentArea).toHaveClass('overflow-auto');
+    expect(mainContentArea).toHaveClass('overflow-hidden');
 
     const mainElement = screen.getByTestId('mock-outlet').parentElement;
     expect(mainElement).toHaveClass('flex-1');

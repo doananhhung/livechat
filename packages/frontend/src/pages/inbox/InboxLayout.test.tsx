@@ -31,6 +31,9 @@ vi.mock("@tanstack/react-query", async (importOriginal) => {
     useQuery: (...args: any[]) => mockUseQuery(...args),
     useQueryClient: () => ({
       getQueriesData: mockGetQueriesData,
+      getQueryCache: () => ({
+        subscribe: () => () => {}, // Returns an unsubscribe function
+      }),
     }),
   };
 });
@@ -43,6 +46,11 @@ vi.mock("../../contexts/SocketContext", () => ({
 // Mock hooks
 vi.mock("../../hooks/use-media-query", () => ({
   useMediaQuery: vi.fn(),
+}));
+
+// Mock useVisitorEvents hook
+vi.mock("../../features/inbox/hooks/useVisitorEvents", () => ({
+  useVisitorEvents: vi.fn(),
 }));
 
 // Mock child components

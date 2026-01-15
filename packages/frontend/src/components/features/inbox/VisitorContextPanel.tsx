@@ -9,6 +9,7 @@ import { Spinner } from "../../../components/ui/Spinner";
 import { useGetVisitor } from "../../../services/inboxApi";
 import type { Conversation, VisitorSessionMetadata } from "@live-chat/shared-types";
 import { VisitorNoteList } from "./VisitorNoteList";
+import { VisitorNameEditor } from './VisitorNameEditor'; // Move import to top
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -54,9 +55,7 @@ export const VisitorContextPanel = ({ conversation }: { conversation: Conversati
               <div className="text-sm space-y-4">
                 <div className="flex items-center space-x-3">
                   <Avatar name={visitor.displayName} />
-                  <p className="font-semibold text-foreground">
-                    {visitor.displayName}
-                  </p>
+                  <VisitorNameEditor visitor={visitor} projectId={conversation.projectId} />
                 </div>
                 <div>
                   <p className="font-medium text-muted-foreground">{t("visitor.currentPage")}:</p>

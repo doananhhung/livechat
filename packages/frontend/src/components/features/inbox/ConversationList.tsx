@@ -30,8 +30,9 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "../../ui/AlertDialog";
-import { MoreHorizontal, Trash2 } from "lucide-react";
+import { MoreHorizontal, Trash2, Edit } from "lucide-react"; // Import Edit icon
 import { ConversationStatus, type Conversation } from "@live-chat/shared-types";
+import { RenameVisitorDialog } from "./RenameVisitorDialog"; // Import RenameVisitorDialog
 
 const ConversationTime = ({ date }: { date: Date | string }) => {
   const timeAgo = useTimeAgo(date);
@@ -55,6 +56,14 @@ export const ConversationList = ({ overrideProjectId }: ConversationListProps) =
     (state) => state.setCurrentProjectId
   );
 
+  // Rename dialog state
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [selectedVisitorForRename, setSelectedVisitorForRename] = useState<Conversation['visitor'] | null>(null);
+
+  // Delete confirmation dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<Conversation | null>(null);
+
   // Read initial status from URL query param, default to OPEN
   const getStatusFromUrl = (): ConversationStatus | undefined => {
     const urlStatus = searchParams.get("status");
@@ -72,7 +81,7 @@ export const ConversationList = ({ overrideProjectId }: ConversationListProps) =
     if (newStatus !== status) {
       setStatus(newStatus);
     }
-  }, [searchParams]);
+  }, [searchParams, status]);
 
   // Update URL when status filter is clicked
   const handleStatusChange = (newStatus: ConversationStatus | undefined) => {
@@ -85,10 +94,6 @@ export const ConversationList = ({ overrideProjectId }: ConversationListProps) =
       setSearchParams(searchParams, { replace: true });
     }
   };
-
-  // Delete confirmation dialog state
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [conversationToDelete, setConversationToDelete] = useState<Conversation | null>(null);
 
   // Set the current project ID in the global store
   useEffect(() => {
@@ -123,20 +128,27 @@ export const ConversationList = ({ overrideProjectId }: ConversationListProps) =
     setDeleteDialogOpen(true);
   };
 
+  const handleRenameClick = (e: React.MouseEvent, conversation: Conversation) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (conversation.visitor) {
+      setSelectedVisitorForRename(conversation.visitor);
+      setIsRenameDialogOpen(true);
+    }
+  };
+
   const handleConfirmDelete = () => {
     if (!conversationToDelete || !numericProjectId) return;
-
-    const deletingId = conversationToDelete.id;
 
     deleteConversation(
       {
         projectId: numericProjectId,
-        conversationId: deletingId,
+        conversationId: conversationToDelete.id,
       },
       {
         onSuccess: () => {
           // If we're viewing the deleted conversation, navigate away
-          if (activeConversationId === deletingId) {
+          if (activeConversationId === conversationToDelete.id) {
             navigate(`/inbox/projects/${projectId}`);
           }
           setDeleteDialogOpen(false);
@@ -288,6 +300,13 @@ export const ConversationList = ({ overrideProjectId }: ConversationListProps) =
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={(e) => handleRenameClick(e, conversation)}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          {t("inbox.renameVisitor")}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
                           className="text-destructive focus:text-destructive cursor-pointer"
                           onClick={(e) => handleDeleteClick(e, conversation)}
                         >
@@ -336,6 +355,16 @@ export const ConversationList = ({ overrideProjectId }: ConversationListProps) =
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Rename Visitor Dialog */}
+      {selectedVisitorForRename && numericProjectId && (
+        <RenameVisitorDialog
+          isOpen={isRenameDialogOpen}
+          onClose={() => setIsRenameDialogOpen(false)}
+          visitor={selectedVisitorForRename}
+          projectId={numericProjectId}
+        />
+      )}
     </div>
   );
 };

@@ -27,6 +27,7 @@ import { AuditModule } from './audit-logs/audit.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { CannedResponsesModule } from './canned-responses/canned-responses.module';
 import { VisitorNotesModule } from './visitor-notes/visitor-notes.module';
+import { VisitorsModule } from './visitors/visitors.module'; // Import VisitorsModule
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { VisitorNotesModule } from './visitor-notes/visitor-notes.module';
     WebhooksModule,
     CannedResponsesModule,
     VisitorNotesModule,
+    VisitorsModule, // Add VisitorsModule here
   ],
   controllers: [AppController],
   providers: [

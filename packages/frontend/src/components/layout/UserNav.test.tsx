@@ -22,13 +22,8 @@ vi.mock('../../components/ui/Avatar', () => ({
   Avatar: ({ name }: { name: string }) => <div data-testid="mock-avatar">{name}</div>,
 }));
 
-vi.mock('../../components/ui/Button', () => ({
-  Button: ({ children, ...props }: any) => (
-    <button data-testid="mock-trigger-button" {...props}>
-      {children}
-    </button>
-  ),
-}));
+// Remove Button mock since component uses native button
+// vi.mock('../../components/ui/Button', () => ({...}));
 
 vi.mock('../../components/ui/DropdownMenu', () => ({
   DropdownMenu: ({ children }: any) => <div>{children}</div>,
@@ -72,7 +67,8 @@ describe('UserNav', () => {
         <UserNav isCollapsed={false} />
       </BrowserRouter>
     );
-    const triggerBtn = screen.getByTestId('mock-trigger-button');
+    // Find the trigger button (first button - others are dropdown items)
+    const triggerBtn = screen.getAllByRole('button')[0];
     
     // We expect "John Doe" to appear twice: in Avatar and in the text details
     const nameElements = within(triggerBtn).getAllByText(mockUser.fullName);
@@ -87,7 +83,8 @@ describe('UserNav', () => {
         <UserNav isCollapsed={true} />
       </BrowserRouter>
     );
-    const triggerBtn = screen.getByTestId('mock-trigger-button');
+    // Find the trigger button (first button - others are dropdown items)
+    const triggerBtn = screen.getAllByRole('button')[0];
     
     // We expect "John Doe" to appear ONLY ONCE (in the Avatar)
     const nameElements = within(triggerBtn).getAllByText(mockUser.fullName);

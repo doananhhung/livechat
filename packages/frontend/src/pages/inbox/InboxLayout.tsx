@@ -17,6 +17,7 @@ import {
   ResizablePanelGroup,
 } from "../../components/ui/resizable";
 import { VisitorContextPanel } from "../../components/features/inbox/VisitorContextPanel";
+import { useVisitorEvents } from "../../features/inbox/hooks/useVisitorEvents";
 import type { Conversation } from "@live-chat/shared-types";
 
 const InboxContent = () => {
@@ -144,6 +145,15 @@ export const InboxLayout = () => {
     queryFn: projectApi.getProjects,
   });
 
+  // Compute effective project ID early (before early returns)
+  // so useVisitorEvents can be called unconditionally
+  const effectiveProjectId = projectId || (projects && projects.length > 0 ? projects[0].id.toString() : undefined);
+  const numericProjectId = effectiveProjectId ? parseInt(effectiveProjectId, 10) : undefined;
+
+  // Listen for visitor events (e.g., name updates)
+  // IMPORTANT: This must be called before any early returns to satisfy Rules of Hooks
+  useVisitorEvents(numericProjectId);
+
   useEffect(() => {
     if (projects && projects.length > 0 && !projectId) {
       navigate(`/inbox/projects/${projects[0].id}`, { replace: true });
@@ -184,9 +194,7 @@ export const InboxLayout = () => {
     );
   }
 
-  // If projects exist but no projectId is set, we are about to redirect in the useEffect.
-  // Optimistic rendering: Show the first project layout immediately.
-  const effectiveProjectId = projectId || (projects && projects.length > 0 ? projects[0].id.toString() : undefined);
+  // effectiveProjectId and numericProjectId are computed above before early returns
 
   // === Desktop Layout (Resizable Panels) ===
   // IMPORTANT: Always render all 3 panels to maintain consistent layout for react-resizable-panels.
