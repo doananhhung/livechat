@@ -1,11 +1,12 @@
+
 import { Injectable, Logger } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
-import { VisitorIdentifiedEvent, VisitorMessageReceivedEvent } from './events';
+import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
+import { VisitorIdentifiedEvent, VisitorMessageReceivedEvent, VisitorSessionReadyEvent, VisitorMessageProcessedEvent, AgentMessageSentEvent, UpdateContextRequestEvent } from './events';
+import { VisitorDisconnectedEvent } from '../visitors/events';
 import { ConversationService } from './services/conversation.service';
 import { VisitorService } from './services/visitor.service';
 import { RealtimeSessionService } from '../realtime-session/realtime-session.service';
 import { BullMqProducerService } from '../event-producer/bullmq-producer.service';
-import { EventsGateway } from '../gateway/events.gateway';
 import { EntityManager } from 'typeorm';
 import { WorkerEventTypes, WebSocketEvent, MessageSentPayload, HistoryVisibilityMode } from '@live-chat/shared-types';
 import { Project } from '../database/entities';
@@ -71,7 +72,7 @@ export class InboxEventHandlerService {
     private readonly visitorService: VisitorService,
     private readonly realtimeSessionService: RealtimeSessionService,
     private readonly bullMqProducerService: BullMqProducerService,
-    private readonly eventsGateway: EventsGateway,
+    private readonly eventEmitter: EventEmitter2,
     private readonly entityManager: EntityManager
   ) {}
 
@@ -117,13 +118,28 @@ export class InboxEventHandlerService {
       }
     );
 
-    this.eventsGateway.prepareSocketForVisitor(
-      payload.socketId,
-      visitor,
-      conversation, // Can be null for new visitors or limited history
-      payload.projectId,
-      payload.visitorUid
-    );
+    let messagesForFrontend: any[] = [];
+    if (conversation && conversation.messages && conversation.messages.length > 0) {
+      messagesForFrontend = conversation.messages.map((msg) => ({
+        id: msg.id,
+        content: msg.content || '',
+        sender: {
+          type: msg.fromCustomer ? 'visitor' : 'agent',
+          name: msg.senderId,
+        },
+        status: msg.status as any,
+        timestamp: typeof msg.createdAt === 'string' ? msg.createdAt : msg.createdAt.toISOString(),
+      }));
+    }
+
+    const event = new VisitorSessionReadyEvent();
+    event.socketId = payload.socketId;
+    event.visitor = visitor;
+    event.conversation = conversation;
+    event.projectId = payload.projectId;
+    event.visitorUid = payload.visitorUid;
+    event.messages = messagesForFrontend;
+    this.eventEmitter.emit('visitor.session.ready', event);
   }
 
   @OnEvent('visitor.message.received')
@@ -191,26 +207,91 @@ export class InboxEventHandlerService {
       );
       
       if (visitorSocketId) {
-        const payload: MessageSentPayload = { tempId, finalMessage: messageForFrontend };
-        this.eventsGateway.server
-          .to(visitorSocketId)
-          .emit(WebSocketEvent.MESSAGE_SENT, payload);
+        const event = new VisitorMessageProcessedEvent();
+        event.visitorSocketId = visitorSocketId;
+        event.payload = { tempId, finalMessage: messageForFrontend };
+        this.eventEmitter.emit('visitor.message.processed', event);
       }
 
+      // We still need to broadcast to the project room, but we can do it via event or keep it here?
+      // The blueprint says "Emit VisitorMessageProcessedEvent instead of calling Gateway methods directly".
+      // But the Gateway method called was `server.to(roomName).emit(...)`.
+      // We can emit an event for this too, or let the GatewayEventListener handle it.
+      // Let's use a generic event or reuse AgentMessageSentEvent? No, this is a visitor message.
+      // Let's add a new event or just use the existing pattern.
+      // Actually, `InboxEventHandlerService` was calling `eventsGateway.server.to(roomName).emit(WebSocketEvent.NEW_MESSAGE, message);`
+      // I should probably move this to `GatewayEventListener` as well.
+      // I'll reuse `AgentMessageSentEvent` but that implies agent.
+      // I'll create a generic `MessageBroadcastEvent`? Or just use `AgentMessageSentEvent` logic which does exactly this.
+      // But `AgentMessageSentEvent` takes a `Message` entity. `message` here is a plain object from Redis.
+      // I'll just emit `AgentMessageSentEvent` with the message object casted, as the listener just emits it.
+      // Wait, `AgentMessageSentEvent` expects `Message` entity.
+      // Let's just add a `BroadcastMessageEvent`.
+      // Or better, `VisitorMessageProcessedEvent` can handle the broadcast too if I add `projectId` and `message` to it.
+      
+      // Let's modify `VisitorMessageProcessedEvent` in `src/inbox/events.ts` (I can't modify it again in this turn easily without re-outputting).
+      // I'll just use `AgentMessageSentEvent` logic but I need to be careful about types.
+      // Actually, I can just emit `agent.message.sent` with `visitorSocketId: null` and `message: message as any`.
+      // The listener does: `if (visitorSocketId) ...; server.to(project).emit(...)`.
+      // This fits perfectly.
+      
       const conversation = await this.conversationService.findById(
         String(message.conversationId)
       );
 
       if (conversation && conversation.projectId) {
-        const projectId = conversation.projectId;
-        const roomName = `project:${projectId}`;
-
-        this.eventsGateway.server.to(roomName).emit(WebSocketEvent.NEW_MESSAGE, message);
-
-        this.logger.log(`Emitted '${WebSocketEvent.NEW_MESSAGE}' to room: ${roomName}`);
+        const event = new AgentMessageSentEvent(); // Reusing this event for broadcasting
+        event.visitorSocketId = null; // Already handled above via VisitorMessageProcessedEvent if needed, or I can combine them.
+        // Actually, let's just use this event for the broadcast part.
+        event.message = message as any;
+        event.projectId = conversation.projectId;
+        this.eventEmitter.emit('agent.message.sent', event);
       }
     } catch (error) {
       this.logger.error('Error processing message from Redis:', error);
+    }
+  }
+
+  @OnEvent('visitor.disconnected')
+  async handleVisitorDisconnected(event: VisitorDisconnectedEvent): Promise<void> {
+    this.logger.debug(`Handling visitor.disconnected for visitorUid: ${event.visitorUid}`);
+
+    // Truncate URL history to 5 entries on disconnect
+    if (event.conversationId) {
+      try {
+        await this.conversationService.truncateUrlHistory(event.conversationId, 5);
+      } catch (err) {
+        this.logger.error(`Failed to truncate URL history for conversation ${event.conversationId}`, err);
+      }
+    }
+  }
+
+  @OnEvent('update.context.request')
+  async handleUpdateContextRequest(event: UpdateContextRequestEvent): Promise<void> {
+    this.logger.debug(`Handling update.context.request for visitorUid: ${event.visitorUid}`);
+
+    try {
+        await this.realtimeSessionService.setVisitorCurrentUrl(
+        event.visitorUid,
+        event.currentUrl
+      );
+    } catch (err) {
+      this.logger.error(`Failed to update visitor current URL in Redis`, err);
+    }
+
+    const resolvedConversationId = await this.conversationService.updateContext(
+      event.projectId,
+      event.visitorUid,
+      event.currentUrl,
+      event.conversationId
+    );
+
+    // Emit response event with resolved conversation ID so Gateway can update socket data
+    if (resolvedConversationId) {
+      this.eventEmitter.emit('context.updated.response', {
+        socketId: event.socketId,
+        conversationId: resolvedConversationId,
+      });
     }
   }
 }

@@ -1,18 +1,20 @@
-import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Visitor } from '../database/entities/visitor.entity';
 import { UpdateVisitorDto } from './dto/update-visitor.dto';
 import { RealtimeSessionService } from '../realtime-session/realtime-session.service';
-import { EventsGateway } from '../gateway/events.gateway';
-import { Visitor as SharedVisitorType, WebSocketEvent } from '@live-chat/shared-types'; // ADDED WebSocketEvent
+import { Visitor as SharedVisitorType } from '@live-chat/shared-types';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { VisitorUpdatedEvent } from './events';
 
 @Injectable()
 export class VisitorsService {
   constructor(
     @InjectRepository(Visitor)
     private readonly visitorRepository: Repository<Visitor>,
-    @Inject(forwardRef(() => EventsGateway)) private readonly eventsGateway: EventsGateway,
+    private readonly eventEmitter: EventEmitter2,
     private readonly realtimeSessionService: RealtimeSessionService,
   ) {}
 
@@ -46,7 +48,7 @@ export class VisitorsService {
       phone: (visitorEntity as any).phone || null,
       customData: (visitorEntity as any).customData || null,
       currentUrl: (visitorEntity as any).currentUrl || null,
-      lastSeenAt: visitorEntity.lastSeenAt, // Changed from || null
+      lastSeenAt: visitorEntity.lastSeenAt,
       createdAt: visitorEntity.createdAt,
       updatedAt: visitorEntity.updatedAt,
       isOnline: isOnline,
@@ -94,12 +96,12 @@ export class VisitorsService {
     // Fetch the updated visitor with online status before emitting and returning
     const updatedVisitor = await this.findOne(projectId, visitorId);
 
-    // Emit WebSocket event for real-time updates
-    this.eventsGateway.server.to(`project.${projectId}`).emit(WebSocketEvent.VISITOR_UPDATED, {
-      projectId: projectId,
-      visitorId: updatedVisitor.id,
-      visitor: updatedVisitor,
-    });
+    // Emit event instead of direct socket broadcast
+    const event = new VisitorUpdatedEvent();
+    event.projectId = projectId;
+    event.visitorId = updatedVisitor.id;
+    event.visitor = updatedVisitor;
+    this.eventEmitter.emit('visitor.updated', event);
 
     return updatedVisitor;
   }

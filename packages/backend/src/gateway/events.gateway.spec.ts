@@ -1,16 +1,15 @@
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { EventsGateway } from './events.gateway';
 import { RealtimeSessionService } from '../realtime-session/realtime-session.service';
 import { REDIS_SUBSCRIBER_CLIENT } from '../redis/redis.module';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Server, Socket } from 'socket.io';
-import { JwtService } from '@nestjs/jwt'
-import { UserService } from '../users/user.service';
 import { ProjectService } from '../projects/project.service';
-import { ConfigService } from '@nestjs/config';
-import { ConversationPersistenceService } from '../inbox/services/persistence/conversation.persistence.service';
-import { EntityManager } from 'typeorm';
-import { VisitorsService } from '../visitors/visitors.service'; // ADDED
+import { WsAuthService } from './services/ws-auth.service';
+import { UpdateContextRequestEvent } from '../inbox/events';
+import { JwtService } from '@nestjs/jwt';
+import { UserService } from '../users/user.service';
 
 describe('EventsGateway', () => {
   let gateway: EventsGateway;
@@ -19,15 +18,9 @@ describe('EventsGateway', () => {
   let eventEmitter: jest.Mocked<EventEmitter2>;
   let server: jest.Mocked<Server>;
   let client: jest.Mocked<Socket>;
-  let entityManager: jest.Mocked<EntityManager>;
-  let visitorsService: jest.Mocked<VisitorsService>; // ADDED
+  let wsAuthService: jest.Mocked<WsAuthService>;
 
   beforeEach(async () => {
-    const mockConversationRepo = {
-      findOne: jest.fn().mockResolvedValue(null),
-      save: jest.fn(),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EventsGateway,
@@ -52,6 +45,19 @@ describe('EventsGateway', () => {
           },
         },
         {
+          provide: ProjectService,
+          useValue: {
+            findByProjectId: jest.fn(),
+            validateProjectMembership: jest.fn().mockResolvedValue({}),
+          },
+        },
+        {
+          provide: WsAuthService,
+          useValue: {
+            validateConnection: jest.fn(),
+          },
+        },
+        {
           provide: JwtService,
           useValue: {
             verify: jest.fn(),
@@ -64,39 +70,17 @@ describe('EventsGateway', () => {
           },
         },
         {
-          provide: ProjectService,
+          provide: 'JwtService', // Token injection might be string or class
           useValue: {
-            findByProjectId: jest.fn(),
-            validateProjectMembership: jest.fn().mockResolvedValue({}),
+            verify: jest.fn(),
           },
         },
         {
-          provide: ConfigService,
-          useValue: {
-            get: jest.fn((key: string) => {
-              if (key === 'FRONTEND_URL') return 'http://localhost:3000';
-              return null;
-            }),
-          },
-        },
-        {
-          provide: ConversationPersistenceService,
-          useValue: {
-            findOrCreateByVisitorId: jest.fn(),
-          },
-        },
-        {
-          provide: EntityManager,
-          useValue: {
-            getRepository: jest.fn().mockReturnValue(mockConversationRepo),
-          },
-        },
-        {
-          provide: VisitorsService, // ADDED
-          useValue: {
-            updateLastSeenAtByUid: jest.fn().mockResolvedValue(undefined),
-          },
-        },
+           provide: UserService,
+           useValue: {
+             findOneById: jest.fn(),
+           }
+        }
       ],
     }).compile();
 
@@ -104,14 +88,18 @@ describe('EventsGateway', () => {
     realtimeSessionService = module.get(RealtimeSessionService);
     redisSubscriber = module.get(REDIS_SUBSCRIBER_CLIENT);
     eventEmitter = module.get(EventEmitter2);
-    visitorsService = module.get(VisitorsService); // ADDED
+    wsAuthService = module.get(WsAuthService);
 
-    server = { to: jest.fn().mockReturnThis(), emit: jest.fn(), use: jest.fn() } as unknown as jest.Mocked<Server>;
+    server = { to: jest.fn().mockReturnThis(), emit: jest.fn(), use: jest.fn(), sockets: { sockets: new Map() } } as unknown as jest.Mocked<Server>;
+    // @ts-ignore
+    server.sockets.sockets.get = jest.fn();
+
     client = {
       id: 'socket-id',
       data: {},
       join: jest.fn(),
       leave: jest.fn(),
+      disconnect: jest.fn(),
     } as unknown as jest.Mocked<Socket>;
 
     gateway.server = server;
@@ -122,16 +110,40 @@ describe('EventsGateway', () => {
     expect(gateway).toBeDefined();
   });
 
+  describe('handleConnection', () => {
+    it('should disconnect if validation fails', async () => {
+      wsAuthService.validateConnection.mockResolvedValue({ valid: false, error: 'Invalid' });
+      await gateway.handleConnection(client);
+      expect(client.disconnect).toHaveBeenCalledWith(true);
+    });
+
+    it('should set user data if validation succeeds with user', async () => {
+      wsAuthService.validateConnection.mockResolvedValue({ 
+        valid: true, 
+        user: { id: 'user-1', email: 'test@test.com' } 
+      });
+      await gateway.handleConnection(client);
+      expect(client.data.user).toEqual({ id: 'user-1', email: 'test@test.com' });
+    });
+  });
+
   describe('handleDisconnect', () => {
-    it('should delete visitor session on disconnect, emit status changed event, and update lastSeenAt', () => {
+    it('should delete visitor session on disconnect and emit events', () => {
       client.data.visitorUid = 'visitor-123';
       client.data.projectId = 1;
+      client.data.conversationId = 'conv-1';
       gateway.handleDisconnect(client);
-      expect(
-        realtimeSessionService.deleteVisitorSession
-      ).toHaveBeenCalledWith('visitor-123', 'socket-id');
+      
+      expect(realtimeSessionService.deleteVisitorSession).toHaveBeenCalledWith('visitor-123', 'socket-id');
       expect(gateway.emitVisitorStatusChanged).toHaveBeenCalledWith(1, 'visitor-123', false);
-      expect(visitorsService.updateLastSeenAtByUid).toHaveBeenCalledWith('visitor-123'); // ADDED
+      expect(eventEmitter.emit).toHaveBeenCalledWith(
+        'visitor.disconnected', 
+        expect.objectContaining({
+          projectId: 1,
+          visitorUid: 'visitor-123',
+          conversationId: 'conv-1'
+        })
+      );
     });
   });
 
@@ -146,15 +158,19 @@ describe('EventsGateway', () => {
   });
 
   describe('handleIdentify', () => {
-    it('should emit a visitor.identified event, emit status changed event, and update lastSeenAt', async () => {
+    it('should emit visitor.identified, emit status changed, and emit visitor.connected', async () => {
       const payload = { projectId: 1, visitorUid: 'visitor-123' };
       await gateway.handleIdentify(client, payload);
+      
       expect(eventEmitter.emit).toHaveBeenCalledWith(
         'visitor.identified',
         expect.objectContaining(payload)
       );
       expect(gateway.emitVisitorStatusChanged).toHaveBeenCalledWith(1, 'visitor-123', true);
-      expect(visitorsService.updateLastSeenAtByUid).toHaveBeenCalledWith('visitor-123'); // ADDED
+      expect(eventEmitter.emit).toHaveBeenCalledWith(
+        'visitor.connected',
+        expect.objectContaining(payload)
+      );
     });
   });
 
@@ -189,22 +205,20 @@ describe('EventsGateway', () => {
   });
 
   describe('handleUpdateContext', () => {
-    it('should set current URL and emit visitorContextUpdated', async () => {
+    it('should emit update.context.request', async () => {
       client.data.projectId = 1;
       client.data.conversationId = 2;
       client.data.visitorUid = 'visitor-123';
       const payload = { currentUrl: 'https://new-url.com' };
       await gateway.handleUpdateContext(client, payload);
 
-      expect(realtimeSessionService.setVisitorCurrentUrl).toHaveBeenCalledWith(
-        'visitor-123',
-        'https://new-url.com'
+      // Should NOT call Redis directly anymore
+      expect(realtimeSessionService.setVisitorCurrentUrl).not.toHaveBeenCalled();
+      
+      expect(eventEmitter.emit).toHaveBeenCalledWith(
+        'update.context.request',
+        expect.any(UpdateContextRequestEvent)
       );
-      expect(server.to).toHaveBeenCalledWith('project:1');
-      expect(server.emit).toHaveBeenCalledWith('visitorContextUpdated', {
-        conversationId: 2,
-        currentUrl: 'https://new-url.com',
-      });
     });
   });
 

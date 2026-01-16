@@ -6,6 +6,7 @@ import { EventsGateway } from '../../gateway/events.gateway';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConversationStatus } from '@live-chat/shared-types';
 import { Job } from 'bullmq';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('WorkflowConsumer', () => {
   let consumer: WorkflowConsumer;
@@ -32,12 +33,17 @@ describe('WorkflowConsumer', () => {
     },
   };
 
+  const mockEventEmitter = {
+    emit: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WorkflowConsumer,
         { provide: getRepositoryToken(Conversation), useValue: mockRepository },
         { provide: EventsGateway, useValue: mockEventsGateway },
+        { provide: EventEmitter2, useValue: mockEventEmitter },
       ],
     }).compile();
 
@@ -72,15 +78,21 @@ describe('WorkflowConsumer', () => {
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('last_message_id = :triggerId', { triggerId: jobData.triggerMessageId });
       expect(mockQueryBuilder.execute).toHaveBeenCalled();
 
-      expect(eventsGateway.emitConversationUpdated).toHaveBeenCalledWith(jobData.projectId, {
-        conversationId: jobData.conversationId,
-        fields: {
-          status: ConversationStatus.PENDING,
-        },
-      });
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith('conversation.updated', expect.objectContaining({
+        projectId: jobData.projectId,
+        payload: {
+          conversationId: jobData.conversationId,
+          fields: {
+            status: ConversationStatus.PENDING,
+          },
+        }
+      }));
 
-      expect(eventsGateway.server.to).toHaveBeenCalledWith(`project:${jobData.projectId}`);
-      expect(eventsGateway.server.emit).toHaveBeenCalledWith('automation.triggered', expect.any(Object));
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith('automation.triggered', expect.objectContaining({
+        projectId: jobData.projectId,
+        conversationId: jobData.conversationId,
+        type: 'auto_pending',
+      }));
     });
 
     it('should NOT emit events if update affects 0 rows (condition failed)', async () => {
@@ -90,8 +102,8 @@ describe('WorkflowConsumer', () => {
       await consumer.process(job);
 
       expect(mockQueryBuilder.execute).toHaveBeenCalled();
-      expect(eventsGateway.emitConversationUpdated).not.toHaveBeenCalled();
-      expect(eventsGateway.server.emit).not.toHaveBeenCalled();
+      expect(mockEventEmitter.emit).not.toHaveBeenCalled();
     });
   });
 });
+

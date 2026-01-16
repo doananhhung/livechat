@@ -5,12 +5,20 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Conversation } from '../../database/entities';
 import { ConversationStatus, WorkerEventTypes } from '@live-chat/shared-types';
-import { EventsGateway } from '../../gateway/events.gateway';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ConversationUpdatedEvent } from '../../inbox/events';
 
 interface AutoPendingJob {
   conversationId: string;
   projectId: number;
   triggerMessageId: string;
+}
+
+export class AutomationTriggeredEvent {
+  projectId: number;
+  conversationId: string;
+  type: string;
+  message: string;
 }
 
 @Processor('conversation-workflow-queue')
@@ -20,7 +28,7 @@ export class WorkflowConsumer extends WorkerHost {
   constructor(
     @InjectRepository(Conversation)
     private readonly conversationRepo: Repository<Conversation>,
-    private readonly eventsGateway: EventsGateway,
+    private readonly eventEmitter: EventEmitter2,
   ) {
     super();
   }
@@ -48,28 +56,27 @@ export class WorkflowConsumer extends WorkerHost {
     if (result?.affected && result.affected > 0) {
       this.logger.log(`Auto-pending triggered for conversation ${conversationId}`);
       
-      // Emit socket events
-      
-      // 1. General conversation update (for lists)
-      this.eventsGateway.emitConversationUpdated(projectId, {
+      // Emit conversation updated event
+      const updateEvent = new ConversationUpdatedEvent();
+      updateEvent.projectId = projectId;
+      updateEvent.payload = {
         conversationId: conversationId,
         fields: {
           status: ConversationStatus.PENDING,
         },
-      });
+      };
+      this.eventEmitter.emit('conversation.updated', updateEvent);
 
-      // 2. Specific automation triggered event (for Toast)
-      // We can reuse a generic event or create a specific one. 
-      // Using a custom event name via socket for the frontend to listen to.
-      // Ideally this should be typed in shared-types.
-      
-      this.eventsGateway.server.to(`project:${projectId}`).emit('automation.triggered', {
-        conversationId,
-        type: 'auto_pending',
-        message: 'Conversation automatically moved to Pending due to inactivity.',
-      });
+      // Emit automation triggered event
+      const automationEvent = new AutomationTriggeredEvent();
+      automationEvent.projectId = projectId;
+      automationEvent.conversationId = conversationId;
+      automationEvent.type = 'auto_pending';
+      automationEvent.message = 'Conversation automatically moved to Pending due to inactivity.';
+      this.eventEmitter.emit('automation.triggered', automationEvent);
     } else {
         this.logger.debug(`Auto-pending skipped for conversation ${conversationId} (Condition failed or already handled).`);
     }
   }
 }
+

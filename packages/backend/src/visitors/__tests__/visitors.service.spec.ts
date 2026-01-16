@@ -8,12 +8,14 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { UpdateVisitorDto } from '../dto/update-visitor.dto';
 import { RealtimeSessionService } from '../../realtime-session/realtime-session.service'; // ADDED
 import { Visitor as SharedVisitorType } from '@live-chat/shared-types'; // ADDED
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('VisitorsService', () => {
   let service: VisitorsService;
   let visitorRepository: Repository<Visitor>;
   let eventsGateway: EventsGateway;
   let realtimeSessionService: RealtimeSessionService; // ADDED
+  let eventEmitter: EventEmitter2;
 
   const mockVisitorRepository = {
     findOne: jest.fn(),
@@ -32,6 +34,10 @@ describe('VisitorsService', () => {
     getManyVisitorOnlineStatus: jest.fn(),
   };
 
+  const mockEventEmitter = {
+    emit: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks(); // Clear mocks before each test
     const module: TestingModule = await Test.createTestingModule({
@@ -48,6 +54,10 @@ describe('VisitorsService', () => {
         { // ADDED
           provide: RealtimeSessionService,
           useValue: mockRealtimeSessionService,
+        },
+        {
+          provide: EventEmitter2,
+          useValue: mockEventEmitter,
         },
       ],
     }).compile();
@@ -161,12 +171,11 @@ describe('VisitorsService', () => {
 
       expect(visitorRepository.findOne).toHaveBeenCalledWith({ where: { id: visitorId, projectId: projectId } });
       expect(visitorRepository.save).toHaveBeenCalledWith(expect.objectContaining({ displayName: 'New Name' })); // Use expect.objectContaining
-      expect(eventsGateway.server.to).toHaveBeenCalledWith(`project.${projectId}`);
-      expect(eventsGateway.server.emit).toHaveBeenCalledWith('visitorUpdated', {
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith('visitor.updated', expect.objectContaining({
         projectId: projectId,
         visitorId: visitorId,
-        visitor: updatedSharedVisitor, // UPDATED
-      });
+        visitor: updatedSharedVisitor,
+      }));
       expect(result).toEqual(updatedSharedVisitor); // UPDATED
     });
 
@@ -177,7 +186,7 @@ describe('VisitorsService', () => {
       await expect(service.updateDisplayName(projectId, visitorId, updateDto)).rejects.toThrow(NotFoundException);
       expect(visitorRepository.findOne).toHaveBeenCalledWith({ where: { id: visitorId, projectId: projectId } });
       expect(visitorRepository.save).not.toHaveBeenCalled();
-      expect(mockEventsGateway.server.emit).not.toHaveBeenCalled();
+      expect(mockEventEmitter.emit).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException if displayName is empty', async () => {
@@ -187,7 +196,7 @@ describe('VisitorsService', () => {
       await expect(service.updateDisplayName(projectId, visitorId, updateDto)).rejects.toThrow(BadRequestException);
       expect(visitorRepository.findOne).not.toHaveBeenCalled();
       expect(visitorRepository.save).not.toHaveBeenCalled();
-      expect(mockEventsGateway.server.emit).not.toHaveBeenCalled();
+      expect(mockEventEmitter.emit).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException if displayName is too long', async () => {
@@ -197,7 +206,7 @@ describe('VisitorsService', () => {
       await expect(service.updateDisplayName(projectId, visitorId, updateDto)).rejects.toThrow(BadRequestException);
       expect(visitorRepository.findOne).not.toHaveBeenCalled();
       expect(visitorRepository.save).not.toHaveBeenCalled();
-      expect(mockEventsGateway.server.emit).not.toHaveBeenCalled();
+      expect(mockEventEmitter.emit).not.toHaveBeenCalled();
     });
 
     it('should update visitor if displayName has leading/trailing spaces and trim it internally', async () => {

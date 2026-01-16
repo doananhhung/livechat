@@ -1,5 +1,4 @@
 
-// src/gateway/events.gateway.ts
 import {
   WebSocketGateway,
   SubscribeMessage,
@@ -11,8 +10,9 @@ import {
   OnGatewayInit,
   WsException,
 } from '@nestjs/websockets';
+import { WsAuthService } from './services/ws-auth.service';
 import { Server, Socket } from 'socket.io';
-import { Logger, Inject, UseGuards, UsePipes, ValidationPipe, forwardRef } from '@nestjs/common';
+import { Logger, Inject, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { RealtimeSessionService } from '../realtime-session/realtime-session.service';
 import { type Redis } from 'ioredis';
 import { REDIS_SUBSCRIBER_CLIENT } from '../redis/redis.module';
@@ -22,14 +22,11 @@ import {
   VisitorIdentifiedEvent,
   VisitorMessageReceivedEvent,
 } from '../inbox/events';
+import { VisitorDisconnectedEvent, VisitorConnectedEvent } from '../visitors/events';
 import { Conversation, Visitor } from '../database/entities';
-import { MessageStatus, WidgetMessageDto, WebSocketEvent, NavigationEntry, VisitorSessionMetadata } from '@live-chat/shared-types';
+import { MessageStatus, WidgetMessageDto, WebSocketEvent } from '@live-chat/shared-types';
 import { ProjectService } from '../projects/project.service';
 import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
-import { UserService } from '../users/user.service';
-import { ConversationPersistenceService } from '../inbox/services/persistence/conversation.persistence.service';
-import { EntityManager } from 'typeorm';
 import { 
   IdentifyPayload, 
   SendMessagePayload, 
@@ -38,16 +35,13 @@ import {
   JoinRoomPayload,
   AgentTypingPayload,
   VisitorTypingBroadcastPayload,
-  VisitorContextUpdatedPayload,
   ConversationUpdatedPayload,
-  VisitorStatusChangedPayload // ADDED
+  VisitorStatusChangedPayload
 } from '@live-chat/shared-types';
 
-import { VisitorsService } from '../visitors/visitors.service'; // ADDED
+import { UpdateContextRequestEvent } from '../inbox/events';
 
 const NEW_MESSAGE_CHANNEL = 'new_message_channel';
-
-const MAX_URL_HISTORY_LENGTH = 10; // Defined in design
 
 @UseGuards(WsJwtAuthGuard)
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
@@ -65,12 +59,7 @@ export class EventsGateway
     @Inject(REDIS_SUBSCRIBER_CLIENT) private readonly redisSubscriber: Redis,
     private readonly eventEmitter: EventEmitter2,
     private readonly projectService: ProjectService,
-    private readonly configService: ConfigService,
-    private readonly jwtService: JwtService,
-    private readonly userService: UserService,
-    private readonly conversationPersistenceService: ConversationPersistenceService,
-    private readonly entityManager: EntityManager,
-    @Inject(forwardRef(() => VisitorsService)) private readonly visitorsService: VisitorsService // ADDED with forwardRef to avoid circular dependency if VisitorsService uses Gateway
+    private readonly wsAuthService: WsAuthService,
   ) {}
 
   public emitToProject(projectId: number, event: string, payload: any) {
@@ -102,95 +91,17 @@ export class EventsGateway
 
   async handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
+    
+    const result = await this.wsAuthService.validateConnection(client);
 
-    const origin = client.handshake.headers.origin;
-    const projectId = client.handshake.query.projectId;
-    const authToken = client.handshake.auth?.token;
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-
-    // 1. Agent Authentication (JWT)
-    if (authToken) {
-      try {
-        const payload = this.jwtService.verify(authToken, {
-          secret: this.configService.get<string>('JWT_SECRET'),
-        });
-        
-        const user = await this.userService.findOneById(payload.sub);
-        if (!user) {
-          this.logger.warn(`Connection rejected: User ${payload.sub} not found.`);
-          client.disconnect(true);
-          return;
-        }
-
-        // Check token revocation
-        const tokensValidFromSec = Math.floor(user.tokensValidFrom.getTime() / 1000);
-        if (payload.iat < tokensValidFromSec) {
-          this.logger.warn(`Connection rejected: Token revoked for user ${user.email}`);
-          client.disconnect(true);
-          return;
-        }
-
-        // Attach user to socket data for subsequent events
-        client.data.user = { id: user.id, email: user.email };
-        this.logger.log(`Agent authenticated: ${user.email}`);
-        return; // Authenticated agent, skip widget checks
-      } catch (error: any) {
-        this.logger.warn(`Connection rejected: Invalid JWT. ${error.message}`);
-        client.disconnect(true);
-        return;
-      }
-    }
-
-    // 2. Widget/Visitor Connection Checks
-    // Allow main frontend app without further checks (e.g. for dashboard access without auth yet)
-    if (origin === frontendUrl) {
+    if (!result.valid) {
+      this.logger.warn(`Connection rejected for ${client.id}: ${result.error}`);
+      client.disconnect(true);
       return;
     }
 
-    if (projectId && typeof projectId === 'string') {
-      const project = await this.projectService.findByProjectId(+projectId);
-      if (!project) {
-        this.logger.warn(`Connection rejected: Project ${projectId} not found.`);
-        client.disconnect(true);
-        return;
-      }
-
-      if (
-        !project.whitelistedDomains ||
-        project.whitelistedDomains.length === 0
-      ) {
-        this.logger.warn(
-          `Project ${projectId} has no whitelisted domains configured. WS connection denied for origin ${origin}.`
-        );
-        client.disconnect(true);
-        return;
-      }
-
-      if (origin) {
-        try {
-          const originUrl = new URL(origin);
-          const originDomain = originUrl.hostname;
-
-          if (!project.whitelistedDomains.includes(originDomain)) {
-            this.logger.warn(
-              `Connection rejected: Origin ${origin} not whitelisted for project ${projectId}`
-            );
-            client.disconnect(true);
-            return;
-          }
-        } catch (error) {
-          this.logger.warn(`Connection rejected: Invalid Origin header ${origin}`);
-          client.disconnect(true);
-          return;
-        }
-      } else {
-        // No origin header provided for a widget connection
-        this.logger.warn(
-          `Connection rejected: Missing Origin header for project ${projectId}`
-        );
-        client.disconnect(true);
-        return;
-      }
+    if (result.user) {
+      client.data.user = result.user;
     }
   }
 
@@ -201,10 +112,12 @@ export class EventsGateway
       // Emit visitor offline status change
       this.emitVisitorStatusChanged(client.data.projectId, client.data.visitorUid, false);
       
-      // Update lastSeenAt
-      this.visitorsService.updateLastSeenAtByUid(client.data.visitorUid).catch(err => 
-        this.logger.error(`Failed to update lastSeenAt for visitorUid ${client.data.visitorUid}`, err)
-      );
+      // Emit visitor.disconnected event for domain handlers to process
+      const disconnectedEvent = new VisitorDisconnectedEvent();
+      disconnectedEvent.projectId = client.data.projectId;
+      disconnectedEvent.visitorUid = client.data.visitorUid;
+      disconnectedEvent.conversationId = client.data.conversationId;
+      this.eventEmitter.emit('visitor.disconnected', disconnectedEvent);
     }
   }
 
@@ -240,7 +153,8 @@ export class EventsGateway
     visitor: Visitor,
     conversation: Conversation | null,
     projectId: number,
-    visitorUid: string
+    visitorUid: string,
+    messages: WidgetMessageDto[] = []
   ) {
     const socket = this.server.sockets.sockets.get(socketId);
     if (!socket) {
@@ -258,25 +172,13 @@ export class EventsGateway
       socket.data.visitorId = visitor.id;
     }
 
-    let messagesForFrontend: WidgetMessageDto[] = [];
-
     // Handle lazy conversation creation: conversation may be null for new visitors
     if (conversation) {
       socket.data.conversationId = conversation.id;
       
-      if (conversation.messages && conversation.messages.length > 0) {
-        messagesForFrontend = conversation.messages.map((msg) => ({
-          id: msg.id,
-          content: msg.content || '',
-          sender: {
-            type: msg.fromCustomer ? 'visitor' : 'agent',
-            name: msg.senderId,
-          },
-          status: msg.status as MessageStatus,
-          timestamp: typeof msg.createdAt === 'string' ? msg.createdAt : msg.createdAt.toISOString(),
-        }));
+      if (messages.length > 0) {
         this.logger.log(
-          `Loaded ${messagesForFrontend.length} messages for conversationId ${conversation.id}`
+          `Loaded ${messages.length} messages for conversationId ${conversation.id}`
         );
       } else {
         this.logger.log(
@@ -292,7 +194,7 @@ export class EventsGateway
 
     this.logger.log(`Emitting conversationHistory to ${socket.id}`);
     socket.emit(WebSocketEvent.CONVERSATION_HISTORY, {
-      messages: messagesForFrontend,
+      messages: messages,
     });
   }
 
@@ -314,10 +216,11 @@ export class EventsGateway
     // Emit visitor online status change
     this.emitVisitorStatusChanged(payload.projectId, payload.visitorUid, true);
 
-    // Update lastSeenAt
-    this.visitorsService.updateLastSeenAtByUid(payload.visitorUid).catch(err => 
-      this.logger.error(`Failed to update lastSeenAt for visitorUid ${payload.visitorUid}`, err)
-    );
+    // Emit visitor.connected event for domain handlers to process
+    const connectedEvent = new VisitorConnectedEvent();
+    connectedEvent.projectId = payload.projectId;
+    connectedEvent.visitorUid = payload.visitorUid;
+    this.eventEmitter.emit('visitor.connected', connectedEvent);
   }
 
   @SubscribeMessage(WebSocketEvent.SEND_MESSAGE)
@@ -381,92 +284,14 @@ export class EventsGateway
       return;
     }
 
-    // Handle lazy conversation creation: conversationId might be missing if
-    // the conversation was created on first message after the socket connected.
-    // Look it up by visitorUid and cache it on the socket for future calls.
-    if (!conversationId) {
-      this.logger.debug(
-        `conversationId missing on socket ${client.id}, looking up by visitorUid: ${visitorUid}`
-      );
-      
-      const conversation = await this.entityManager.getRepository(Conversation).findOne({
-        where: { visitor: { visitorUid } },
-        select: ['id'],
-      });
-      
-      if (conversation) {
-        conversationId = conversation.id;
-        client.data.conversationId = conversationId; // Cache for future calls
-        this.logger.debug(
-          `Found and cached conversationId ${conversationId} for socket ${client.id}`
-        );
-      } else {
-        this.logger.debug(
-          `No conversation found for visitorUid ${visitorUid}, skipping updateContext`
-        );
-        return;
-      }
-    }
-
-    // Store currentUrl in Redis (existing logic)
-    await this.realtimeSessionService.setVisitorCurrentUrl(
-      visitorUid,
-      payload.currentUrl
-    );
-
-    // Update conversation metadata with new URL
-    try {
-      const conversation = await this.entityManager.getRepository(Conversation).findOne({
-        where: { id: conversationId as string }, // conversationId from client.data is string
-      });
-
-      if (conversation) {
-        // Ensure metadata structure exists
-        if (!conversation.metadata) {
-          conversation.metadata = {
-            referrer: null, // Should be set on first message, but fallback
-            landingPage: payload.currentUrl, // Fallback if metadata was missing
-            urlHistory: [],
-          };
-        }
-
-        // Create new navigation entry
-        const newEntry: NavigationEntry = {
-          url: payload.currentUrl,
-          title: payload.currentUrl, // Frontend should ideally send the title
-          timestamp: new Date().toISOString(),
-        };
-
-        // Add to history and maintain FIFO limit
-        conversation.metadata.urlHistory.push(newEntry);
-        if (conversation.metadata.urlHistory.length > MAX_URL_HISTORY_LENGTH) {
-          conversation.metadata.urlHistory.shift(); // Remove oldest entry
-        }
-
-        await this.entityManager.getRepository(Conversation).save(conversation);
-
-        // Emit conversationUpdated event to agents for real-time visualization
-        this.emitConversationUpdated(conversation.projectId, {
-          conversationId: conversation.id,
-          fields: {
-            metadata: conversation.metadata, // Send updated metadata
-          },
-        });
-      }
-    } catch (error) {
-      this.logger.error(
-        `Error updating conversation metadata for conversationId ${conversationId}:`,
-        error
-      );
-    }
-
-    // Broadcast to agents (existing logic)
-    this.logger.log(`Emitting visitorContextUpdated to project ${projectId}`);
-    const broadcastPayload: VisitorContextUpdatedPayload = {
-      conversationId,
-      currentUrl: payload.currentUrl,
-    };
-    this.server.to(`project:${projectId}`).emit(WebSocketEvent.VISITOR_CONTEXT_UPDATED, broadcastPayload);
+    // Emit update.context.request event for domain handlers to process
+    const contextEvent = new UpdateContextRequestEvent();
+    contextEvent.projectId = projectId;
+    contextEvent.visitorUid = visitorUid;
+    contextEvent.currentUrl = payload.currentUrl;
+    contextEvent.conversationId = conversationId;
+    contextEvent.socketId = client.id;
+    this.eventEmitter.emit('update.context.request', contextEvent);
   }
 
   @SubscribeMessage(WebSocketEvent.JOIN_PROJECT_ROOM)

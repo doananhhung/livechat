@@ -9,6 +9,7 @@ import { ConversationService } from './conversation.service';
 import { getQueueToken } from '@nestjs/bullmq';
 import { User, Conversation, Message, Project, Visitor } from '../../database/entities';
 import { MessageStatus } from '@live-chat/shared-types';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('MessageService', () => {
   let service: MessageService;
@@ -49,6 +50,10 @@ describe('MessageService', () => {
     add: jest.fn(),
   };
 
+  const mockEventEmitter = {
+    emit: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -60,6 +65,7 @@ describe('MessageService', () => {
         { provide: MessagePersistenceService, useValue: mockMessagePersistenceService },
         { provide: ConversationService, useValue: mockConversationService },
         { provide: getQueueToken('conversation-workflow-queue'), useValue: mockQueue },
+        { provide: EventEmitter2, useValue: mockEventEmitter },
       ],
     }).compile();
 

@@ -1,14 +1,16 @@
 
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { EventsGateway } from './events.gateway';
+import { WsAuthService } from './services/ws-auth.service';
+import { GatewayEventListener } from './gateway.event-listener';
 import { AuthModule } from '../auth/auth.module';
 import { UserModule } from '../users/user.module';
 import { WsJwtAuthGuard } from './guards/ws-jwt-auth.guard';
 import { EventProducerModule } from '../event-producer/event-producer.module';
 import { RealtimeSessionModule } from '../realtime-session/realtime-session.module';
 import { ProjectModule } from '../projects/project.module';
-import { InboxModule } from '../inbox/inbox.module'; // Import InboxModule
-import { VisitorsModule } from '../visitors/visitors.module'; // ADDED
+import { InboxModule } from '../inbox/inbox.module';
+import { VisitorsModule } from '../visitors/visitors.module';
 
 @Module({
   imports: [
@@ -17,10 +19,10 @@ import { VisitorsModule } from '../visitors/visitors.module'; // ADDED
     EventProducerModule,
     RealtimeSessionModule,
     ProjectModule,
-    forwardRef(() => InboxModule), // Use forwardRef to resolve circular dependency
-    forwardRef(() => VisitorsModule), // ADDED
+    InboxModule,
+    VisitorsModule,
   ],
-  providers: [EventsGateway, WsJwtAuthGuard],
+  providers: [EventsGateway, WsJwtAuthGuard, GatewayEventListener, WsAuthService],
   exports: [EventsGateway],
 })
 export class GatewayModule {}

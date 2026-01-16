@@ -8,6 +8,7 @@ import { ConversationPersistenceService } from './persistence/conversation.persi
 import { ConversationStatus, User } from '@live-chat/shared-types';
 import { NotFoundException } from '@nestjs/common';
 import { ListConversationsDto } from '@live-chat/shared-dtos';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('ConversationService', () => {
   let service: ConversationService;
@@ -55,6 +56,10 @@ describe('ConversationService', () => {
     emitConversationDeleted: jest.fn(),
   };
 
+  const mockEventEmitter = {
+    emit: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -64,6 +69,7 @@ describe('ConversationService', () => {
         { provide: EventsGateway, useValue: mockEventsGateway },
         { provide: ProjectService, useValue: mockProjectService },
         { provide: ConversationPersistenceService, useValue: mockPersistenceService },
+        { provide: EventEmitter2, useValue: mockEventEmitter },
       ],
     }).compile();
 

@@ -4,7 +4,6 @@ import {
   Injectable,
   NotFoundException,
   Inject,
-  forwardRef,
   Logger,
 } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
@@ -12,7 +11,7 @@ import {
   ListConversationsDto,
   UpdateConversationDto,
 } from '@live-chat/shared-dtos';
-import { ConversationStatus, HistoryVisibilityMode } from '@live-chat/shared-types';
+import { ConversationStatus, HistoryVisibilityMode, NavigationEntry } from '@live-chat/shared-types';
 import {
   Conversation,
   User,
@@ -20,17 +19,26 @@ import {
   Visitor,
 } from '../../database/entities';
 import { RealtimeSessionService } from '../../realtime-session/realtime-session.service';
-import { EventsGateway } from '../../gateway/events.gateway';
 import { ProjectService } from '../../projects/project.service';
 import { ConversationPersistenceService } from './persistence/conversation.persistence.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { 
+  ConversationUpdatedEvent, 
+  ConversationDeletedEvent, 
+  AgentTypingEvent,
+  VisitorContextUpdatedEvent 
+} from '../events';
+
+const MAX_URL_HISTORY_LENGTH = 10;
 
 @Injectable()
 export class ConversationService {
+  private readonly logger = new Logger(ConversationService.name);
+
   constructor(
     private readonly entityManager: EntityManager,
     private readonly realtimeSessionService: RealtimeSessionService,
-    @Inject(forwardRef(() => EventsGateway))
-    private readonly eventsGateway: EventsGateway,
+    private readonly eventEmitter: EventEmitter2,
     private readonly projectService: ProjectService,
     private readonly conversationPersistenceService: ConversationPersistenceService
   ) {}
@@ -293,11 +301,11 @@ export class ConversationService {
     const visitorSocketId =
       await this.realtimeSessionService.getVisitorSession(visitorUid);
     if (visitorSocketId) {
-      this.eventsGateway.sendAgentTypingToVisitor(
-        visitorSocketId,
-        isTyping,
-        user.fullName || 'Agent' // Use fullName or a default name
-      );
+      const event = new AgentTypingEvent();
+      event.visitorSocketId = visitorSocketId;
+      event.isTyping = isTyping;
+      event.agentName = user.fullName || 'Agent';
+      this.eventEmitter.emit('agent.typing', event);
     }
   }
 
@@ -332,13 +340,16 @@ export class ConversationService {
       const updated = await manager.save(conversation);
 
       // 5. Emit Event
-      this.eventsGateway.emitConversationUpdated(conversation.projectId, {
+      const event = new ConversationUpdatedEvent();
+      event.projectId = conversation.projectId;
+      event.payload = {
         conversationId: conversation.id,
         fields: {
           assigneeId: conversation.assigneeId,
           assignedAt: conversation.assignedAt,
         },
-      });
+      };
+      this.eventEmitter.emit('conversation.updated', event);
 
       return updated;
     });
@@ -371,13 +382,16 @@ export class ConversationService {
       const updated = await manager.save(conversation);
 
       // 4. Emit Event
-      this.eventsGateway.emitConversationUpdated(conversation.projectId, {
+      const event = new ConversationUpdatedEvent();
+      event.projectId = conversation.projectId;
+      event.payload = {
         conversationId: conversation.id,
         fields: {
           assigneeId: null,
           assignedAt: null,
         },
-      });
+      };
+      this.eventEmitter.emit('conversation.updated', event);
 
       return updated;
     });
@@ -407,6 +421,115 @@ export class ConversationService {
     await this.entityManager.delete(Conversation, conversationId);
 
     // Emit event to notify connected clients
-    this.eventsGateway.emitConversationDeleted(projectId, conversationId);
+    const event = new ConversationDeletedEvent();
+    event.projectId = projectId;
+    event.conversationId = conversationId;
+    this.eventEmitter.emit('conversation.deleted', event);
+  }
+
+  /**
+   * Truncates the URL history of a conversation to keep only the most recent N entries.
+   * Used when a visitor disconnects to reduce stored history size.
+   * @param conversationId The ID of the conversation.
+   * @param limit The maximum number of entries to keep.
+   */
+  async truncateUrlHistory(conversationId: string, limit: number): Promise<void> {
+    const conversation = await this.entityManager.findOne(Conversation, {
+      where: { id: conversationId },
+    });
+
+    if (conversation?.metadata?.urlHistory && conversation.metadata.urlHistory.length > limit) {
+      // Keep only the last N entries (most recent)
+      conversation.metadata.urlHistory = conversation.metadata.urlHistory.slice(-limit);
+      await this.entityManager.save(Conversation, conversation);
+      this.logger.debug(`Truncated URL history for conversation ${conversationId} to ${limit} entries`);
+    }
+  }
+
+  /**
+   * Updates the visitor's current context (URL) and conversation metadata.
+   * Handles lazy conversation resolution.
+   * 
+   * @param projectId The project ID.
+   * @param visitorUid The visitor's UID.
+   * @param currentUrl The new URL.
+   * @param conversationId Optional conversation ID if known.
+   * @returns The resolved conversation ID or null if none exists.
+   */
+  async updateContext(
+    projectId: number,
+    visitorUid: string,
+    currentUrl: string,
+    conversationId?: string
+  ): Promise<string | null> {
+    // 1. Resolve conversationId if missing
+    let targetConversationId = conversationId;
+    if (!targetConversationId) {
+       const conversation = await this.entityManager.getRepository(Conversation).findOne({
+        where: { visitor: { visitorUid } },
+        select: ['id'],
+      });
+      if (conversation) {
+        targetConversationId = conversation.id;
+      } else {
+        // No conversation exists yet, so we can't update metadata.
+        // But we still update Redis for presence.
+        await this.realtimeSessionService.setVisitorCurrentUrl(visitorUid, currentUrl);
+        return null; 
+      }
+    }
+
+    // 2. Update Redis
+    await this.realtimeSessionService.setVisitorCurrentUrl(visitorUid, currentUrl);
+
+    // 3. Update DB Metadata
+    try {
+      const conversation = await this.entityManager.getRepository(Conversation).findOne({
+        where: { id: targetConversationId },
+      });
+
+      if (conversation) {
+        if (!conversation.metadata) {
+          conversation.metadata = {
+            referrer: null,
+            landingPage: currentUrl,
+            urlHistory: [],
+          };
+        }
+
+        const newEntry: NavigationEntry = {
+          url: currentUrl,
+          title: currentUrl,
+          timestamp: new Date().toISOString(),
+        };
+
+        conversation.metadata.urlHistory.push(newEntry);
+        if (conversation.metadata.urlHistory.length > MAX_URL_HISTORY_LENGTH) {
+          conversation.metadata.urlHistory.shift();
+        }
+
+        await this.entityManager.getRepository(Conversation).save(conversation);
+
+        // 4. Emit ConversationUpdated
+        const event = new ConversationUpdatedEvent();
+        event.projectId = conversation.projectId;
+        event.payload = {
+          conversationId: conversation.id,
+          fields: { metadata: conversation.metadata },
+        };
+        this.eventEmitter.emit('conversation.updated', event);
+      }
+    } catch (error) {
+      this.logger.error(`Error updating conversation metadata:`, error);
+    }
+
+    // 5. Emit VisitorContextUpdated
+    const contextEvent = new VisitorContextUpdatedEvent();
+    contextEvent.projectId = projectId;
+    contextEvent.currentUrl = currentUrl;
+    contextEvent.conversationId = targetConversationId;
+    this.eventEmitter.emit('visitor.context.updated', contextEvent);
+
+    return targetConversationId;
   }
 }

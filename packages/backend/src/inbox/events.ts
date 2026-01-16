@@ -1,4 +1,6 @@
-import type { VisitorSessionMetadata } from "@live-chat/shared-types";
+import { WidgetMessageDto, VisitorSessionMetadata, ConversationUpdatedPayload, MessageSentPayload } from '@live-chat/shared-types';
+import { Conversation, Visitor } from '../database/entities';
+import { Message } from '../database/entities/message.entity';
 
 export class VisitorMessageReceivedEvent {
   tempId: string;
@@ -24,5 +26,49 @@ export class VisitorTypingEvent {
 export class VisitorContextUpdatedEvent {
   currentUrl: string;
   projectId: number;
-  conversationId: number;
+  conversationId: string;
+}
+
+export class UpdateContextRequestEvent {
+  projectId: number;
+  visitorUid: string;
+  currentUrl: string;
+  conversationId?: string;
+  socketId: string;
+}
+
+export class ConversationUpdatedEvent {
+  projectId: number;
+  payload: ConversationUpdatedPayload;
+}
+
+export class ConversationDeletedEvent {
+  projectId: number;
+  conversationId: string;
+}
+
+export class AgentTypingEvent {
+  visitorSocketId: string;
+  isTyping: boolean;
+  agentName: string;
+}
+
+export class AgentMessageSentEvent {
+  visitorSocketId: string | null;
+  message: Message;
+  projectId: number;
+}
+
+export class VisitorSessionReadyEvent {
+  socketId: string;
+  visitor: Visitor;
+  conversation: Conversation | null;
+  projectId: number;
+  visitorUid: string;
+  messages: WidgetMessageDto[];
+}
+
+export class VisitorMessageProcessedEvent {
+  visitorSocketId: string;
+  payload: MessageSentPayload;
 }

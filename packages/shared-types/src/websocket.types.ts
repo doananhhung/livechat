@@ -76,7 +76,7 @@ export interface MessageSentPayload {
 }
 
 export interface VisitorContextUpdatedPayload {
-  conversationId: number;
+  conversationId: string;
   currentUrl: string;
 }
 

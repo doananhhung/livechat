@@ -1,6 +1,4 @@
 
-// src/inbox/services/message.service.ts
-
 import { EntityManager } from 'typeorm';
 import {
   CreateMessageDto,
@@ -10,14 +8,11 @@ import {
   Conversation,
   Message,
   User,
-  Project,
 } from '../../database/entities';
-import { MessageStatus, WebSocketEvent } from '@live-chat/shared-types';
-import { EventsGateway } from '../../gateway/events.gateway';
+import { MessageStatus } from '@live-chat/shared-types';
 import {
   Injectable,
   Logger,
-  ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import { RealtimeSessionService } from '../../realtime-session/realtime-session.service';
@@ -26,6 +21,8 @@ import { MessagePersistenceService } from './persistence/message.persistence.ser
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { ConversationService } from './conversation.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AgentMessageSentEvent } from '../events';
 
 @Injectable()
 export class MessageService {
@@ -34,14 +31,12 @@ export class MessageService {
   constructor(
     private readonly entityManager: EntityManager,
     private readonly realtimeSessionService: RealtimeSessionService,
-    private readonly eventsGateway: EventsGateway,
+    private readonly eventEmitter: EventEmitter2,
     private readonly projectService: ProjectService,
     private readonly messagePersistenceService: MessagePersistenceService,
     @InjectQueue('conversation-workflow-queue') private readonly workflowQueue: Queue,
     private readonly conversationService: ConversationService
-  ) {
-    this.logger.log(`EventGateWay server: ${this.eventsGateway.server}`);
-  }
+  ) {}
 
   /**
    * Create a new message, called from EventConsumerService.
@@ -131,9 +126,14 @@ export class MessageService {
       savedMessage.recipientId
     );
 
-    // Step 4: Send real-time event and update final status
+    // Step 4: Emit Event for Gateway to handle
+    const event = new AgentMessageSentEvent();
+    event.visitorSocketId = visitorSocketId;
+    event.message = savedMessage;
+    event.projectId = project.id;
+    this.eventEmitter.emit('agent.message.sent', event);
+
     if (visitorSocketId) {
-      this.eventsGateway.sendReplyToVisitor(visitorSocketId, savedMessage);
       savedMessage.status = MessageStatus.SENT;
     } else {
       savedMessage.status = MessageStatus.DELIVERED;
@@ -144,11 +144,6 @@ export class MessageService {
     this.logger.log(
       `Agent reply message ${savedMessage.id} status updated to ${savedMessage.status}`
     );
-
-    // Step 4b: Broadcast to project room for agent dashboard real-time updates
-    this.eventsGateway.server
-      .to(`project:${project.id}`)
-      .emit(WebSocketEvent.NEW_MESSAGE, savedMessage);
     
     const updatedMessage = await this.entityManager.save(savedMessage);
 
