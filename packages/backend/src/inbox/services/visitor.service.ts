@@ -39,11 +39,11 @@ export class VisitorService {
    * @NEW
    * Finds a visitor by their ID.
    * Used by the inbox controller to display visitor information.
-   * Populates currentUrl from Redis.
+   * Populates currentUrl and isOnline from Redis.
    * @param visitorId The ID of the visitor.
-   * @returns The Visitor entity or null if not found.
+   * @returns The Visitor entity with runtime properties or null if not found.
    */
-  async getVisitorById(visitorId: number): Promise<Visitor | null> {
+  async getVisitorById(visitorId: number): Promise<(Visitor & { isOnline: boolean | null }) | null> {
     const visitor = await this.entityManager.findOne(Visitor, {
       where: { id: visitorId },
     });
@@ -54,8 +54,15 @@ export class VisitorService {
         await this.realtimeSessionService.getVisitorCurrentUrl(
           visitor.visitorUid
         );
+      
+      // Populate isOnline status from Redis
+      const isOnline = await this.realtimeSessionService.isVisitorOnline(
+        visitor.visitorUid
+      );
+
+      return { ...visitor, isOnline };
     }
 
-    return visitor;
+    return null;
   }
 }

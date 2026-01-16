@@ -47,7 +47,7 @@ import { VisitorsService } from '../visitors/visitors.service'; // ADDED
 
 const NEW_MESSAGE_CHANNEL = 'new_message_channel';
 
-const MAX_URL_HISTORY_LENGTH = 50; // Defined in design
+const MAX_URL_HISTORY_LENGTH = 10; // Defined in design
 
 @UseGuards(WsJwtAuthGuard)
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
