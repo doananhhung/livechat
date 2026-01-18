@@ -1,6 +1,7 @@
 // src/components/layout/UserNav.tsx
 
 import { useAuthStore } from "../../stores/authStore";
+import { useThemeStore } from "../../stores/themeStore";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,19 +9,25 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from "../../components/ui/DropdownMenu";
 import { Avatar } from "../../components/ui/Avatar";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Settings } from "lucide-react";
+import { LogOut, Settings, Sun, Moon, Monitor } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface UserNavProps {
   isCollapsed?: boolean;
 }
 
 export const UserNav = ({ isCollapsed = false }: UserNavProps) => {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const { theme, setTheme } = useThemeStore();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -82,12 +89,38 @@ export const UserNav = ({ isCollapsed = false }: UserNavProps) => {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => navigate("/settings/profile")}>
           <Settings className="mr-2 h-4 w-4" />
-          <span>My Profile</span>
+          <span>{t("settings.myProfile")}</span>
         </DropdownMenuItem>
+        
+        {/* Theme submenu */}
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <Sun className="mr-2 h-4 w-4" />
+            <span>{t("settings.theme")}</span>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            <DropdownMenuItem onClick={() => setTheme("light")}>
+              <Sun className="mr-2 h-4 w-4" />
+              <span>{t("settings.themeLight")}</span>
+              {theme === "light" && <span className="ml-auto text-primary">✓</span>}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme("dark")}>
+              <Moon className="mr-2 h-4 w-4" />
+              <span>{t("settings.themeDark")}</span>
+              {theme === "dark" && <span className="ml-auto text-primary">✓</span>}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme("system")}>
+              <Monitor className="mr-2 h-4 w-4" />
+              <span>{t("settings.themeSystem")}</span>
+              {theme === "system" && <span className="ml-auto text-primary">✓</span>}
+            </DropdownMenuItem>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+        
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
+          <span>{t("settings.logout")}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

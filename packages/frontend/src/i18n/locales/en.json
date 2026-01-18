@@ -25,7 +25,12 @@
         "view": "View",
         "previous": "Previous",
         "next": "Next",
-        "pageOf": "Page {{page}} of {{total}}"
+        "pageOf": "Page {{page}} of {{total}}",
+        "submit": "Submit",
+        "select": "Select...",
+        "required": "This field is required",
+        "yes": "Yes",
+        "no": "No"
     },
     "conversations": {
         "status": {
@@ -240,9 +245,51 @@
             "online": "Online",
             "offline": "Offline"
         },
-        "lastSeen": "Last seen {{time}}"
+        "lastSeen": "Last seen {{time}}",
+        "notes": "Notes",
+        "actions": "Actions"
+    },
+    "actions": {
+        "newAction": "New Action",
+        "history": "History",
+        "noTemplates": "No action templates available.",
+        "noHistory": "No actions have been submitted yet.",
+        "unknownTemplate": "Unknown Template",
+        "sendFormToVisitor": "Send Form",
+        "formDisplay": {
+            "fields": "{{count}} fields",
+            "awaitingResponse": "Awaiting visitor response",
+            "visitorFilling": "Visitor is filling form...",
+            "submitted": "Submitted",
+            "expired": "Expired",
+            "textField": "Text field",
+            "numberField": "Number field",
+            "dateField": "Date field",
+            "yesNo": "Yes/No",
+            "options": "Options: {{options}}",
+            "yes": "Yes",
+            "no": "No",
+            "submittedTime": "Submitted {{time}}",
+            "edit": "Edit",
+            "delete": "Delete",
+            "templateSubmitted": "{{templateName}} Submitted"
+        },
+        "historyStatus": {
+            "submitted": "submitted",
+            "processing": "processing",
+            "completed": "completed",
+            "failed": "failed",
+            "cancelled": "cancelled"
+        }
     },
     "settings": {
+        "myProfile": "My Profile",
+        "theme": "Theme",
+        "themeLight": "Light",
+        "themeDark": "Dark",
+        "themeSystem": "System",
+        "logout": "Log out",
+        "manage": "Manage",
         "title": "Settings",
         "projectName": "Project name",
         "basicInfo": "Basic Information",
@@ -265,8 +312,6 @@
         "chatStyle": "Chat Style",
         "chatStyleDesc": "Always show old chat history. New messages will reopen old conversations.",
         "widgetTheme": "Widget Theme",
-        "themeLight": "Light",
-        "themeDark": "Dark",
         "widgetHeader": "Widget Header",
         "primaryColor": "Primary Color",
         "useDefaultColor": "Use default color",
@@ -286,9 +331,10 @@
         "copySnippet": "Copy embed code",
         "cannedResponses": "Canned Responses",
         "cannedResponsesDesc": "Manage quick reply shortcuts",
+        "actionTemplates": "Action Templates",
+        "actionTemplatesDesc": "Create and manage form templates for agents",
         "auditLogs": "Audit Logs",
         "auditLogsDesc": "View change history and security logs",
-        "themeSystem": "System",
         "projectNamePlaceholder": "Enter project name...",
         "whitelistedDomainsHelp": "Only websites from these domains can use the widget (e.g., example.com)",
         "domainPlaceholder": "example.com (no https://)",
@@ -297,7 +343,6 @@
         "domainFormatError": "Domain format error",
         "invalidDomains": "The following domains are invalid (please remove http:// or https://): {{domains}}",
         "autoResolvePositive": "Auto-resolve time must be a non-negative number",
-        "manage": "Manage",
         "quickWidgetSettings": "Quick Widget Settings",
         "detailedSettings": "Detailed Settings for Project",
         "projectInfo": "Project Info",
@@ -307,6 +352,56 @@
             "projects": "Projects"
         },
         "backToInbox": "Back to Inbox"
+    },
+    "actionTemplates": {
+        "title": "Action Templates",
+        "description": "Manage form templates that agents can use during conversations.",
+        "addTemplate": "Add Template",
+        "editTemplate": "Edit Template",
+        "deleteTemplate": "Delete Template",
+        "deleteConfirm": "Are you sure you want to delete this template? This action cannot be undone.",
+        "noTemplates": "No action templates yet. Create your first template to get started.",
+        "table": {
+            "name": "Name",
+            "description": "Description",
+            "fields": "Fields",
+            "status": "Status",
+            "actions": "Actions",
+            "enabled": "Enabled",
+            "disabled": "Disabled"
+        },
+        "form": {
+            "name": "Template Name",
+            "namePlaceholder": "e.g., Create Order",
+            "description": "Description",
+            "descriptionPlaceholder": "Brief description of this action",
+            "fields": "Form Fields",
+            "addField": "Add Field",
+            "fieldKey": "Key",
+            "fieldLabel": "Label",
+            "fieldType": "Type",
+            "fieldRequired": "Required",
+            "fieldOptions": "Options (comma-separated)",
+            "removeField": "Remove field",
+            "noFields": "Add at least one field to your template."
+        },
+        "types": {
+            "text": "Text",
+            "number": "Number",
+            "date": "Date",
+            "boolean": "Yes/No",
+            "select": "Dropdown"
+        },
+        "toast": {
+            "created": "Action template created",
+            "updated": "Action template updated",
+            "deleted": "Action template deleted",
+            "enabled": "Action template enabled",
+            "disabled": "Action template disabled",
+            "createError": "Failed to create template",
+            "updateError": "Failed to update template",
+            "deleteError": "Failed to delete template"
+        }
     },
     "members": {
         "manager": "Manager",

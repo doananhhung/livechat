@@ -28,6 +28,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { CannedResponsesModule } from './canned-responses/canned-responses.module';
 import { VisitorNotesModule } from './visitor-notes/visitor-notes.module';
 import { VisitorsModule } from './visitors/visitors.module'; // Import VisitorsModule
+import { ActionsModule } from './actions/actions.module';
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { VisitorsModule } from './visitors/visitors.module'; // Import VisitorsM
     CannedResponsesModule,
     VisitorNotesModule,
     VisitorsModule, // Add VisitorsModule here
+    ActionsModule,
   ],
   controllers: [AppController],
   providers: [

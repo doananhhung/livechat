@@ -48,11 +48,6 @@ vi.mock("../../hooks/use-media-query", () => ({
   useMediaQuery: vi.fn(),
 }));
 
-// Mock useVisitorEvents hook
-vi.mock("../../features/inbox/hooks/useVisitorEvents", () => ({
-  useVisitorEvents: vi.fn(),
-}));
-
 // Mock child components
 vi.mock("../../components/features/inbox/ProjectSelector", () => ({
   ProjectSelector: () => <div data-testid="mock-project-selector"></div>,

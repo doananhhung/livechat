@@ -7,7 +7,7 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Spinner } from "../../components/ui/Spinner";
 import { useToast } from "../../components/ui/use-toast";
-import { ChevronRight, ArrowLeft, Info, Palette, Code, ShieldAlert, MessageSquarePlus } from "lucide-react";
+import { ChevronRight, ArrowLeft, Info, Palette, Code, ShieldAlert, MessageSquarePlus, Zap } from "lucide-react";
 import { PermissionGate } from "../../components/PermissionGate";
 import { ProjectRole, WidgetPosition, WidgetTheme } from "@live-chat/shared-types";
 import type { HistoryVisibilityMode } from "@live-chat/shared-types";
@@ -504,6 +504,27 @@ export const ProjectSettingsPage = () => {
                 </h2>
                 <p className="text-sm text-muted-foreground">
                   {t("settings.cannedResponsesDesc")}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-200" />
+          </button>
+        </div>
+
+        {/* Action Templates Link */}
+        <div className="bg-card border rounded-lg overflow-hidden">
+          <button
+            onClick={() => navigate(`/projects/${projectId}/settings/action-templates`)}
+            className="group w-full px-6 py-4 flex items-center justify-between hover:bg-accent transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Zap className="h-5 w-5 text-muted-foreground" />
+              <div className="text-left">
+                <h2 className="text-lg font-semibold text-foreground">
+                  {t("settings.actionTemplates")}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {t("settings.actionTemplatesDesc")}
                 </p>
               </div>
             </div>

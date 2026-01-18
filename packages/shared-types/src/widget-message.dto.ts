@@ -1,4 +1,4 @@
-import { MessageStatus } from './message.types';
+import { MessageContentType, MessageStatus } from './message.types';
 
 export type MessageSender = {
   type: 'visitor' | 'agent';
@@ -11,4 +11,6 @@ export interface WidgetMessageDto {
   sender: MessageSender;
   status: MessageStatus;
   timestamp: string;
+  contentType?: MessageContentType;
+  metadata?: Record<string, unknown>;
 }

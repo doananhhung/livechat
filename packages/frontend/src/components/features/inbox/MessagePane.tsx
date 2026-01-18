@@ -30,6 +30,23 @@ import {
 import { getStatusLabel, getAvailableTransitions } from "../../../lib/conversationUtils";
 
 import { AssignmentControls } from "./AssignmentControls";
+import { FormRequestBubble } from "./FormRequestBubble";
+import { FormSubmissionBubble } from "./FormSubmissionBubble";
+
+/**
+ * Renders message content based on contentType.
+ * Switches between plain text, form request, and form submission.
+ */
+const renderMessageContent = (msg: Message, conversationId: number) => {
+  switch (msg.contentType) {
+    case "form_request":
+      return <FormRequestBubble message={msg} conversationId={conversationId} />;
+    case "form_submission":
+      return <FormSubmissionBubble message={msg} />;
+    default:
+      return msg.content;
+  }
+};
 
 /**
  * Component displaying the message list in a conversation.
@@ -73,6 +90,19 @@ const MessageList = ({
               const isFirstInGroup = msgIndex === 0;
               const isLastInGroup = msgIndex === group.length - 1;
 
+              // Check if this is a form message that should be centered
+              const isFormMessage = msg.contentType === 'form_request' || msg.contentType === 'form_submission';
+
+              // Centered form message layout
+              if (isFormMessage) {
+                return (
+                  <div key={msg.id} className="flex justify-center my-4 animate-slide-in">
+                    {renderMessageContent(msg, conversationId)}
+                  </div>
+                );
+              }
+
+              // Regular message layout (left/right aligned)
               return (
                 <div
                   key={msg.id}
@@ -107,7 +137,7 @@ const MessageList = ({
                           : "bg-primary text-primary-foreground rounded-tr-none"
                       )}
                     >
-                      {msg.content}
+                      {renderMessageContent(msg, conversationId)}
                     </div>
                     {/* Show timestamp only for last message in group */}
                     {isLastInGroup && (

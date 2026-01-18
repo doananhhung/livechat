@@ -8,6 +8,14 @@ vi.mock('../../stores/authStore', () => ({
   useAuthStore: vi.fn(),
 }));
 
+vi.mock('../../stores/themeStore', () => ({
+  useThemeStore: () => ({ theme: 'system', setTheme: vi.fn() }),
+}));
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
+
 const mockedUseNavigate = vi.fn();
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
@@ -36,6 +44,9 @@ vi.mock('../../components/ui/DropdownMenu', () => ({
   ),
   DropdownMenuLabel: ({ children }: any) => <div>{children}</div>,
   DropdownMenuSeparator: () => <hr />,
+  DropdownMenuSub: ({ children }: any) => <div data-testid="mock-dropdown-sub">{children}</div>,
+  DropdownMenuSubTrigger: ({ children }: any) => <div data-testid="mock-dropdown-sub-trigger">{children}</div>,
+  DropdownMenuSubContent: ({ children }: any) => <div data-testid="mock-dropdown-sub-content">{children}</div>,
 }));
 
 describe('UserNav', () => {
@@ -111,8 +122,9 @@ describe('UserNav', () => {
     expect(within(dropdownContent).getByText(mockUser.email)).toBeInTheDocument();
     
     const items = screen.getAllByTestId('mock-dropdown-item');
-    expect(items[0]).toHaveTextContent('My Profile');
-    expect(items[1]).toHaveTextContent('Log out');
+    expect(items[0]).toHaveTextContent('settings.myProfile');
+    // Items 1-3 are theme options (light, dark, system) inside DropdownMenuSubContent
+    expect(items[4]).toHaveTextContent('settings.logout');
   });
 
   it('navigates to profile on click', () => {
@@ -121,7 +133,7 @@ describe('UserNav', () => {
         <UserNav />
       </BrowserRouter>
     );
-    const profileBtn = screen.getByText('My Profile');
+    const profileBtn = screen.getByText('settings.myProfile');
     fireEvent.click(profileBtn);
     expect(mockedUseNavigate).toHaveBeenCalledWith('/settings/profile');
   });
@@ -132,7 +144,7 @@ describe('UserNav', () => {
         <UserNav />
       </BrowserRouter>
     );
-    const logoutBtn = screen.getByText('Log out');
+    const logoutBtn = screen.getByText('settings.logout');
     fireEvent.click(logoutBtn);
     expect(mockLogout).toHaveBeenCalled();
     expect(mockedUseNavigate).toHaveBeenCalledWith('/login');

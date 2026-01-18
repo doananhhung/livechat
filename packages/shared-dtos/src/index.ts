@@ -39,3 +39,8 @@ export * from './update-user-dto';
 
 export * from './widget-settings.dto';
 
+export * from './action-template.dto';
+export * from './action-submission.dto';
+export * from './send-form-request.dto';
+export * from './submit-form-as-visitor.dto';
+export * from './update-submission.dto';

@@ -5,6 +5,8 @@ import { WebhookSubscription } from '../webhooks/entities/webhook-subscription.e
 import { WebhookDelivery } from '../webhooks/entities/webhook-delivery.entity';
 import { AuditLog } from '../audit-logs/audit.entity';
 import { CannedResponse } from '../canned-responses/entities/canned-response.entity';
+import { ActionTemplate } from '../actions/entities/action-template.entity';
+import { ActionSubmission } from '../actions/entities/action-submission.entity';
 import {
   Conversation,
   EmailChangeRequest,
@@ -43,6 +45,8 @@ export const DATABASE_ENTITIES = [
   AuditLog,
   CannedResponse,
   VisitorNote,
+  ActionTemplate,
+  ActionSubmission,
 ];
 
 /**

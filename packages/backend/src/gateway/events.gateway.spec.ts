@@ -10,6 +10,7 @@ import { WsAuthService } from './services/ws-auth.service';
 import { UpdateContextRequestEvent } from '../inbox/events';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../users/user.service';
+import { ActionsService } from '../actions/actions.service';
 
 describe('EventsGateway', () => {
   let gateway: EventsGateway;
@@ -19,6 +20,7 @@ describe('EventsGateway', () => {
   let server: jest.Mocked<Server>;
   let client: jest.Mocked<Socket>;
   let wsAuthService: jest.Mocked<WsAuthService>;
+  let actionsService: jest.Mocked<ActionsService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -80,7 +82,13 @@ describe('EventsGateway', () => {
            useValue: {
              findOneById: jest.fn(),
            }
-        }
+        },
+        {
+          provide: ActionsService,
+          useValue: {
+            submitFormAsVisitor: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -89,6 +97,7 @@ describe('EventsGateway', () => {
     redisSubscriber = module.get(REDIS_SUBSCRIBER_CLIENT);
     eventEmitter = module.get(EventEmitter2);
     wsAuthService = module.get(WsAuthService);
+    actionsService = module.get(ActionsService);
 
     server = { to: jest.fn().mockReturnThis(), emit: jest.fn(), use: jest.fn(), sockets: { sockets: new Map() } } as unknown as jest.Mocked<Server>;
     // @ts-ignore
@@ -234,6 +243,157 @@ describe('EventsGateway', () => {
     it('should make the client leave the project room', () => {
       gateway.handleLeaveProjectRoom(client, { projectId: 1 });
       expect(client.leave).toHaveBeenCalledWith('project:1');
+    });
+  });
+
+  // ==================== FORM EVENT TESTS ====================
+
+  describe('handleVisitorFillingForm', () => {
+    it('should broadcast visitorFillingForm to project room', () => {
+      client.data.projectId = 1;
+      client.data.conversationId = 'conv-1';
+      
+      gateway.handleVisitorFillingForm(client, { conversationId: 'conv-1', isFilling: true });
+      
+      expect(server.to).toHaveBeenCalledWith('project:1');
+      expect(server.emit).toHaveBeenCalledWith('visitorFillingForm', {
+        conversationId: 'conv-1',
+        isFilling: true,
+      });
+    });
+  });
+
+  describe('emitFormRequestSent', () => {
+    it('should emit formRequestSent to visitor socket', () => {
+      const payload = { conversationId: 'conv-1', message: { id: 'msg-1' } };
+      
+      gateway.emitFormRequestSent('visitor-socket-id', payload as any);
+      
+      expect(server.to).toHaveBeenCalledWith('visitor-socket-id');
+      expect(server.emit).toHaveBeenCalledWith('formRequestSent', payload);
+    });
+  });
+
+  describe('emitFormSubmitted', () => {
+    it('should emit formSubmitted to both project room and visitor socket', () => {
+      const payload = { 
+        conversationId: 'conv-1', 
+        submission: { id: 'sub-1' },
+        message: { id: 'msg-1' }
+      };
+      
+      gateway.emitFormSubmitted(1, 'visitor-socket-id', payload as any);
+      
+      // Emitted to project room
+      expect(server.to).toHaveBeenCalledWith('project:1');
+      expect(server.emit).toHaveBeenCalledWith('formSubmitted', payload);
+      
+      // Also emitted to visitor
+      expect(server.to).toHaveBeenCalledWith('visitor-socket-id');
+    });
+
+    it('should emit formSubmitted only to project room if no visitor socket', () => {
+      const payload = { 
+        conversationId: 'conv-1', 
+        submission: { id: 'sub-1' },
+        message: { id: 'msg-1' }
+      };
+      
+      gateway.emitFormSubmitted(1, null, payload as any);
+      
+      expect(server.to).toHaveBeenCalledWith('project:1');
+      expect(server.emit).toHaveBeenCalledWith('formSubmitted', payload);
+    });
+  });
+
+  describe('emitFormUpdated', () => {
+    it('should emit formUpdated to project room', () => {
+      const payload = { conversationId: 'conv-1', submissionId: 'sub-1' };
+      
+      gateway.emitFormUpdated(1, payload as any);
+      
+      expect(server.to).toHaveBeenCalledWith('project:1');
+      expect(server.emit).toHaveBeenCalledWith('formUpdated', payload);
+    });
+  });
+
+  describe('emitFormDeleted', () => {
+    it('should emit formDeleted to project room', () => {
+      const payload = { conversationId: 'conv-1', submissionId: 'sub-1' };
+      
+      gateway.emitFormDeleted(1, payload as any);
+      
+      expect(server.to).toHaveBeenCalledWith('project:1');
+      expect(server.emit).toHaveBeenCalledWith('formDeleted', payload);
+    });
+  });
+
+  describe('handleSubmitForm', () => {
+    it('should return error if visitorId is missing', async () => {
+      client.data = { conversationId: 1, projectId: 1 }; // Missing visitorId
+      
+      const result = await gateway.handleSubmitForm(client, {
+        formRequestMessageId: 'msg-1',
+        data: { field1: 'value1' },
+      });
+      
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Session not ready');
+    });
+
+    it('should return error if conversationId is missing', async () => {
+      client.data = { visitorId: 1, projectId: 1 }; // Missing conversationId
+      
+      const result = await gateway.handleSubmitForm(client, {
+        formRequestMessageId: 'msg-1',
+        data: { field1: 'value1' },
+      });
+      
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Session not ready');
+    });
+
+    it('should call actionsService and emit FORM_SUBMITTED on success', async () => {
+      client.data = { visitorId: 1, conversationId: 2, projectId: 3 };
+      client.emit = jest.fn();
+      
+      actionsService.submitFormAsVisitor.mockResolvedValue({
+        submission: { id: 'sub-1' } as any,
+        message: { id: 123 } as any,
+      });
+      
+      const result = await gateway.handleSubmitForm(client, {
+        formRequestMessageId: 'msg-1',
+        data: { field1: 'value1' },
+      });
+      
+      expect(result.success).toBe(true);
+      expect(actionsService.submitFormAsVisitor).toHaveBeenCalledWith(
+        '2', // conversationId as string
+        1,   // visitorId
+        {
+          formRequestMessageId: 'msg-1',
+          data: { field1: 'value1' },
+        }
+      );
+      expect(server.to).toHaveBeenCalledWith('project:3');
+      expect(client.emit).toHaveBeenCalledWith('formSubmitted', expect.any(Object));
+    });
+
+    it('should return error when actionsService throws', async () => {
+      client.data = { visitorId: 1, conversationId: 2, projectId: 3 };
+      
+      actionsService.submitFormAsVisitor.mockRejectedValue(
+        new Error('Form already submitted')
+      );
+      
+      const result = await gateway.handleSubmitForm(client, {
+        formRequestMessageId: 'msg-1',
+        data: { field1: 'value1' },
+      });
+      
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Form already submitted');
     });
   });
 });

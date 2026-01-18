@@ -10,6 +10,7 @@ import { useGetVisitor } from "../../../services/inboxApi";
 import type { Conversation, VisitorSessionMetadata } from "@live-chat/shared-types";
 import { VisitorNoteList } from "./VisitorNoteList";
 import { VisitorNameEditor } from './VisitorNameEditor'; // Move import to top
+import { ActionPanel } from "../actions/ActionPanel"; // ADDED
 import { formatDistanceToNow } from 'date-fns'; // ADDED
 import {
   ResizablePanelGroup,
@@ -40,7 +41,9 @@ export const VisitorContextPanel = ({ conversation }: { conversation: Conversati
   // Display history in reverse chronological order (newest first)
   const sortedHistory = [...urlHistory].reverse();
   const displayedHistory = showFullHistory ? sortedHistory : sortedHistory.slice(0, 3);
-
+  
+  // New State for Tabs
+  const [activeTab, setActiveTab] = useState<"notes" | "actions">("notes");
 
   return (
     <div className="flex flex-col h-full bg-card">
@@ -192,7 +195,29 @@ export const VisitorContextPanel = ({ conversation }: { conversation: Conversati
 
         {/* Bottom: Internal Notes */}
         <ResizablePanel id="internal-notes" order={2} defaultSize={30} minSize={20}>
-          <VisitorNoteList projectId={conversation.projectId} visitorId={Number(conversation.visitorId)} />
+            <div className="flex flex-col h-full">
+                <div className="flex border-b bg-muted/20">
+                    <button
+                        className={`flex-1 p-2 text-sm font-medium ${activeTab === 'notes' ? 'bg-background border-b-2 border-primary text-primary' : 'text-muted-foreground hover:bg-muted/50'}`}
+                        onClick={() => setActiveTab('notes')}
+                    >
+                        {t("visitor.notes")}
+                    </button>
+                    <button
+                        className={`flex-1 p-2 text-sm font-medium ${activeTab === 'actions' ? 'bg-background border-b-2 border-primary text-primary' : 'text-muted-foreground hover:bg-muted/50'}`}
+                        onClick={() => setActiveTab('actions')}
+                    >
+                        {t("visitor.actions")}
+                    </button>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                    {activeTab === 'notes' ? (
+                        <VisitorNoteList projectId={conversation.projectId} visitorId={Number(conversation.visitorId)} />
+                    ) : (
+                        <ActionPanel conversationId={String(conversation.id)} projectId={Number(conversation.projectId)} />
+                    )}
+                </div>
+            </div>
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>

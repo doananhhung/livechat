@@ -17,7 +17,6 @@ import {
   ResizablePanelGroup,
 } from "../../components/ui/resizable";
 import { VisitorContextPanel } from "../../components/features/inbox/VisitorContextPanel";
-import { useVisitorEvents } from "../../features/inbox/hooks/useVisitorEvents";
 import type { Conversation } from "@live-chat/shared-types";
 
 const InboxContent = () => {
@@ -146,13 +145,8 @@ export const InboxLayout = () => {
   });
 
   // Compute effective project ID early (before early returns)
-  // so useVisitorEvents can be called unconditionally
   const effectiveProjectId = projectId || (projects && projects.length > 0 ? projects[0].id.toString() : undefined);
   const numericProjectId = effectiveProjectId ? parseInt(effectiveProjectId, 10) : undefined;
-
-  // Listen for visitor events (e.g., name updates)
-  // IMPORTANT: This must be called before any early returns to satisfy Rules of Hooks
-  useVisitorEvents(numericProjectId);
 
   useEffect(() => {
     if (projects && projects.length > 0 && !projectId) {

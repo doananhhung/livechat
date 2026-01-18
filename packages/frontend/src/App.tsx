@@ -70,6 +70,11 @@ const CannedResponsesPage = lazy(() =>
     default: m.CannedResponsesPage,
   }))
 );
+const ActionTemplatesPage = lazy(() =>
+  import("./pages/settings/ActionTemplatesPage").then((m) => ({
+    default: m.ActionTemplatesPage,
+  }))
+);
 const ProjectsListPage = lazy(() =>
   import("./pages/settings/ProjectsListPage").then((m) => ({
     default: m.ProjectsListPage,
@@ -220,6 +225,10 @@ function App() {
             <Route
               path="/projects/:projectId/settings/canned-responses"
               element={<CannedResponsesPage />}
+            />
+            <Route
+              path="/projects/:projectId/settings/action-templates"
+              element={<ActionTemplatesPage />}
             />
 
             {/* Invitation management (protected) */}

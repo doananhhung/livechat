@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Settings, UserPlus, Info, Users, Sliders, ShieldAlert, MessageSquarePlus } from "lucide-react";
+import { Settings, UserPlus, Info, Users, Sliders, ShieldAlert, MessageSquarePlus, Zap } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,6 +75,13 @@ export const ProjectManagementMenu = ({
           >
             <MessageSquarePlus className="h-4 w-4 mr-2" />
           {t("settings.cannedResponses")}
+        </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={() => navigate(`/projects/${project.id}/settings/action-templates`)}
+          >
+            <Zap className="h-4 w-4 mr-2" />
+          {t("settings.actionTemplates")}
         </DropdownMenuItem>
 
           <DropdownMenuItem

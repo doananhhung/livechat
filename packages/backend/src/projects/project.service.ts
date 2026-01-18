@@ -107,6 +107,35 @@ export class ProjectService {
     return this.validateProjectMembership(id, userId);
   }
 
+  async isProjectMember(userId: string, projectId: number): Promise<boolean> {
+    const count = await this.entityManager.count(ProjectMember, {
+      where: { projectId, userId },
+    });
+    return count > 0;
+  }
+
+  async hasProjectRole(
+    userId: string,
+    projectId: number,
+    role: ProjectRole
+  ): Promise<boolean> {
+    const member = await this.entityManager.findOne(ProjectMember, {
+      where: { projectId, userId },
+    });
+
+    if (!member) return false;
+
+    // Simple role check. If roles become hierarchical (Manager > Agent), 
+    // we need to adjust this logic.
+    // For now, assume exact match or Manager can do everything?
+    // Usually Manager > Agent.
+    
+    if (member.role === ProjectRole.MANAGER) return true; // Manager has all permissions
+    if (member.role === role) return true;
+
+    return false;
+  }
+
   async update(
     id: number,
     updateProjectDto: UpdateProjectDto,

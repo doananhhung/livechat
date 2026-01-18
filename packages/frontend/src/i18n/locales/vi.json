@@ -25,7 +25,12 @@
         "view": "Xem",
         "previous": "Trước",
         "next": "Tiếp",
-        "pageOf": "Trang {{page}} trên {{total}}"
+        "pageOf": "Trang {{page}} trên {{total}}",
+        "submit": "Gửi",
+        "select": "Chọn...",
+        "required": "Trường này là bắt buộc",
+        "yes": "Có",
+        "no": "Không"
     },
     "conversations": {
         "status": {
@@ -240,9 +245,51 @@
             "online": "Trực tuyến",
             "offline": "Ngoại tuyến"
         },
-        "lastSeen": "Truy cập lần cuối {{time}}"
+        "lastSeen": "Truy cập lần cuối {{time}}",
+        "notes": "Ghi chú",
+        "actions": "Hành động"
+    },
+    "actions": {
+        "newAction": "Hành động mới",
+        "history": "Lịch sử",
+        "noTemplates": "Không có mẫu hành động nào.",
+        "noHistory": "Chưa có hành động nào được gửi.",
+        "unknownTemplate": "Mẫu không xác định",
+        "sendFormToVisitor": "Gửi biểu mẫu",
+        "formDisplay": {
+            "fields": "{{count}} trường",
+            "awaitingResponse": "Đang chờ khách phản hồi",
+            "visitorFilling": "Khách đang điền biểu mẫu...",
+            "submitted": "Đã gửi",
+            "expired": "Đã hết hạn",
+            "textField": "Trường văn bản",
+            "numberField": "Trường số",
+            "dateField": "Trường ngày",
+            "yesNo": "Có/Không",
+            "options": "Tùy chọn: {{options}}",
+            "yes": "Có",
+            "no": "Không",
+            "submittedTime": "Đã gửi {{time}}",
+            "edit": "Sửa",
+            "delete": "Xóa",
+            "templateSubmitted": "{{templateName}} Đã gửi"
+        },
+        "historyStatus": {
+            "submitted": "đã gửi",
+            "processing": "đang xử lý",
+            "completed": "hoàn thành",
+            "failed": "thất bại",
+            "cancelled": "đã hủy"
+        }
     },
     "settings": {
+        "myProfile": "Hồ sơ của tôi",
+        "theme": "Giao diện",
+        "themeLight": "Sáng",
+        "themeDark": "Tối",
+        "themeSystem": "Hệ thống",
+        "logout": "Đăng xuất",
+        "manage": "Quản lý",
         "title": "Cài đặt",
         "projectName": "Tên dự án",
         "basicInfo": "Thông tin cơ bản",
@@ -265,8 +312,6 @@
         "chatStyle": "Chat Style",
         "chatStyleDesc": "Luôn hiện lịch sử trò chuyện cũ. Tin nhắn mới sẽ mở lại hội thoại cũ.",
         "widgetTheme": "Giao diện Widget",
-        "themeLight": "Sáng",
-        "themeDark": "Tối",
         "widgetHeader": "Tiêu đề Widget",
         "primaryColor": "Màu chủ đạo",
         "useDefaultColor": "Sử dụng màu mặc định",
@@ -286,9 +331,10 @@
         "copySnippet": "Copy mã nhúng",
         "cannedResponses": "Mẫu câu trả lời",
         "cannedResponsesDesc": "Quản lý các phím tắt tin nhắn nhanh",
+        "actionTemplates": "Mẫu hành động",
+        "actionTemplatesDesc": "Tạo và quản lý biểu mẫu cho nhân viên",
         "auditLogs": "Nhật ký hoạt động",
         "auditLogsDesc": "Xem lịch sử thay đổi và bảo mật",
-        "themeSystem": "Hệ thống",
         "projectNamePlaceholder": "Nhập tên dự án...",
         "whitelistedDomainsHelp": "Chỉ các trang web từ các tên miền này mới có thể sử dụng widget (VD: example.com)",
         "domainPlaceholder": "example.com (không cần https://)",
@@ -297,7 +343,6 @@
         "domainFormatError": "Lỗi định dạng tên miền",
         "invalidDomains": "Các tên miền sau không hợp lệ (vui lòng xóa http:// hoặc https://): {{domains}}",
         "autoResolvePositive": "Thời gian tự động hoàn tất phải là số không âm",
-        "manage": "Quản lý",
         "quickWidgetSettings": "Cài đặt nhanh Widget",
         "detailedSettings": "Cài đặt chi tiết dự án",
         "projectInfo": "Thông tin dự án",
@@ -307,6 +352,56 @@
             "projects": "Dự án"
         },
         "backToInbox": "Quay lại Inbox"
+    },
+    "actionTemplates": {
+        "title": "Mẫu hành động",
+        "description": "Quản lý các biểu mẫu mà nhân viên có thể sử dụng trong cuộc trò chuyện.",
+        "addTemplate": "Thêm mẫu",
+        "editTemplate": "Chỉnh sửa mẫu",
+        "deleteTemplate": "Xóa mẫu",
+        "deleteConfirm": "Bạn có chắc chắn muốn xóa mẫu này? Hành động này không thể hoàn tác.",
+        "noTemplates": "Chưa có mẫu hành động nào. Tạo mẫu đầu tiên của bạn để bắt đầu.",
+        "table": {
+            "name": "Tên",
+            "description": "Mô tả",
+            "fields": "Trường",
+            "status": "Trạng thái",
+            "actions": "Hành động",
+            "enabled": "Đã bật",
+            "disabled": "Đã tắt"
+        },
+        "form": {
+            "name": "Tên mẫu",
+            "namePlaceholder": "VD: Tạo đơn hàng",
+            "description": "Mô tả",
+            "descriptionPlaceholder": "Mô tả ngắn về hành động này",
+            "fields": "Các trường biểu mẫu",
+            "addField": "Thêm trường",
+            "fieldKey": "Khóa",
+            "fieldLabel": "Nhãn",
+            "fieldType": "Loại",
+            "fieldRequired": "Bắt buộc",
+            "fieldOptions": "Tùy chọn (phân cách bằng dấu phẩy)",
+            "removeField": "Xóa trường",
+            "noFields": "Thêm ít nhất một trường vào mẫu của bạn."
+        },
+        "types": {
+            "text": "Văn bản",
+            "number": "Số",
+            "date": "Ngày",
+            "boolean": "Có/Không",
+            "select": "Lựa chọn"
+        },
+        "toast": {
+            "created": "Đã tạo mẫu hành động",
+            "updated": "Đã cập nhật mẫu hành động",
+            "deleted": "Đã xóa mẫu hành động",
+            "enabled": "Đã bật mẫu hành động",
+            "disabled": "Đã tắt mẫu hành động",
+            "createError": "Không thể tạo mẫu",
+            "updateError": "Không thể cập nhật mẫu",
+            "deleteError": "Không thể xóa mẫu"
+        }
     },
     "members": {
         "manager": "Quản lý viên",

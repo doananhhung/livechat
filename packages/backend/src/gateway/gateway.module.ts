@@ -1,4 +1,3 @@
-
 import { Module } from '@nestjs/common';
 import { EventsGateway } from './events.gateway';
 import { WsAuthService } from './services/ws-auth.service';
@@ -11,6 +10,7 @@ import { RealtimeSessionModule } from '../realtime-session/realtime-session.modu
 import { ProjectModule } from '../projects/project.module';
 import { InboxModule } from '../inbox/inbox.module';
 import { VisitorsModule } from '../visitors/visitors.module';
+import { ActionsModule } from '../actions/actions.module';
 
 @Module({
   imports: [
@@ -21,8 +21,14 @@ import { VisitorsModule } from '../visitors/visitors.module';
     ProjectModule,
     InboxModule,
     VisitorsModule,
+    ActionsModule,
   ],
-  providers: [EventsGateway, WsJwtAuthGuard, GatewayEventListener, WsAuthService],
+  providers: [
+    EventsGateway,
+    WsJwtAuthGuard,
+    GatewayEventListener,
+    WsAuthService,
+  ],
   exports: [EventsGateway],
 })
 export class GatewayModule {}
