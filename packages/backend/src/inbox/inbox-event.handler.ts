@@ -129,6 +129,8 @@ export class InboxEventHandlerService {
         },
         status: msg.status as any,
         timestamp: typeof msg.createdAt === 'string' ? msg.createdAt : msg.createdAt.toISOString(),
+        contentType: msg.contentType,
+        metadata: msg.metadata,
       }));
     }
 

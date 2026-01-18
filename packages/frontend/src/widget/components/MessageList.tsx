@@ -8,6 +8,8 @@ interface MessageListProps {
   isAgentTyping: boolean;
   primaryColor?: string;
   theme: 'light' | 'dark';
+  onFormSubmit?: (messageId: string, data: Record<string, unknown>) => Promise<void>;
+  submittedFormMessageIds?: Set<string>;
 }
 
 // A simple utility to format time
@@ -23,6 +25,8 @@ export const MessageList = ({
   isAgentTyping,
   primaryColor,
   theme,
+  onFormSubmit,
+  submittedFormMessageIds,
 }: MessageListProps) => {
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const finalWelcomeMessage = welcomeMessage || "Welcome! How can we help you today?";
@@ -82,7 +86,13 @@ export const MessageList = ({
                 {formatTimestamp(msg.timestamp)}
               </div>
             )}
-            <Message message={msg} primaryColor={primaryColor} theme={theme} />
+            <Message 
+              message={msg} 
+              primaryColor={primaryColor} 
+              theme={theme} 
+              onFormSubmit={onFormSubmit}
+              submittedFormMessageIds={submittedFormMessageIds}
+            />
           </div>
         ))
       )}

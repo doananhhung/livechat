@@ -1,5 +1,6 @@
 import { Message, MessageStatus } from './message.types';
 import { VisitorSessionMetadata } from './conversation.types';
+import { ActionDefinition } from './actions';
 
 export enum WebSocketEvent {
   // Client (Widget/Frontend) -> Server
@@ -9,6 +10,7 @@ export enum WebSocketEvent {
   UPDATE_CONTEXT = 'updateContext',
   JOIN_PROJECT_ROOM = 'joinProjectRoom',
   LEAVE_PROJECT_ROOM = 'leaveProjectRoom',
+  SUBMIT_FORM = 'submitForm',               // Widget -> Server: visitor submits form
 
   // Server -> Client
   CONVERSATION_HISTORY = 'conversationHistory',
@@ -25,7 +27,14 @@ export enum WebSocketEvent {
 
   // NEW: Visitor Online Status
   VISITOR_STATUS_CHANGED = 'visitorStatusChanged',
-  VISITOR_UPDATED = 'visitorUpdated', // ADDED
+  VISITOR_UPDATED = 'visitorUpdated',
+
+  // Form-related events
+  FORM_REQUEST_SENT = 'formRequestSent',       // Server → Visitor
+  VISITOR_FILLING_FORM = 'visitorFillingForm', // Visitor → Server → Agents
+  FORM_SUBMITTED = 'formSubmitted',            // Server → Agents & Visitor
+  FORM_UPDATED = 'formUpdated',                // Server → Agents & Visitor
+  FORM_DELETED = 'formDeleted',                // Server → Agents & Visitor
 }
 
 // NEW: Visitor Online Status Payload
@@ -98,4 +107,62 @@ export interface VisitorNotePayload {
 export interface VisitorNoteDeletedPayload {
   visitorId: number;
   noteId: string;
+}
+
+// Form-related payloads
+
+/**
+ * Sent to visitor when agent sends a form request.
+ */
+export interface FormRequestSentPayload {
+  messageId: string;
+  conversationId: string;
+  templateId: number;
+  templateName: string;
+  definition: ActionDefinition;
+}
+
+/**
+ * Broadcasted when visitor is actively filling a form.
+ */
+export interface VisitorFillingFormPayload {
+  conversationId: string;
+  isFilling: boolean;
+}
+
+/**
+ * Sent by visitor widget to submit a form.
+ */
+export interface SubmitFormPayload {
+  formRequestMessageId: string;
+  data: Record<string, unknown>;
+}
+
+/**
+ * Sent when a form is submitted.
+ */
+export interface FormSubmittedPayload {
+  conversationId: string;
+  submissionId: string;
+  messageId: string;          // The form_submission message ID
+  submittedBy: 'agent' | 'visitor';
+  data: Record<string, unknown>;
+}
+
+/**
+ * Sent when a form submission is updated.
+ */
+export interface FormUpdatedPayload {
+  conversationId: string;
+  submissionId: string;
+  data: Record<string, unknown>;
+}
+
+/**
+ * Sent when a form submission is deleted.
+ */
+export interface FormDeletedPayload {
+  conversationId: string;
+  submissionId: string;
+  messageId?: string;
 }

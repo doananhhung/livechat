@@ -18,6 +18,7 @@ interface ChatState {
   unreadCount: number;
   isAgentTyping: boolean;
   isSessionReady: boolean;
+  submittedFormMessageIds: Set<string>;
 
   // Actions
   setWidgetConfig: (config: WidgetConfig) => void;
@@ -34,6 +35,7 @@ interface ChatState {
   setAgentIsTyping: (isTyping: boolean) => void;
   loadConversationHistory: (history: Message[]) => void;
   setSessionReady: (isReady: boolean) => void;
+  markFormAsSubmitted: (messageId: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -45,6 +47,7 @@ export const useChatStore = create<ChatState>((set) => ({
   unreadCount: 0,
   isAgentTyping: false,
   isSessionReady: false,
+  submittedFormMessageIds: new Set<string>(),
 
   // Actions Implementation
   setWidgetConfig: (config) => set({ widgetConfig: config }),
@@ -91,4 +94,9 @@ export const useChatStore = create<ChatState>((set) => ({
   },
 
   setSessionReady: (isReady) => set({ isSessionReady: isReady }),
+
+  markFormAsSubmitted: (messageId) =>
+    set((state) => ({
+      submittedFormMessageIds: new Set([...state.submittedFormMessageIds, messageId]),
+    })),
 }));

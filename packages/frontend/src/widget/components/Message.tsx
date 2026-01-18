@@ -1,11 +1,16 @@
-import { type WidgetMessageDto as MessageType } from "@live-chat/shared-types";
+import { type WidgetMessageDto as MessageType, MessageContentType } from "@live-chat/shared-types";
+import type { FormRequestMetadata, FormSubmissionMetadata } from "@live-chat/shared-types";
 import { useMemo } from "preact/hooks";
 import { isColorLight } from "../utils/color";
+import { FormRequestMessage } from "./FormRequestMessage";
+import { FormSubmissionMessage } from "./FormSubmissionMessage";
 
 interface MessageProps {
   message: MessageType;
   primaryColor?: string;
   theme: 'light' | 'dark';
+  onFormSubmit?: (messageId: string, data: Record<string, unknown>) => Promise<void>;
+  submittedFormMessageIds?: Set<string>;
 }
 
 /**
@@ -57,12 +62,59 @@ const ErrorIcon = () => (
   </svg>
 );
 
-export const Message = ({ message, primaryColor, theme }: MessageProps) => {
+export const Message = ({ 
+  message, 
+  primaryColor, 
+  theme,
+  onFormSubmit,
+  submittedFormMessageIds,
+}: MessageProps) => {
   const isVisitor = message.sender.type === "visitor";
+  const contentType = (message as any).contentType as MessageContentType | undefined;
+  const metadata = (message as any).metadata;
 
+  // Handle form_request content type
+  if (contentType === MessageContentType.FORM_REQUEST && metadata) {
+    const formMetadata = metadata as FormRequestMetadata;
+    const isExpired = formMetadata.expiresAt 
+      ? new Date(formMetadata.expiresAt) < new Date() 
+      : false;
+    const isSubmitted = submittedFormMessageIds?.has(String(message.id)) ?? false;
+
+    return (
+      <div className="flex items-end my-1 gap-2 justify-start">
+        <FormRequestMessage
+          metadata={formMetadata}
+          messageId={String(message.id)}
+          onSubmit={onFormSubmit || (async () => {})}
+          primaryColor={primaryColor}
+          theme={theme}
+          isExpired={isExpired}
+          isSubmitted={isSubmitted}
+        />
+      </div>
+    );
+  }
+
+  // Handle form_submission content type
+  if (contentType === MessageContentType.FORM_SUBMISSION && metadata) {
+    const submissionMetadata = metadata as FormSubmissionMetadata;
+    return (
+      <div className={`flex items-end my-1 gap-2 ${isVisitor ? "justify-end" : "justify-start"}`}>
+        <FormSubmissionMessage
+          metadata={submissionMetadata}
+          theme={theme}
+          isFromVisitor={isVisitor}
+          primaryColor={primaryColor}
+        />
+      </div>
+    );
+  }
+
+  // Default: text message
   // Memoize sanitized content to avoid recalculating on every render
   const sanitizedContent = useMemo(
-    () => sanitizeContent(message.content),
+    () => sanitizeContent(message.content || ''),
     [message.content]
   );
 

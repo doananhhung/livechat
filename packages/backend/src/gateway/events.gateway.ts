@@ -1,4 +1,3 @@
-
 import {
   WebSocketGateway,
   SubscribeMessage,
@@ -26,6 +25,7 @@ import { VisitorDisconnectedEvent, VisitorConnectedEvent } from '../visitors/eve
 import { Conversation, Visitor } from '../database/entities';
 import { MessageStatus, WidgetMessageDto, WebSocketEvent } from '@live-chat/shared-types';
 import { ProjectService } from '../projects/project.service';
+import { ActionsService } from '../actions/actions.service';
 import { ConfigService } from '@nestjs/config';
 import { 
   IdentifyPayload, 
@@ -36,10 +36,17 @@ import {
   AgentTypingPayload,
   VisitorTypingBroadcastPayload,
   ConversationUpdatedPayload,
-  VisitorStatusChangedPayload
+  VisitorStatusChangedPayload,
+  VisitorFillingFormPayload,
+  FormRequestSentPayload,
+  FormSubmittedPayload,
+  FormUpdatedPayload,
+  FormDeletedPayload,
+  SubmitFormPayload,
 } from '@live-chat/shared-types';
 
 import { UpdateContextRequestEvent } from '../inbox/events';
+
 
 const NEW_MESSAGE_CHANNEL = 'new_message_channel';
 
@@ -60,6 +67,7 @@ export class EventsGateway
     private readonly eventEmitter: EventEmitter2,
     private readonly projectService: ProjectService,
     private readonly wsAuthService: WsAuthService,
+    private readonly actionsService: ActionsService,
   ) {}
 
   public emitToProject(projectId: number, event: string, payload: any) {
@@ -354,5 +362,117 @@ export class EventsGateway
     } catch (error) {
       this.logger.log(error);
     }
+  }
+
+  // ==================== FORM EVENTS ====================
+
+  /**
+   * Handle visitor filling form status.
+   * Broadcasts to project room so agents can see "filling form" indicator.
+   */
+  @SubscribeMessage(WebSocketEvent.VISITOR_FILLING_FORM)
+  handleVisitorFillingForm(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: VisitorFillingFormPayload
+  ): void {
+    const { projectId, conversationId } = client.data;
+    if (projectId) {
+      this.logger.log(`Emitting visitorFillingForm to project ${projectId}`);
+      const broadcastPayload: VisitorFillingFormPayload = {
+        conversationId: conversationId?.toString() ?? payload.conversationId,
+        isFilling: payload.isFilling,
+      };
+      this.server.to(`project:${projectId}`).emit(WebSocketEvent.VISITOR_FILLING_FORM, broadcastPayload);
+    }
+  }
+
+  /**
+   * Handle visitor form submission.
+   * Validates socket session, calls ActionsService, and emits FORM_SUBMITTED.
+   */
+  @SubscribeMessage(WebSocketEvent.SUBMIT_FORM)
+  async handleSubmitForm(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: SubmitFormPayload
+  ): Promise<{ success: boolean; error?: string }> {
+    const { visitorId, conversationId, projectId } = client.data;
+
+    // INV-1: Visitor must be identified
+    if (!visitorId || !conversationId) {
+      this.logger.warn(`SUBMIT_FORM rejected: missing visitorId or conversationId`);
+      return { success: false, error: 'Session not ready. Please refresh the page.' };
+    }
+
+    try {
+      const result = await this.actionsService.submitFormAsVisitor(
+        conversationId.toString(),
+        visitorId,
+        {
+          formRequestMessageId: payload.formRequestMessageId,
+          data: payload.data,
+        }
+      );
+
+      // Emit FORM_SUBMITTED to both visitor and project room
+      const formSubmittedPayload: FormSubmittedPayload = {
+        conversationId: conversationId.toString(),
+        submissionId: result.submission.id,
+        messageId: result.message.id.toString(),
+        submittedBy: 'visitor',
+        data: payload.data,
+      };
+
+      // Emit to project room (agents)
+      this.server.to(`project:${projectId}`).emit(WebSocketEvent.FORM_SUBMITTED, formSubmittedPayload);
+      // Emit to visitor socket
+      client.emit(WebSocketEvent.FORM_SUBMITTED, formSubmittedPayload);
+
+      this.logger.log(`Form submitted by visitor ${visitorId} for message ${payload.formRequestMessageId}`);
+      return { success: true };
+    } catch (error: any) {
+      this.logger.error(`SUBMIT_FORM failed: ${error.message}`);
+      return { success: false, error: error.message || 'Form submission failed' };
+    }
+  }
+
+  /**
+   * Emit form request sent event to visitor socket.
+   */
+  public emitFormRequestSent(visitorSocketId: string, payload: FormRequestSentPayload) {
+    this.logger.log(`Emitting formRequestSent to ${visitorSocketId}`);
+    this.server.to(visitorSocketId).emit(WebSocketEvent.FORM_REQUEST_SENT, payload);
+  }
+
+  /**
+   * Emit form submitted event to both visitor and project room.
+   */
+  public emitFormSubmitted(
+    projectId: number,
+    visitorSocketId: string | null,
+    payload: FormSubmittedPayload
+  ) {
+    this.logger.log(`Emitting formSubmitted to project:${projectId}`);
+    // Emit to project room (agents)
+    this.server.to(`project:${projectId}`).emit(WebSocketEvent.FORM_SUBMITTED, payload);
+    // Also emit to visitor if socket provided
+    if (visitorSocketId) {
+      this.server.to(visitorSocketId).emit(WebSocketEvent.FORM_SUBMITTED, payload);
+    }
+  }
+
+  /**
+   * Emit form updated event to project room.
+   */
+  public emitFormUpdated(projectId: number, payload: FormUpdatedPayload) {
+    this.logger.log(`Emitting formUpdated to project:${projectId}`);
+    this.server.to(`project:${projectId}`).emit(WebSocketEvent.FORM_UPDATED, payload);
+  }
+
+  /**
+   * Emit form deleted event to project room.
+   */
+  public emitFormDeleted(projectId: number, payload: FormDeletedPayload) {
+    this.logger.log(`Emitting formDeleted to project:${projectId}`);
+    this.server.to(`project:${projectId}`).emit(WebSocketEvent.FORM_DELETED, payload);
   }
 }

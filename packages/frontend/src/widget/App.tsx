@@ -30,9 +30,11 @@ const App = () => {
     connectionStatus,
     isAgentTyping,
     isSessionReady,
+    submittedFormMessageIds,
     toggleWindow,
     addMessage,
     resetUnreadCount,
+    markFormAsSubmitted,
   } = useChatStore();
 
   const lastUrl = useRef(window.location.href);
@@ -153,6 +155,19 @@ const App = () => {
     socketService.emitVisitorIsTyping(isTyping);
   }, []);
 
+  const handleFormSubmit = useCallback(
+    async (messageId: string, data: Record<string, unknown>) => {
+      const result = await socketService.emitSubmitForm(messageId, data);
+      if (result.success) {
+        markFormAsSubmitted(messageId);
+      } else {
+        // TODO: Show error toast to user
+        console.error('Form submission failed:', result.error);
+      }
+    },
+    [markFormAsSubmitted]
+  );
+
   if (!widgetConfig) {
     return null;
   }
@@ -169,6 +184,8 @@ const App = () => {
           onClose={handleToggleWindow}
           onSendMessage={handleSendMessage}
           onTypingChange={handleTypingChange}
+          onFormSubmit={handleFormSubmit}
+          submittedFormMessageIds={submittedFormMessageIds}
         />
         <Launcher
           onClick={handleToggleWindow}

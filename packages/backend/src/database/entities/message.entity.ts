@@ -8,7 +8,7 @@ import {
   Index,
 } from "typeorm";
 import { Conversation } from "./conversation.entity";
-import { MessageStatus, Attachment } from "@live-chat/shared-types";
+import { MessageStatus, Attachment, MessageContentType } from "@live-chat/shared-types";
 
 @Entity("messages")
 export class Message {
@@ -26,6 +26,28 @@ export class Message {
 
   @Column({ type: "text", nullable: true })
   content: string | null;
+
+  /**
+   * Type of message content.
+   * - text: Standard text message (default)
+   * - form_request: Agent sends form to visitor
+   * - form_submission: Filled form submitted
+   */
+  @Column({
+    type: "enum",
+    enum: MessageContentType,
+    default: MessageContentType.TEXT,
+    name: "content_type",
+  })
+  contentType: MessageContentType;
+
+  /**
+   * JSON metadata for form messages.
+   * - For form_request: FormRequestMetadata
+   * - For form_submission: FormSubmissionMetadata
+   */
+  @Column({ type: "jsonb", nullable: true })
+  metadata: Record<string, unknown> | null;
 
   @Column({ type: "jsonb", nullable: true })
   attachments: Attachment[] | null;
@@ -50,3 +72,4 @@ export class Message {
   @CreateDateColumn({ type: "timestamptz", name: "created_at" })
   createdAt: Date;
 }
+

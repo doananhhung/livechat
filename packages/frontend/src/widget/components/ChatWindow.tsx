@@ -19,6 +19,8 @@ interface ChatWindowProps {
   onClose: () => void;
   onSendMessage: (content: string) => void;
   onTypingChange: (isTyping: boolean) => void;
+  onFormSubmit?: (messageId: string, data: Record<string, unknown>) => Promise<void>;
+  submittedFormMessageIds?: Set<string>;
 }
 
 const scrollbarStyles = `
@@ -150,6 +152,8 @@ export const ChatWindow = (props: ChatWindowProps) => {
         isAgentTyping={props.isAgentTyping}
         primaryColor={props.config.primaryColor}
         theme={theme}
+        onFormSubmit={props.onFormSubmit}
+        submittedFormMessageIds={props.submittedFormMessageIds}
       />
       <Composer
         onSendMessage={props.onSendMessage}

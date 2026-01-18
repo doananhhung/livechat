@@ -97,4 +97,32 @@ export class GatewayEventListener {
       message: event.message,
     });
   }
+
+  @OnEvent('form.request.sent')
+  async handleFormRequestSent(event: { message: any; conversationId: number; projectId: number; visitorUid?: string }) {
+    this.logger.log(`Broadcasting form request to project:${event.projectId} and visitor:${event.visitorUid}`);
+    
+    // Broadcast to project room for agents
+    this.eventsGateway.server.to(`project:${event.projectId}`).emit(WebSocketEvent.NEW_MESSAGE, event.message);
+    
+    // Send to visitor socket if available
+    if (event.visitorUid) {
+      const visitorSocketId = await this.getVisitorSocket(event.visitorUid);
+      if (visitorSocketId) {
+        // Send full message through AGENT_REPLIED (consistent with text messages)
+        this.eventsGateway.server.to(visitorSocketId).emit(WebSocketEvent.AGENT_REPLIED, event.message);
+      }
+    }
+  }
+
+  private async getVisitorSocket(visitorUid: string): Promise<string | null> {
+    // Access the server sockets to find the visitor's socket by their UID
+    for (const [socketId, socket] of this.eventsGateway.server.sockets.sockets) {
+      if (socket.data.visitorUid === visitorUid) {
+        return socketId;
+      }
+    }
+    return null;
+  }
 }
+

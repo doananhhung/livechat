@@ -99,6 +99,7 @@ class SocketService {
       incrementUnreadCount,
       finalizeMessage,
       setSessionReady,
+      markFormAsSubmitted,
     } = useChatStore.getState();
     setConnectionStatus("connecting");
 
@@ -173,6 +174,8 @@ class SocketService {
         },
         status: MessageStatus.SENT, // Assuming the message is sent successfully
         timestamp: data.createdAt,
+        contentType: data.contentType,
+        metadata: data.metadata,
       };
 
       addMessage(newMessage);
@@ -194,6 +197,17 @@ class SocketService {
       setAgentIsTyping(data.isTyping);
     };
 
+    const formSubmittedHandler = (data: { messageId: string; formRequestMessageId?: string }) => {
+      logWithTime(this.instanceId, `📋 Form submitted:`, data);
+      // Mark both the form submission message and original request as submitted
+      if (data.messageId) {
+        markFormAsSubmitted(data.messageId);
+      }
+      if (data.formRequestMessageId) {
+        markFormAsSubmitted(data.formRequestMessageId);
+      }
+    };
+
     // Register handlers
     this.socket.on("connect", connectHandler);
     this.socket.on("disconnect", disconnectHandler);
@@ -203,6 +217,7 @@ class SocketService {
     this.socket.on(WebSocketEvent.MESSAGE_SENT, messageSentHandler);
     this.socket.on(WebSocketEvent.AGENT_REPLIED, agentRepliedHandler);
     this.socket.on(WebSocketEvent.AGENT_TYPING, agentIsTypingHandler);
+    this.socket.on(WebSocketEvent.FORM_SUBMITTED, formSubmittedHandler);
 
     // Store handlers for cleanup
     this.eventHandlers.set("connect", connectHandler);
@@ -213,6 +228,7 @@ class SocketService {
     this.eventHandlers.set(WebSocketEvent.MESSAGE_SENT, messageSentHandler);
     this.eventHandlers.set(WebSocketEvent.AGENT_REPLIED, agentRepliedHandler);
     this.eventHandlers.set(WebSocketEvent.AGENT_TYPING, agentIsTypingHandler);
+    this.eventHandlers.set(WebSocketEvent.FORM_SUBMITTED, formSubmittedHandler);
   }
 
   // --- Helper to remove all listeners (prevent duplicates) ---
@@ -295,6 +311,31 @@ class SocketService {
         `⚠️ Cannot emit updateContext: socket not connected`
       );
     }
+  }
+
+  public emitSubmitForm(
+    formRequestMessageId: string,
+    data: Record<string, unknown>
+  ): Promise<{ success: boolean; error?: string }> {
+    return new Promise((resolve) => {
+      if (this.socket?.connected) {
+        logWithTime(this.instanceId, `📤 Emitting submitForm for ${formRequestMessageId}`);
+        this.socket.emit(
+          WebSocketEvent.SUBMIT_FORM,
+          { formRequestMessageId, data },
+          (response: { success: boolean; error?: string }) => {
+            logWithTime(this.instanceId, `📥 submitForm response:`, response);
+            resolve(response);
+          }
+        );
+      } else {
+        errorWithTime(
+          this.instanceId,
+          `⚠️ Cannot emit submitForm: socket not connected`
+        );
+        resolve({ success: false, error: 'Socket not connected' });
+      }
+    });
   }
 
   public disconnect(): void {
