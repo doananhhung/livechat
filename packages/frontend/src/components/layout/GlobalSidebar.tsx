@@ -8,6 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '../../components/ui/tooltip';
+import { useTranslation } from 'react-i18next';
 
 interface GlobalSidebarProps {
   className?: string;
@@ -39,6 +40,8 @@ const NavItem = ({ to, icon, label }: NavItemProps) => {
 };
 
 export function GlobalSidebarContent() {
+  const { t } = useTranslation();
+
   return (
     <div className="flex flex-col h-full">
       {/* Header/Logo */}
@@ -46,11 +49,11 @@ export function GlobalSidebarContent() {
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <Link to="/" className="flex items-center justify-center">
-              <img src="/logo.png" alt="Live Chat" className="h-7 w-7" />
+              <img src="/logo.png" alt={t("common.appName")} className="h-7 w-7" />
             </Link>
           </TooltipTrigger>
           <TooltipContent side="right">
-            Live Chat
+            {t("common.appName")}
           </TooltipContent>
         </Tooltip>
       </div>
@@ -60,12 +63,12 @@ export function GlobalSidebarContent() {
         <NavItem
           to="/inbox"
           icon={<MessageSquare className="h-5 w-5" />}
-          label="Inbox"
+          label={t("inbox.title")}
         />
         <NavItem
           to="/settings/projects"
           icon={<Folder className="h-5 w-5" />}
-          label="Projects"
+          label={t("settings.menu.projects")}
         />
       </nav>
 

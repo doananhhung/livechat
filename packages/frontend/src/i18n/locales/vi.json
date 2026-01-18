@@ -1,5 +1,6 @@
 {
     "common": {
+        "appName": "Live Chat",
         "save": "Lưu thay đổi",
         "saving": "Đang lưu...",
         "cancel": "Hủy",
@@ -30,7 +31,9 @@
         "select": "Chọn...",
         "required": "Trường này là bắt buộc",
         "yes": "Có",
-        "no": "Không"
+        "no": "Không",
+        "agent": "Nhân viên",
+        "manager": "Quản lý"
     },
     "conversations": {
         "status": {
@@ -81,8 +84,12 @@
         "startJourney": "Bắt đầu hành trình của bạn với chúng tôi",
         "loadingInvitation": "Đang tải thông tin lời mời...",
         "projectInvitation": "Lời mời tham gia dự án",
+        "hasInvitation": "Bạn có một lời mời tham gia dự án",
+        "role": "Vai trò",
         "emailFromInvitation": "Email được lấy từ lời mời",
+        "emailFromInvite": "Email đã được điền sẵn từ lời mời",
         "fullName": "Họ và tên",
+        "fullNamePlaceholder": "Nhập họ và tên của bạn",
         "minChars": "Tối thiểu {{count}} ký tự",
         "confirmPassword": "Xác nhận mật khẩu",
         "creatingAccount": "Đang tạo tài khoản...",
@@ -288,6 +295,7 @@
         "themeLight": "Sáng",
         "themeDark": "Tối",
         "themeSystem": "Hệ thống",
+        "language": "Ngôn ngữ",
         "logout": "Đăng xuất",
         "manage": "Quản lý",
         "title": "Cài đặt",

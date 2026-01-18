@@ -15,7 +15,7 @@ import {
 } from "../../components/ui/DropdownMenu";
 import { Avatar } from "../../components/ui/Avatar";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Settings, Sun, Moon, Monitor } from "lucide-react";
+import { LogOut, Settings, Sun, Moon, Monitor, Languages } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useTranslation } from "react-i18next";
 
@@ -24,7 +24,7 @@ interface UserNavProps {
 }
 
 export const UserNav = ({ isCollapsed = false }: UserNavProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const { theme, setTheme } = useThemeStore();
@@ -113,6 +113,24 @@ export const UserNav = ({ isCollapsed = false }: UserNavProps) => {
               <Monitor className="mr-2 h-4 w-4" />
               <span>{t("settings.themeSystem")}</span>
               {theme === "system" && <span className="ml-auto text-primary">✓</span>}
+            </DropdownMenuItem>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+        
+        {/* Language submenu */}
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <Languages className="mr-2 h-4 w-4" />
+            <span>{t("settings.language")}</span>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            <DropdownMenuItem onClick={() => i18n.changeLanguage("en")}>
+              <span>English</span>
+              {i18n.language === "en" && <span className="ml-auto text-primary">✓</span>}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => i18n.changeLanguage("vi")}>
+              <span>Tiếng Việt</span>
+              {i18n.language === "vi" && <span className="ml-auto text-primary">✓</span>}
             </DropdownMenuItem>
           </DropdownMenuSubContent>
         </DropdownMenuSub>

@@ -125,3 +125,7 @@ $RECYCLE.BIN/
 test.md
 
 *.bak
+# Persona workflow documents
+PostImplementationAnalyst.md
+StressAnalyst.md
+StressAuditor.md
