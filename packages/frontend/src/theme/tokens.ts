@@ -1,78 +1,99 @@
 /**
- * SINGLE SOURCE OF TRUTH for all theme colors.
- * Update colors HERE — both dashboard and widget will use these values.
+ * SINGLE SOURCE OF TRUTH for theme colors.
+ * These values are manually derived from dashboard's index.css HSL values.
  *
- * Run `npm run generate:widget-css` to sync widget.css after changes.
+ * Dashboard uses HSL format: "0 0% 100%" for Tailwind
+ * Widget uses hex format: "#ffffff"
+ *
+ * When updating colors, update BOTH this file AND index.css.
+ * Run `npm run generate:widget-css` after changes.
  */
+
+// HSL to Hex conversions from dashboard index.css
+// Light mode (:root)
+// --background: 0 0% 100% → #ffffff
+// --foreground: 0 0% 3.9% → #0a0a0a
+// --card: 0 0% 100% → #ffffff
+// --muted: 0 0% 96.1% → #f5f5f5
+// --muted-foreground: 0 0% 45.1% → #737373
+// --border: 0 0% 89.8% → #e5e5e5
+
+// Dark mode (.dark)
+// --background: 0 0% 3.9% → #0a0a0a
+// --foreground: 0 0% 98% → #fafafa
+// --card: 0 0% 3.9% → #0a0a0a
+// --muted: 0 0% 14.9% → #262626
+// --muted-foreground: 0 0% 63.9% → #a3a3a3
+// --border: 0 0% 14.9% → #262626
 
 export const themeTokens = {
   light: {
-    // Core semantic colors (match dashboard index.css)
-    background: "#ffffff",
-    foreground: "#0a0a0a",
-    card: "#ffffff",
-    cardForeground: "#0a0a0a",
-    muted: "#f5f5f5",
-    mutedForeground: "#737373",
-    border: "#e5e5e5",
-    input: "#e5e5e5",
+    // Derived from dashboard index.css :root
+    background: "#ffffff", // --background: 0 0% 100%
+    foreground: "#0a0a0a", // --foreground: 0 0% 3.9%
+    card: "#ffffff", // --card: 0 0% 100%
+    cardForeground: "#0a0a0a", // --card-foreground: 0 0% 3.9%
+    muted: "#f5f5f5", // --muted: 0 0% 96.1%
+    mutedForeground: "#737373", // --muted-foreground: 0 0% 45.1%
+    border: "#e5e5e5", // --border: 0 0% 89.8%
+    input: "#e5e5e5", // --input: 0 0% 89.8%
 
-    // Widget-specific colors
-    textPrimary: "#1f2937",
-    textSecondary: "#6b7280",
-    textMuted: "#6b7280",
-    labelText: "#374151",
+    // Widget semantic aliases (using dashboard values)
+    textPrimary: "#0a0a0a", // Same as foreground
+    textSecondary: "#737373", // Same as mutedForeground
+    textMuted: "#737373", // Same as mutedForeground
+    labelText: "#0a0a0a", // Same as foreground
 
-    bubbleAgentBg: "#f3f4f6",
-    bubbleAgentText: "#1f2937",
+    bubbleAgentBg: "#f5f5f5", // Same as muted
+    bubbleAgentText: "#0a0a0a", // Same as foreground
 
-    cardBackground: "#ffffff",
-    cardBorder: "#e5e7eb",
-    inputBackground: "#ffffff",
-    inputBorder: "#d1d5db",
-    inputText: "#1f2937",
+    cardBackground: "#ffffff", // Same as card
+    cardBorder: "#e5e5e5", // Same as border
+    inputBackground: "#ffffff", // Same as background
+    inputBorder: "#e5e5e5", // Same as border
+    inputText: "#0a0a0a", // Same as foreground
 
     headerBackground: "rgba(255, 255, 255, 0.85)",
     composerBackground: "#ffffff",
 
     error: "#ef4444",
-    success: "#10b981",
-    disabled: "#9ca3af",
-    typingDot: "#1f2937",
+    success: "#22c55e", // --success: hsl(142 76% 36%) ≈ green-500
+    disabled: "#a3a3a3", // Using mutedForeground
+    typingDot: "#737373", // Using mutedForeground
   },
   dark: {
-    // Core semantic colors (match dashboard index.css)
-    background: "#0a0a0a",
-    foreground: "#fafafa",
-    card: "#0a0a0a",
-    cardForeground: "#fafafa",
-    muted: "#262626",
-    mutedForeground: "#a3a3a3",
-    border: "#262626",
-    input: "#262626",
+    // Derived from dashboard index.css .dark
+    background: "#0a0a0a", // --background: 0 0% 3.9%
+    foreground: "#fafafa", // --foreground: 0 0% 98%
+    card: "#0a0a0a", // --card: 0 0% 3.9%
+    cardForeground: "#fafafa", // --card-foreground: 0 0% 98%
+    muted: "#262626", // --muted: 0 0% 14.9%
+    mutedForeground: "#a3a3a3", // --muted-foreground: 0 0% 63.9%
+    border: "#262626", // --border: 0 0% 14.9%
+    input: "#262626", // --input: 0 0% 14.9%
 
-    // Widget-specific colors
-    textPrimary: "#f9fafb",
-    textSecondary: "#9ca3af",
-    textMuted: "#9ca3af",
-    labelText: "#d1d5db",
+    // Widget semantic aliases (using dashboard values)
+    textPrimary: "#fafafa", // Same as foreground
+    textSecondary: "#a3a3a3", // Same as mutedForeground
+    textMuted: "#a3a3a3", // Same as mutedForeground
+    labelText: "#fafafa", // Same as foreground
 
-    bubbleAgentBg: "#374151",
-    bubbleAgentText: "#f9fafb",
+    bubbleAgentBg: "#262626", // Same as muted
+    bubbleAgentText: "#fafafa", // Same as foreground
 
-    cardBackground: "#1f2937",
-    cardBorder: "#374151",
-    inputBackground: "#374151",
-    inputBorder: "#4b5563",
-    inputText: "#f3f4f6",
+    cardBackground: "#0a0a0a", // Same as card
+    cardBorder: "#262626", // Same as border
+    inputBackground: "#262626", // Same as muted (inputs have bg in dark)
+    inputBorder: "#262626", // Same as border
+    inputText: "#fafafa", // Same as foreground
 
-    headerBackground: "rgba(31, 41, 55, 0.9)",
-    composerBackground: "#1f2937",
+    headerBackground: "rgba(10, 10, 10, 0.9)",
+    composerBackground: "#0a0a0a",
 
     error: "#ef4444",
-    success: "#10b981",
-    disabled: "#9ca3af",
-    typingDot: "#9ca3af",
+    success: "#22c55e",
+    disabled: "#a3a3a3",
+    typingDot: "#a3a3a3",
   },
 } as const;
 
