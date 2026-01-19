@@ -44,7 +44,7 @@ export class ActionSubmission {
   @Column({ type: 'bigint', name: 'conversation_id' })
   conversationId: string;
 
-  @ManyToOne(() => Conversation)
+  @ManyToOne(() => Conversation, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'conversation_id' })
   conversation: Conversation;
 
@@ -64,7 +64,7 @@ export class ActionSubmission {
   @Column({ type: 'integer', name: 'visitor_id', nullable: true })
   visitorId: number | null;
 
-  @ManyToOne(() => Visitor, { nullable: true })
+  @ManyToOne(() => Visitor, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'visitor_id' })
   visitor: Visitor | null;
 
@@ -75,7 +75,7 @@ export class ActionSubmission {
   @Column({ type: 'bigint', name: 'form_request_message_id', nullable: true })
   formRequestMessageId: string | null;
 
-  @ManyToOne(() => Message, { nullable: true })
+  @ManyToOne(() => Message, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'form_request_message_id' })
   formRequestMessage: Message | null;
 
