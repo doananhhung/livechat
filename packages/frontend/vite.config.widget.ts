@@ -18,4 +18,11 @@ export default defineConfig({
     outDir: "dist/app",
     emptyOutDir: true,
   },
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: "./vitest.setup.widget.ts",
+    // Ensure we only run widget tests with this config
+    include: ["src/widget/**/*.{test,spec}.{ts,tsx}"],
+  },
 });

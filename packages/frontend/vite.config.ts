@@ -46,12 +46,9 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     setupFiles: "./vitest.setup.ts",
+    exclude: ["src/widget/**", "node_modules/**"],
     alias: {
-      // Alias React to Preact for widget tests
-      react: "preact/compat",
-      "react-dom": "preact/compat",
-      "react-dom/test-utils": "preact/test-utils",
-      "react/jsx-runtime": "preact/jsx-runtime",
+      "@": path.resolve(__dirname, "./src"),
     },
   },
 });

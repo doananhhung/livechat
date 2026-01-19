@@ -1,23 +1,29 @@
-import { render, screen, fireEvent, within } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-import { UserNav } from './UserNav';
-import { useAuthStore } from '../../stores/authStore';
+import { render, screen, fireEvent, within } from "@testing-library/react";
+import { BrowserRouter } from "react-router-dom";
+import { UserNav } from "./UserNav";
+import { useAuthStore } from "../../stores/authStore";
 
 // Mock dependencies
-vi.mock('../../stores/authStore', () => ({
+vi.mock("../../stores/authStore", () => ({
   useAuthStore: vi.fn(),
 }));
 
-vi.mock('../../stores/themeStore', () => ({
-  useThemeStore: () => ({ theme: 'system', setTheme: vi.fn() }),
+vi.mock("../../stores/themeStore", () => ({
+  useThemeStore: () => ({ theme: "system", setTheme: vi.fn() }),
 }));
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: {
+      language: "en",
+      changeLanguage: vi.fn(),
+    },
+  }),
 }));
 
 const mockedUseNavigate = vi.fn();
-vi.mock('react-router-dom', async (importOriginal) => {
+vi.mock("react-router-dom", async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
@@ -26,17 +32,21 @@ vi.mock('react-router-dom', async (importOriginal) => {
 });
 
 // Simplify UI component mocks
-vi.mock('../../components/ui/Avatar', () => ({
-  Avatar: ({ name }: { name: string }) => <div data-testid="mock-avatar">{name}</div>,
+vi.mock("../../components/ui/Avatar", () => ({
+  Avatar: ({ name }: { name: string }) => (
+    <div data-testid="mock-avatar">{name}</div>
+  ),
 }));
 
 // Remove Button mock since component uses native button
 // vi.mock('../../components/ui/Button', () => ({...}));
 
-vi.mock('../../components/ui/DropdownMenu', () => ({
+vi.mock("../../components/ui/DropdownMenu", () => ({
   DropdownMenu: ({ children }: any) => <div>{children}</div>,
   DropdownMenuTrigger: ({ children }: any) => <div>{children}</div>,
-  DropdownMenuContent: ({ children }: any) => <div data-testid="mock-dropdown-content">{children}</div>,
+  DropdownMenuContent: ({ children }: any) => (
+    <div data-testid="mock-dropdown-content">{children}</div>
+  ),
   DropdownMenuItem: ({ children, onClick }: any) => (
     <button data-testid="mock-dropdown-item" onClick={onClick}>
       {children}
@@ -44,16 +54,22 @@ vi.mock('../../components/ui/DropdownMenu', () => ({
   ),
   DropdownMenuLabel: ({ children }: any) => <div>{children}</div>,
   DropdownMenuSeparator: () => <hr />,
-  DropdownMenuSub: ({ children }: any) => <div data-testid="mock-dropdown-sub">{children}</div>,
-  DropdownMenuSubTrigger: ({ children }: any) => <div data-testid="mock-dropdown-sub-trigger">{children}</div>,
-  DropdownMenuSubContent: ({ children }: any) => <div data-testid="mock-dropdown-sub-content">{children}</div>,
+  DropdownMenuSub: ({ children }: any) => (
+    <div data-testid="mock-dropdown-sub">{children}</div>
+  ),
+  DropdownMenuSubTrigger: ({ children }: any) => (
+    <div data-testid="mock-dropdown-sub-trigger">{children}</div>
+  ),
+  DropdownMenuSubContent: ({ children }: any) => (
+    <div data-testid="mock-dropdown-sub-content">{children}</div>
+  ),
 }));
 
-describe('UserNav', () => {
+describe("UserNav", () => {
   const mockUser = {
-    fullName: 'John Doe',
-    email: 'john.doe@example.com',
-    avatarUrl: 'https://example.com/avatar.jpg',
+    fullName: "John Doe",
+    email: "john.doe@example.com",
+    avatarUrl: "https://example.com/avatar.jpg",
   };
 
   const mockLogout = vi.fn();
@@ -72,81 +88,88 @@ describe('UserNav', () => {
     });
   });
 
-  it('renders user details when expanded (isCollapsed=false)', () => {
+  it("renders user details when expanded (isCollapsed=false)", () => {
     render(
       <BrowserRouter>
         <UserNav isCollapsed={false} />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
     // Find the trigger button (first button - others are dropdown items)
-    const triggerBtn = screen.getAllByRole('button')[0];
-    
+    const triggerBtn = screen.getAllByRole("button")[0];
+
     // We expect "John Doe" to appear twice: in Avatar and in the text details
     const nameElements = within(triggerBtn).getAllByText(mockUser.fullName);
     expect(nameElements).toHaveLength(2);
-    
+
     expect(within(triggerBtn).getByText(mockUser.email)).toBeInTheDocument();
   });
 
-  it('hides user details when collapsed (isCollapsed=true)', () => {
+  it("hides user details when collapsed (isCollapsed=true)", () => {
     render(
       <BrowserRouter>
         <UserNav isCollapsed={true} />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
     // Find the trigger button (first button - others are dropdown items)
-    const triggerBtn = screen.getAllByRole('button')[0];
-    
+    const triggerBtn = screen.getAllByRole("button")[0];
+
     // We expect "John Doe" to appear ONLY ONCE (in the Avatar)
     const nameElements = within(triggerBtn).getAllByText(mockUser.fullName);
     expect(nameElements).toHaveLength(1);
-    
+
     // Email should be completely gone
-    expect(within(triggerBtn).queryByText(mockUser.email)).not.toBeInTheDocument();
-    
+    expect(
+      within(triggerBtn).queryByText(mockUser.email),
+    ).not.toBeInTheDocument();
+
     // Avatar should still be there
-    expect(within(triggerBtn).getByTestId('mock-avatar')).toBeInTheDocument();
+    expect(within(triggerBtn).getByTestId("mock-avatar")).toBeInTheDocument();
   });
 
-  it('renders dropdown content correctly', () => {
+  it("renders dropdown content correctly", () => {
     render(
       <BrowserRouter>
         <UserNav />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
-    const dropdownContent = screen.getByTestId('mock-dropdown-content');
+    const dropdownContent = screen.getByTestId("mock-dropdown-content");
     expect(dropdownContent).toBeInTheDocument();
-    
+
     // Check specific dropdown elements
-    expect(within(dropdownContent).getByText(mockUser.fullName)).toBeInTheDocument();
-    expect(within(dropdownContent).getByText(mockUser.email)).toBeInTheDocument();
-    
-    const items = screen.getAllByTestId('mock-dropdown-item');
-    expect(items[0]).toHaveTextContent('settings.myProfile');
+    expect(
+      within(dropdownContent).getByText(mockUser.fullName),
+    ).toBeInTheDocument();
+    expect(
+      within(dropdownContent).getByText(mockUser.email),
+    ).toBeInTheDocument();
+
+    const items = screen.getAllByTestId("mock-dropdown-item");
+    expect(items[0]).toHaveTextContent("settings.myProfile");
     // Items 1-3 are theme options (light, dark, system) inside DropdownMenuSubContent
-    expect(items[4]).toHaveTextContent('settings.logout');
+    // Items 4-5 are language options
+    expect(items[6]).toHaveTextContent("settings.logout");
   });
 
-  it('navigates to profile on click', () => {
+  it("navigates to profile on click", () => {
     render(
       <BrowserRouter>
         <UserNav />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
-    const profileBtn = screen.getByText('settings.myProfile');
+    const profileBtn = screen.getByText("settings.myProfile");
     fireEvent.click(profileBtn);
-    expect(mockedUseNavigate).toHaveBeenCalledWith('/settings/profile');
+    expect(mockedUseNavigate).toHaveBeenCalledWith("/settings/profile");
   });
 
-  it('calls logout on click', () => {
+  it("calls logout on click", () => {
     render(
       <BrowserRouter>
         <UserNav />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
-    const logoutBtn = screen.getByText('settings.logout');
+    const logoutBtn = screen.getByText("settings.logout");
     fireEvent.click(logoutBtn);
     expect(mockLogout).toHaveBeenCalled();
-    expect(mockedUseNavigate).toHaveBeenCalledWith('/login');
+    expect(mockedUseNavigate).toHaveBeenCalledWith("/login");
   });
 });

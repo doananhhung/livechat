@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest --run",
+    "test:widget": "vitest --run --config vite.config.widget.ts",
     "build:widget": "vite build --config vite.config.widget.ts",
     "check-types": "tsc --noEmit"
   },
