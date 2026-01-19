@@ -1,11 +1,11 @@
-import { Link } from 'react-router-dom';
-import { Menu, MessageSquare } from 'lucide-react';
-import { cn } from '../../lib/utils';
-import { Button } from '../../components/ui/Button';
-import { Sheet, SheetContent, SheetTrigger } from '../../components/ui/sheet';
+import { Link } from "react-router-dom";
+import { Menu, MessageSquare } from "lucide-react";
+import { cn } from "../../lib/utils";
+import { Button } from "../../components/ui/Button";
+import { Sheet, SheetContent, SheetTrigger } from "../../components/ui/sheet";
 
-import { UserNav } from './UserNav';
-import { GlobalSidebarContent } from './GlobalSidebar'; // Import the reusable content
+import { UserNav } from "./UserNav";
+import { GlobalSidebarContent } from "./GlobalSidebar"; // Import the reusable content
 
 interface MobileHeaderProps {
   className?: string;
@@ -27,8 +27,8 @@ export function MobileHeader({ className }: MobileHeaderProps) {
   return (
     <header
       className={cn(
-        'flex h-16 items-center justify-between border-b bg-background px-4 md:hidden', // Visible only on mobile
-        className
+        "flex h-16 items-center justify-between border-b bg-background px-4 md:hidden", // Visible only on mobile
+        className,
       )}
     >
       <div className="flex items-center space-x-4">
@@ -41,7 +41,7 @@ export function MobileHeader({ className }: MobileHeaderProps) {
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0">
             {/* Reuse the content from GlobalSidebar, always expanded on mobile */}
-            <GlobalSidebarContent isCollapsed={false} />
+            <GlobalSidebarContent />
           </SheetContent>
         </Sheet>
         <Link to="/" className="flex items-center space-x-2 text-xl font-bold">

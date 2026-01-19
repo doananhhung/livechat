@@ -27,7 +27,9 @@ export interface FormRequestMetadata {
   templateName: string;
   templateDescription?: string;
   definition: ActionDefinition; // Snapshot at time of send
-  expiresAt?: string;           // ISO 8601, optional
+  expiresAt?: string; // ISO 8601, optional
+  submissionId?: string; // ID of the submission if answered
+  submittedAt?: string; // ISO 8601, optional
 }
 
 /**
@@ -36,7 +38,7 @@ export interface FormRequestMetadata {
  */
 export interface FormSubmissionMetadata {
   formRequestMessageId: string; // Links to original form request
-  submissionId: string;         // Links to ActionSubmission record
+  submissionId: string; // Links to ActionSubmission record
   templateName: string;
   data: Record<string, unknown>; // The filled form data for display
 }
@@ -77,4 +79,3 @@ export interface ActionSubmission {
   createdAt: Date;
   updatedAt: Date;
 }
-

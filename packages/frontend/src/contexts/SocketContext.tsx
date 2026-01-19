@@ -1,4 +1,3 @@
-
 // src/contexts/SocketContext.tsx
 import {
   createContext,
@@ -10,7 +9,18 @@ import {
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "../stores/authStore";
 import { useQueryClient } from "@tanstack/react-query";
-import { type Message, WebSocketEvent, type VisitorContextUpdatedPayload, type VisitorTypingBroadcastPayload, type ConversationUpdatedPayload, type VisitorNotePayload, type VisitorNoteDeletedPayload, type VisitorStatusChangedPayload, type VisitorUpdatedPayload } from "@live-chat/shared-types";
+import {
+  type Message,
+  WebSocketEvent,
+  type VisitorContextUpdatedPayload,
+  type VisitorTypingBroadcastPayload,
+  type ConversationUpdatedPayload,
+  type VisitorNotePayload,
+  type VisitorNoteDeletedPayload,
+  type VisitorStatusChangedPayload,
+  type VisitorUpdatedPayload,
+  type FormSubmittedPayload,
+} from "@live-chat/shared-types";
 import { useTypingStore } from "../stores/typingStore";
 import { useProjectStore } from "../stores/projectStore";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -41,13 +51,13 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
 
     // Define all handlers as stable references
     const handleNewMessage = async (newMessage: Message) => {
-      console.log('[SocketContext] handleNewMessage called with:', newMessage);
-      console.log('[SocketContext] currentProjectId:', currentProjectId);
-      
+      console.log("[SocketContext] handleNewMessage called with:", newMessage);
+      console.log("[SocketContext] currentProjectId:", currentProjectId);
+
       const conversationId = parseInt(String(newMessage.conversationId), 10);
 
       if (isNaN(conversationId)) {
-        console.warn('[SocketContext] Invalid conversationId, skipping');
+        console.warn("[SocketContext] Invalid conversationId, skipping");
         return;
       }
 
@@ -67,7 +77,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
               return [...oldData, newMessage];
             }
             return oldData || [newMessage];
-          }
+          },
         );
       }
 
@@ -78,7 +88,11 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
         : null;
 
       // If the message is from the currently open conversation, mark it as read immediately
-      if (activeConversationId === conversationId && newMessage.fromCustomer && projectIdFromUrl) {
+      if (
+        activeConversationId === conversationId &&
+        newMessage.fromCustomer &&
+        projectIdFromUrl
+      ) {
         try {
           await updateConversationStatus({
             projectId: projectIdFromUrl,
@@ -94,7 +108,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       if (currentProjectId) {
         console.log(
           "[SocketContext] Invalidating and refetching conversations cache for project:",
-          currentProjectId
+          currentProjectId,
         );
         queryClient.invalidateQueries({
           queryKey: ["conversations", currentProjectId],
@@ -107,9 +121,11 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       setTypingStatus(payload.conversationId, payload.isTyping);
     };
 
-    const handleVisitorContextUpdated = (payload: VisitorContextUpdatedPayload) => {
-      console.log('[SocketContext] Received visitorContextUpdated:', payload);
-      
+    const handleVisitorContextUpdated = (
+      payload: VisitorContextUpdatedPayload,
+    ) => {
+      console.log("[SocketContext] Received visitorContextUpdated:", payload);
+
       // Update the visitor's currentUrl in the conversations cache
       queryClient.setQueriesData<any>(
         { queryKey: ["conversations"] },
@@ -125,7 +141,10 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
                   Number(conversation.id) === Number(payload.conversationId) &&
                   conversation.visitor
                 ) {
-                  console.log('[SocketContext] Updating conversation visitor currentUrl:', payload.currentUrl);
+                  console.log(
+                    "[SocketContext] Updating conversation visitor currentUrl:",
+                    payload.currentUrl,
+                  );
                   return {
                     ...conversation,
                     visitor: {
@@ -138,7 +157,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
               }),
             })),
           };
-        }
+        },
       );
 
       // Also update the specific visitor cache if it exists
@@ -147,15 +166,19 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       const allConversations = queryClient
         .getQueriesData<any>({ queryKey: ["conversations"] })
         .flatMap(([, cacheData]) =>
-          cacheData?.pages.flatMap((page: any) => page.data)
+          cacheData?.pages.flatMap((page: any) => page.data),
         );
 
       const conversation = allConversations.find(
-        (c: any) => c && Number(c.id) === conversationIdNum
+        (c: any) => c && Number(c.id) === conversationIdNum,
       );
 
       if (conversation?.visitor?.id && currentProjectId) {
-        console.log('[SocketContext] Updating visitor cache with key:', ["visitor", currentProjectId, conversation.visitor.id]);
+        console.log("[SocketContext] Updating visitor cache with key:", [
+          "visitor",
+          currentProjectId,
+          conversation.visitor.id,
+        ]);
         queryClient.setQueryData(
           ["visitor", currentProjectId, conversation.visitor.id],
           (oldVisitor: any) => {
@@ -164,14 +187,16 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
               ...oldVisitor,
               currentUrl: payload.currentUrl,
             };
-          }
+          },
         );
       }
     };
 
     // NEW: Handle Visitor Status Changed (Online/Offline)
-    const handleVisitorStatusChanged = (payload: VisitorStatusChangedPayload) => {
-      console.log('[SocketContext] Received visitorStatusChanged:', payload);
+    const handleVisitorStatusChanged = (
+      payload: VisitorStatusChangedPayload,
+    ) => {
+      console.log("[SocketContext] Received visitorStatusChanged:", payload);
 
       // Update conversations cache (visitor.isOnline)
       queryClient.setQueriesData<any>(
@@ -183,7 +208,10 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
             pages: oldData.pages.map((page: any) => ({
               ...page,
               data: page.data.map((conversation: any) => {
-                if (conversation.visitor && conversation.visitor.visitorUid === payload.visitorUid) {
+                if (
+                  conversation.visitor &&
+                  conversation.visitor.visitorUid === payload.visitorUid
+                ) {
                   return {
                     ...conversation,
                     visitor: {
@@ -196,7 +224,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
               }),
             })),
           };
-        }
+        },
       );
 
       // Find visitor ID to update specific visitor cache
@@ -204,11 +232,11 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       const allConversations = queryClient
         .getQueriesData<any>({ queryKey: ["conversations"] })
         .flatMap(([, cacheData]) =>
-          cacheData?.pages.flatMap((page: any) => page.data)
+          cacheData?.pages.flatMap((page: any) => page.data),
         );
 
       const visitorId = allConversations.find(
-        (c: any) => c?.visitor?.visitorUid === payload.visitorUid
+        (c: any) => c?.visitor?.visitorUid === payload.visitorUid,
       )?.visitor?.id;
 
       if (visitorId && currentProjectId) {
@@ -217,14 +245,14 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
           (oldVisitor: any) => {
             if (!oldVisitor) return oldVisitor;
             return { ...oldVisitor, isOnline: payload.isOnline };
-          }
+          },
         );
       }
     };
 
     // NEW: Handle Visitor Updated (e.g. Name Change)
     const handleVisitorUpdated = (payload: VisitorUpdatedPayload) => {
-      console.log('[SocketContext] Received visitorUpdated:', payload);
+      console.log("[SocketContext] Received visitorUpdated:", payload);
 
       // Update conversations cache
       queryClient.setQueriesData<any>(
@@ -236,7 +264,9 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
             pages: oldData.pages.map((page: any) => ({
               ...page,
               data: page.data.map((conversation: any) => {
-                if (Number(conversation.visitorId) === Number(payload.visitorId)) {
+                if (
+                  Number(conversation.visitorId) === Number(payload.visitorId)
+                ) {
                   return {
                     ...conversation,
                     visitor: payload.visitor,
@@ -246,25 +276,95 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
               }),
             })),
           };
-        }
+        },
       );
 
       // Update specific visitor cache
       if (currentProjectId) {
         queryClient.setQueryData(
           ["visitor", currentProjectId, payload.visitorId],
-          payload.visitor
+          payload.visitor,
         );
       }
     };
 
+    // NEW: Handle Form Submitted
+    const handleFormSubmitted = (payload: FormSubmittedPayload) => {
+      console.log("[SocketContext] Received formSubmitted:", payload);
+
+      const conversationId = parseInt(payload.conversationId, 10);
+      const projectIdFromUrl = currentProjectId; // Best effort to get project ID
+
+      const submissionMessage = payload.message;
+
+      // 1. Add the submission message to the cache
+      if (projectIdFromUrl && conversationId && submissionMessage) {
+        // Optimistically add the submission message if not already there
+        queryClient.setQueryData(
+          ["messages", projectIdFromUrl, conversationId],
+          (oldData?: Message[]) => {
+            // Check if message already exists (using captured variable so TS knows it's defined)
+            if (
+              oldData &&
+              oldData.some((msg) => msg.id === submissionMessage.id)
+            ) {
+              return oldData;
+            }
+            // Add new message
+            return [...(oldData || []), submissionMessage];
+          },
+        );
+
+        // 2. Update the original Form Request message to mark it as submitted
+        // This relies on the backend having updated the metadata, but we might receive
+        // the event before the separate "metadata update" event if there is one (or we do it manually here)
+        // Since we know the backend updated the metadata, let's update it in our cache too
+        queryClient.setQueryData(
+          ["messages", projectIdFromUrl, conversationId],
+          (oldData?: Message[]) => {
+            if (!oldData) return oldData;
+
+            return oldData.map((msg) => {
+              if (
+                submissionMessage?.metadata?.formRequestMessageId && // Ensure submission message has metadata
+                (msg.id === submissionMessage.metadata.formRequestMessageId ||
+                  msg.id === payload.data?.formRequestMessageId)
+              ) {
+                // Fallback check
+                // It's the request message. Update its metadata.
+                const currentMetadata = msg.metadata || {};
+                return {
+                  ...msg,
+                  metadata: {
+                    ...currentMetadata,
+                    submissionId: payload.submissionId,
+                    submittedAt: new Date().toISOString(),
+                  },
+                };
+              }
+              return msg;
+            });
+          },
+        );
+      }
+
+      // Force refresh conversations to update snippets
+      if (currentProjectId) {
+        queryClient.invalidateQueries({
+          queryKey: ["conversations", currentProjectId],
+        });
+      }
+    };
+
     const handleConversationUpdated = (payload: ConversationUpdatedPayload) => {
-      console.log('[SocketContext] Received conversationUpdated:', payload);
+      console.log("[SocketContext] Received conversationUpdated:", payload);
 
       // If this is the currently selected conversation and status changed,
       // update the URL status filter to keep the conversation visible
       const pathMatch = location.pathname.match(/\/conversations\/(\d+)/);
-      const activeConversationId = pathMatch ? parseInt(pathMatch[1], 10) : null;
+      const activeConversationId = pathMatch
+        ? parseInt(pathMatch[1], 10)
+        : null;
 
       if (
         activeConversationId &&
@@ -272,10 +372,9 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
         payload.fields?.status
       ) {
         // Navigate to the new status filter to update tabs and keep conversation visible
-        navigate(
-          `${location.pathname}?status=${payload.fields.status}`,
-          { replace: true }
-        );
+        navigate(`${location.pathname}?status=${payload.fields.status}`, {
+          replace: true,
+        });
       }
 
       // Invalidate queries to fetch updated assignee details
@@ -288,9 +387,9 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
         ["visitor-notes", currentProjectId, payload.visitorId],
         (oldData: any[]) => {
           if (!oldData) return [payload.note];
-          if (oldData.some(n => n.id === payload.note.id)) return oldData;
+          if (oldData.some((n) => n.id === payload.note.id)) return oldData;
           return [payload.note, ...oldData]; // Prepend (desc order)
-        }
+        },
       );
     };
 
@@ -300,8 +399,10 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
         ["visitor-notes", currentProjectId, payload.visitorId],
         (oldData: any[]) => {
           if (!oldData) return oldData;
-          return oldData.map(n => n.id === payload.note.id ? payload.note : n);
-        }
+          return oldData.map((n) =>
+            n.id === payload.note.id ? payload.note : n,
+          );
+        },
       );
     };
 
@@ -311,12 +412,16 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
         ["visitor-notes", currentProjectId, payload.visitorId],
         (oldData: any[]) => {
           if (!oldData) return oldData;
-          return oldData.filter(n => n.id !== payload.noteId);
-        }
+          return oldData.filter((n) => n.id !== payload.noteId);
+        },
       );
     };
 
-    const handleAutomationTriggered = (payload: { conversationId: string; type: string; message: string }) => {
+    const handleAutomationTriggered = (payload: {
+      conversationId: string;
+      type: string;
+      message: string;
+    }) => {
       toast({
         title: t("common.automation"),
         description: payload.message,
@@ -326,28 +431,45 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
     socket.on(WebSocketEvent.NEW_MESSAGE, handleNewMessage);
     socket.on(WebSocketEvent.AGENT_REPLIED, handleNewMessage);
     socket.on(WebSocketEvent.VISITOR_TYPING, handleVisitorTyping);
-    socket.on(WebSocketEvent.VISITOR_CONTEXT_UPDATED, handleVisitorContextUpdated);
+    socket.on(
+      WebSocketEvent.VISITOR_CONTEXT_UPDATED,
+      handleVisitorContextUpdated,
+    );
     socket.on(WebSocketEvent.CONVERSATION_UPDATED, handleConversationUpdated);
     socket.on(WebSocketEvent.VISITOR_NOTE_ADDED, handleVisitorNoteAdded);
     socket.on(WebSocketEvent.VISITOR_NOTE_UPDATED, handleVisitorNoteUpdated);
     socket.on(WebSocketEvent.VISITOR_NOTE_DELETED, handleVisitorNoteDeleted);
-    socket.on(WebSocketEvent.VISITOR_STATUS_CHANGED, handleVisitorStatusChanged); // ADDED
+    socket.on(
+      WebSocketEvent.VISITOR_STATUS_CHANGED,
+      handleVisitorStatusChanged,
+    ); // ADDED
     socket.on(WebSocketEvent.VISITOR_UPDATED, handleVisitorUpdated); // ADDED
-    socket.on('automation.triggered', handleAutomationTriggered);
+    socket.on(WebSocketEvent.FORM_SUBMITTED, handleFormSubmitted); // ADDED
+    socket.on("automation.triggered", handleAutomationTriggered);
 
     // CRITICAL: Always cleanup listeners on unmount or when dependencies change
     return () => {
       socket.off(WebSocketEvent.NEW_MESSAGE, handleNewMessage);
       socket.off(WebSocketEvent.AGENT_REPLIED, handleNewMessage);
       socket.off(WebSocketEvent.VISITOR_TYPING, handleVisitorTyping);
-      socket.off(WebSocketEvent.VISITOR_CONTEXT_UPDATED, handleVisitorContextUpdated);
-      socket.off(WebSocketEvent.CONVERSATION_UPDATED, handleConversationUpdated);
+      socket.off(
+        WebSocketEvent.VISITOR_CONTEXT_UPDATED,
+        handleVisitorContextUpdated,
+      );
+      socket.off(
+        WebSocketEvent.CONVERSATION_UPDATED,
+        handleConversationUpdated,
+      );
       socket.off(WebSocketEvent.VISITOR_NOTE_ADDED, handleVisitorNoteAdded);
       socket.off(WebSocketEvent.VISITOR_NOTE_UPDATED, handleVisitorNoteUpdated);
       socket.off(WebSocketEvent.VISITOR_NOTE_DELETED, handleVisitorNoteDeleted);
-      socket.off(WebSocketEvent.VISITOR_STATUS_CHANGED, handleVisitorStatusChanged); // ADDED
+      socket.off(
+        WebSocketEvent.VISITOR_STATUS_CHANGED,
+        handleVisitorStatusChanged,
+      ); // ADDED
       socket.off(WebSocketEvent.VISITOR_UPDATED, handleVisitorUpdated); // ADDED
-      socket.off('automation.triggered', handleAutomationTriggered);
+      socket.off(WebSocketEvent.FORM_SUBMITTED, handleFormSubmitted); // ADDED
+      socket.off("automation.triggered", handleAutomationTriggered);
     };
   }, [
     socket,

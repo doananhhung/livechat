@@ -1,40 +1,40 @@
-import { Message, MessageStatus } from './message.types';
-import { VisitorSessionMetadata } from './conversation.types';
-import { ActionDefinition } from './actions';
+import { Message, MessageStatus } from "./message.types";
+import { VisitorSessionMetadata } from "./conversation.types";
+import { ActionDefinition } from "./actions";
 
 export enum WebSocketEvent {
   // Client (Widget/Frontend) -> Server
-  IDENTIFY = 'identify',
-  SEND_MESSAGE = 'sendMessage',
-  VISITOR_TYPING = 'visitorIsTyping',
-  UPDATE_CONTEXT = 'updateContext',
-  JOIN_PROJECT_ROOM = 'joinProjectRoom',
-  LEAVE_PROJECT_ROOM = 'leaveProjectRoom',
-  SUBMIT_FORM = 'submitForm',               // Widget -> Server: visitor submits form
+  IDENTIFY = "identify",
+  SEND_MESSAGE = "sendMessage",
+  VISITOR_TYPING = "visitorIsTyping",
+  UPDATE_CONTEXT = "updateContext",
+  JOIN_PROJECT_ROOM = "joinProjectRoom",
+  LEAVE_PROJECT_ROOM = "leaveProjectRoom",
+  SUBMIT_FORM = "submitForm", // Widget -> Server: visitor submits form
 
   // Server -> Client
-  CONVERSATION_HISTORY = 'conversationHistory',
-  MESSAGE_SENT = 'messageSent',
-  AGENT_REPLIED = 'agentReplied',
-  AGENT_TYPING = 'agentIsTyping',
-  NEW_MESSAGE = 'newMessage', // Broadcast to agents
-  VISITOR_CONTEXT_UPDATED = 'visitorContextUpdated', // Broadcast to agents
-  CONVERSATION_UPDATED = 'conversationUpdated', // Broadcast to agents
-  CONVERSATION_DELETED = 'conversationDeleted', // Broadcast to agents
-  VISITOR_NOTE_ADDED = 'visitorNoteAdded',
-  VISITOR_NOTE_UPDATED = 'visitorNoteUpdated',
-  VISITOR_NOTE_DELETED = 'visitorNoteDeleted',
+  CONVERSATION_HISTORY = "conversationHistory",
+  MESSAGE_SENT = "messageSent",
+  AGENT_REPLIED = "agentReplied",
+  AGENT_TYPING = "agentIsTyping",
+  NEW_MESSAGE = "newMessage", // Broadcast to agents
+  VISITOR_CONTEXT_UPDATED = "visitorContextUpdated", // Broadcast to agents
+  CONVERSATION_UPDATED = "conversationUpdated", // Broadcast to agents
+  CONVERSATION_DELETED = "conversationDeleted", // Broadcast to agents
+  VISITOR_NOTE_ADDED = "visitorNoteAdded",
+  VISITOR_NOTE_UPDATED = "visitorNoteUpdated",
+  VISITOR_NOTE_DELETED = "visitorNoteDeleted",
 
   // NEW: Visitor Online Status
-  VISITOR_STATUS_CHANGED = 'visitorStatusChanged',
-  VISITOR_UPDATED = 'visitorUpdated',
+  VISITOR_STATUS_CHANGED = "visitorStatusChanged",
+  VISITOR_UPDATED = "visitorUpdated",
 
   // Form-related events
-  FORM_REQUEST_SENT = 'formRequestSent',       // Server → Visitor
-  VISITOR_FILLING_FORM = 'visitorFillingForm', // Visitor → Server → Agents
-  FORM_SUBMITTED = 'formSubmitted',            // Server → Agents & Visitor
-  FORM_UPDATED = 'formUpdated',                // Server → Agents & Visitor
-  FORM_DELETED = 'formDeleted',                // Server → Agents & Visitor
+  FORM_REQUEST_SENT = "formRequestSent", // Server → Visitor
+  VISITOR_FILLING_FORM = "visitorFillingForm", // Visitor → Server → Agents
+  FORM_SUBMITTED = "formSubmitted", // Server → Agents & Visitor
+  FORM_UPDATED = "formUpdated", // Server → Agents & Visitor
+  FORM_DELETED = "formDeleted", // Server → Agents & Visitor
 }
 
 // NEW: Visitor Online Status Payload
@@ -44,7 +44,8 @@ export interface VisitorStatusChangedPayload {
   isOnline: boolean;
 }
 
-export interface VisitorUpdatedPayload { // ADDED
+export interface VisitorUpdatedPayload {
+  // ADDED
   projectId: number;
   visitorId: number;
   visitor: any; // Type 'Visitor' - preventing circular dependency or strict type issues
@@ -144,8 +145,9 @@ export interface SubmitFormPayload {
 export interface FormSubmittedPayload {
   conversationId: string;
   submissionId: string;
-  messageId: string;          // The form_submission message ID
-  submittedBy: 'agent' | 'visitor';
+  messageId: string; // The form_submission message ID
+  message?: Message; // Full message object for immediate display
+  submittedBy: "agent" | "visitor";
   data: Record<string, unknown>;
 }
 

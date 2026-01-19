@@ -39,6 +39,11 @@ export const FormRequestBubble: React.FC<FormRequestBubbleProps> = ({
       }
     }
 
+    // Check if submitted (via metadata)
+    // The backend now syncs this, and SocketContext updates it in real-time
+    if (metadata.submissionId) {
+      return "submitted";
+    }
     // Check if visitor is filling
     const isFilling = fillingStatus?.[conversationId];
     if (isFilling) {
@@ -63,7 +68,7 @@ export const FormRequestBubble: React.FC<FormRequestBubbleProps> = ({
         "border-2 rounded-xl p-6 max-w-lg w-full shadow-lg transition-all",
         isExpired
           ? "bg-muted/50 border-dashed border-muted-foreground/30"
-          : "bg-card border-border"
+          : "bg-card border-border",
       )}
     >
       {/* Header */}
@@ -75,7 +80,7 @@ export const FormRequestBubble: React.FC<FormRequestBubbleProps> = ({
         <span
           className={cn(
             "font-medium flex-1",
-            isExpired && "line-through text-muted-foreground"
+            isExpired && "line-through text-muted-foreground",
           )}
         >
           {metadata.templateName}
