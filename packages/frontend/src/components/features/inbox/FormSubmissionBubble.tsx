@@ -103,7 +103,7 @@ export const FormSubmissionBubble: React.FC<FormSubmissionBubbleProps> = ({
   };
 
   return (
-    <div className="border rounded-lg shadow-sm bg-card max-w-lg w-full relative overflow-hidden group border-t-4 border-t-green-500">
+    <div className="border-2 rounded-xl p-6 max-w-lg w-full shadow-lg bg-success/10 border-success/30 relative">
       {/* Header */}
       <div
         className="flex items-center gap-2 cursor-pointer select-none"
@@ -124,21 +124,18 @@ export const FormSubmissionBubble: React.FC<FormSubmissionBubbleProps> = ({
 
       {/* Data entries (collapsible) */}
       {isExpanded && (
-        <div className="px-5 pb-5 pt-2 ml-[3.25rem] border-l-2 border-muted pl-4 space-y-3">
+        <div className="mt-3 pt-3 border-t border-success/20 space-y-1.5 ml-6">
           {entries.length === 0 && (
             <div className="text-sm text-muted-foreground italic px-1">
               {t("actions.formDisplay.noDataSubmitted", "No data submitted")}
             </div>
           )}
           {entries.map(([key, value]) => (
-            <div
-              key={key}
-              className="flex flex-col sm:flex-row sm:gap-2 text-sm border-b border-border/40 last:border-0 pb-1.5 last:pb-0"
-            >
-              <span className="font-medium text-foreground min-w-[120px]">
+            <div key={key} className="flex gap-2 text-sm">
+              <span className="font-medium text-foreground">
                 {formatFieldLabel(key)}:
               </span>
-              <span className="text-muted-foreground break-words flex-1">
+              <span className="text-muted-foreground break-all">
                 {formatValue(value)}
               </span>
             </div>
@@ -148,7 +145,7 @@ export const FormSubmissionBubble: React.FC<FormSubmissionBubbleProps> = ({
 
       {/* Footer with timestamp and actions */}
       {isExpanded && (
-        <div className="bg-muted/30 px-5 py-2 border-t flex items-center justify-between">
+        <div className="mt-3 pt-2 border-t border-success/20 flex items-center justify-between ml-6">
           <span className="text-xs text-muted-foreground">
             {t("actions.formDisplay.submittedTime", {
               time: message.createdAt && formatMessageTime(message.createdAt),
