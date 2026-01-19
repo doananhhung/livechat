@@ -6,17 +6,17 @@
 
 ### Scope
 
-- Widget theme is already centralized via backend `project.widgetSettings.theme`.
-- Dashboard theme is stored separately in `localStorage('theme')`.
-- **Gap:** Dashboard and Widget themes are independent systems.
+- **NOT about syncing theme selection** — widget theme still comes from backend.
+- **About CSS value parity** — when mode is "dark", widget and dashboard show identical colors.
 
 ### Approach
 
-- Chose **Option C: Safest approach** — Widget continues using backend config.
-- Sync mechanism: Dashboard will persist theme to `widgetSettings` on every toggle.
+- Create shared tokens file (`theme/tokens.ts`).
+- Generate CSS variables for both dashboard (`:root`, `.dark`) and widget (`:host`, `.theme-dark`).
+- Both consume same color values.
 
 ### Findings
 
-- `IWidgetSettingsDto.theme` already exists in `@live-chat/shared-types`.
-- Widget reads theme from `config.theme` and applies `theme-${theme}` CSS class.
-- Dashboard theme store uses `localStorage('theme')` and applies `.dark`/`.light` classes.
+- Dashboard: `index.css` uses HSL CSS variables.
+- Widget: `widget.css` uses hardcoded hex values.
+- These are visually different — needs alignment.

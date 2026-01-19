@@ -1,27 +1,33 @@
 # ROADMAP.md
 
 > **Current Milestone**: v1.2 - Theme Unification
-> **Goal**: Centralize theme management so widget inherits dashboard theme (light/dark) automatically without duplication.
+> **Goal**: Widget and Dashboard use identical CSS color tokens for light/dark modes.
 
 ## Must-Haves
 
-- [ ] Dashboard theme change syncs to `widgetSettings.theme` via API
-- [ ] Widget continues using backend config (already works)
-- [ ] Light/Dark mode parity verified
+- [ ] Single source of truth for theme tokens
+- [ ] Dashboard CSS uses shared tokens
+- [ ] Widget CSS uses shared tokens
+- [ ] Visual parity verified
 
 ## Phases
 
-### Phase 1: Dashboard Theme Sync
+### Phase 1: Extract Shared Theme Tokens
 
 **Status**: ⬜ Not Started
-**Objective**: When dashboard theme toggles, persist the new theme to `widgetSettings.theme` via API call.
+**Objective**: Create `packages/frontend/src/theme/tokens.ts` with all color values. Generate CSS variables from it.
 
-### Phase 2: CSS Variable Alignment
-
-**Status**: ⬜ Not Started
-**Objective**: Ensure widget CSS variables produce same visual result as dashboard for light/dark modes.
-
-### Phase 3: Verification
+### Phase 2: Refactor Dashboard CSS
 
 **Status**: ⬜ Not Started
-**Objective**: Verify visual parity and theme switching capability.
+**Objective**: Update `index.css` to use generated tokens.
+
+### Phase 3: Refactor Widget CSS
+
+**Status**: ⬜ Not Started
+**Objective**: Update `widget.css` to use same tokens (injected into `:host`).
+
+### Phase 4: Verification
+
+**Status**: ⬜ Not Started
+**Objective**: Verify visual parity between dashboard and widget in both modes.
