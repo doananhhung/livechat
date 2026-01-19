@@ -1,9 +1,19 @@
 // src/components/features/inbox/FormSubmissionBubble.tsx
 import { useState } from "react";
-import { ChevronDown, ChevronRight, CheckCircle, Pencil, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  CheckCircle,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { Button } from "../../ui/Button";
-import type { Message, FormSubmissionMetadata, ActionFieldDefinition } from "@live-chat/shared-types";
+import type {
+  Message,
+  FormSubmissionMetadata,
+  ActionFieldDefinition,
+} from "@live-chat/shared-types";
 import { formatMessageTime } from "../../../lib/dateUtils";
 import { useTranslation } from "react-i18next";
 
@@ -36,18 +46,64 @@ export const FormSubmissionBubble: React.FC<FormSubmissionBubbleProps> = ({
   /**
    * Format field value for display with i18n support.
    */
-  const formatValue = (value: unknown): string => {
+  const formatValue = (value: unknown): React.ReactNode => {
     if (value === null || value === undefined) {
       return "—";
     }
     if (typeof value === "boolean") {
       return value ? t("actions.formDisplay.yes") : t("actions.formDisplay.no");
     }
-    return String(value);
+
+    const stringValue = String(value);
+
+    // Date check (simple ISO check)
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(stringValue)) {
+      try {
+        const date = new Date(stringValue);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleString(undefined, {
+            dateStyle: "medium",
+            timeStyle: "short",
+          });
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // URL check
+    if (/^https?:\/\//i.test(stringValue)) {
+      return (
+        <a
+          href={stringValue}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary hover:underline break-all"
+        >
+          {stringValue.length > 50
+            ? stringValue.substring(0, 47) + "..."
+            : stringValue}
+        </a>
+      );
+    }
+
+    // Email check
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(stringValue)) {
+      return (
+        <a
+          href={`mailto:${stringValue}`}
+          className="text-primary hover:underline"
+        >
+          {stringValue}
+        </a>
+      );
+    }
+
+    return stringValue;
   };
 
   return (
-    <div className="border-2 rounded-xl p-6 max-w-lg w-full shadow-lg bg-success/10 border-success/30 relative">
+    <div className="border rounded-lg shadow-sm bg-card max-w-lg w-full relative overflow-hidden group border-t-4 border-t-green-500">
       {/* Header */}
       <div
         className="flex items-center gap-2 cursor-pointer select-none"
@@ -55,7 +111,9 @@ export const FormSubmissionBubble: React.FC<FormSubmissionBubbleProps> = ({
       >
         <CheckCircle className="h-4 w-4 text-success flex-shrink-0" />
         <span className="font-medium flex-1 text-foreground">
-          {t("actions.formDisplay.templateSubmitted", { templateName: metadata.templateName })}
+          {t("actions.formDisplay.templateSubmitted", {
+            templateName: metadata.templateName,
+          })}
         </span>
         {isExpanded ? (
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -66,11 +124,23 @@ export const FormSubmissionBubble: React.FC<FormSubmissionBubbleProps> = ({
 
       {/* Data entries (collapsible) */}
       {isExpanded && (
-        <div className="mt-3 pt-3 border-t border-success/20 space-y-1.5 ml-6">
+        <div className="px-5 pb-5 pt-2 ml-[3.25rem] border-l-2 border-muted pl-4 space-y-3">
+          {entries.length === 0 && (
+            <div className="text-sm text-muted-foreground italic px-1">
+              {t("actions.formDisplay.noDataSubmitted", "No data submitted")}
+            </div>
+          )}
           {entries.map(([key, value]) => (
-            <div key={key} className="flex gap-2 text-sm">
-              <span className="font-medium text-foreground">{formatFieldLabel(key)}:</span>
-              <span className="text-muted-foreground">{formatValue(value)}</span>
+            <div
+              key={key}
+              className="flex flex-col sm:flex-row sm:gap-2 text-sm border-b border-border/40 last:border-0 pb-1.5 last:pb-0"
+            >
+              <span className="font-medium text-foreground min-w-[120px]">
+                {formatFieldLabel(key)}:
+              </span>
+              <span className="text-muted-foreground break-words flex-1">
+                {formatValue(value)}
+              </span>
             </div>
           ))}
         </div>
@@ -78,9 +148,11 @@ export const FormSubmissionBubble: React.FC<FormSubmissionBubbleProps> = ({
 
       {/* Footer with timestamp and actions */}
       {isExpanded && (
-        <div className="mt-3 pt-2 border-t border-success/20 flex items-center justify-between ml-6">
+        <div className="bg-muted/30 px-5 py-2 border-t flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
-            {t("actions.formDisplay.submittedTime", { time: message.createdAt && formatMessageTime(message.createdAt) })}
+            {t("actions.formDisplay.submittedTime", {
+              time: message.createdAt && formatMessageTime(message.createdAt),
+            })}
           </span>
           <div className="flex gap-1">
             {onEdit && (
@@ -128,4 +200,3 @@ function formatFieldLabel(key: string): string {
     .replace(/^\w/, (c) => c.toUpperCase())
     .trim();
 }
-
