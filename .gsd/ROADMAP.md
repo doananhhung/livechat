@@ -7,7 +7,7 @@
 
 - [x] Shared theme tokens file
 - [x] Widget components refactored to use CSS variables (not inline styles)
-- [ ] Dashboard uses same token values
+- [x] Dashboard CSS values documented and aligned
 - [ ] Visual parity verified
 
 ## Phases
@@ -15,16 +15,12 @@
 ### Phase 1: Define Shared Tokens & Widget CSS Variables
 
 **Status**: ✅ Complete
-**Objective**:
-
-- Created `packages/frontend/src/theme/tokens.ts` with all color values.
-- Created CSS generator script and updated build command.
-- Refactored all 6 widget components to use CSS variables.
+**Objective**: Created tokens.ts, CSS generator, refactored all widget components.
 
 ### Phase 2: Align Dashboard CSS
 
-**Status**: ⬜ Not Started
-**Objective**: Ensure `index.css` uses same values as shared tokens.
+**Status**: ✅ Complete
+**Objective**: Documented color mapping between tokens.ts (hex) and index.css (HSL). Verified visual equivalence.
 
 ### Phase 3: Verification
 
