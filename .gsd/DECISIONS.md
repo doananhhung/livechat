@@ -15,8 +15,28 @@
 - Generate CSS variables for both dashboard (`:root`, `.dark`) and widget (`:host`, `.theme-dark`).
 - Both consume same color values.
 
-### Findings
+### Findings — Widget Analysis
 
-- Dashboard: `index.css` uses HSL CSS variables.
-- Widget: `widget.css` uses hardcoded hex values.
-- These are visually different — needs alignment.
+**Dashboard:**
+
+- Uses Tailwind CSS with HSL CSS variables in `index.css`
+- Variables: `--background`, `--foreground`, `--card`, `--primary`, etc.
+- Theme applied via `.dark` class on `<html>`
+
+**Widget:**
+
+- Uses Tailwind for utility classes (flex, py-2, rounded-xl, etc.)
+- **PROBLEM:** Theme colors are INLINE STYLES with hardcoded hex values
+- Pattern: `theme === 'light' ? '#ffffff' : '#1f2937'`
+- Found in 6 components:
+  - `FormRequestMessage.tsx` — 8 inline conditionals
+  - `FormSubmissionMessage.tsx` — 4 inline conditionals
+  - `Message.tsx` — 3 inline conditionals
+  - `MessageList.tsx` — 5 inline conditionals
+  - `Composer.tsx` — 4 inline conditionals
+  - `ChatWindow.tsx` — 2 inline conditionals
+
+**Implication:**
+
+- Cannot just unify CSS variables — must refactor widget components to use CSS vars instead of inline styles
+- `widget.css` already defines CSS variables in `:host` and `.theme-dark`, but components don't use them

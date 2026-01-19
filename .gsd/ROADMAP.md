@@ -5,27 +5,30 @@
 
 ## Must-Haves
 
-- [ ] Single source of truth for theme tokens
-- [ ] Dashboard CSS uses shared tokens
-- [ ] Widget CSS uses shared tokens
+- [ ] Shared theme tokens file
+- [ ] Widget components refactored to use CSS variables (not inline styles)
+- [ ] Dashboard uses same token values
 - [ ] Visual parity verified
 
 ## Phases
 
-### Phase 1: Extract Shared Theme Tokens
+### Phase 1: Define Shared Tokens & Widget CSS Variables
 
 **Status**: ⬜ Not Started
-**Objective**: Create `packages/frontend/src/theme/tokens.ts` with all color values. Generate CSS variables from it.
+**Objective**:
 
-### Phase 2: Refactor Dashboard CSS
+- Create `packages/frontend/src/theme/tokens.ts` with all color values.
+- Update `widget.css` `:host` and `.theme-dark` to use these tokens.
 
-**Status**: ⬜ Not Started
-**Objective**: Update `index.css` to use generated tokens.
-
-### Phase 3: Refactor Widget CSS
+### Phase 2: Refactor Widget Components
 
 **Status**: ⬜ Not Started
-**Objective**: Update `widget.css` to use same tokens (injected into `:host`).
+**Objective**: Replace all inline `theme === 'light' ? ... : ...` conditionals with CSS variable references (6 components, 26+ instances).
+
+### Phase 3: Align Dashboard CSS
+
+**Status**: ⬜ Not Started
+**Objective**: Ensure `index.css` uses same values as shared tokens.
 
 ### Phase 4: Verification
 
