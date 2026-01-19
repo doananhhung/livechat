@@ -1,19 +1,17 @@
 ## Current Position
 
-- **Milestone**: v1.2 Form Reliability
-- **Phase**: 3
-- **Task**: Execution complete
-- **Status**: Verified
+- **Milestone**: v1.2 Completed
+- **Phase**: None
+- **Task**: Milestone v1.2 archived
+- **Status**: Idle
 
 ## Last Session Summary
 
-Phase 3 executed successfully.
+Completed Milestone v1.2 "Form Reliability".
 
-- Reverted submission UI style to original.
-- Implemented unified form request/submission component.
-- Eliminated redundant chat bubbles.
+- Archived phases 1-3.
+- Tagged v1.2.
 
 ## Next Steps
 
-1. /audit-milestone — to verify completion of v1.2
-2. /complete-milestone — to archive
+1. /new-milestone — to start v1.3
