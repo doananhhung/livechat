@@ -7,8 +7,11 @@ interface MessageListProps {
   welcomeMessage?: string;
   isAgentTyping: boolean;
   primaryColor?: string;
-  theme: 'light' | 'dark';
-  onFormSubmit?: (messageId: string, data: Record<string, unknown>) => Promise<void>;
+  theme: "light" | "dark";
+  onFormSubmit?: (
+    messageId: string,
+    data: Record<string, unknown>,
+  ) => Promise<void>;
   submittedFormMessageIds?: Set<string>;
 }
 
@@ -29,7 +32,8 @@ export const MessageList = ({
   submittedFormMessageIds,
 }: MessageListProps) => {
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
-  const finalWelcomeMessage = welcomeMessage || "Welcome! How can we help you today?";
+  const finalWelcomeMessage =
+    welcomeMessage || "Welcome! How can we help you today?";
 
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -37,7 +41,7 @@ export const MessageList = ({
 
   const shouldShowTimestamp = (
     current: MessageType,
-    previous: MessageType | undefined
+    previous: MessageType | undefined,
   ): boolean => {
     if (!previous) return true;
     const prevDate = new Date(previous.timestamp);
@@ -46,22 +50,22 @@ export const MessageList = ({
   };
 
   const welcomeStyles = {
-    color: theme === 'light' ? '#6b7280' : '#9ca3af',
+    color: "var(--widget-text-muted)",
   };
 
   const timestampStyles = {
-    color: theme === 'light' ? '#6b7280' : '#9ca3af',
+    color: "var(--widget-text-muted)",
   };
 
   const typingIndicatorStyles = {
-    backgroundColor: theme === 'light' ? '#e5e7eb' : '#374151',
-    color: theme === 'light' ? '#1f2937' : '#e5e7eb',
+    backgroundColor: "var(--widget-bubble-agent-bg)",
+    color: "var(--widget-bubble-agent-text)",
   };
 
   return (
     <div
       className="flex-grow p-4 overflow-y-auto"
-      style={{ color: theme === 'light' ? '#111827' : '#f9fafb' }}
+      style={{ color: "var(--widget-text-primary)" }}
       role="log"
       aria-live="polite"
       aria-label="Chat messages"
@@ -86,10 +90,10 @@ export const MessageList = ({
                 {formatTimestamp(msg.timestamp)}
               </div>
             )}
-            <Message 
-              message={msg} 
-              primaryColor={primaryColor} 
-              theme={theme} 
+            <Message
+              message={msg}
+              primaryColor={primaryColor}
+              theme={theme}
               onFormSubmit={onFormSubmit}
               submittedFormMessageIds={submittedFormMessageIds}
             />
@@ -102,7 +106,7 @@ export const MessageList = ({
           role="status"
           aria-label="Agent is typing"
         >
-          <div 
+          <div
             className="py-2 px-3 max-w-xs shadow-sm rounded-r-xl rounded-t-xl"
             style={typingIndicatorStyles}
           >

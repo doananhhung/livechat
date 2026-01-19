@@ -19,7 +19,10 @@ interface ChatWindowProps {
   onClose: () => void;
   onSendMessage: (content: string) => void;
   onTypingChange: (isTyping: boolean) => void;
-  onFormSubmit?: (messageId: string, data: Record<string, unknown>) => Promise<void>;
+  onFormSubmit?: (
+    messageId: string,
+    data: Record<string, unknown>,
+  ) => Promise<void>;
   submittedFormMessageIds?: Set<string>;
 }
 
@@ -102,19 +105,21 @@ export const ChatWindow = (props: ChatWindowProps) => {
       : "rounded-tr-xl rounded-tl-xl rounded-bl-xl";
 
   const windowStyles = (() => {
-    const lightBg = "#ffffff";
-    const darkBg = "#1f2937";
-    const lightRgb = "255, 255, 255";
-    const darkRgb = "31, 41, 55";
-
+    // For background image overlay, we still need theme-specific rgba values
+    // The CSS variables handle the solid background case
     let backgroundColor;
     if (props.config.backgroundImageUrl) {
+      // When there's a background image, we need semi-transparent overlay
+      // These values must match tokens.ts
+      const lightRgb = "255, 255, 255";
+      const darkRgb = "31, 41, 55";
       const baseRgb = theme === WidgetTheme.LIGHT ? lightRgb : darkRgb;
       backgroundColor = `rgba(${baseRgb}, ${
         props.config.backgroundOpacity || 0.8
       })`;
     } else {
-      backgroundColor = theme === WidgetTheme.LIGHT ? lightBg : darkBg;
+      // Use CSS variable for solid background
+      backgroundColor = "var(--widget-card-background)";
     }
 
     return {

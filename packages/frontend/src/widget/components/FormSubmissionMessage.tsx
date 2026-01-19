@@ -1,10 +1,10 @@
-import { h } from 'preact';
-import { useMemo } from 'preact/hooks';
-import type { FormSubmissionMetadata } from '@live-chat/shared-types';
+import { h } from "preact";
+import { useMemo } from "preact/hooks";
+import type { FormSubmissionMetadata } from "@live-chat/shared-types";
 
 interface FormSubmissionMessageProps {
   metadata: FormSubmissionMetadata;
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
   isFromVisitor: boolean;
   primaryColor?: string;
 }
@@ -18,57 +18,93 @@ export const FormSubmissionMessage = ({
   isFromVisitor,
   primaryColor,
 }: FormSubmissionMessageProps) => {
-  const containerStyle = useMemo(() => ({
-    backgroundColor: isFromVisitor 
-      ? (primaryColor || '#2563eb')
-      : (theme === 'light' ? '#dcfce7' : '#14532d'),
-    color: isFromVisitor 
-      ? '#ffffff' 
-      : (theme === 'light' ? '#166534' : '#bbf7d0'),
-    borderRadius: '16px',
-    border: '2px solid',
-    borderColor: isFromVisitor ? 'transparent' : (theme === 'light' ? '#86efac' : '#166534'),
-    padding: '24px',
-    maxWidth: '400px',
-    width: '100%',
-    margin: '8px auto',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-  }), [theme, isFromVisitor, primaryColor]);
+  // Dynamic styles based on theme and sender
+  const containerStyle = useMemo(
+    () => ({
+      backgroundColor: isFromVisitor
+        ? primaryColor || "var(--widget-primary-color, #2563eb)"
+        : "var(--widget-bubble-agent-bg)",
+      color: isFromVisitor ? "#ffffff" : "var(--widget-bubble-agent-text)",
+      borderRadius: "12px",
+      padding: "16px",
+      maxWidth: "320px",
+      width: "100%",
+      margin: "4px 0",
+      boxShadow: isFromVisitor ? "0 2px 4px rgba(0,0,0,0.1)" : "none",
+      border: isFromVisitor ? "none" : "1px solid var(--widget-card-border)",
+    }),
+    [isFromVisitor, primaryColor],
+  );
 
-  const labelStyle = useMemo(() => ({
-    fontSize: '12px',
+  const headerStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    marginBottom: "12px",
+    paddingBottom: "8px",
+    borderBottom: `1px solid ${isFromVisitor ? "rgba(255,255,255,0.2)" : "var(--widget-card-border)"}`,
+  };
+
+  const titleStyle = {
+    fontSize: "13px",
     fontWeight: 600,
-    opacity: 0.8,
-    marginBottom: '2px',
-  }), []);
+    opacity: 0.95,
+  };
 
-  const valueStyle = useMemo(() => ({
-    fontSize: '14px',
-    marginBottom: '8px',
-  }), []);
+  const gridStyle = {
+    display: "grid",
+    gap: "8px",
+  };
+
+  const itemStyle = {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "2px",
+  };
+
+  const labelStyle = {
+    fontSize: "11px",
+    fontWeight: 500,
+    opacity: 0.75,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.02em",
+  };
+
+  const valueStyle = {
+    fontSize: "14px",
+    fontWeight: 400,
+    wordBreak: "break-word" as const,
+  };
 
   const entries = Object.entries(metadata.data);
 
   return (
     <div style={containerStyle}>
-      <div style={{ 
-        fontSize: '12px', 
-        fontWeight: 600, 
-        marginBottom: '8px',
-        opacity: 0.9,
-      }}>
-        ✓ {metadata.templateName}
+      {/* Header */}
+      <div style={headerStyle}>
+        <span style={{ fontSize: "14px" }}>✓</span>
+        <span style={titleStyle}>
+          {metadata.templateName || "Form Submitted"}
+        </span>
       </div>
-      {entries.map(([key, value]) => (
-        <div key={key}>
-          <div style={labelStyle}>{key}</div>
-          <div style={valueStyle}>
-            {typeof value === 'boolean' 
-              ? (value ? 'Yes' : 'No') 
-              : String(value ?? '-')}
+
+      {/* Body */}
+      <div style={gridStyle}>
+        {entries.map(([key, value]) => (
+          <div key={key} style={itemStyle}>
+            <div style={labelStyle}>{key}</div>
+            <div style={valueStyle}>
+              {typeof value === "boolean"
+                ? value
+                  ? "Yes"
+                  : "No"
+                : value === null || value === undefined
+                  ? "-"
+                  : String(value)}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };

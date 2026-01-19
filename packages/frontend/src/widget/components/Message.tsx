@@ -1,5 +1,11 @@
-import { type WidgetMessageDto as MessageType, MessageContentType } from "@live-chat/shared-types";
-import type { FormRequestMetadata, FormSubmissionMetadata } from "@live-chat/shared-types";
+import {
+  type WidgetMessageDto as MessageType,
+  MessageContentType,
+} from "@live-chat/shared-types";
+import type {
+  FormRequestMetadata,
+  FormSubmissionMetadata,
+} from "@live-chat/shared-types";
 import { useMemo } from "preact/hooks";
 import { isColorLight } from "../utils/color";
 import { FormRequestMessage } from "./FormRequestMessage";
@@ -8,8 +14,11 @@ import { FormSubmissionMessage } from "./FormSubmissionMessage";
 interface MessageProps {
   message: MessageType;
   primaryColor?: string;
-  theme: 'light' | 'dark';
-  onFormSubmit?: (messageId: string, data: Record<string, unknown>) => Promise<void>;
+  theme: "light" | "dark";
+  onFormSubmit?: (
+    messageId: string,
+    data: Record<string, unknown>,
+  ) => Promise<void>;
   submittedFormMessageIds?: Set<string>;
 }
 
@@ -62,24 +71,27 @@ const ErrorIcon = () => (
   </svg>
 );
 
-export const Message = ({ 
-  message, 
-  primaryColor, 
+export const Message = ({
+  message,
+  primaryColor,
   theme,
   onFormSubmit,
   submittedFormMessageIds,
 }: MessageProps) => {
-  const isVisitor = message.sender.type === "visitor";
-  const contentType = (message as any).contentType as MessageContentType | undefined;
+  const isVisitor = message.fromCustomer;
+  const contentType = (message as any).contentType as
+    | MessageContentType
+    | undefined;
   const metadata = (message as any).metadata;
 
   // Handle form_request content type
   if (contentType === MessageContentType.FORM_REQUEST && metadata) {
     const formMetadata = metadata as FormRequestMetadata;
-    const isExpired = formMetadata.expiresAt 
-      ? new Date(formMetadata.expiresAt) < new Date() 
+    const isExpired = formMetadata.expiresAt
+      ? new Date(formMetadata.expiresAt) < new Date()
       : false;
-    const isSubmitted = submittedFormMessageIds?.has(String(message.id)) ?? false;
+    const isSubmitted =
+      submittedFormMessageIds?.has(String(message.id)) ?? false;
 
     return (
       <div className="flex items-end my-1 gap-2 justify-start">
@@ -100,7 +112,9 @@ export const Message = ({
   if (contentType === MessageContentType.FORM_SUBMISSION && metadata) {
     const submissionMetadata = metadata as FormSubmissionMetadata;
     return (
-      <div className={`flex items-end my-1 gap-2 ${isVisitor ? "justify-end" : "justify-start"}`}>
+      <div
+        className={`flex items-end my-1 gap-2 ${isVisitor ? "justify-end" : "justify-start"}`}
+      >
         <FormSubmissionMessage
           metadata={submissionMetadata}
           theme={theme}
@@ -114,8 +128,8 @@ export const Message = ({
   // Default: text message
   // Memoize sanitized content to avoid recalculating on every render
   const sanitizedContent = useMemo(
-    () => sanitizeContent(message.content || ''),
-    [message.content]
+    () => sanitizeContent(message.content || ""),
+    [message.content],
   );
 
   const bubbleClass = isVisitor
@@ -126,20 +140,20 @@ export const Message = ({
     if (isVisitor) {
       return {
         // Use gradient if defined in CSS, fallback to primaryColor
-        background: 'var(--widget-primary-gradient, var(--widget-primary-color))',
-        backgroundColor: primaryColor || '#2563eb', // Fallback
-        color: '#ffffff', // Always white on primary gradient
+        background:
+          "var(--widget-primary-gradient, var(--widget-primary-color))",
+        backgroundColor: primaryColor || "#2563eb", // Fallback
+        color: "#ffffff", // Always white on primary gradient
         boxShadow: "0 2px 4px rgba(0,0,0,0.1)", // Subtle shadow
       };
     } else {
       return {
-        backgroundColor: theme === 'light' ? '#f3f4f6' : '#374151',
-        color: theme === 'light' ? '#1f2937' : '#e5e7eb',
-        // Slight border for contrast in light mode
-        border: theme === 'light' ? '1px solid #e5e7eb' : 'none',
+        backgroundColor: "var(--widget-bubble-agent-bg)",
+        color: "var(--widget-bubble-agent-text)",
+        border: "1px solid var(--widget-card-border)",
       };
     }
-  }, [isVisitor, primaryColor, theme]);
+  }, [isVisitor, primaryColor]);
 
   return (
     <div

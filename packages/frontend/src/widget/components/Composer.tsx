@@ -7,7 +7,7 @@ interface ComposerProps {
   onTypingChange: (isTyping: boolean) => void;
   connectionStatus: ConnectionStatus;
   offlineMessage?: string;
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
 }
 
 // Constants
@@ -16,7 +16,7 @@ const TYPING_TIMEOUT = 1500; // ms
 const RATE_LIMIT_COUNT = 10; // Max messages
 const RATE_LIMIT_WINDOW = 60000; // Per 60 seconds
 
-const getStyles = (theme: 'light' | 'dark') => ({
+const getStyles = (theme: "light" | "dark") => ({
   form: {
     padding: "1rem",
     backgroundColor: "transparent",
@@ -29,7 +29,7 @@ const getStyles = (theme: 'light' | 'dark') => ({
     borderRadius: "1.5rem",
     padding: "0.5rem",
     boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
-    border: theme === 'light' ? '1px solid #f3f4f6' : '1px solid rgba(255,255,255,0.1)', // Lighter border in dark mode
+    border: "1px solid var(--widget-card-border)",
     transition: "box-shadow 0.2s ease, border-color 0.2s ease",
   },
   textarea: {
@@ -48,7 +48,7 @@ const getStyles = (theme: 'light' | 'dark') => ({
   button: {
     padding: "0.75rem",
     color: "#ffffff",
-    backgroundColor: "var(--widget-primary-color)", 
+    backgroundColor: "var(--widget-primary-color)",
     background: "var(--widget-primary-gradient)",
     borderRadius: "50%",
     border: "none",
@@ -59,7 +59,7 @@ const getStyles = (theme: 'light' | 'dark') => ({
     justifyContent: "center",
     minWidth: "42px",
     minHeight: "42px",
-    marginBottom: "2px", 
+    marginBottom: "2px",
     boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
   },
   buttonDisabled: {
@@ -69,20 +69,20 @@ const getStyles = (theme: 'light' | 'dark') => ({
   },
   charCount: {
     fontSize: "10px",
-    color: theme === 'light' ? '#9ca3af' : '#6b7280',
+    color: "var(--widget-text-muted)",
     textAlign: "right" as const,
     marginTop: "6px",
     marginRight: "12px",
     opacity: 0.7,
   },
   offlineText: {
-    textAlign: 'center' as const,
-    color: theme === 'light' ? '#6b7280' : '#9ca3af',
-    padding: '1rem',
-    background: theme === 'light' ? '#f3f4f6' : '#374151',
-    borderRadius: '0.75rem',
-    margin: '0 1rem 1rem 1rem',
-  }
+    textAlign: "center" as const,
+    color: "var(--widget-text-muted)",
+    padding: "1rem",
+    background: "var(--widget-bubble-agent-bg)",
+    borderRadius: "0.75rem",
+    margin: "0 1rem 1rem 1rem",
+  },
 });
 
 const SendIcon = () => (
@@ -134,7 +134,7 @@ export const Composer = ({
     const now = Date.now();
     // Remove timestamps older than the window
     messageTimes.current = messageTimes.current.filter(
-      (time) => now - time < RATE_LIMIT_WINDOW
+      (time) => now - time < RATE_LIMIT_WINDOW,
     );
     return messageTimes.current.length >= RATE_LIMIT_COUNT;
   };
@@ -190,7 +190,7 @@ export const Composer = ({
     onSendMessage(trimmedContent);
     setContent("");
     setError("");
-    
+
     // Reset height
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -209,7 +209,7 @@ export const Composer = ({
       sendMessage();
     }
   };
-  
+
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     sendMessage();
@@ -222,10 +222,10 @@ export const Composer = ({
 
   if (isDisabled) {
     return (
-      <div style={{...styles.form, ...styles.offlineText}}>
+      <div style={{ ...styles.form, ...styles.offlineText }}>
         {offlineMessage || "The chat is currently offline."}
       </div>
-    )
+    );
   }
 
   return (
@@ -251,7 +251,12 @@ export const Composer = ({
           onKeyDown={handleKeyDown}
           disabled={isDisabled}
           placeholder={isDisabled ? "Connecting..." : "Type a message..."}
-          style={{...styles.textarea, height: 'auto', maxHeight: '120px', overflowY: 'auto'}}
+          style={{
+            ...styles.textarea,
+            height: "auto",
+            maxHeight: "120px",
+            overflowY: "auto",
+          }}
           rows={1}
           maxLength={MAX_MESSAGE_LENGTH}
           aria-label="Message input"
