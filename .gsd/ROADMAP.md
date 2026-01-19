@@ -5,21 +5,21 @@
 
 ## Must-Haves
 
-- [ ] Centralized theme configuration within `packages/frontend/src/`
-- [ ] Widget theme matches Dashboard theme
-- [ ] Light/Dark mode support for Widget
+- [ ] Dashboard theme change syncs to `widgetSettings.theme` via API
+- [ ] Widget continues using backend config (already works)
+- [ ] Light/Dark mode parity verified
 
 ## Phases
 
-### Phase 1: Theme Extraction
+### Phase 1: Dashboard Theme Sync
 
 **Status**: ⬜ Not Started
-**Objective**: Extract Dashboard theme variables/tokens into a shared directory (e.g., `packages/frontend/src/theme/`).
+**Objective**: When dashboard theme toggles, persist the new theme to `widgetSettings.theme` via API call.
 
-### Phase 2: Widget Integration & Theme Sync
+### Phase 2: CSS Variable Alignment
 
 **Status**: ⬜ Not Started
-**Objective**: Refactor Widget to use the shared theme and sync with Dashboard theme preference.
+**Objective**: Ensure widget CSS variables produce same visual result as dashboard for light/dark modes.
 
 ### Phase 3: Verification
 
