@@ -447,6 +447,14 @@ export class ActionsService {
         throw new NotFoundException('Action template no longer exists');
       }
 
+      // Update form request metadata with submission info (Persistence fix)
+      // This ensures the dashboard knows this form is already submitted
+      const updatedMetadata = {
+        ...metadata,
+        submissionId: undefined, // placeholder, will be set after save
+        submittedAt: new Date().toISOString(),
+      };
+
       // INV-4: Create submission linked to form request
       const submission = this.submissionsRepository.create({
         templateId: metadata.templateId,
@@ -466,8 +474,21 @@ export class ActionsService {
           // Unique violation
           throw new ConflictException('This form has already been submitted');
         }
+        if ((error as any).code === '23505') {
+          // Unique violation
+          throw new ConflictException('This form has already been submitted');
+        }
         throw error;
       }
+
+      // Update the request message metadata with the real submission ID
+      updatedMetadata.submissionId = savedSubmission.id;
+      formRequestMessage.metadata = updatedMetadata as unknown as Record<
+        string,
+        unknown
+      >;
+      // Save the updated request message transactionally
+      await manager.save(formRequestMessage);
 
       // Create form_submission message
       const submissionMetadata: FormSubmissionMetadata = {
