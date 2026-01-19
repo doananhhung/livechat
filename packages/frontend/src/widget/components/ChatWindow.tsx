@@ -134,7 +134,7 @@ export const ChatWindow = (props: ChatWindowProps) => {
   return (
     <div
       ref={windowRef}
-      className={`fixed flex flex-col fade-in-up z-[9999] shadow-2xl bg-white
+      className={`fixed flex flex-col fade-in-up z-[9999] shadow-2xl
         w-[calc(100%-40px)] sm:w-[380px] 
         h-[calc(100%-120px)] sm:h-[600px] max-h-[750px]
         ${positionClasses} ${borderRadiusClasses} theme-${theme}`}

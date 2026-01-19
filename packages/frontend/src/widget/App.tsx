@@ -178,7 +178,7 @@ const App = () => {
 
   return (
     <>
-      <div className="text-black bg-white">
+      <div>
         <ChatWindow
           isOpen={isWindowOpen}
           config={widgetConfig}
