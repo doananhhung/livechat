@@ -5,32 +5,32 @@ import {
   ForbiddenException,
   ConflictException,
   GoneException,
-} from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { EventEmitter2 } from "@nestjs/event-emitter";
-import { ActionTemplate } from "./entities/action-template.entity";
-import { ActionSubmission } from "./entities/action-submission.entity";
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, DataSource } from 'typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ActionTemplate } from './entities/action-template.entity';
+import { ActionSubmission } from './entities/action-submission.entity';
 import {
   CreateActionTemplateDto,
   UpdateActionTemplateDto,
   CreateActionSubmissionDto,
   SendFormRequestDto,
   SubmitFormAsVisitorDto,
-} from "@live-chat/shared-dtos";
-import { validateActionData } from "./utils/action-validator";
-import { ProjectService } from "../projects/project.service";
-import { Conversation } from "../database/entities/conversation.entity";
-import { User } from "../database/entities/user.entity";
-import { Visitor } from "../database/entities/visitor.entity";
-import { Message } from "../database/entities/message.entity";
+} from '@live-chat/shared-dtos';
+import { validateActionData } from './utils/action-validator';
+import { ProjectService } from '../projects/project.service';
+import { Conversation } from '../database/entities/conversation.entity';
+import { User } from '../database/entities/user.entity';
+import { Visitor } from '../database/entities/visitor.entity';
+import { Message } from '../database/entities/message.entity';
 import {
   ProjectRole,
   MessageContentType,
   MessageStatus,
   FormRequestMetadata,
   FormSubmissionMetadata,
-} from "@live-chat/shared-types";
+} from '@live-chat/shared-types';
 
 @Injectable()
 export class ActionsService {
@@ -46,7 +46,8 @@ export class ActionsService {
     @InjectRepository(Visitor)
     private visitorRepository: Repository<Visitor>,
     private projectService: ProjectService,
-    private readonly eventEmitter: EventEmitter2
+    private readonly eventEmitter: EventEmitter2,
+    private dataSource: DataSource
   ) {}
 
   // ==================== TEMPLATE MANAGEMENT (Manager) ====================
@@ -55,14 +56,17 @@ export class ActionsService {
    * Verify user has MANAGER role for the project.
    * Throws ForbiddenException if not.
    */
-  private async requireManagerRole(userId: string, projectId: number): Promise<void> {
+  private async requireManagerRole(
+    userId: string,
+    projectId: number
+  ): Promise<void> {
     const hasPermission = await this.projectService.hasProjectRole(
       userId,
       projectId,
       ProjectRole.MANAGER
     );
     if (!hasPermission) {
-      throw new ForbiddenException("Only managers can manage action templates");
+      throw new ForbiddenException('Only managers can manage action templates');
     }
   }
 
@@ -91,7 +95,7 @@ export class ActionsService {
   async getTemplates(projectId: number): Promise<ActionTemplate[]> {
     return this.templatesRepository.find({
       where: { projectId },
-      order: { createdAt: "DESC" },
+      order: { createdAt: 'DESC' },
     });
   }
 
@@ -99,13 +103,16 @@ export class ActionsService {
    * Get a single action template by ID.
    * Throws NotFoundException if not found.
    */
-  async getTemplate(projectId: number, templateId: number): Promise<ActionTemplate> {
+  async getTemplate(
+    projectId: number,
+    templateId: number
+  ): Promise<ActionTemplate> {
     const template = await this.templatesRepository.findOne({
       where: { id: templateId, projectId },
     });
 
     if (!template) {
-      throw new NotFoundException("Action template not found");
+      throw new NotFoundException('Action template not found');
     }
 
     return template;
@@ -192,7 +199,7 @@ export class ActionsService {
     });
 
     if (!conversation) {
-      throw new NotFoundException("Conversation not found");
+      throw new NotFoundException('Conversation not found');
     }
 
     // Permission Check: AGENT or MANAGER (must be project member)
@@ -201,7 +208,7 @@ export class ActionsService {
       Number(conversation.projectId)
     );
     if (!hasAccess) {
-      throw new ForbiddenException("You do not have access to this project");
+      throw new ForbiddenException('You do not have access to this project');
     }
 
     const template = await this.templatesRepository.findOne({
@@ -209,15 +216,15 @@ export class ActionsService {
     });
 
     if (!template) {
-      throw new NotFoundException("Action Template not found");
+      throw new NotFoundException('Action Template not found');
     }
 
     if (!template.isEnabled) {
-      throw new BadRequestException("This action template is disabled");
+      throw new BadRequestException('This action template is disabled');
     }
 
     if (!validateActionData(template.definition, dto.data)) {
-      throw new BadRequestException("Data does not match template definition");
+      throw new BadRequestException('Data does not match template definition');
     }
 
     const submission = this.submissionsRepository.create({
@@ -237,8 +244,8 @@ export class ActionsService {
   async getSubmissions(conversationId: string): Promise<ActionSubmission[]> {
     return this.submissionsRepository.find({
       where: { conversationId },
-      relations: ["template", "creator", "visitor"],
-      order: { createdAt: "DESC" },
+      relations: ['template', 'creator', 'visitor'],
+      order: { createdAt: 'DESC' },
     });
   }
 
@@ -254,7 +261,7 @@ export class ActionsService {
         conversationId: Number(conversationId),
         contentType: MessageContentType.FORM_REQUEST,
       },
-      order: { createdAt: "DESC" },
+      order: { createdAt: 'DESC' },
     });
 
     if (!pendingMessage) {
@@ -272,7 +279,7 @@ export class ActionsService {
   /**
    * Agent sends a form to visitor in chat.
    * Creates a form_request message with template snapshot.
-   * 
+   *
    * Invariants enforced:
    * - INV-1: Template must exist and be enabled
    * - INV-5: No pending form request allowed
@@ -284,11 +291,11 @@ export class ActionsService {
   ): Promise<Message> {
     const conversation = await this.conversationRepository.findOne({
       where: { id: conversationId },
-      relations: ["visitor"],
+      relations: ['visitor'],
     });
 
     if (!conversation) {
-      throw new NotFoundException("Conversation not found");
+      throw new NotFoundException('Conversation not found');
     }
 
     // Permission Check
@@ -297,7 +304,7 @@ export class ActionsService {
       Number(conversation.projectId)
     );
     if (!hasAccess) {
-      throw new ForbiddenException("You do not have access to this project");
+      throw new ForbiddenException('You do not have access to this project');
     }
 
     // INV-1: Template must exist and be enabled
@@ -306,17 +313,19 @@ export class ActionsService {
     });
 
     if (!template) {
-      throw new NotFoundException("Action template not found");
+      throw new NotFoundException('Action template not found');
     }
 
     if (!template.isEnabled) {
-      throw new BadRequestException("This action template is disabled");
+      throw new BadRequestException('This action template is disabled');
     }
 
     // INV-5: Only one active form request per conversation
     const hasPending = await this.hasPendingFormRequest(conversationId);
     if (hasPending) {
-      throw new ConflictException("A form request is already pending for this conversation");
+      throw new ConflictException(
+        'A form request is already pending for this conversation'
+      );
     }
 
     // Create form request metadata (snapshot)
@@ -356,7 +365,9 @@ export class ActionsService {
   /**
    * Get the pending form request message for a conversation.
    */
-  async getFormRequestMessage(formRequestMessageId: string): Promise<Message | null> {
+  async getFormRequestMessage(
+    formRequestMessageId: string
+  ): Promise<Message | null> {
     return this.messageRepository.findOne({
       where: { id: formRequestMessageId },
     });
@@ -365,7 +376,7 @@ export class ActionsService {
   /**
    * Visitor submits a filled form.
    * Creates ActionSubmission with visitorId and a form_submission message.
-   * 
+   *
    * Invariants enforced:
    * - INV-2: Visitor must have an active form request
    * - INV-3: Data must pass validation
@@ -376,96 +387,117 @@ export class ActionsService {
     visitorId: number,
     dto: SubmitFormAsVisitorDto
   ): Promise<{ submission: ActionSubmission; message: Message }> {
-    // Verify conversation exists
-    const conversation = await this.conversationRepository.findOne({
-      where: { id: conversationId },
-    });
+    return this.dataSource.transaction(async (manager) => {
+      // Verify conversation exists
+      const conversation = await this.conversationRepository.findOne({
+        where: { id: conversationId },
+      });
 
-    if (!conversation) {
-      throw new NotFoundException("Conversation not found");
-    }
-
-    // INV-2: Verify form request exists
-    const formRequestMessage = await this.getFormRequestMessage(dto.formRequestMessageId);
-    if (!formRequestMessage) {
-      throw new BadRequestException("Form request not found");
-    }
-
-    if (formRequestMessage.contentType !== MessageContentType.FORM_REQUEST) {
-      throw new BadRequestException("Invalid form request message");
-    }
-
-    // Check if already submitted
-    const existingSubmission = await this.submissionsRepository.findOne({
-      where: { formRequestMessageId: dto.formRequestMessageId },
-    });
-
-    if (existingSubmission) {
-      throw new BadRequestException("This form has already been submitted");
-    }
-
-    // Extract metadata and validate expiration
-    const metadata = formRequestMessage.metadata as unknown as FormRequestMetadata;
-    if (metadata.expiresAt) {
-      const expiresAt = new Date(metadata.expiresAt);
-      if (expiresAt < new Date()) {
-        throw new GoneException("This form request has expired");
+      if (!conversation) {
+        throw new NotFoundException('Conversation not found');
       }
-    }
 
-    // INV-3: Validate data against template definition
-    if (!validateActionData(metadata.definition, dto.data as Record<string, unknown>)) {
-      throw new BadRequestException("Data does not match form definition");
-    }
+      // INV-2: Verify form request exists
+      const formRequestMessage = await this.messageRepository.findOne({
+        where: { id: dto.formRequestMessageId },
+      });
+      if (!formRequestMessage) {
+        throw new BadRequestException('Form request not found');
+      }
 
-    // Fetch template for ID reference
-    const template = await this.templatesRepository.findOne({
-      where: { id: metadata.templateId },
+      if (formRequestMessage.contentType !== MessageContentType.FORM_REQUEST) {
+        throw new BadRequestException('Invalid form request message');
+      }
+
+      // Check if already submitted (using manager to prevent race conditions ideally, but repo is fine for read-committed)
+      const existingSubmission = await this.submissionsRepository.findOne({
+        where: { formRequestMessageId: dto.formRequestMessageId },
+      });
+
+      if (existingSubmission) {
+        throw new BadRequestException('This form has already been submitted');
+      }
+
+      // Extract metadata and validate expiration
+      const metadata =
+        formRequestMessage.metadata as unknown as FormRequestMetadata;
+      if (metadata.expiresAt) {
+        const expiresAt = new Date(metadata.expiresAt);
+        if (expiresAt < new Date()) {
+          throw new GoneException('This form request has expired');
+        }
+      }
+
+      // INV-3: Validate data against template definition
+      if (
+        !validateActionData(
+          metadata.definition,
+          dto.data as Record<string, unknown>
+        )
+      ) {
+        throw new BadRequestException('Data does not match form definition');
+      }
+
+      // Fetch template for ID reference
+      const template = await this.templatesRepository.findOne({
+        where: { id: metadata.templateId },
+      });
+
+      if (!template) {
+        throw new NotFoundException('Action template no longer exists');
+      }
+
+      // INV-4: Create submission linked to form request
+      const submission = this.submissionsRepository.create({
+        templateId: metadata.templateId,
+        conversationId,
+        creatorId: null,
+        visitorId,
+        formRequestMessageId: dto.formRequestMessageId,
+        data: dto.data,
+      });
+
+      // Transactional SAVE
+      let savedSubmission;
+      try {
+        savedSubmission = await manager.save(submission);
+      } catch (error) {
+        if ((error as any).code === '23505') {
+          // Unique violation
+          throw new ConflictException('This form has already been submitted');
+        }
+        throw error;
+      }
+
+      // Create form_submission message
+      const submissionMetadata: FormSubmissionMetadata = {
+        formRequestMessageId: dto.formRequestMessageId,
+        submissionId: savedSubmission.id,
+        templateName: metadata.templateName,
+        data: dto.data,
+      };
+
+      // Get visitor for sender info
+      const visitor = await this.visitorRepository.findOne({
+        where: { id: visitorId },
+      });
+
+      const submissionMessage = this.messageRepository.create({
+        conversationId: Number(conversationId),
+        content: `Form submitted: ${metadata.templateName}`,
+        contentType: MessageContentType.FORM_SUBMISSION,
+        metadata: submissionMetadata as unknown as Record<string, unknown>,
+        senderId: visitor?.visitorUid ?? String(visitorId),
+        recipientId: formRequestMessage.senderId,
+        fromCustomer: true,
+        status: MessageStatus.SENT,
+      });
+
+      // Transactional SAVE
+      const savedMessage = await manager.save(submissionMessage);
+
+      return { submission: savedSubmission, message: savedMessage };
     });
-
-    if (!template) {
-      throw new NotFoundException("Action template no longer exists");
-    }
-
-    // INV-4: Create submission linked to form request
-    const submission = this.submissionsRepository.create({
-      templateId: metadata.templateId,
-      conversationId,
-      creatorId: null,
-      visitorId,
-      formRequestMessageId: dto.formRequestMessageId,
-      data: dto.data,
-    });
-
-    const savedSubmission = await this.submissionsRepository.save(submission);
-
-    // Create form_submission message
-    const submissionMetadata: FormSubmissionMetadata = {
-      formRequestMessageId: dto.formRequestMessageId,
-      submissionId: savedSubmission.id,
-      templateName: metadata.templateName,
-      data: dto.data,
-    };
-
-    // Get visitor for sender info
-    const visitor = await this.visitorRepository.findOne({
-      where: { id: visitorId },
-    });
-
-    const submissionMessage = this.messageRepository.create({
-      conversationId: Number(conversationId),
-      content: `Form submitted: ${metadata.templateName}`,
-      contentType: MessageContentType.FORM_SUBMISSION,
-      metadata: submissionMetadata as unknown as Record<string, unknown>,
-      senderId: visitor?.visitorUid ?? String(visitorId),
-      recipientId: formRequestMessage.senderId,
-      fromCustomer: true,
-      status: MessageStatus.SENT,
-    });
-
-    const savedMessage = await this.messageRepository.save(submissionMessage);
-
-    return { submission: savedSubmission, message: savedMessage };
   }
 
   // ==================== SUBMISSION MANAGEMENT (Update/Delete) ====================
@@ -482,11 +514,11 @@ export class ActionsService {
   ): Promise<ActionSubmission> {
     const submission = await this.submissionsRepository.findOne({
       where: { id: submissionId },
-      relations: ["template"],
+      relations: ['template'],
     });
 
     if (!submission) {
-      throw new NotFoundException("Submission not found");
+      throw new NotFoundException('Submission not found');
     }
 
     // Permission check: Either creator (agent) or visitor must match
@@ -495,16 +527,16 @@ export class ActionsService {
       (visitorId && submission.visitorId === visitorId);
 
     if (!isOwner) {
-      throw new ForbiddenException("You can only update your own submissions");
+      throw new ForbiddenException('You can only update your own submissions');
     }
 
     // Validate the new data against template definition
     if (!submission.template) {
-      throw new NotFoundException("Template not found for validation");
+      throw new NotFoundException('Template not found for validation');
     }
 
     if (!validateActionData(submission.template.definition, data)) {
-      throw new BadRequestException("Data does not match template definition");
+      throw new BadRequestException('Data does not match template definition');
     }
 
     submission.data = data;
@@ -523,11 +555,11 @@ export class ActionsService {
   ): Promise<void> {
     const submission = await this.submissionsRepository.findOne({
       where: { id: submissionId },
-      relations: ["conversation"],
+      relations: ['conversation'],
     });
 
     if (!submission) {
-      throw new NotFoundException("Submission not found");
+      throw new NotFoundException('Submission not found');
     }
 
     // If user is an agent, check project membership
@@ -537,7 +569,7 @@ export class ActionsService {
       });
 
       if (!conversation) {
-        throw new NotFoundException("Conversation not found");
+        throw new NotFoundException('Conversation not found');
       }
 
       const hasAccess = await this.projectService.isProjectMember(
@@ -546,18 +578,19 @@ export class ActionsService {
       );
 
       if (!hasAccess) {
-        throw new ForbiddenException("You do not have access to this project");
+        throw new ForbiddenException('You do not have access to this project');
       }
     } else if (visitorId) {
       // Visitor can only delete their own submission
       if (submission.visitorId !== visitorId) {
-        throw new ForbiddenException("You can only delete your own submissions");
+        throw new ForbiddenException(
+          'You can only delete your own submissions'
+        );
       }
     } else {
-      throw new ForbiddenException("Authentication required");
+      throw new ForbiddenException('Authentication required');
     }
 
     await this.submissionsRepository.remove(submission);
   }
 }
-
