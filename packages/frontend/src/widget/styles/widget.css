@@ -1,5 +1,4 @@
-/* Import generated theme variables from tokens.ts */
-@import "./_generated-vars.css";
+/* Theme variables imported separately via main.tsx */
 
 @tailwind base;
 @tailwind components;

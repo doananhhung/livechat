@@ -26,7 +26,7 @@ interface ChatState {
   addMessage: (message: Message) => void;
   updateMessageStatus: (
     messageId: string | number,
-    status: MessageStatus
+    status: MessageStatus,
   ) => void;
   finalizeMessage: (tempId: string, finalMessage: Message) => void;
   setConnectionStatus: (status: ConnectionStatus) => void;
@@ -67,14 +67,14 @@ export const useChatStore = create<ChatState>((set) => ({
   updateMessageStatus: (messageId, status) =>
     set((state) => ({
       messages: state.messages.map((msg) =>
-        msg.id === messageId ? { ...msg, status } : msg
+        msg.id === messageId ? { ...msg, status } : msg,
       ),
     })),
 
   finalizeMessage: (tempId, finalMessage) =>
     set((state) => ({
       messages: state.messages.map((msg) =>
-        msg.id === tempId ? finalMessage : msg
+        msg.id === tempId ? finalMessage : msg,
       ),
     })),
 
@@ -90,13 +90,35 @@ export const useChatStore = create<ChatState>((set) => ({
   loadConversationHistory: (history) => {
     // Limit history to prevent memory issues
     const limitedHistory = history.slice(-MAX_MESSAGES);
-    set({ messages: limitedHistory });
+
+    // Derived state: Find all form submission messages and extract their request IDs
+    const submittedIds = new Set<string>();
+    limitedHistory.forEach((msg) => {
+      if (
+        msg.contentType === "form_submission" &&
+        msg.metadata &&
+        typeof msg.metadata.formRequestMessageId === "string"
+      ) {
+        submittedIds.add(msg.metadata.formRequestMessageId);
+      }
+    });
+
+    set((state) => ({
+      messages: limitedHistory,
+      submittedFormMessageIds: new Set([
+        ...state.submittedFormMessageIds,
+        ...submittedIds,
+      ]),
+    }));
   },
 
   setSessionReady: (isReady) => set({ isSessionReady: isReady }),
 
   markFormAsSubmitted: (messageId) =>
     set((state) => ({
-      submittedFormMessageIds: new Set([...state.submittedFormMessageIds, messageId]),
+      submittedFormMessageIds: new Set([
+        ...state.submittedFormMessageIds,
+        messageId,
+      ]),
     })),
 }));

@@ -4,8 +4,12 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { getWidgetSettings } from "./services/widgetApi";
 import { useChatStore } from "./store/useChatStore";
 import { socketService } from "./services/socketService";
-import widgetStyles from "./styles/widget.css?inline";
+import generatedVars from "./styles/_generated-vars.css?inline";
+import widgetBaseStyles from "./styles/widget.css?inline";
 import type { WidgetSettingsDto } from "@live-chat/shared-dtos";
+
+// Combine generated vars with base styles (order matters: vars first)
+const widgetStyles = generatedVars + "\n" + widgetBaseStyles;
 
 const WIDGET_SCRIPT_ID = "live-chat-widget";
 const INIT_TIMEOUT = 500; // ms - Configurable constant instead of magic number
@@ -71,7 +75,7 @@ function sanitizeInput(input: string): string {
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
   retries = MAX_RETRY_ATTEMPTS,
-  delay = RETRY_DELAY
+  delay = RETRY_DELAY,
 ): Promise<T> {
   try {
     return await fn();
@@ -95,13 +99,13 @@ async function initializeWidget(config: {
   initializationCount++;
   logWithTime(
     "Widget",
-    `🚀 initializeWidget() called | Attempt #${initializationCount} | isInitialized: ${isInitialized}`
+    `🚀 initializeWidget() called | Attempt #${initializationCount} | isInitialized: ${isInitialized}`,
   );
 
   if (isInitialized || !config.projectId) {
     logWithTime(
       "Widget",
-      `⚠️ Initialization SKIPPED | isInitialized: ${isInitialized}, hasProjectId: ${!!config.projectId}`
+      `⚠️ Initialization SKIPPED | isInitialized: ${isInitialized}, hasProjectId: ${!!config.projectId}`,
     );
     return;
   }
@@ -111,7 +115,7 @@ async function initializeWidget(config: {
   try {
     logWithTime(
       "Widget",
-      `📡 Fetching widget settings for projectId: ${config.projectId}`
+      `📡 Fetching widget settings for projectId: ${config.projectId}`,
     );
 
     // 1. Store the original functions
@@ -126,7 +130,7 @@ async function initializeWidget(config: {
       ...args: [
         data: any,
         unused: string,
-        url?: string | URL | null | undefined
+        url?: string | URL | null | undefined,
       ]
     ) {
       // Call the original function
@@ -141,7 +145,7 @@ async function initializeWidget(config: {
       ...args: [
         data: any,
         unused: string,
-        url?: string | URL | null | undefined
+        url?: string | URL | null | undefined,
       ]
     ) {
       // Call the original function
@@ -153,7 +157,7 @@ async function initializeWidget(config: {
 
     // 1. Fetch settings from the backend with retry logic
     const settings: WidgetSettingsDto = await retryWithBackoff(() =>
-      getWidgetSettings(config.projectId)
+      getWidgetSettings(config.projectId),
     );
     logWithTime("Widget", `✅ Widget settings received:`, settings);
 
@@ -174,7 +178,7 @@ async function initializeWidget(config: {
 
     logWithTime(
       "Widget",
-      `🔌 Calling socketService.connect() with visitorUid: ${visitorUid}`
+      `🔌 Calling socketService.connect() with visitorUid: ${visitorUid}`,
     );
     socketService.connect(config.projectId, visitorUid);
 
@@ -188,16 +192,19 @@ async function initializeWidget(config: {
       <ErrorBoundary>
         <App />
       </ErrorBoundary>,
-      appContainer
+      appContainer,
     );
     logWithTime(
       "Widget",
-      `✅ Widget initialized successfully | Total initializations: ${initializationCount}`
+      `✅ Widget initialized successfully | Total initializations: ${initializationCount}`,
     );
 
     // 5. Handle auto-open delay
     if (fullConfig.autoOpenDelay && fullConfig.autoOpenDelay > 0) {
-      logWithTime("Widget", `⏳ Scheduling auto-open in ${fullConfig.autoOpenDelay}ms`);
+      logWithTime(
+        "Widget",
+        `⏳ Scheduling auto-open in ${fullConfig.autoOpenDelay}ms`,
+      );
       const autoOpenTimeout = setTimeout(() => {
         if (!useChatStore.getState().isWindowOpen) {
           useChatStore.getState().toggleWindow();
@@ -206,7 +213,6 @@ async function initializeWidget(config: {
       }, fullConfig.autoOpenDelay);
       cleanupFunctions.push(() => clearTimeout(autoOpenTimeout));
     }
-
   } catch (error) {
     errorWithTime("Widget", `❌ Widget initialization FAILED:`, error);
     isInitialized = false; // Reset flag on failure to allow re-initialization
@@ -251,7 +257,7 @@ function cleanup() {
   cleanupCount++;
   logWithTime(
     "Widget",
-    `🧹 cleanup() called | Cleanup #${cleanupCount} | cleanupFunctions: ${cleanupFunctions.length}`
+    `🧹 cleanup() called | Cleanup #${cleanupCount} | cleanupFunctions: ${cleanupFunctions.length}`,
   );
 
   // Execute all registered cleanup functions
@@ -263,7 +269,7 @@ function cleanup() {
       errorWithTime(
         "Widget",
         `❌ Error during cleanup function #${index + 1}:`,
-        error
+        error,
       );
     }
   });
@@ -314,7 +320,7 @@ function cleanup() {
   isInitialized = false;
   logWithTime(
     "Widget",
-    `✅ Cleanup complete | isInitialized = false | Total cleanups: ${cleanupCount}, Total inits: ${initializationCount}`
+    `✅ Cleanup complete | isInitialized = false | Total cleanups: ${cleanupCount}, Total inits: ${initializationCount}`,
   );
 }
 
@@ -331,7 +337,7 @@ setTimeout(() => {
   if (isInitialized) {
     logWithTime(
       "Widget",
-      `⏭️ Fallback init SKIPPED - widget already initialized`
+      `⏭️ Fallback init SKIPPED - widget already initialized`,
     );
     return;
   }
@@ -343,19 +349,19 @@ setTimeout(() => {
     if (projectId) {
       logWithTime(
         "Widget",
-        `✅ Found data-project-id: ${projectId} - initializing widget`
+        `✅ Found data-project-id: ${projectId} - initializing widget`,
       );
       initializeWidget({ projectId });
     } else {
       errorWithTime(
         "Widget",
-        `❌ Script tag found but data-project-id attribute is missing`
+        `❌ Script tag found but data-project-id attribute is missing`,
       );
     }
   } else {
     logWithTime(
       "Widget",
-      `⚠️ Script tag with id '${WIDGET_SCRIPT_ID}' not found - waiting for manual init`
+      `⚠️ Script tag with id '${WIDGET_SCRIPT_ID}' not found - waiting for manual init`,
     );
   }
 }, INIT_TIMEOUT);

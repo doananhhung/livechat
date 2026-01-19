@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useChatStore } from "../useChatStore";
-import { MessageStatus } from "@live-chat/shared-types";
+import { MessageStatus, MessageContentType } from "@live-chat/shared-types";
 import type { WidgetMessageDto as Message } from "@live-chat/shared-types";
 
 describe("useChatStore", () => {
@@ -21,9 +21,10 @@ describe("useChatStore", () => {
   const createMockMessage = (overrides: Partial<Message> = {}): Message => ({
     id: "msg-1",
     content: "Hello",
-    sender: { type: "agent" },
+    fromCustomer: false,
+    senderId: "agent-1",
     status: MessageStatus.SENT,
-    timestamp: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
     contentType: "text" as any,
     ...overrides,
   });
@@ -100,11 +101,41 @@ describe("useChatStore", () => {
     expect(state.messages[0].content).toBe("Final");
   });
 
-  it("marks form as submitted", () => {
-    useChatStore.getState().markFormAsSubmitted("form-req-1");
+  it("markFormAsSubmitted adds messageId to submittedFormMessageIds", () => {
+    useChatStore.getState().markFormAsSubmitted("req-1");
 
     const state = useChatStore.getState();
-    expect(state.submittedFormMessageIds.has("form-req-1")).toBe(true);
+    expect(state.submittedFormMessageIds.has("req-1")).toBe(true);
+  });
+
+  it("restores submitted state from history", () => {
+    const mockHistory: Message[] = [
+      {
+        id: "req-1",
+        content: "Form Request",
+        contentType: MessageContentType.FORM_REQUEST,
+        fromCustomer: false,
+        senderId: "agent-1",
+        status: MessageStatus.SENT,
+        createdAt: new Date().toISOString(),
+        metadata: { templateId: 1 } as any,
+      },
+      {
+        id: "sub-1",
+        content: "Form Submitted",
+        contentType: MessageContentType.FORM_SUBMISSION,
+        fromCustomer: true,
+        status: MessageStatus.SENT,
+        createdAt: new Date().toISOString(),
+        metadata: { formRequestMessageId: "req-1" } as any,
+      },
+    ];
+
+    useChatStore.getState().loadConversationHistory(mockHistory);
+
+    const state = useChatStore.getState();
+    expect(state.messages).toHaveLength(2);
+    expect(state.submittedFormMessageIds.has("req-1")).toBe(true);
   });
 
   it("toggles window open state", () => {

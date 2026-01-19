@@ -50,7 +50,7 @@ const App = () => {
       if (currentUrl === lastUrl.current) {
         // If URL hasn't changed, but title might have, update it in history
         historyTracker.push(currentUrl, currentTitle);
-        return; 
+        return;
       }
 
       logWithTime("App", `🔗 URL CHANGED: ${lastUrl.current} → ${currentUrl}`);
@@ -63,7 +63,7 @@ const App = () => {
       } else {
         logWithTime(
           "App",
-          "Skipping context update because session is not ready."
+          "Skipping context update because session is not ready.",
         );
       }
     };
@@ -75,14 +75,18 @@ const App = () => {
 
     // Observe title changes to update history entry if title changes after navigation (SPA behavior)
     let titleObserver: MutationObserver | null = null;
-    const titleElement = document.querySelector('title');
+    const titleElement = document.querySelector("title");
     if (titleElement) {
       titleObserver = new MutationObserver(() => {
         const currentUrl = window.location.href;
         const currentTitle = document.title;
         historyTracker.push(currentUrl, currentTitle);
       });
-      titleObserver.observe(titleElement, { childList: true, subtree: true, characterData: true });
+      titleObserver.observe(titleElement, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
     }
 
     // Cleanup listeners and clear history tracker
@@ -102,7 +106,7 @@ const App = () => {
     if (isSessionReady) {
       logWithTime(
         "App",
-        `✅ Session is ready, sending initial context: ${window.location.href}`
+        `✅ Session is ready, sending initial context: ${window.location.href}`,
       );
       // Ensure initial page view is recorded and then sent
       historyTracker.push(window.location.href, document.title);
@@ -111,10 +115,10 @@ const App = () => {
   }, [isSessionReady]);
 
   useEffect(() => {
-    if (isWindowOpen && widgetConfig && connectionStatus === 'connected') {
+    if (isWindowOpen && widgetConfig && connectionStatus === "connected") {
       logWithTime(
         "App",
-        `🟢 Widget opened and socket connected, identifying visitor for projectId: ${widgetConfig.projectId}`
+        `🟢 Widget opened and socket connected, identifying visitor for projectId: ${widgetConfig.projectId}`,
       );
       const visitorUid = localStorage.getItem("visitor_uid");
       if (visitorUid) {
@@ -139,16 +143,16 @@ const App = () => {
       const optimisticMessage: Message = {
         id: tempId,
         content,
-        sender: { type: "visitor" },
+        fromCustomer: true,
         status: MessageStatus.SENDING,
-        timestamp: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
       };
 
       addMessage(optimisticMessage);
       const sessionMetadata = historyTracker.getMetadata(); // Get current metadata
       socketService.emitSendMessage(content, tempId, sessionMetadata); // Pass metadata
     },
-    [addMessage]
+    [addMessage],
   );
 
   const handleTypingChange = useCallback((isTyping: boolean) => {
@@ -162,10 +166,10 @@ const App = () => {
         markFormAsSubmitted(messageId);
       } else {
         // TODO: Show error toast to user
-        console.error('Form submission failed:', result.error);
+        console.error("Form submission failed:", result.error);
       }
     },
-    [markFormAsSubmitted]
+    [markFormAsSubmitted],
   );
 
   if (!widgetConfig) {

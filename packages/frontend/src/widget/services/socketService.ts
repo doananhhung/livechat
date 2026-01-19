@@ -1,4 +1,3 @@
-
 // src/widget/services/socketService.ts
 import { io, Socket } from "socket.io-client";
 import { useChatStore } from "../store/useChatStore";
@@ -12,7 +11,7 @@ import {
   type UpdateContextPayload,
   type AgentTypingPayload,
   type MessageSentPayload,
-  type VisitorSessionMetadata
+  type VisitorSessionMetadata,
 } from "@live-chat/shared-types";
 
 // Socket.IO runs on the root domain, not /api/v1
@@ -29,7 +28,7 @@ const logWithTime = (instanceId: string, message: string, ...args: any[]) => {
   });
   console.log(
     `[${timestamp}] [SocketService ${instanceId}] ${message}`,
-    ...args
+    ...args,
   );
 };
 
@@ -43,7 +42,7 @@ const errorWithTime = (instanceId: string, message: string, ...args: any[]) => {
   });
   console.error(
     `[${timestamp}] [SocketService ${instanceId}] ${message}`,
-    ...args
+    ...args,
   );
 };
 
@@ -60,7 +59,7 @@ class SocketService {
     this.instanceId = crypto.randomUUID().slice(0, 8);
     logWithTime(
       this.instanceId,
-      `✨ Instance created at ${new Date().toISOString()}`
+      `✨ Instance created at ${new Date().toISOString()}`,
     );
   }
 
@@ -75,7 +74,7 @@ class SocketService {
         this.instanceId,
         `⚠️ Connect IGNORED: socket already ${
           this.socket?.connected ? "CONNECTED" : "CONNECTING"
-        } | Current socket ID: ${this.socket?.id}`
+        } | Current socket ID: ${this.socket?.id}`,
       );
       return;
     }
@@ -84,7 +83,7 @@ class SocketService {
     if (this.socket) {
       errorWithTime(
         this.instanceId,
-        `⚠️ STALE SOCKET FOUND! Disconnecting it before creating new one. Old socket ID: ${this.socket.id}`
+        `⚠️ STALE SOCKET FOUND! Disconnecting it before creating new one. Old socket ID: ${this.socket.id}`,
       );
       this.disconnect();
     }
@@ -119,7 +118,7 @@ class SocketService {
       setConnectionStatus("connected");
       logWithTime(
         this.instanceId,
-        `✅ Socket CONNECTED with ID: ${this.socket?.id} | Total connections: ${this.connectionCount}`
+        `✅ Socket CONNECTED with ID: ${this.socket?.id} | Total connections: ${this.connectionCount}`,
       );
     };
 
@@ -130,7 +129,7 @@ class SocketService {
       setSessionReady(false); // Reset session readiness
       logWithTime(
         this.instanceId,
-        `🔌 Socket DISCONNECTED | Socket ID was: ${this.socket?.id} | Total disconnections: ${this.disconnectionCount}`
+        `🔌 Socket DISCONNECTED | Socket ID was: ${this.socket?.id} | Total disconnections: ${this.disconnectionCount}`,
       );
     };
 
@@ -147,7 +146,7 @@ class SocketService {
       setSessionReady(false); // Reset session readiness
       errorWithTime(
         this.instanceId,
-        `❌ Socket reconnection FAILED after all attempts`
+        `❌ Socket reconnection FAILED after all attempts`,
       );
     };
 
@@ -169,11 +168,10 @@ class SocketService {
       const newMessage: Message = {
         id: data.id,
         content: data.content,
-        sender: {
-          type: data.fromCustomer ? "visitor" : "agent",
-        },
-        status: MessageStatus.SENT, // Assuming the message is sent successfully
-        timestamp: data.createdAt,
+        senderId: data.senderId,
+        fromCustomer: data.fromCustomer,
+        status: MessageStatus.SENT,
+        createdAt: data.createdAt,
         contentType: data.contentType,
         metadata: data.metadata,
       };
@@ -181,12 +179,12 @@ class SocketService {
       addMessage(newMessage);
       logWithTime(
         this.instanceId,
-        `💬 New message added from agent | Message ID: ${newMessage.id}`
+        `💬 New message added from agent | Message ID: ${newMessage.id}`,
       );
       if (!useChatStore.getState().isWindowOpen) {
         logWithTime(
           this.instanceId,
-          `🔔 Chat window is closed, incrementing unread count`
+          `🔔 Chat window is closed, incrementing unread count`,
         );
         incrementUnreadCount();
       }
@@ -197,8 +195,18 @@ class SocketService {
       setAgentIsTyping(data.isTyping);
     };
 
-    const formSubmittedHandler = (data: { messageId: string; formRequestMessageId?: string }) => {
+    const formSubmittedHandler = (data: {
+      messageId: string;
+      formRequestMessageId?: string;
+      message?: Message;
+    }) => {
       logWithTime(this.instanceId, `📋 Form submitted:`, data);
+
+      // If full message is provided (normal case for new receipts), add it to chat
+      if (data.message) {
+        addMessage(data.message);
+      }
+
       // Mark both the form submission message and original request as submitted
       if (data.messageId) {
         markFormAsSubmitted(data.messageId);
@@ -213,7 +221,10 @@ class SocketService {
     this.socket.on("disconnect", disconnectHandler);
     this.socket.on("connect_error", connectErrorHandler);
     this.socket.on("reconnect_failed", reconnectFailedHandler);
-    this.socket.on(WebSocketEvent.CONVERSATION_HISTORY, conversationHistoryHandler);
+    this.socket.on(
+      WebSocketEvent.CONVERSATION_HISTORY,
+      conversationHistoryHandler,
+    );
     this.socket.on(WebSocketEvent.MESSAGE_SENT, messageSentHandler);
     this.socket.on(WebSocketEvent.AGENT_REPLIED, agentRepliedHandler);
     this.socket.on(WebSocketEvent.AGENT_TYPING, agentIsTypingHandler);
@@ -224,7 +235,10 @@ class SocketService {
     this.eventHandlers.set("disconnect", disconnectHandler);
     this.eventHandlers.set("connect_error", connectErrorHandler);
     this.eventHandlers.set("reconnect_failed", reconnectFailedHandler);
-    this.eventHandlers.set(WebSocketEvent.CONVERSATION_HISTORY, conversationHistoryHandler);
+    this.eventHandlers.set(
+      WebSocketEvent.CONVERSATION_HISTORY,
+      conversationHistoryHandler,
+    );
     this.eventHandlers.set(WebSocketEvent.MESSAGE_SENT, messageSentHandler);
     this.eventHandlers.set(WebSocketEvent.AGENT_REPLIED, agentRepliedHandler);
     this.eventHandlers.set(WebSocketEvent.AGENT_TYPING, agentIsTypingHandler);
@@ -238,7 +252,7 @@ class SocketService {
     const handlersCount = this.eventHandlers.size;
     logWithTime(
       this.instanceId,
-      `🧹 CLEANING UP ${handlersCount} event listeners for socket ID: ${this.socket.id}`
+      `🧹 CLEANING UP ${handlersCount} event listeners for socket ID: ${this.socket.id}`,
     );
 
     // Remove all registered event handlers properly
@@ -258,7 +272,11 @@ class SocketService {
 
   // --- Methods to send events to the Server ---
 
-  public emitSendMessage(content: string, tempId: string, sessionMetadata?: VisitorSessionMetadata): void {
+  public emitSendMessage(
+    content: string,
+    tempId: string,
+    sessionMetadata?: VisitorSessionMetadata,
+  ): void {
     if (this.socket?.connected) {
       logWithTime(this.instanceId, `📤 Emitting sendMessage`);
       const payload: SendMessagePayload = { content, tempId, sessionMetadata };
@@ -266,7 +284,7 @@ class SocketService {
     } else {
       errorWithTime(
         this.instanceId,
-        `⚠️ Cannot emit sendMessage: socket not connected`
+        `⚠️ Cannot emit sendMessage: socket not connected`,
       );
     }
   }
@@ -279,7 +297,7 @@ class SocketService {
     } else {
       errorWithTime(
         this.instanceId,
-        `⚠️ Cannot emit visitorIsTyping: socket not connected`
+        `⚠️ Cannot emit visitorIsTyping: socket not connected`,
       );
     }
   }
@@ -287,12 +305,15 @@ class SocketService {
   public emitIdentify(projectId: string, visitorUid: string): void {
     if (this.socket?.connected) {
       logWithTime(this.instanceId, `📤 Emitting identify`);
-      const payload: IdentifyPayload = { projectId: Number(projectId), visitorUid };
+      const payload: IdentifyPayload = {
+        projectId: Number(projectId),
+        visitorUid,
+      };
       this.socket.emit(WebSocketEvent.IDENTIFY, payload);
     } else {
       errorWithTime(
         this.instanceId,
-        `⚠️ Cannot emit identify: socket not connected`
+        `⚠️ Cannot emit identify: socket not connected`,
       );
     }
   }
@@ -308,32 +329,35 @@ class SocketService {
     } else {
       errorWithTime(
         this.instanceId,
-        `⚠️ Cannot emit updateContext: socket not connected`
+        `⚠️ Cannot emit updateContext: socket not connected`,
       );
     }
   }
 
   public emitSubmitForm(
     formRequestMessageId: string,
-    data: Record<string, unknown>
+    data: Record<string, unknown>,
   ): Promise<{ success: boolean; error?: string }> {
     return new Promise((resolve) => {
       if (this.socket?.connected) {
-        logWithTime(this.instanceId, `📤 Emitting submitForm for ${formRequestMessageId}`);
+        logWithTime(
+          this.instanceId,
+          `📤 Emitting submitForm for ${formRequestMessageId}`,
+        );
         this.socket.emit(
           WebSocketEvent.SUBMIT_FORM,
           { formRequestMessageId, data },
           (response: { success: boolean; error?: string }) => {
             logWithTime(this.instanceId, `📥 submitForm response:`, response);
             resolve(response);
-          }
+          },
         );
       } else {
         errorWithTime(
           this.instanceId,
-          `⚠️ Cannot emit submitForm: socket not connected`
+          `⚠️ Cannot emit submitForm: socket not connected`,
         );
-        resolve({ success: false, error: 'Socket not connected' });
+        resolve({ success: false, error: "Socket not connected" });
       }
     });
   }
@@ -343,7 +367,7 @@ class SocketService {
     if (!this.socket) {
       errorWithTime(
         this.instanceId,
-        `⚠️ Disconnect IGNORED: no socket instance to disconnect | connectionCount: ${this.connectionCount}, disconnectionCount: ${this.disconnectionCount}`
+        `⚠️ Disconnect IGNORED: no socket instance to disconnect | connectionCount: ${this.connectionCount}, disconnectionCount: ${this.disconnectionCount}`,
       );
       return;
     }
@@ -353,7 +377,7 @@ class SocketService {
 
     logWithTime(
       this.instanceId,
-      `🔌 Disconnecting and closing socket ID: ${socketId}...`
+      `🔌 Disconnecting and closing socket ID: ${socketId}...`,
     );
     this.socket.disconnect();
     this.socket.close(); // Force close the socket
@@ -362,11 +386,10 @@ class SocketService {
     this.isConnecting = false;
     logWithTime(
       this.instanceId,
-      `✅ Socket instance set to null | Final stats: ${this.connectionCount} total connections, ${this.disconnectionCount} total disconnections`
+      `✅ Socket instance set to null | Final stats: ${this.connectionCount} total connections, ${this.disconnectionCount} total disconnections`,
     );
   }
 }
 
 // Export a single instance (singleton) for the entire widget to use
 export const socketService = new SocketService();
-
