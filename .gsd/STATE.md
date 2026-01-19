@@ -1,9 +1,9 @@
 ## Current Position
 
 - **Milestone**: v1.2 - Theme Unification
-- **Phase**: Not started
-- **Status**: Milestone planned
+- **Phase**: 1 - Define Shared Tokens & Widget CSS Variables
+- **Status**: Planning complete
 
-## Recent Decisions
+## Next Steps
 
-- Theme will be centralized within `packages/frontend/src/theme/`, not a separate package.
+1. `/execute 1` — Run all plans
