@@ -6,10 +6,12 @@ import { cn } from "../../../lib/utils";
 import { FormFieldPreview } from "./FormFieldPreview";
 import { useTypingStore } from "../../../stores/typingStore";
 import type { Message, FormRequestMetadata } from "@live-chat/shared-types";
+import { FormSubmissionBubble } from "./FormSubmissionBubble";
 
 interface FormRequestBubbleProps {
   message: Message;
   conversationId: number;
+  submissionMessage?: Message;
 }
 
 type FormStatus = "pending" | "filling" | "submitted" | "expired";
@@ -21,6 +23,7 @@ type FormStatus = "pending" | "filling" | "submitted" | "expired";
 export const FormRequestBubble: React.FC<FormRequestBubbleProps> = ({
   message,
   conversationId,
+  submissionMessage,
 }) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -57,6 +60,11 @@ export const FormRequestBubble: React.FC<FormRequestBubbleProps> = ({
 
   if (!metadata) {
     return <span className="text-muted-foreground">{message.content}</span>;
+  }
+
+  // If submitted and we have the submission message, render that instead
+  if (status === "submitted" && submissionMessage) {
+    return <FormSubmissionBubble message={submissionMessage} />;
   }
 
   const fields = metadata.definition?.fields || [];

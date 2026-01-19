@@ -18,7 +18,13 @@ import { Button } from "../../ui/Button";
 import { formatMessageTime } from "../../../lib/dateUtils";
 import { cn } from "../../../lib/utils";
 import { useToast } from "../../ui/use-toast";
-import { ChevronDown, CheckCircle, Clock, AlertOctagon, RotateCcw } from "lucide-react";
+import {
+  ChevronDown,
+  CheckCircle,
+  Clock,
+  AlertOctagon,
+  RotateCcw,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,7 +33,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "../../ui/DropdownMenu";
-import { getStatusLabel, getAvailableTransitions } from "../../../lib/conversationUtils";
+import {
+  getStatusLabel,
+  getAvailableTransitions,
+} from "../../../lib/conversationUtils";
 
 import { AssignmentControls } from "./AssignmentControls";
 import { FormRequestBubble } from "./FormRequestBubble";
@@ -37,10 +46,20 @@ import { FormSubmissionBubble } from "./FormSubmissionBubble";
  * Renders message content based on contentType.
  * Switches between plain text, form request, and form submission.
  */
-const renderMessageContent = (msg: Message, conversationId: number) => {
+const renderMessageContent = (
+  msg: Message,
+  conversationId: number,
+  submissionMessage?: Message,
+) => {
   switch (msg.contentType) {
     case "form_request":
-      return <FormRequestBubble message={msg} conversationId={conversationId} />;
+      return (
+        <FormRequestBubble
+          message={msg}
+          conversationId={conversationId}
+          submissionMessage={submissionMessage}
+        />
+      );
     case "form_submission":
       return <FormSubmissionBubble message={msg} />;
     default:
@@ -63,15 +82,46 @@ const MessageList = ({
   const { typingStatus } = useTypingStore();
   const isTyping = typingStatus[conversationId];
 
-  // Group messages by sender to show avatar only for first message in group
-  const groupedMessages = messages.reduce((groups: Message[][], msg, index) => {
-    if (index === 0 || messages[index - 1].fromCustomer !== msg.fromCustomer) {
-      groups.push([msg]);
-    } else {
-      groups[groups.length - 1].push(msg);
+  // Map request IDs to their submission messages
+  const submissionMap = new Map<string, Message>();
+  messages.forEach((msg) => {
+    if (
+      msg.contentType === "form_submission" &&
+      msg.metadata?.formRequestMessageId
+    ) {
+      submissionMap.set(String(msg.metadata.formRequestMessageId), msg);
     }
-    return groups;
-  }, []);
+  });
+
+  // Filter out submissions that have a corresponding request in the list
+  // If the request is missing, we still show the submission (fallback)
+  const visibleMessages = messages.filter((msg) => {
+    if (
+      msg.contentType === "form_submission" &&
+      msg.metadata?.formRequestMessageId
+    ) {
+      const requestId = String(msg.metadata.formRequestMessageId);
+      const requestExists = messages.some((m) => String(m.id) === requestId);
+      return !requestExists;
+    }
+    return true;
+  });
+
+  // Group messages by sender to show avatar only for first message in group
+  const groupedMessages = visibleMessages.reduce(
+    (groups: Message[][], msg, index) => {
+      if (
+        index === 0 ||
+        visibleMessages[index - 1].fromCustomer !== msg.fromCustomer
+      ) {
+        groups.push([msg]);
+      } else {
+        groups[groups.length - 1].push(msg);
+      }
+      return groups;
+    },
+    [],
+  );
 
   return (
     <div className="flex-1 p-4 overflow-y-auto flex flex-col-reverse">
@@ -91,13 +141,23 @@ const MessageList = ({
               const isLastInGroup = msgIndex === group.length - 1;
 
               // Check if this is a form message that should be centered
-              const isFormMessage = msg.contentType === 'form_request' || msg.contentType === 'form_submission';
+              const isFormMessage =
+                msg.contentType === "form_request" ||
+                msg.contentType === "form_submission";
+
+              const submissionMsg =
+                msg.contentType === "form_request"
+                  ? submissionMap.get(String(msg.id))
+                  : undefined;
 
               // Centered form message layout
               if (isFormMessage) {
                 return (
-                  <div key={msg.id} className="flex justify-center my-4 animate-slide-in">
-                    {renderMessageContent(msg, conversationId)}
+                  <div
+                    key={msg.id}
+                    className="flex justify-center my-4 animate-slide-in"
+                  >
+                    {renderMessageContent(msg, conversationId, submissionMsg)}
                   </div>
                 );
               }
@@ -108,7 +168,7 @@ const MessageList = ({
                   key={msg.id}
                   className={cn(
                     "flex gap-2 animate-slide-in",
-                    msg.fromCustomer ? "justify-start" : "justify-end"
+                    msg.fromCustomer ? "justify-start" : "justify-end",
                   )}
                 >
                   {/* Visitor messages - left side with avatar */}
@@ -126,7 +186,7 @@ const MessageList = ({
                   <div
                     className={cn(
                       "flex flex-col max-w-[70%]",
-                      msg.fromCustomer ? "items-start" : "items-end"
+                      msg.fromCustomer ? "items-start" : "items-end",
                     )}
                   >
                     <div
@@ -134,10 +194,10 @@ const MessageList = ({
                         "p-2 px-3 break-words rounded-lg",
                         msg.fromCustomer
                           ? "bg-muted text-muted-foreground rounded-tl-none"
-                          : "bg-primary text-primary-foreground rounded-tr-none"
+                          : "bg-primary text-primary-foreground rounded-tr-none",
                       )}
                     >
-                      {renderMessageContent(msg, conversationId)}
+                      {renderMessageContent(msg, conversationId, submissionMsg)}
                     </div>
                     {/* Show timestamp only for last message in group */}
                     {isLastInGroup && (
@@ -172,7 +232,10 @@ export const MessagePane = () => {
   const numericProjectId = projectId ? parseInt(projectId, 10) : undefined;
   const convoId = conversationId ? parseInt(conversationId, 10) : undefined;
 
-  const { data: messages, isLoading } = useGetMessages(numericProjectId, convoId);
+  const { data: messages, isLoading } = useGetMessages(
+    numericProjectId,
+    convoId,
+  );
   const { mutate: updateConversation, isPending: isUpdatingStatus } =
     useUpdateConversationStatus();
 
@@ -180,7 +243,7 @@ export const MessagePane = () => {
   const [, setTick] = useState(0);
   useEffect(() => {
     const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
-      if (event.query.queryKey[0] === 'conversations') {
+      if (event.query.queryKey[0] === "conversations") {
         setTick((t) => t + 1);
       }
     });
@@ -199,7 +262,12 @@ export const MessagePane = () => {
     });
 
   useEffect(() => {
-    if (convoId && numericProjectId && conversation && conversation.unreadCount > 0) {
+    if (
+      convoId &&
+      numericProjectId &&
+      conversation &&
+      conversation.unreadCount > 0
+    ) {
       updateConversation({
         projectId: numericProjectId,
         conversationId: convoId,
@@ -222,17 +290,21 @@ export const MessagePane = () => {
       },
       {
         onSuccess: () => {
-          const visitorName = conversation.visitor?.displayName || t("visitor.guest");
+          const visitorName =
+            conversation.visitor?.displayName || t("visitor.guest");
           toast({
             title: t("common.success"),
-            description: t("toast.statusUpdated", { visitorName, status: getStatusLabel(newStatus) }),
+            description: t("toast.statusUpdated", {
+              visitorName,
+              status: getStatusLabel(newStatus),
+            }),
           });
 
           // Navigate to the new status filter so user can continue viewing the conversation
           // This prevents the "Loading conversation..." state when conversation moves to different filter
           if (currentStatus !== newStatus) {
             navigate(
-              `/inbox/projects/${projectId}/conversations/${conversationId}?status=${newStatus}`
+              `/inbox/projects/${projectId}/conversations/${conversationId}?status=${newStatus}`,
             );
           }
         },
@@ -243,25 +315,28 @@ export const MessagePane = () => {
             variant: "destructive",
           });
         },
-      }
+      },
     );
   };
 
   const getStatusIcon = (s: ConversationStatus) => {
     switch (s) {
-      case ConversationStatus.OPEN: return <RotateCcw className="h-4 w-4" />;
-      case ConversationStatus.PENDING: return <Clock className="h-4 w-4" />;
-      case ConversationStatus.SOLVED: return <CheckCircle className="h-4 w-4" />;
-      case ConversationStatus.SPAM: return <AlertOctagon className="h-4 w-4" />;
-      default: return null;
+      case ConversationStatus.OPEN:
+        return <RotateCcw className="h-4 w-4" />;
+      case ConversationStatus.PENDING:
+        return <Clock className="h-4 w-4" />;
+      case ConversationStatus.SOLVED:
+        return <CheckCircle className="h-4 w-4" />;
+      case ConversationStatus.SPAM:
+        return <AlertOctagon className="h-4 w-4" />;
+      default:
+        return null;
     }
   };
-
 
   if (!convoId) {
     return null;
   }
-
 
   if (isLoading) {
     return (
@@ -282,7 +357,10 @@ export const MessagePane = () => {
             </h2>
             {conversation && (
               <p className="text-xs text-muted-foreground flex items-center gap-1">
-                {t("inbox.statusLabel")}: <span className="font-medium">{getStatusLabel(conversation.status)}</span>
+                {t("inbox.statusLabel")}:{" "}
+                <span className="font-medium">
+                  {getStatusLabel(conversation.status)}
+                </span>
               </p>
             )}
           </div>
@@ -298,35 +376,45 @@ export const MessagePane = () => {
           )}
 
           {conversation && !conversation.status && (
-            <span className="text-sm text-yellow-500">⚠️ {t("inbox.noStatus")}</span>
+            <span className="text-sm text-yellow-500">
+              ⚠️ {t("inbox.noStatus")}
+            </span>
           )}
 
           {conversation && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" disabled={isUpdatingStatus} className="gap-2">
-                    {isUpdatingStatus ? (
-                      <Spinner className="h-4 w-4" />
-                    ) : (
-                      <>
-                        {getStatusIcon(conversation.status)}
-                        {getStatusLabel(conversation.status)}
-                      </>
-                    )}
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>{t("inbox.changeStatus")}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {getAvailableTransitions(conversation.status).map((s) => (
-                    <DropdownMenuItem key={s} onClick={() => handleStatusUpdate(s)}>
-                      {getStatusIcon(s)}
-                      <span className="ml-2">{getStatusLabel(s)}</span>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isUpdatingStatus}
+                  className="gap-2"
+                >
+                  {isUpdatingStatus ? (
+                    <Spinner className="h-4 w-4" />
+                  ) : (
+                    <>
+                      {getStatusIcon(conversation.status)}
+                      {getStatusLabel(conversation.status)}
+                    </>
+                  )}
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>{t("inbox.changeStatus")}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {getAvailableTransitions(conversation.status).map((s) => (
+                  <DropdownMenuItem
+                    key={s}
+                    onClick={() => handleStatusUpdate(s)}
+                  >
+                    {getStatusIcon(s)}
+                    <span className="ml-2">{getStatusLabel(s)}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </header>
@@ -334,11 +422,14 @@ export const MessagePane = () => {
       <MessageList
         messages={messages || []}
         conversationId={convoId}
-        visitorName={conversation?.visitor?.displayName || 'Anonymous'}
+        visitorName={conversation?.visitor?.displayName || "Anonymous"}
       />
 
       {numericProjectId && convoId && (
-        <MessageComposer projectId={numericProjectId} conversationId={convoId} />
+        <MessageComposer
+          projectId={numericProjectId}
+          conversationId={convoId}
+        />
       )}
     </div>
   );
