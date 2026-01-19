@@ -1,13 +1,13 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
-import path from 'path'; // Import path module
+import path from "path"; // Import path module
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'), // Add alias for src directory
+      "@": path.resolve(__dirname, "./src"), // Add alias for src directory
     },
   },
   server: {
@@ -44,7 +44,14 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: 'jsdom',
-    setupFiles: './vitest.setup.ts', // Will create this file
+    environment: "jsdom",
+    setupFiles: "./vitest.setup.ts",
+    alias: {
+      // Alias React to Preact for widget tests
+      react: "preact/compat",
+      "react-dom": "preact/compat",
+      "react-dom/test-utils": "preact/test-utils",
+      "react/jsx-runtime": "preact/jsx-runtime",
+    },
   },
 });
