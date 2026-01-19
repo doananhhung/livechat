@@ -1,75 +1,35 @@
+/* Import generated theme variables from tokens.ts */
+@import "./_generated-vars.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* src/widget/styles/widget.css */
-:host {
-  /* Main color palette */
-  --widget-primary-color: hsl(262 83% 58%);
-  /* Gradient for primary actions */
-  --widget-primary-gradient: linear-gradient(135deg, var(--widget-primary-color), hsl(280 80% 50%));
-  
-  --widget-text-on-primary: #ffffff;
-
-  /* Background color palette */
-  --widget-background-color: #ffffff;
-  /* Glass header background (with opacity) */
-  --widget-header-background: rgba(255, 255, 255, 0.85); 
-  --widget-composer-background: #ffffff; 
-  
-  /* Text color palette */
-  --widget-text-primary: #1f2937; /* gray-800 */
-  --widget-text-secondary: #6b7280; /* gray-500 */
-  --widget-text-header: #1f2937; /* Dark text for glass header */
-
-  /* Message color palette */
-  --widget-bubble-visitor-background: var(--widget-primary-gradient);
-  --widget-bubble-visitor-text: var(--widget-text-on-primary);
-  --widget-bubble-agent-background: #f3f4f6; /* gray-100 */
-  --widget-bubble-agent-text: var(--widget-text-primary);
-
-  /* Shadows */
-  --widget-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  --widget-shadow-glow: 0 0 15px rgba(139, 92, 246, 0.3); /* Subtle purple glow */
-}
-
-/* Dark Mode Overrides */
-:host .theme-dark {
-  --widget-background-color: #1f2937; /* gray-800 */
-  --widget-header-background: rgba(31, 41, 55, 0.9); /* Darker, more opaque */
-  --widget-composer-background: #1f2937;
-  
-  --widget-text-primary: #f9fafb; /* gray-50 */
-  --widget-text-secondary: #9ca3af; /* gray-400 */
-  --widget-text-header: #f9fafb;
-
-  --widget-bubble-agent-background: #374151; /* gray-700 */
-  --widget-bubble-agent-text: #f9fafb;
-
-  /* Shadows for dark mode */
-  --widget-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
-  --widget-shadow-glow: 0 0 20px rgba(139, 92, 246, 0.2);
-}
 
 /* Glassmorphism Utility */
 .glass-effect {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   background-color: var(--widget-header-background);
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 /* Dark mode glass border needs to be lighter */
 .theme-dark .glass-effect {
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .floating-shadow {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .theme-dark .floating-shadow {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 2px 4px -1px rgba(0, 0, 0, 0.2);
 }
 
 .fade-in-up {
@@ -94,7 +54,7 @@
 .typing-indicator span {
   height: 8px;
   width: 8px;
-  background-color: #1f2937; /* gray-800 */
+  background-color: var(--widget-typing-dot);
   border-radius: 50%;
   display: inline-block;
   margin: 0 1px;
@@ -123,7 +83,7 @@
   }
 }
 
-/* ADDITION: Animation for spinner */
+/* Animation for spinner */
 @keyframes spin {
   from {
     transform: rotate(0deg);
@@ -134,7 +94,6 @@
   }
 }
 
-
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -144,7 +103,6 @@
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 
 ::-webkit-scrollbar-thumb {
   background: var(--widget-primary-gradient);

@@ -1,7 +1,7 @@
 {
   "name": "@live-chat/frontend",
   "private": true,
-  "version": "0.0.2",
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest --run",
     "test:widget": "vitest --run --config vite.config.widget.ts",
-    "build:widget": "vite build --config vite.config.widget.ts",
+    "generate:widget-css": "npx tsx scripts/generate-widget-css.ts",
+    "build:widget": "npm run generate:widget-css && vite build --config vite.config.widget.ts",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
