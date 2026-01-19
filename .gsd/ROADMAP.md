@@ -10,4 +10,12 @@
 
 ## Phases
 
-<!-- Run /plan to add phases -->
+### Phase 1: Real-time Form Synchronization
+
+**Status**: ✅ Completerted
+**Objective**: Ensure dashboard immediately reflects new form submissions and correctly transitions them from pending to submitted without duplication.
+
+### Phase 2: Submission UI Enhancements
+
+**Status**: ⬜ Not Started
+**Objective**: Improve the visual presentation of form submissions in the dashboard to provide a better user experience.
