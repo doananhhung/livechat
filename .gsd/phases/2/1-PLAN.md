@@ -4,71 +4,78 @@ plan: 1
 wave: 1
 ---
 
-# Plan 2.1: Document Color Mapping & Verify Alignment
+# Plan 2.1: Inbox API DTO Unification
 
 ## Objective
 
-Document the mapping between dashboard CSS variables (HSL) and tokens.ts (hex). Ensure the rendered colors are visually equivalent. No major refactoring of Tailwind config.
+Standardize `inboxApi.ts` and its consumers to use shared DTOs for messaging, typing indicators, and message listing.
 
 ## Context
 
-- `packages/frontend/src/theme/tokens.ts` — Hex values
-- `packages/frontend/src/index.css` — HSL values for Tailwind
+- `packages/frontend/src/services/inboxApi.ts`
+- `packages/shared-dtos/src/agent-typing.dto.ts`
+- `packages/shared-dtos/src/send-reply.dto.ts`
+- `packages/shared-dtos/src/list-messages.dto.ts`
+- `packages/frontend/src/components/features/inbox/MessageComposer.tsx`
+- `packages/frontend/src/components/features/inbox/MessagePane.tsx`
+
+## Proposed Changes
+
+### [MODIFY] [inboxApi.ts](file:///home/hoang/node/live_chat/packages/frontend/src/services/inboxApi.ts)
+
+- Update `sendAgentTypingStatus`, `sendAgentReply`, `getMessages` to use DTOs.
+- Update `useSendAgentReply`, `useNotifyAgentTyping`, `useGetMessages` hooks.
+
+### [MODIFY] [MessageComposer.tsx](file:///home/hoang/node/live_chat/packages/frontend/src/components/features/inbox/MessageComposer.tsx)
+
+- Update `mutate` calls to pass DTO objects.
+
+### [MODIFY] [MessagePane.tsx](file:///home/hoang/node/live_chat/packages/frontend/src/components/features/inbox/MessagePane.tsx)
+
+- Ensure compatibility with new `useGetMessages` signature.
 
 ## Tasks
 
 <task type="auto">
-  <name>Create color mapping documentation</name>
-  <files>packages/frontend/src/theme/README.md</files>
+  <name>Refactor inboxApi.ts to use DTOs</name>
+  <files>
+    <file>packages/frontend/src/services/inboxApi.ts</file>
+  </files>
   <action>
-    Create a README.md that documents:
-    
-    1. Purpose of tokens.ts as single source
-    2. Mapping between tokens.ts colors and index.css variables
-    3. Why they use different formats (hex for widget, HSL for Tailwind)
-    4. How to keep them aligned when updating
-    
-    Include a table showing the color correspondences:
-    | tokens.ts key | tokens.ts value | index.css variable | Visual match |
-    |---------------|-----------------|-------------------|--------------|
-    | background    | #ffffff         | --background      | ✓            |
-    | foreground    | #0a0a0a         | --foreground      | ✓            |
-    | ...           | ...             | ...               | ...          |
+    - Import `AgentTypingDto`, `SendReplyDto`, `ListMessagesDto` from `@live-chat/shared-dtos`.
+    - Refactor `sendAgentTypingStatus` to accept `payload: AgentTypingDto`.
+    - Refactor `sendAgentReply` to accept `payload: SendReplyDto`.
+    - Refactor `getMessages` to accept `projectId, conversationId, params: ListMessagesDto`.
+    - Update `useSendAgentReply`, `useNotifyAgentTyping`, `useGetMessages` hooks to match.
   </action>
-  <verify>test -f packages/frontend/src/theme/README.md && echo "README exists"</verify>
-  <done>README.md exists with color mapping documentation</done>
+  <verify>
+    Check for TypeScript errors in `inboxApi.ts`.
+  </verify>
+  <done>
+    Inbox API functions use shared DTOs.
+  </done>
 </task>
 
 <task type="auto">
-  <name>Align tokens.ts core colors with index.css values</name>
-  <files>packages/frontend/src/theme/tokens.ts</files>
+  <name>Update Inbox UI components</name>
+  <files>
+    <file>packages/frontend/src/components/features/inbox/MessageComposer.tsx</file>
+    <file>packages/frontend/src/components/features/inbox/MessagePane.tsx</file>
+  </files>
   <action>
-    Verify and update tokens.ts core colors to match index.css rendered values:
-    
-    **Light mode mapping (HSL → Hex):**
-    - `--background: 0 0% 100%` → `hsl(0, 0%, 100%)` → `#ffffff` ✓
-    - `--foreground: 0 0% 3.9%` → `hsl(0, 0%, 3.9%)` → `#0a0a0a` ✓
-    - `--muted: 0 0% 96.1%` → `hsl(0, 0%, 96.1%)` → `#f5f5f5` ✓
-    - `--muted-foreground: 0 0% 45.1%` → `hsl(0, 0%, 45.1%)` → `#737373` ✓
-    - `--border: 0 0% 89.8%` → `hsl(0, 0%, 89.8%)` → `#e5e5e5` ✓
-    
-    **Dark mode mapping (HSL → Hex):**
-    - `--background: 0 0% 3.9%` → `hsl(0, 0%, 3.9%)` → `#0a0a0a` ✓
-    - `--foreground: 0 0% 98%` → `hsl(0, 0%, 98%)` → `#fafafa` ✓
-    - `--muted: 0 0% 14.9%` → `hsl(0, 0%, 14.9%)` → `#262626` ✓
-    - `--muted-foreground: 0 0% 63.9%` → `hsl(0, 0%, 63.9%)` → `#a3a3a3` ✓
-    - `--border: 0 0% 14.9%` → `hsl(0, 0%, 14.9%)` → `#262626` ✓
-    
-    These already match. No changes needed if verification passes.
-    
-    Run CSS generator to ensure widget CSS is up to date.
+    - Update `MessageComposer`'s `sendMessage` and `notifyTyping` calls to pass objects `{ text }` and `{ isTyping }`.
+    - Verify `MessagePane` correctly handles the updated `useGetMessages`.
   </action>
-  <verify>npm run generate:widget-css --prefix packages/frontend && echo "CSS generated"</verify>
-  <done>tokens.ts values verified to match index.css HSL equivalents</done>
+  <verify>
+    npm run check-types --workspace=@live-chat/frontend
+  </verify>
+  <done>
+    Inbox UI components are type-safe and functional with new DTO payloads.
+  </done>
 </task>
 
 ## Success Criteria
 
-- [ ] README.md created with color mapping
-- [ ] tokens.ts core colors verified against index.css
-- [ ] CSS generator runs successfully
+- [ ] Messaging and typing indicators use shared DTOs.
+- [ ] Message listing uses `ListMessagesDto`.
+- [ ] No regression in Inbox functionality.
