@@ -44,8 +44,8 @@ export const MessageList = ({
     previous: MessageType | undefined,
   ): boolean => {
     if (!previous) return true;
-    const prevDate = new Date(previous.timestamp);
-    const currDate = new Date(current.timestamp);
+    const prevDate = new Date(previous.createdAt);
+    const currDate = new Date(current.createdAt);
     return currDate.getTime() - prevDate.getTime() > 5 * 60 * 1000; // 5 minutes
   };
 
@@ -87,7 +87,7 @@ export const MessageList = ({
                 style={timestampStyles}
                 role="presentation"
               >
-                {formatTimestamp(msg.timestamp)}
+                {formatTimestamp(msg.createdAt)}
               </div>
             )}
             <Message

@@ -19,6 +19,7 @@ interface ChatState {
   isAgentTyping: boolean;
   isSessionReady: boolean;
   submittedFormMessageIds: Set<string>;
+  conversationId: number | null;
 
   // Actions
   setWidgetConfig: (config: WidgetConfig) => void;
@@ -48,6 +49,7 @@ export const useChatStore = create<ChatState>((set) => ({
   isAgentTyping: false,
   isSessionReady: false,
   submittedFormMessageIds: new Set<string>(),
+  conversationId: null,
 
   // Actions Implementation
   setWidgetConfig: (config) => set({ widgetConfig: config }),
@@ -90,6 +92,7 @@ export const useChatStore = create<ChatState>((set) => ({
   loadConversationHistory: (history) => {
     // Limit history to prevent memory issues
     const limitedHistory = history.slice(-MAX_MESSAGES);
+    const conversationId = limitedHistory[0]?.conversationId ?? null;
 
     // Derived state: Find all form submission messages and extract their request IDs
     const submittedIds = new Set<string>();
@@ -109,6 +112,7 @@ export const useChatStore = create<ChatState>((set) => ({
         ...state.submittedFormMessageIds,
         ...submittedIds,
       ]),
+      conversationId: conversationId ?? state.conversationId,
     }));
   },
 

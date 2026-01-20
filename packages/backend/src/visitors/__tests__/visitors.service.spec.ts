@@ -5,7 +5,7 @@ import { Visitor } from '../entities/visitor.entity';
 import { Repository } from 'typeorm';
 import { EventsGateway } from '../../gateway/events.gateway';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { UpdateVisitorDto } from '../dto/update-visitor.dto';
+import { UpdateVisitorDto } from '@live-chat/shared-dtos';
 import { RealtimeSessionService } from '../../realtime-session/realtime-session.service'; // ADDED
 import { Visitor as SharedVisitorType } from '@live-chat/shared-types'; // ADDED
 import { EventEmitter2 } from '@nestjs/event-emitter';

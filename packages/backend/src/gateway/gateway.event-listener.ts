@@ -14,7 +14,10 @@ import {
 import {
   WebSocketEvent,
   VisitorContextUpdatedPayload,
+  AutomationTriggeredPayload,
+  WidgetMessageDto,
 } from '@live-chat/shared-types';
+import { Message } from '../database/entities';
 
 @Injectable()
 export class GatewayEventListener {
@@ -63,7 +66,7 @@ export class GatewayEventListener {
     if (event.visitorSocketId) {
       this.eventsGateway.sendReplyToVisitor(
         event.visitorSocketId,
-        event.message
+        this.mapToWidgetMessageDto(event.message)
       );
     }
     // Broadcast to project room
@@ -134,19 +137,17 @@ export class GatewayEventListener {
   }
 
   @OnEvent('automation.triggered')
-  handleAutomationTriggered(event: {
-    projectId: number;
-    conversationId: string;
-    type: string;
-    message: string;
-  }) {
+  handleAutomationTriggered(
+    event: AutomationTriggeredPayload & { projectId: number }
+  ) {
+    const payload: AutomationTriggeredPayload = {
+      conversationId: event.conversationId,
+      type: event.type,
+      message: event.message,
+    };
     this.eventsGateway.server
       .to(`project:${event.projectId}`)
-      .emit('automation.triggered', {
-        conversationId: event.conversationId,
-        type: event.type,
-        message: event.message,
-      });
+      .emit(WebSocketEvent.AUTOMATION_TRIGGERED, payload);
   }
 
   @OnEvent('form.request.sent')
@@ -186,5 +187,20 @@ export class GatewayEventListener {
       }
     }
     return null;
+    return null;
+  }
+
+  private mapToWidgetMessageDto(message: Message): WidgetMessageDto {
+    return {
+      ...message,
+      conversationId: Number(message.conversationId),
+      content: message.content,
+      createdAt:
+        message.createdAt instanceof Date
+          ? message.createdAt.toISOString()
+          : message.createdAt,
+      contentType: message.contentType,
+      metadata: message.metadata ?? undefined,
+    };
   }
 }

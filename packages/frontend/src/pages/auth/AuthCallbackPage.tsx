@@ -27,7 +27,7 @@ export const AuthCallbackPage = () => {
 
     const handleExchangeCode = async (codeToExchange: string) => {
       try {
-        const authData = await exchangeCodeForToken(codeToExchange);
+        const authData = await exchangeCodeForToken({ code: codeToExchange });
         setAuthData(authData);
         toast({
           title: "Successfully authenticated!",

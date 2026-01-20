@@ -1,7 +1,7 @@
 import { TestHarness } from './utils/test-harness';
 import request from 'supertest';
 import { ProjectRole } from '@live-chat/shared-types';
-import { CreateProjectDto } from '../src/projects/dto/create-project.dto'; // Assuming this DTO exists
+import { CreateProjectDto } from '@live-chat/shared-dtos';
 import { Visitor } from '../src/visitors/entities/visitor.entity';
 
 describe('Visitors Module (E2E)', () => {

@@ -5,14 +5,19 @@ import {
   MessageStatus,
   type WidgetMessageDto as Message,
   WebSocketEvent,
-  type IdentifyPayload,
-  type SendMessagePayload,
-  type VisitorTypingPayload,
-  type UpdateContextPayload,
   type AgentTypingPayload,
   type MessageSentPayload,
   type VisitorSessionMetadata,
+  type FormSubmittedPayload,
+  MessageContentType,
 } from "@live-chat/shared-types";
+import {
+  IdentifyVisitorDto,
+  SendMessageDto,
+  VisitorTypingDto,
+  UpdateContextDto,
+  SubmitFormDto,
+} from "@live-chat/shared-dtos";
 
 // Socket.IO runs on the root domain, not /api/v1
 const SOCKET_URL = import.meta.env.VITE_API_BASE_URL?.replace("/api/v1", "");
@@ -162,7 +167,7 @@ class SocketService {
       finalizeMessage(data.tempId, data.finalMessage);
     };
 
-    const agentRepliedHandler = (data: any) => {
+    const agentRepliedHandler = (data: Message) => {
       // Transform the data to match the Message type
       logWithTime(this.instanceId, `📥 Agent replied:`, data);
       const newMessage: Message = {
@@ -174,6 +179,7 @@ class SocketService {
         createdAt: data.createdAt,
         contentType: data.contentType,
         metadata: data.metadata,
+        conversationId: data.conversationId,
       };
 
       addMessage(newMessage);
@@ -195,16 +201,20 @@ class SocketService {
       setAgentIsTyping(data.isTyping);
     };
 
-    const formSubmittedHandler = (data: {
-      messageId: string;
-      formRequestMessageId?: string;
-      message?: Message;
-    }) => {
+    const formSubmittedHandler = (data: FormSubmittedPayload) => {
       logWithTime(this.instanceId, `📋 Form submitted:`, data);
 
       // If full message is provided (normal case for new receipts), add it to chat
       if (data.message) {
-        addMessage(data.message);
+        addMessage({
+          ...data.message,
+          content: data.message.content || "", // Ensure content is string
+          createdAt:
+            data.message.createdAt instanceof Date
+              ? data.message.createdAt.toISOString()
+              : data.message.createdAt,
+          contentType: data.message.contentType as MessageContentType,
+        });
       }
 
       // Mark both the form submission message and original request as submitted
@@ -279,7 +289,7 @@ class SocketService {
   ): void {
     if (this.socket?.connected) {
       logWithTime(this.instanceId, `📤 Emitting sendMessage`);
-      const payload: SendMessagePayload = { content, tempId, sessionMetadata };
+      const payload: SendMessageDto = { content, tempId, sessionMetadata };
       this.socket.emit(WebSocketEvent.SEND_MESSAGE, payload);
     } else {
       errorWithTime(
@@ -292,7 +302,7 @@ class SocketService {
   public emitVisitorIsTyping(isTyping: boolean): void {
     if (this.socket?.connected) {
       logWithTime(this.instanceId, `📤 Emitting visitorIsTyping`);
-      const payload: VisitorTypingPayload = { isTyping };
+      const payload: VisitorTypingDto = { isTyping };
       this.socket.emit(WebSocketEvent.VISITOR_TYPING, payload);
     } else {
       errorWithTime(
@@ -305,7 +315,7 @@ class SocketService {
   public emitIdentify(projectId: string, visitorUid: string): void {
     if (this.socket?.connected) {
       logWithTime(this.instanceId, `📤 Emitting identify`);
-      const payload: IdentifyPayload = {
+      const payload: IdentifyVisitorDto = {
         projectId: Number(projectId),
         visitorUid,
       };
@@ -323,7 +333,7 @@ class SocketService {
     const now = Date.now();
     if (this.socket?.connected) {
       logWithTime(this.instanceId, `📤 Emitting updateContext`);
-      const payload: UpdateContextPayload = { currentUrl };
+      const payload: UpdateContextDto = { currentUrl };
       this.socket.emit(WebSocketEvent.UPDATE_CONTEXT, payload);
       this.lastContextUpdate = now;
     } else {
@@ -344,9 +354,10 @@ class SocketService {
           this.instanceId,
           `📤 Emitting submitForm for ${formRequestMessageId}`,
         );
+        const payload: SubmitFormDto = { formRequestMessageId, data };
         this.socket.emit(
           WebSocketEvent.SUBMIT_FORM,
-          { formRequestMessageId, data },
+          payload,
           (response: { success: boolean; error?: string }) => {
             logWithTime(this.instanceId, `📥 submitForm response:`, response);
             resolve(response);

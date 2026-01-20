@@ -8,6 +8,9 @@ import type {
   RegisterResponseDto,
   ResetPasswordDto,
   ForgotPasswordDto,
+  ResendVerificationDto,
+  ExchangeCodeDto,
+  TurnOn2faDto,
 } from "@live-chat/shared-dtos";
 import type { User } from "@live-chat/shared-types";
 
@@ -21,11 +24,11 @@ const loginUser = async (credentials: LoginDto): Promise<AuthResponseDto> => {
 };
 
 const registerUser = async (
-  userData: RegisterDto
+  userData: RegisterDto,
 ): Promise<RegisterResponseDto> => {
   const { data } = await api.post<RegisterResponseDto>(
     "/auth/register",
-    userData
+    userData,
   );
   return data;
 };
@@ -36,7 +39,7 @@ const registerUser = async (
  * @returns {Promise<{ message: string; invitationToken?: string }>} Success message and optional invitation token
  */
 export const verifyEmail = async (
-  token: string
+  token: string,
 ): Promise<{ message: string; invitationToken?: string }> => {
   const { data } = await api.get<{
     message: string;
@@ -47,70 +50,76 @@ export const verifyEmail = async (
 
 /**
  * Resends the verification email to the user.
- * @param email - The user's email address
+ * @param payload - The email address to resend verification to
  * @returns {Promise<{ message: string }>} Success message
  */
 export const resendVerificationEmail = async (
-  email: string
+  payload: ResendVerificationDto,
 ): Promise<{ message: string }> => {
   const { data } = await api.post<{ message: string }>(
     "/auth/resend-verification",
-    { email }
+    payload,
   );
   return data;
 };
 
-// --- NEW FUNCTION ---
 /**
  * Sends the 2FA code to the backend for authentication and to complete login.
- * @param code - The 6-digit code from the authenticator app.
+ * @param payload - The 6-digit code from the authenticator app.
  * @returns {Promise<AuthResponseDto>} Full user data and access token.
  */
-export const verify2FA = async (code: string): Promise<AuthResponseDto> => {
-  const { data } = await api.post<AuthResponseDto>("/2fa/authenticate", {
-    code,
-  });
+export const verify2FA = async (
+  payload: TurnOn2faDto,
+): Promise<AuthResponseDto> => {
+  const { data } = await api.post<AuthResponseDto>(
+    "/2fa/authenticate",
+    payload,
+  );
   return data;
 };
 
+/**
+ * Exchanges a one-time code for an access token.
+ * @param payload - The code received from OAuth callback.
+ * @returns {Promise<AuthResponseDto>} Full user data and access token.
+ */
 export const exchangeCodeForToken = async (
-  code: string
+  payload: ExchangeCodeDto,
 ): Promise<AuthResponseDto> => {
-  const { data } = await api.post<AuthResponseDto>("/auth/exchange-code", {
-    code,
-  });
+  const { data } = await api.post<AuthResponseDto>(
+    "/auth/exchange-code",
+    payload,
+  );
   return data;
 };
 
 /**
  * Sends a password reset email to the user.
- * @param email - The user's email address
+ * @param payload - The user's email address
  * @returns {Promise<{ message: string; isOAuthUser?: boolean }>} Success message and OAuth status
  */
 export const forgotPassword = async (
-  email: string
+  payload: ForgotPasswordDto,
 ): Promise<{ message: string; isOAuthUser?: boolean }> => {
   const { data } = await api.post<{ message: string; isOAuthUser?: boolean }>(
     "/auth/forgot-password",
-    { email }
+    payload,
   );
   return data;
 };
 
 /**
  * Resets the user's password using the token from the reset email.
- * @param token - The reset token from the email link
- * @param newPassword - The new password
+ * @param payload - The reset token and new password.
  * @returns {Promise<{ message: string }>} Success message
  */
 export const resetPassword = async (
-  token: string,
-  newPassword: string
+  payload: ResetPasswordDto,
 ): Promise<{ message: string }> => {
-  const { data } = await api.post<{ message: string }>("/auth/reset-password", {
-    token,
-    newPassword,
-  });
+  const { data } = await api.post<{ message: string }>(
+    "/auth/reset-password",
+    payload,
+  );
   return data;
 };
 
@@ -120,9 +129,9 @@ export const resetPassword = async (
 
 export const useExchangeCodeForTokenMutation = (
   options?: Omit<
-    UseMutationOptions<AuthResponseDto, Error, string>,
+    UseMutationOptions<AuthResponseDto, Error, ExchangeCodeDto>,
     "mutationFn"
-  >
+  >,
 ) => {
   return useMutation({
     mutationFn: exchangeCodeForToken,
@@ -134,7 +143,7 @@ export const useLoginMutation = (
   options?: Omit<
     UseMutationOptions<AuthResponseDto, Error, LoginDto>,
     "mutationFn"
-  >
+  >,
 ) => {
   return useMutation({
     mutationFn: loginUser,
@@ -146,7 +155,7 @@ export const useRegisterMutation = (
   options?: Omit<
     UseMutationOptions<RegisterResponseDto, Error, RegisterDto>,
     "mutationFn"
-  >
+  >,
 ) => {
   return useMutation({
     mutationFn: registerUser,
@@ -159,10 +168,10 @@ export const useForgotPasswordMutation = (
     UseMutationOptions<
       { message: string; isOAuthUser?: boolean },
       Error,
-      string
+      ForgotPasswordDto
     >,
     "mutationFn"
-  >
+  >,
 ) => {
   return useMutation({
     mutationFn: forgotPassword,
@@ -172,16 +181,12 @@ export const useForgotPasswordMutation = (
 
 export const useResetPasswordMutation = (
   options?: Omit<
-    UseMutationOptions<
-      { message: string },
-      Error,
-      { token: string; newPassword: string }
-    >,
+    UseMutationOptions<{ message: string }, Error, ResetPasswordDto>,
     "mutationFn"
-  >
+  >,
 ) => {
   return useMutation({
-    mutationFn: ({ token, newPassword }) => resetPassword(token, newPassword),
+    mutationFn: resetPassword,
     ...options,
   });
 };

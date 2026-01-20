@@ -35,6 +35,7 @@ const App = () => {
     addMessage,
     resetUnreadCount,
     markFormAsSubmitted,
+    conversationId,
   } = useChatStore();
 
   const lastUrl = useRef(window.location.href);
@@ -146,6 +147,7 @@ const App = () => {
         fromCustomer: true,
         status: MessageStatus.SENDING,
         createdAt: new Date().toISOString(),
+        conversationId: conversationId || 0, // Optimistic: 0 if not yet assigned
       };
 
       addMessage(optimisticMessage);

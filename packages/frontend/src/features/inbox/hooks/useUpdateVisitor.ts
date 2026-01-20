@@ -1,6 +1,11 @@
-import { useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
-import api from '../../../lib/api';
-import type { Visitor, Conversation } from '@live-chat/shared-types';
+import {
+  useMutation,
+  useQueryClient,
+  type InfiniteData,
+} from "@tanstack/react-query";
+import api from "../../../lib/api";
+import type { Visitor, Conversation } from "@live-chat/shared-types";
+import type { UpdateVisitorDto } from "@live-chat/shared-dtos";
 
 interface ConversationsPage {
   data: Conversation[];
@@ -18,26 +23,30 @@ export const useUpdateVisitor = () => {
     mutationFn: async ({
       projectId,
       visitorId,
-      displayName,
+      dto,
     }: {
       projectId: number;
       visitorId: number;
-      displayName: string;
+      dto: UpdateVisitorDto;
     }) => {
       const response = await api.patch<Visitor>(
         `/projects/${projectId}/visitors/${visitorId}`,
-        { displayName }
+        dto,
       );
       return response.data;
     },
     onMutate: async (variables) => {
       // Cancel ALL conversation queries for this project (any filter params)
-      await queryClient.cancelQueries({ queryKey: ['conversations', variables.projectId] });
-      await queryClient.cancelQueries({ queryKey: ['visitor', variables.projectId, variables.visitorId] });
+      await queryClient.cancelQueries({
+        queryKey: ["conversations", variables.projectId],
+      });
+      await queryClient.cancelQueries({
+        queryKey: ["visitor", variables.projectId, variables.visitorId],
+      });
 
       // Snapshot the previous visitor for rollback on error
       const previousVisitor = queryClient.getQueryData<Visitor>([
-        'visitor',
+        "visitor",
         variables.projectId,
         variables.visitorId,
       ]);
@@ -45,7 +54,7 @@ export const useUpdateVisitor = () => {
       // Optimistically update ALL conversation queries that match this project
       // This handles different filter params (status, etc.)
       queryClient.setQueriesData<InfiniteData<ConversationsPage>>(
-        { queryKey: ['conversations', variables.projectId] },
+        { queryKey: ["conversations", variables.projectId] },
         (oldData) => {
           if (!oldData) return oldData;
 
@@ -59,7 +68,7 @@ export const useUpdateVisitor = () => {
                     ...conversation,
                     visitor: {
                       ...conversation.visitor,
-                      displayName: variables.displayName,
+                      displayName: variables.dto.displayName,
                     },
                   };
                 }
@@ -67,19 +76,19 @@ export const useUpdateVisitor = () => {
               }),
             })),
           };
-        }
+        },
       );
 
       // Optimistically update visitor cache (for VisitorContextPanel)
       queryClient.setQueryData<Visitor>(
-        ['visitor', variables.projectId, variables.visitorId],
+        ["visitor", variables.projectId, variables.visitorId],
         (oldData) => {
           if (!oldData) return oldData;
           return {
             ...oldData,
-            displayName: variables.displayName,
+            displayName: variables.dto.displayName,
           };
-        }
+        },
       );
 
       // Return context with snapshot for rollback
@@ -89,17 +98,23 @@ export const useUpdateVisitor = () => {
       // Rollback visitor to previous state on error
       if (context?.previousVisitor) {
         queryClient.setQueryData(
-          ['visitor', variables.projectId, variables.visitorId],
-          context.previousVisitor
+          ["visitor", variables.projectId, variables.visitorId],
+          context.previousVisitor,
         );
       }
       // Invalidate conversations to refetch correct data
-      queryClient.invalidateQueries({ queryKey: ['conversations', variables.projectId] });
+      queryClient.invalidateQueries({
+        queryKey: ["conversations", variables.projectId],
+      });
     },
     onSettled: (_data, _error, variables) => {
       // Refetch after mutation to ensure server state is in sync
-      queryClient.invalidateQueries({ queryKey: ['conversations', variables.projectId] });
-      queryClient.invalidateQueries({ queryKey: ['visitor', variables.projectId, variables.visitorId] });
+      queryClient.invalidateQueries({
+        queryKey: ["conversations", variables.projectId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["visitor", variables.projectId, variables.visitorId],
+      });
     },
   });
 };

@@ -6,7 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Visitor } from './entities/visitor.entity';
-import { UpdateVisitorDto } from './dto/update-visitor.dto';
+import { UpdateVisitorDto } from '@live-chat/shared-dtos';
 import { RealtimeSessionService } from '../realtime-session/realtime-session.service';
 import { Visitor as SharedVisitorType } from '@live-chat/shared-types';
 import { EventEmitter2 } from '@nestjs/event-emitter';

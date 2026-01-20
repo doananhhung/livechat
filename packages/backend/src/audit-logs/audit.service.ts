@@ -2,21 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuditLog } from './audit.entity';
-import { AuditAction, JsonValue } from '@live-chat/shared-types';
+import {
+  AuditAction,
+  JsonValue,
+  CreateAuditLogDto,
+} from '@live-chat/shared-types';
 import { ListAuditLogsDto } from '@live-chat/shared-dtos';
 import { PaginationDto } from '@live-chat/shared-types';
-
-export interface CreateAuditLogDto {
-  projectId?: number;
-  actorId?: string | null;
-  actorType?: 'USER' | 'SYSTEM' | 'API_KEY';
-  ipAddress?: string | null;
-  userAgent?: string | null;
-  action: AuditAction;
-  entity: string;
-  entityId: string;
-  metadata?: Record<string, JsonValue>;
-}
 
 @Injectable()
 export class AuditService {
@@ -24,7 +16,7 @@ export class AuditService {
 
   constructor(
     @InjectRepository(AuditLog)
-    private readonly auditRepository: Repository<AuditLog>,
+    private readonly auditRepository: Repository<AuditLog>
   ) {}
 
   async log(dto: CreateAuditLogDto): Promise<void> {
@@ -32,9 +24,11 @@ export class AuditService {
       // 1. Validation: Safe JSON check
       if (dto.metadata) {
         try {
-           JSON.stringify(dto.metadata);
+          JSON.stringify(dto.metadata);
         } catch (e) {
-           throw new Error('Metadata contains circular reference or non-serializable data');
+          throw new Error(
+            'Metadata contains circular reference or non-serializable data'
+          );
         }
       }
 
@@ -57,11 +51,17 @@ export class AuditService {
       await this.auditRepository.save(logEntry);
     } catch (error) {
       // 4. Fail Open
-      this.logger.error(`AuditLogWriteError: Failed to write audit log for ${dto.entity}:${dto.entityId}`, error);
+      this.logger.error(
+        `AuditLogWriteError: Failed to write audit log for ${dto.entity}:${dto.entityId}`,
+        error
+      );
     }
   }
 
-  async findAll(projectId: number, query: ListAuditLogsDto): Promise<PaginationDto<AuditLog>> {
+  async findAll(
+    projectId: number,
+    query: ListAuditLogsDto
+  ): Promise<PaginationDto<AuditLog>> {
     const { action, actorId, startDate, endDate, page = 1, limit = 20 } = query;
     const qb = this.auditRepository.createQueryBuilder('audit');
 

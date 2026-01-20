@@ -32,30 +32,30 @@ import {
   VisitorConnectedEvent,
 } from '../visitors/events';
 import { Conversation, Visitor } from '../database/entities';
-import {
-  MessageStatus,
-  WidgetMessageDto,
-  WebSocketEvent,
-} from '@live-chat/shared-types';
+import { WidgetMessageDto, WebSocketEvent } from '@live-chat/shared-types';
 import { ProjectService } from '../projects/project.service';
 import { ActionsService } from '../actions/actions.service';
-import { ConfigService } from '@nestjs/config';
 import {
-  IdentifyPayload,
-  SendMessagePayload,
-  VisitorTypingPayload,
-  UpdateContextPayload,
-  JoinRoomPayload,
+  IdentifyVisitorDto,
+  SendMessageDto,
+  VisitorTypingDto,
+  UpdateContextDto,
+  JoinRoomDto,
+  LeaveRoomDto,
+  SubmitFormDto,
+  VisitorFillingFormDto,
+} from '@live-chat/shared-dtos';
+import {
   AgentTypingPayload,
   VisitorTypingBroadcastPayload,
   ConversationUpdatedPayload,
   VisitorStatusChangedPayload,
-  VisitorFillingFormPayload,
   FormRequestSentPayload,
   FormSubmittedPayload,
   FormUpdatedPayload,
   FormDeletedPayload,
-  SubmitFormPayload,
+  VisitorFillingFormPayload,
+  MessageSentPayload,
 } from '@live-chat/shared-types';
 
 import { UpdateContextRequestEvent } from '../inbox/events';
@@ -247,7 +247,7 @@ export class EventsGateway
   @SubscribeMessage(WebSocketEvent.IDENTIFY)
   async handleIdentify(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: IdentifyPayload
+    @MessageBody() payload: IdentifyVisitorDto
   ): Promise<void> {
     this.logger.debug(
       `Identify event from client ${client.id} for visitorUid: ${payload.visitorUid} in projectId: ${payload.projectId}`
@@ -271,7 +271,7 @@ export class EventsGateway
 
   @SubscribeMessage(WebSocketEvent.SEND_MESSAGE)
   async handleSendMessage(
-    @MessageBody() data: SendMessagePayload,
+    @MessageBody() data: SendMessageDto,
     @ConnectedSocket() client: Socket
   ): Promise<void> {
     if (!client.data.visitorUid || !client.data.projectId) {
@@ -291,7 +291,7 @@ export class EventsGateway
   @SubscribeMessage(WebSocketEvent.VISITOR_TYPING)
   handleVisitorTyping(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: VisitorTypingPayload
+    @MessageBody() payload: VisitorTypingDto
   ): void {
     const { projectId, conversationId } = client.data;
     if (projectId) {
@@ -309,7 +309,7 @@ export class EventsGateway
   @SubscribeMessage(WebSocketEvent.UPDATE_CONTEXT)
   async handleUpdateContext(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: UpdateContextPayload
+    @MessageBody() payload: UpdateContextDto
   ): Promise<void> {
     const { projectId, visitorUid } = client.data;
     let { conversationId } = client.data;
@@ -345,7 +345,7 @@ export class EventsGateway
   @SubscribeMessage(WebSocketEvent.JOIN_PROJECT_ROOM)
   async handleJoinProjectRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: JoinRoomPayload
+    @MessageBody() payload: JoinRoomDto
   ): Promise<{ status: string; roomName: string }> {
     // Security Check: Ensure user is authenticated
     if (!client.data.user) {
@@ -378,7 +378,7 @@ export class EventsGateway
   @SubscribeMessage(WebSocketEvent.LEAVE_PROJECT_ROOM)
   handleLeaveProjectRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: JoinRoomPayload
+    @MessageBody() payload: LeaveRoomDto
   ): { status: string; roomName: string } {
     const roomName = `project:${payload.projectId}`;
     client.leave(roomName);
@@ -399,12 +399,15 @@ export class EventsGateway
     this.server.to(visitorSocketId).emit(WebSocketEvent.AGENT_TYPING, payload);
   }
 
-  public sendReplyToVisitor(visitorSocketId: string, message: any) {
+  public sendReplyToVisitor(
+    visitorSocketId: string,
+    message: WidgetMessageDto
+  ) {
     this.logger.log(`Emitting agentReplied to ${visitorSocketId}`);
     this.server.to(visitorSocketId).emit(WebSocketEvent.AGENT_REPLIED, message);
   }
 
-  public visitorMessageSent(visitorSocketId: string, data: any) {
+  public visitorMessageSent(visitorSocketId: string, data: MessageSentPayload) {
     try {
       this.logger.log(`Emitting messageSent to ${visitorSocketId}`);
       this.server.to(visitorSocketId).emit(WebSocketEvent.MESSAGE_SENT, data);
@@ -422,13 +425,13 @@ export class EventsGateway
   @SubscribeMessage(WebSocketEvent.VISITOR_FILLING_FORM)
   handleVisitorFillingForm(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: VisitorFillingFormPayload
+    @MessageBody() payload: VisitorFillingFormDto
   ): void {
     const { projectId, conversationId } = client.data;
     if (projectId) {
       this.logger.log(`Emitting visitorFillingForm to project ${projectId}`);
       const broadcastPayload: VisitorFillingFormPayload = {
-        conversationId: conversationId?.toString() ?? payload.conversationId,
+        conversationId: conversationId?.toString() ?? payload.conversationId!,
         isFilling: payload.isFilling,
       };
       this.server
@@ -444,7 +447,7 @@ export class EventsGateway
   @SubscribeMessage(WebSocketEvent.SUBMIT_FORM)
   async handleSubmitForm(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: SubmitFormPayload
+    @MessageBody() payload: SubmitFormDto
   ): Promise<{ success: boolean; error?: string }> {
     const { visitorId, conversationId, projectId } = client.data;
 

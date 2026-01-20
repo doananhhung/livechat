@@ -8,7 +8,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { VisitorsService } from './visitors.service';
-import { UpdateVisitorDto } from './dto/update-visitor.dto';
+import { UpdateVisitorDto, VisitorResponseDto } from '@live-chat/shared-dtos';
 import {
   ApiBearerAuth,
   ApiResponse,
@@ -21,7 +21,6 @@ import { Roles } from '../rbac/roles.decorator';
 import { ProjectRole, AuditAction } from '@live-chat/shared-types'; // Import AuditAction
 import { Visitor as SharedVisitorType } from '@live-chat/shared-types'; // ADDED SharedVisitorType
 import { Auditable } from '../audit-logs/auditable.decorator'; // Import Auditable
-import { VisitorResponseDto } from './dto/visitor-response.dto'; // ADDED
 
 @ApiTags('visitors')
 @ApiBearerAuth()
@@ -35,13 +34,14 @@ export class VisitorsController {
   @Auditable({
     action: AuditAction.UPDATE, // Use generic UPDATE action
     entity: 'Visitor',
-    entityIdExtractor: (data: unknown) => (data as SharedVisitorType).id.toString(), // Updated to SharedVisitorType
+    entityIdExtractor: (data: unknown) =>
+      (data as SharedVisitorType).id.toString(), // Updated to SharedVisitorType
     metadataExtractor: (req: any) => ({
       visitorId: req.params.visitorId,
       newDisplayName: req.body.displayName,
     }),
   })
-  @ApiOperation({ summary: 'Update a visitor\'s display name' })
+  @ApiOperation({ summary: "Update a visitor's display name" })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'The visitor display name has been successfully updated.',
@@ -55,17 +55,21 @@ export class VisitorsController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Validation failed or display name is invalid.',
   })
-  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized.' })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized.',
+  })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden.' })
   async updateDisplayName(
     @Param('projectId', ParseIntPipe) projectId: number,
     @Param('visitorId', ParseIntPipe) visitorId: number,
-    @Body() updateVisitorDto: UpdateVisitorDto,
-  ): Promise<SharedVisitorType> { // Updated return type to SharedVisitorType
+    @Body() updateVisitorDto: UpdateVisitorDto
+  ): Promise<SharedVisitorType> {
+    // Updated return type to SharedVisitorType
     return this.visitorsService.updateDisplayName(
       projectId,
       visitorId,
-      updateVisitorDto,
+      updateVisitorDto
     );
   }
 }

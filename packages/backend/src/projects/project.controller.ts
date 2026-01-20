@@ -17,6 +17,7 @@ import {
   WidgetSettingsDto,
   CreateInvitationDto,
   AcceptInvitationDto,
+  InvitationResponseDto,
 } from '@live-chat/shared-dtos';
 import { User } from '../database/entities';
 import { ProjectRole, AuditAction } from '@live-chat/shared-types';
@@ -85,7 +86,7 @@ export class ProjectController {
     @Param('projectId', ParseIntPipe) projectId: number,
     @Body() createInvitationDto: CreateInvitationDto,
     @GetCurrentUser() user: User
-  ) {
+  ): Promise<InvitationResponseDto> {
     return this.invitationService.createInvitation(
       { ...createInvitationDto, projectId },
       user.id
@@ -97,7 +98,7 @@ export class ProjectController {
   getProjectInvitations(
     @Param('projectId', ParseIntPipe) projectId: number,
     @GetCurrentUser() user: User
-  ) {
+  ): Promise<InvitationResponseDto[]> {
     return this.invitationService.getProjectInvitations(projectId, user.id);
   }
 
@@ -123,7 +124,9 @@ export class ProjectController {
   // Public endpoint to get invitation details (for registration page)
   @Public()
   @Get('invitations/details')
-  getInvitationDetails(@Query('token') token: string) {
+  getInvitationDetails(
+    @Query('token') token: string
+  ): Promise<InvitationResponseDto> {
     return this.invitationService.getInvitationByToken(token);
   }
 

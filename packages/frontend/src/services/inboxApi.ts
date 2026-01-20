@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from "uuid";
 import type {
   ListConversationsDto,
   UpdateConversationDto,
+  AssignConversationDto,
 } from "@live-chat/shared-dtos";
 import type {
   Conversation,
@@ -38,7 +39,7 @@ export const updateConversationStatus = async ({
 }: UpdateConversationStatusParams) => {
   const response = await api.patch(
     `/projects/${projectId}/inbox/conversations/${conversationId}`,
-    payload
+    payload,
   );
   return response.data;
 };
@@ -53,14 +54,17 @@ export const sendAgentTypingStatus = async ({
   isTyping: boolean;
 }) => {
   // This API returns 204 No Content, so no need to process response.data
-  await api.post(`/projects/${projectId}/inbox/conversations/${conversationId}/typing`, {
-    isTyping,
-  });
+  await api.post(
+    `/projects/${projectId}/inbox/conversations/${conversationId}/typing`,
+    {
+      isTyping,
+    },
+  );
 };
 
 const getConversationsByProjectId = async (
   projectId: number,
-  params: ListConversationsDto
+  params: ListConversationsDto,
 ): Promise<PaginationDto<Conversation>> => {
   const response = await api.get(`/projects/${projectId}/inbox/conversations`, {
     params,
@@ -74,18 +78,26 @@ const getConversationsByProjectId = async (
   return response.data;
 };
 
-const getMessages = async (projectId: number, conversationId: number): Promise<Message[]> => {
+const getMessages = async (
+  projectId: number,
+  conversationId: number,
+): Promise<Message[]> => {
   const response = await api.get(
     `/projects/${projectId}/inbox/conversations/${conversationId}/messages`,
     {
       params: { limit: 1000 }, // Set a high limit to fetch more messages
-    }
+    },
   );
   return response.data.data; // Assuming paginated response
 };
 
-const getVisitorById = async (projectId: number, visitorId: number): Promise<Visitor> => {
-  const response = await api.get(`/projects/${projectId}/inbox/visitors/${visitorId}`);
+const getVisitorById = async (
+  projectId: number,
+  visitorId: number,
+): Promise<Visitor> => {
+  const response = await api.get(
+    `/projects/${projectId}/inbox/visitors/${visitorId}`,
+  );
   return response.data;
 };
 
@@ -102,14 +114,16 @@ const sendAgentReply = async ({
     `/projects/${projectId}/inbox/conversations/${conversationId}/messages`,
     {
       text,
-    }
+    },
   );
   return response.data;
 };
 
 // --- Custom Hooks ---
 
-export const useGetConversations = (params: Partial<ListConversationsDto> & { projectId?: number }) => {
+export const useGetConversations = (
+  params: Partial<ListConversationsDto> & { projectId?: number },
+) => {
   const { projectId, ...restParams } = params;
   return useInfiniteQuery({
     queryKey: ["conversations", projectId, restParams],
@@ -157,19 +171,22 @@ export const useSendAgentReply = () => {
       conversationId: number;
       text: string;
     }) => {
-      const queryKey = ["messages", newMessagePayload.projectId, newMessagePayload.conversationId];
+      const queryKey = [
+        "messages",
+        newMessagePayload.projectId,
+        newMessagePayload.conversationId,
+      ];
       await queryClient.cancelQueries({ queryKey });
 
       const optimisticMessage: Message = {
         id: uuidv4(),
         conversationId: newMessagePayload.conversationId,
         content: newMessagePayload.text,
-        contentType: 'text',
+        contentType: "text",
         status: MessageStatus.SENDING,
         fromCustomer: false,
         createdAt: new Date(),
         attachments: [],
-
       };
 
       queryClient.setQueryData<Message[]>(queryKey, (oldData = []) => [
@@ -180,31 +197,41 @@ export const useSendAgentReply = () => {
       return { optimisticMessageId: optimisticMessage.id };
     },
     onSuccess: (finalMessage, variables, context) => {
-      const queryKey = ["messages", variables.projectId, variables.conversationId];
+      const queryKey = [
+        "messages",
+        variables.projectId,
+        variables.conversationId,
+      ];
       queryClient.setQueryData<Message[]>(queryKey, (oldData = []) => {
         // Check if the final message already exists (e.g., received via socket)
-        const exists = oldData.some(msg => msg.id === finalMessage.id);
-        
+        const exists = oldData.some((msg) => msg.id === finalMessage.id);
+
         if (exists) {
-           // If it exists, just remove the optimistic one to avoid duplicates
-           return oldData.filter(msg => msg.id !== context?.optimisticMessageId);
+          // If it exists, just remove the optimistic one to avoid duplicates
+          return oldData.filter(
+            (msg) => msg.id !== context?.optimisticMessageId,
+          );
         } else {
-           // Otherwise, replace optimistic with final
-           return oldData.map((msg) =>
-             msg.id === context?.optimisticMessageId ? finalMessage : msg
-           );
+          // Otherwise, replace optimistic with final
+          return oldData.map((msg) =>
+            msg.id === context?.optimisticMessageId ? finalMessage : msg,
+          );
         }
       });
       console.log("Message sent successfully:", finalMessage);
     },
     onError: (_err, variables, context) => {
-      const queryKey = ["messages", variables.projectId, variables.conversationId];
+      const queryKey = [
+        "messages",
+        variables.projectId,
+        variables.conversationId,
+      ];
       queryClient.setQueryData<Message[]>(queryKey, (oldData = []) =>
         oldData.map((msg) =>
           msg.id === context?.optimisticMessageId
             ? { ...msg, status: MessageStatus.FAILED }
-            : msg
-        )
+            : msg,
+        ),
       );
     },
     onSettled: (_data, _error, variables) => {
@@ -245,15 +272,15 @@ export const useUpdateConversationStatus = () => {
 export const assignConversation = async ({
   projectId,
   conversationId,
-  assigneeId,
+  dto,
 }: {
   projectId: number;
   conversationId: number | string;
-  assigneeId: string;
+  dto: AssignConversationDto;
 }) => {
   const response = await api.post(
     `/projects/${projectId}/inbox/conversations/${conversationId}/assignments`,
-    { assigneeId }
+    dto,
   );
   return response.data;
 };
@@ -266,7 +293,7 @@ export const unassignConversation = async ({
   conversationId: number | string;
 }) => {
   const response = await api.delete(
-    `/projects/${projectId}/inbox/conversations/${conversationId}/assignments`
+    `/projects/${projectId}/inbox/conversations/${conversationId}/assignments`,
   );
   return response.data;
 };
@@ -276,12 +303,15 @@ export const useAssignConversation = () => {
 
   return useMutation({
     mutationFn: assignConversation,
-    onMutate: async ({ projectId, conversationId, assigneeId }) => {
+    onMutate: async ({ projectId, conversationId, dto }) => {
       // Cancel queries
       await queryClient.cancelQueries({ queryKey: ["conversations"] });
-      
+
       // Snapshot previous value
-      const previousConversations = queryClient.getQueryData(["conversations", projectId]);
+      const previousConversations = queryClient.getQueryData([
+        "conversations",
+        projectId,
+      ]);
 
       // Optimistic update
       queryClient.setQueryData(["conversations", projectId], (old: any) => {
@@ -292,8 +322,12 @@ export const useAssignConversation = () => {
             ...page,
             data: page.data.map((conv: Conversation) =>
               conv.id === conversationId
-                ? { ...conv, assigneeId, assignedAt: new Date().toISOString() } // Note: assignee object missing, list view handles null check
-                : conv
+                ? {
+                    ...conv,
+                    assigneeId: dto.assigneeId,
+                    assignedAt: new Date().toISOString(),
+                  } // Note: assignee object missing, list view handles null check
+                : conv,
             ),
           })),
         };
@@ -305,7 +339,7 @@ export const useAssignConversation = () => {
       if (context?.previousConversations) {
         queryClient.setQueryData(
           ["conversations", variables.projectId],
-          context.previousConversations
+          context.previousConversations,
         );
       }
     },
@@ -323,7 +357,10 @@ export const useUnassignConversation = () => {
     onMutate: async ({ projectId, conversationId }) => {
       await queryClient.cancelQueries({ queryKey: ["conversations"] });
 
-      const previousConversations = queryClient.getQueryData(["conversations", projectId]);
+      const previousConversations = queryClient.getQueryData([
+        "conversations",
+        projectId,
+      ]);
 
       queryClient.setQueryData(["conversations", projectId], (old: any) => {
         if (!old || !old.pages) return old;
@@ -333,8 +370,13 @@ export const useUnassignConversation = () => {
             ...page,
             data: page.data.map((conv: Conversation) =>
               conv.id === conversationId
-                ? { ...conv, assigneeId: null, assignee: null, assignedAt: null }
-                : conv
+                ? {
+                    ...conv,
+                    assigneeId: null,
+                    assignee: null,
+                    assignedAt: null,
+                  }
+                : conv,
             ),
           })),
         };
@@ -346,7 +388,7 @@ export const useUnassignConversation = () => {
       if (context?.previousConversations) {
         queryClient.setQueryData(
           ["conversations", variables.projectId],
-          context.previousConversations
+          context.previousConversations,
         );
       }
     },
@@ -365,7 +407,9 @@ export const deleteConversation = async ({
   projectId: number;
   conversationId: number | string;
 }) => {
-  await api.delete(`/projects/${projectId}/inbox/conversations/${conversationId}`);
+  await api.delete(
+    `/projects/${projectId}/inbox/conversations/${conversationId}`,
+  );
 };
 
 export const useDeleteConversation = () => {
@@ -376,7 +420,10 @@ export const useDeleteConversation = () => {
     onMutate: async ({ projectId, conversationId }) => {
       await queryClient.cancelQueries({ queryKey: ["conversations"] });
 
-      const previousConversations = queryClient.getQueryData(["conversations", projectId]);
+      const previousConversations = queryClient.getQueryData([
+        "conversations",
+        projectId,
+      ]);
 
       // Optimistically remove the conversation from the list
       queryClient.setQueryData(["conversations", projectId], (old: any) => {
@@ -385,7 +432,9 @@ export const useDeleteConversation = () => {
           ...old,
           pages: old.pages.map((page: any) => ({
             ...page,
-            data: page.data.filter((conv: Conversation) => conv.id !== String(conversationId)),
+            data: page.data.filter(
+              (conv: Conversation) => conv.id !== String(conversationId),
+            ),
             total: page.total - 1,
           })),
         };
@@ -398,7 +447,7 @@ export const useDeleteConversation = () => {
       if (context?.previousConversations) {
         queryClient.setQueryData(
           ["conversations", variables.projectId],
-          context.previousConversations
+          context.previousConversations,
         );
       }
     },
@@ -407,4 +456,3 @@ export const useDeleteConversation = () => {
     },
   });
 };
-

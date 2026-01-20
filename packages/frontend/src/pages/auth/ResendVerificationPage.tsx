@@ -29,7 +29,7 @@ const ResendVerificationPage = () => {
 
     setIsLoading(true);
     try {
-      const response = await resendVerificationEmail(email.trim());
+      const response = await resendVerificationEmail({ email: email.trim() });
       toast({
         title: t("common.success"),
         description: t("auth.resendSuccess"),

@@ -35,6 +35,9 @@ export enum WebSocketEvent {
   FORM_SUBMITTED = "formSubmitted", // Server → Agents & Visitor
   FORM_UPDATED = "formUpdated", // Server → Agents & Visitor
   FORM_DELETED = "formDeleted", // Server → Agents & Visitor
+
+  // Automation events
+  AUTOMATION_TRIGGERED = "automation.triggered",
 }
 
 // NEW: Visitor Online Status Payload
@@ -52,28 +55,6 @@ export interface VisitorUpdatedPayload {
 }
 
 // Existing payloads
-export interface IdentifyPayload {
-  projectId: number;
-  visitorUid: string;
-}
-
-export interface SendMessagePayload {
-  content: string;
-  tempId: string;
-  sessionMetadata?: VisitorSessionMetadata;
-}
-
-export interface VisitorTypingPayload {
-  isTyping: boolean;
-}
-
-export interface UpdateContextPayload {
-  currentUrl: string;
-}
-
-export interface JoinRoomPayload {
-  projectId: number;
-}
 
 export interface AgentTypingPayload {
   agentName: string;
@@ -132,14 +113,6 @@ export interface VisitorFillingFormPayload {
 }
 
 /**
- * Sent by visitor widget to submit a form.
- */
-export interface SubmitFormPayload {
-  formRequestMessageId: string;
-  data: Record<string, unknown>;
-}
-
-/**
  * Sent when a form is submitted.
  */
 export interface FormSubmittedPayload {
@@ -149,6 +122,7 @@ export interface FormSubmittedPayload {
   message?: Message; // Full message object for immediate display
   submittedBy: "agent" | "visitor";
   data: Record<string, unknown>;
+  formRequestMessageId?: string; // Optional: ID of the original request
 }
 
 /**
@@ -167,4 +141,13 @@ export interface FormDeletedPayload {
   conversationId: string;
   submissionId: string;
   messageId?: string;
+}
+
+/**
+ * Payload for automation.triggered event.
+ */
+export interface AutomationTriggeredPayload {
+  conversationId: string;
+  type: string;
+  message: string;
 }

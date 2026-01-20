@@ -20,6 +20,7 @@ describe("useChatStore", () => {
 
   const createMockMessage = (overrides: Partial<Message> = {}): Message => ({
     id: "msg-1",
+    conversationId: 1,
     content: "Hello",
     fromCustomer: false,
     senderId: "agent-1",
@@ -112,6 +113,7 @@ describe("useChatStore", () => {
     const mockHistory: Message[] = [
       {
         id: "req-1",
+        conversationId: 1,
         content: "Form Request",
         contentType: MessageContentType.FORM_REQUEST,
         fromCustomer: false,
@@ -122,6 +124,7 @@ describe("useChatStore", () => {
       },
       {
         id: "sub-1",
+        conversationId: 1,
         content: "Form Submitted",
         contentType: MessageContentType.FORM_SUBMISSION,
         fromCustomer: true,

@@ -1,4 +1,3 @@
-
 import { TestHarness } from './utils/test-harness';
 import request from 'supertest';
 import { ProjectRole } from '@live-chat/shared-types';
@@ -36,25 +35,50 @@ describe('Project Invitation Lifecycle (E2E)', () => {
     harness.mailService.clear();
 
     // Setup Users
-    managerUser = { email: 'manager@test.com', password: 'Password123!', fullName: 'Manager' };
-    inviteeUser = { email: 'invitee@test.com', password: 'Password123!', fullName: 'Invitee' };
-    intruderUser = { email: 'intruder@test.com', password: 'Password123!', fullName: 'Intruder' };
+    managerUser = {
+      email: 'manager@test.com',
+      password: 'Password123!',
+      fullName: 'Manager',
+    };
+    inviteeUser = {
+      email: 'invitee@test.com',
+      password: 'Password123!',
+      fullName: 'Invitee',
+    };
+    intruderUser = {
+      email: 'intruder@test.com',
+      password: 'Password123!',
+      fullName: 'Intruder',
+    };
 
     managerToken = await registerAndLogin(managerAgent, managerUser);
     inviteeToken = await registerAndLogin(inviteeAgent, inviteeUser);
     intruderToken = await registerAndLogin(intruderAgent, intruderUser);
   });
 
-  async function registerAndLogin(agent: SuperTestAgent, user: any): Promise<string> {
+  async function registerAndLogin(
+    agent: SuperTestAgent,
+    user: any
+  ): Promise<string> {
     await agent.post('/auth/register').send(user).expect(201);
     const email = harness.mailService.findEmailByType('CONFIRMATION');
-    await agent.get('/auth/verify-email').query({ token: email.token }).expect(200);
+    await agent
+      .get('/auth/verify-email')
+      .query({ token: email.token })
+      .expect(200);
     harness.mailService.clear(); // Clear confirmation email
-    const loginRes = await agent.post('/auth/login').send({ email: user.email, password: user.password }).expect(200);
+    const loginRes = await agent
+      .post('/auth/login')
+      .send({ email: user.email, password: user.password })
+      .expect(200);
     return loginRes.body.accessToken;
   }
 
-  async function createProject(agent: SuperTestAgent, token: string, name: string) {
+  async function createProject(
+    agent: SuperTestAgent,
+    token: string,
+    name: string
+  ) {
     const res = await agent
       .post('/projects')
       .set('Authorization', `Bearer ${token}`)
@@ -65,7 +89,11 @@ describe('Project Invitation Lifecycle (E2E)', () => {
 
   it('Happy Path: Manager invites -> Invitee fetches details -> Invitee accepts', async () => {
     // 1. Manager creates project
-    const projectId = await createProject(managerAgent, managerToken, 'Alpha Project');
+    const projectId = await createProject(
+      managerAgent,
+      managerToken,
+      'Alpha Project'
+    );
 
     // 2. Manager invites Invitee
     await managerAgent
@@ -88,7 +116,7 @@ describe('Project Invitation Lifecycle (E2E)', () => {
       .expect(200);
 
     expect(detailsRes.body.email).toBe(inviteeUser.email);
-    expect(detailsRes.body.project.name).toBe('Alpha Project');
+    expect(detailsRes.body.projectName).toBe('Alpha Project');
     expect(detailsRes.body.status).toBe(InvitationStatus.PENDING);
 
     // 4. Invitee accepts invitation
@@ -99,14 +127,21 @@ describe('Project Invitation Lifecycle (E2E)', () => {
       .expect(201);
 
     // 5. Verify Membership
-    const projectsRes = await inviteeAgent.get('/projects').set('Authorization', `Bearer ${inviteeToken}`).expect(200);
+    const projectsRes = await inviteeAgent
+      .get('/projects')
+      .set('Authorization', `Bearer ${inviteeToken}`)
+      .expect(200);
     const joinedProject = projectsRes.body.find((p: any) => p.id === projectId);
     expect(joinedProject).toBeDefined();
     expect(joinedProject.myRole).toBe(ProjectRole.AGENT);
   });
 
   it('Security: Email Mismatch - Intruder cannot accept invitation for another email', async () => {
-    const projectId = await createProject(managerAgent, managerToken, 'Secure Project');
+    const projectId = await createProject(
+      managerAgent,
+      managerToken,
+      'Secure Project'
+    );
 
     // Manager invites Invitee
     await managerAgent
@@ -130,7 +165,11 @@ describe('Project Invitation Lifecycle (E2E)', () => {
   });
 
   it('Expiration: Cannot accept expired invitation', async () => {
-    const projectId = await createProject(managerAgent, managerToken, 'Expired Project');
+    const projectId = await createProject(
+      managerAgent,
+      managerToken,
+      'Expired Project'
+    );
 
     // Manager invites Invitee
     await managerAgent
@@ -148,7 +187,7 @@ describe('Project Invitation Lifecycle (E2E)', () => {
     // Manually expire the invitation in DB
     const invitationRepo = harness.dataSource.getRepository(Invitation);
     const invitation = await invitationRepo.findOneBy({ token });
-    
+
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     invitation!.expiresAt = yesterday;
@@ -160,14 +199,18 @@ describe('Project Invitation Lifecycle (E2E)', () => {
       .set('Authorization', `Bearer ${inviteeToken}`)
       .query({ token })
       .expect(400); // Bad Request: Expired
-      
+
     // Verify status updated to EXPIRED
     const updatedInvitation = await invitationRepo.findOneBy({ token });
     expect(updatedInvitation!.status).toBe(InvitationStatus.EXPIRED);
   });
 
   it('Revocation: Manager cancels invitation -> Invitee cannot accept', async () => {
-    const projectId = await createProject(managerAgent, managerToken, 'Revoked Project');
+    const projectId = await createProject(
+      managerAgent,
+      managerToken,
+      'Revoked Project'
+    );
 
     // Manager invites Invitee
     await managerAgent
@@ -204,7 +247,11 @@ describe('Project Invitation Lifecycle (E2E)', () => {
   });
 
   it('Double Acceptance: Cannot accept an already used token', async () => {
-    const projectId = await createProject(managerAgent, managerToken, 'Replay Project');
+    const projectId = await createProject(
+      managerAgent,
+      managerToken,
+      'Replay Project'
+    );
 
     // Manager invites Invitee
     await managerAgent

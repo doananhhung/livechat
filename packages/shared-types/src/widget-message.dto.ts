@@ -7,7 +7,8 @@ export type MessageSender = {
 
 export interface WidgetMessageDto {
   id: string | number;
-  content: string;
+  conversationId: number;
+  content: string | null;
   senderId?: string;
   fromCustomer: boolean;
   status: MessageStatus;

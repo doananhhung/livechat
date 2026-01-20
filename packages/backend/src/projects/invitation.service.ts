@@ -1,4 +1,3 @@
-
 import {
   Injectable,
   BadRequestException,
@@ -9,7 +8,10 @@ import {
 } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import * as crypto from 'crypto';
-import { CreateInvitationDto } from '@live-chat/shared-dtos';
+import {
+  CreateInvitationDto,
+  InvitationResponseDto,
+} from '@live-chat/shared-dtos';
 import { Invitation, Project, User, ProjectMember } from '../database/entities';
 import { InvitationStatus, ProjectRole } from '@live-chat/shared-types';
 import { MailService } from '../mail/mail.service';
@@ -24,17 +26,36 @@ export class InvitationService {
   ) {}
 
   /**
+   * Helper to map Invitation entity to InvitationResponseDto
+   */
+  private mapToResponseDto(invitation: Invitation): InvitationResponseDto {
+    return {
+      id: invitation.id,
+      email: invitation.email,
+      projectId: invitation.projectId,
+      inviterId: invitation.inviterId,
+      status: invitation.status,
+      role: invitation.role,
+      expiresAt: invitation.expiresAt,
+      createdAt: invitation.createdAt,
+      projectName: invitation.project?.name,
+      inviterName: invitation.inviter?.fullName,
+    };
+  }
+
+  /**
    * Creates an invitation and sends an email to the invitee
    */
   async createInvitation(
     createInvitationDto: CreateInvitationDto,
     inviterId: string
-  ): Promise<Invitation> {
+  ): Promise<InvitationResponseDto> {
     const { email, projectId, role = ProjectRole.AGENT } = createInvitationDto;
 
     // 1. Verify that the inviter is a MANAGER of the project
     const inviterMembership = await this.entityManager.findOne(ProjectMember, {
       where: { projectId, userId: inviterId },
+      relations: ['user'], // Load user to get name for DTO if needed immediately
     });
 
     if (!inviterMembership || inviterMembership.role !== ProjectRole.MANAGER) {
@@ -114,7 +135,13 @@ export class InvitationService {
       existingUser ?? undefined
     );
 
-    return savedInvitation;
+    // Load relations for response
+    const result = await this.entityManager.findOne(Invitation, {
+      where: { id: savedInvitation.id },
+      relations: ['project', 'inviter'],
+    });
+
+    return this.mapToResponseDto(result!);
   }
 
   /**
@@ -240,9 +267,10 @@ export class InvitationService {
   /**
    * Gets invitation details by token (for registration page to pre-fill email)
    */
-  async getInvitationByToken(token: string): Promise<any> {
+  async getInvitationByToken(token: string): Promise<InvitationResponseDto> {
     const invitation = await this.entityManager.findOne(Invitation, {
       where: { token },
+      relations: ['project', 'inviter'],
     });
 
     if (!invitation) {
@@ -259,15 +287,7 @@ export class InvitationService {
       throw new BadRequestException('This invitation has already been used.');
     }
 
-    // Load project details
-    const project = await this.entityManager.findOne(Project, {
-      where: { id: invitation.projectId },
-    });
-
-    return {
-      ...invitation,
-      project,
-    };
+    return this.mapToResponseDto(invitation);
   }
 
   /**
@@ -276,7 +296,7 @@ export class InvitationService {
   async getProjectInvitations(
     projectId: number,
     userId: string
-  ): Promise<Invitation[]> {
+  ): Promise<InvitationResponseDto[]> {
     // Verify that the user is a MANAGER of the project
     const membership = await this.entityManager.findOne(ProjectMember, {
       where: { projectId, userId },
@@ -288,10 +308,13 @@ export class InvitationService {
       );
     }
 
-    return this.entityManager.find(Invitation, {
+    const invitations = await this.entityManager.find(Invitation, {
       where: { projectId },
+      relations: ['inviter'],
       order: { createdAt: 'DESC' },
     });
+
+    return invitations.map((inv) => this.mapToResponseDto(inv));
   }
 
   /**

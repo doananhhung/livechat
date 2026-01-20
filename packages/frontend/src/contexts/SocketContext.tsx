@@ -20,6 +20,7 @@ import {
   type VisitorStatusChangedPayload,
   type VisitorUpdatedPayload,
   type FormSubmittedPayload,
+  type AutomationTriggeredPayload,
 } from "@live-chat/shared-types";
 import { useTypingStore } from "../stores/typingStore";
 import { useProjectStore } from "../stores/projectStore";
@@ -417,11 +418,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       );
     };
 
-    const handleAutomationTriggered = (payload: {
-      conversationId: string;
-      type: string;
-      message: string;
-    }) => {
+    const handleAutomationTriggered = (payload: AutomationTriggeredPayload) => {
       toast({
         title: t("common.automation"),
         description: payload.message,
@@ -445,7 +442,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
     ); // ADDED
     socket.on(WebSocketEvent.VISITOR_UPDATED, handleVisitorUpdated); // ADDED
     socket.on(WebSocketEvent.FORM_SUBMITTED, handleFormSubmitted); // ADDED
-    socket.on("automation.triggered", handleAutomationTriggered);
+    socket.on(WebSocketEvent.AUTOMATION_TRIGGERED, handleAutomationTriggered);
 
     // CRITICAL: Always cleanup listeners on unmount or when dependencies change
     return () => {
@@ -469,7 +466,10 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       ); // ADDED
       socket.off(WebSocketEvent.VISITOR_UPDATED, handleVisitorUpdated); // ADDED
       socket.off(WebSocketEvent.FORM_SUBMITTED, handleFormSubmitted); // ADDED
-      socket.off("automation.triggered", handleAutomationTriggered);
+      socket.off(
+        WebSocketEvent.AUTOMATION_TRIGGERED,
+        handleAutomationTriggered,
+      );
     };
   }, [
     socket,

@@ -31,7 +31,7 @@ const Verify2faPage = () => {
     setIsLoading(true);
     try {
       // Call the imported verify2FA function
-      const response = await verify2FA(code);
+      const response = await verify2FA({ code });
       // Save token and user information to store
       login(response.user, response.accessToken);
       navigate(from, { replace: true });

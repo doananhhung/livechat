@@ -32,7 +32,7 @@ export const AssignmentControls: React.FC<AssignmentControlsProps> = ({
     assignMutation.mutate({
       projectId: currentProjectId,
       conversationId: conversation.id,
-      assigneeId: user.id,
+      dto: { assigneeId: user.id },
     });
   };
 

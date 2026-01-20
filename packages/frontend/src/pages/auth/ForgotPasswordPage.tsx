@@ -32,8 +32,7 @@ const ForgotPasswordPage = () => {
       toast({
         variant: "destructive",
         title: t("common.error"),
-        description:
-          error.response?.data?.message || t("auth.tryAgainLater"),
+        description: error.response?.data?.message || t("auth.tryAgainLater"),
       });
     },
   });
@@ -50,7 +49,7 @@ const ForgotPasswordPage = () => {
       return;
     }
 
-    forgotPassword(email);
+    forgotPassword({ email });
   };
 
   const handleGoogleLogin = () => {

@@ -1,6 +1,15 @@
-import { Controller, Post, Delete, Param, Body, UseGuards, Req, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  Req,
+  HttpCode,
+} from '@nestjs/common';
 import { ConversationService } from './services/conversation.service';
-import { AssignConversationDto } from './dto/assign-conversation.dto';
+import { AssignConversationDto } from '@live-chat/shared-dtos';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/types/authenticated-request.interface';
 import { RolesGuard } from '../rbac/roles.guard';
@@ -20,7 +29,7 @@ export class AssignmentsController {
   async assign(
     @Param('id') id: string,
     @Body() dto: AssignConversationDto,
-    @Req() req: AuthenticatedRequest,
+    @Req() req: AuthenticatedRequest
   ) {
     return this.conversationService.assign(req.user.id, id, dto.assigneeId);
   }
@@ -29,10 +38,7 @@ export class AssignmentsController {
   @Delete()
   @Roles(ProjectRole.AGENT)
   @HttpCode(200)
-  async unassign(
-    @Param('id') id: string,
-    @Req() req: AuthenticatedRequest,
-  ) {
+  async unassign(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.conversationService.unassign(req.user.id, id);
   }
 }
