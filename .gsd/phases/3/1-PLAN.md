@@ -4,61 +4,89 @@ plan: 1
 wave: 1
 ---
 
-# Plan 3.1: Visual Parity Verification
+# Plan 3.1: Project & Invitation API DTO Unification
 
 ## Objective
 
-Verify that the widget and dashboard display visually consistent colors in both light and dark modes. This is a checkpoint plan requiring human verification.
+Standardize `projectApi.ts` and its consumers to use shared DTOs for project management, widget settings, and the invitation lifecycle.
 
 ## Context
 
-- `packages/frontend/src/theme/tokens.ts` — Source of truth
-- `packages/frontend/src/theme/README.md` — Color mapping
-- `packages/frontend/src/index.css` — Dashboard theme
-- `packages/frontend/src/widget/styles/_generated-vars.css` — Widget theme
+- `packages/frontend/src/services/projectApi.ts`
+- `packages/shared-dtos/src/invitation.dto.ts`
+- `packages/shared-dtos/src/widget-settings.dto.ts`
+- `packages/shared-dtos/src/update-project.dto.ts`
+- `packages/shared-dtos/src/create-project.dto.ts`
+- `packages/frontend/src/pages/invitations/AcceptInvitationPage.tsx`
+- `packages/frontend/src/pages/auth/RegisterPage.tsx`
+- `packages/frontend/src/components/features/inbox/ProjectWidgetSettingsDialog.tsx`
+- `packages/frontend/src/pages/settings/ProjectSettingsPage.tsx`
+
+## Proposed Changes
+
+### [MODIFY] [projectApi.ts](file:///home/hoang/node/live_chat/packages/frontend/src/services/projectApi.ts)
+
+- Update `updateProjectSettings`, `acceptInvitation`, `getInvitationDetails` to use DTOs.
+
+### [MODIFY] [AcceptInvitationPage.tsx](file:///home/hoang/node/live_chat/packages/frontend/src/pages/invitations/AcceptInvitationPage.tsx)
+
+- Update `acceptInvitation` call to pass `{ token }`.
+
+### [MODIFY] [RegisterPage.tsx](file:///home/hoang/node/live_chat/packages/frontend/src/pages/auth/RegisterPage.tsx)
+
+- Update `acceptInvitation` call to pass `{ token }`.
+
+### [MODIFY] [ProjectWidgetSettingsDialog.tsx](file:///home/hoang/node/live_chat/packages/frontend/src/components/features/inbox/ProjectWidgetSettingsDialog.tsx)
+
+- Replace `IWidgetSettingsDto` with `WidgetSettingsDto`.
+
+### [MODIFY] [ProjectSettingsPage.tsx](file:///home/hoang/node/live_chat/packages/frontend/src/pages/settings/ProjectSettingsPage.tsx)
+
+- Update `updateProjectSettings` call.
 
 ## Tasks
 
 <task type="auto">
-  <name>Ensure widget build is up to date</name>
-  <files>packages/frontend/dist/app/</files>
+  <name>Refactor projectApi.ts to use DTOs</name>
+  <files>
+    <file>packages/frontend/src/services/projectApi.ts</file>
+  </files>
   <action>
-    Run widget build to ensure CSS is generated from latest tokens.
+    - Import `AcceptInvitationDto`, `InvitationResponseDto`, `WidgetSettingsDto` from `@live-chat/shared-dtos`.
+    - Refactor `updateProjectSettings` to accept `settings: WidgetSettingsDto`.
+    - Refactor `acceptInvitation` to accept `payload: AcceptInvitationDto`.
+    - Refactor `getInvitationDetails` to return `Promise<InvitationResponseDto>`.
   </action>
-  <verify>npm run build:widget --prefix packages/frontend 2>&1 | grep -q "built in" && echo "Build success"</verify>
-  <done>Widget build completes without errors</done>
+  <verify>
+    Check for TypeScript errors in `projectApi.ts`.
+  </verify>
+  <done>
+    Project API functions use shared DTOs.
+  </done>
 </task>
 
-<task type="checkpoint:human-verify">
-  <name>Visual verification of theme parity</name>
-  <files>N/A</files>
+<task type="auto">
+  <name>Update Project & Invitation UI components</name>
+  <files>
+    <file>packages/frontend/src/pages/invitations/AcceptInvitationPage.tsx</file>
+    <file>packages/frontend/src/pages/auth/RegisterPage.tsx</file>
+    <file>packages/frontend/src/components/features/inbox/ProjectWidgetSettingsDialog.tsx</file>
+    <file>packages/frontend/src/pages/settings/ProjectSettingsPage.tsx</file>
+  </files>
   <action>
-    Ask user to manually verify visual parity using the running dev servers:
-    
-    **Dashboard (http://localhost:5173):**
-    1. Open dashboard in browser
-    2. Toggle between light and dark mode using theme button
-    3. Note the background, text, and card colors
-    
-    **Widget (test page):**
-    1. Open http://localhost:5173/test.html or embed widget on a test page
-    2. Widget should automatically match its configured theme
-    3. For theme switching, the widget theme is controlled by backend `widgetSettings.theme`
-    
-    **What to verify:**
-    - Background colors look consistent between dashboard and widget
-    - Text colors are readable in both modes
-    - Card/container colors feel visually cohesive
-    - No jarring color differences when switching modes
-    
-    **Note:** Colors don't need to be pixel-perfect identical — they should just feel like part of the same design system.
+    - Update call sites to pass `{ token }` for `acceptInvitation`.
+    - Replace `IWidgetSettingsDto` with `WidgetSettingsDto` in `ProjectWidgetSettingsDialog.tsx`.
+    - Ensure `ProjectSettingsPage.tsx` correctly types the data passed to `updateProjectSettings`.
   </action>
-  <verify>User confirms visual parity is acceptable</verify>
-  <done>User approves theme consistency between dashboard and widget</done>
+  <verify>
+    npm run check-types --workspace=@live-chat/frontend
+  </verify>
+  <done>
+    UI components are type-safe and functional with new DTO payloads.
+  </done>
 </task>
 
 ## Success Criteria
 
-- [ ] Widget build succeeds
-- [ ] User confirms visual parity in light mode
-- [ ] User confirms visual parity in dark mode
+- [ ] Project and Invitation flows use shared DTOs.
+- [ ] No regression in Project management functionality.
