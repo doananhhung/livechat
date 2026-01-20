@@ -3,6 +3,9 @@ import type {
   CreateProjectDto,
   CreateInvitationDto,
   UpdateProjectDto,
+  AcceptInvitationDto,
+  InvitationResponseDto,
+  WidgetSettingsDto,
 } from "@live-chat/shared-dtos";
 import type {
   Project,
@@ -10,7 +13,6 @@ import type {
   Invitation,
   ProjectRole,
   ProjectMemberDto,
-  IWidgetSettingsDto,
 } from "@live-chat/shared-types";
 
 // --- Type Definitions ---
@@ -37,7 +39,7 @@ export const getProjects = async (): Promise<ProjectWithRole[]> => {
  * @param data - The data for the new project.
  */
 export const createProject = async (
-  data: CreateProjectDto
+  data: CreateProjectDto,
 ): Promise<Project> => {
   const response = await api.post("/projects", data);
   return response.data;
@@ -50,7 +52,7 @@ export const createProject = async (
  */
 export const updateProject = async (
   projectId: number,
-  data: UpdateProjectDto
+  data: UpdateProjectDto,
 ): Promise<Project> => {
   const response = await api.patch(`/projects/${projectId}`, data);
   return response.data;
@@ -63,7 +65,7 @@ export const updateProject = async (
  */
 export const updateProjectSettings = async (
   projectId: number,
-  settings: IWidgetSettingsDto
+  settings: WidgetSettingsDto,
 ): Promise<Project> => {
   const response = await api.patch(`/projects/${projectId}`, {
     widgetSettings: settings,
@@ -78,7 +80,7 @@ export const updateProjectSettings = async (
  * @param data - The invitation data (email, projectId, role)
  */
 export const inviteUserToProject = async (
-  data: CreateInvitationDto
+  data: CreateInvitationDto,
 ): Promise<Invitation> => {
   const { projectId, ...body } = data;
   const response = await api.post(`/projects/${projectId}/invitations`, body);
@@ -90,7 +92,7 @@ export const inviteUserToProject = async (
  * @param projectId - The ID of the project
  */
 export const getProjectInvitations = async (
-  projectId: number
+  projectId: number,
 ): Promise<Invitation[]> => {
   const response = await api.get(`/projects/${projectId}/invitations`);
   return response.data;
@@ -103,7 +105,7 @@ export const getProjectInvitations = async (
  */
 export const cancelInvitation = async (
   projectId: number,
-  invitationId: number
+  invitationId: number,
 ): Promise<void> => {
   await api.delete(`/projects/${projectId}/invitations/${invitationId}`);
 };
@@ -112,8 +114,10 @@ export const cancelInvitation = async (
  * Accepts an invitation to join a project.
  * @param token - The invitation token from the email link
  */
-export const acceptInvitation = async (token: string): Promise<void> => {
-  await api.post(`/projects/invitations/accept?token=${token}`);
+export const acceptInvitation = async (
+  payload: AcceptInvitationDto,
+): Promise<void> => {
+  await api.post(`/projects/invitations/accept?token=${payload.token}`);
 };
 
 /**
@@ -121,10 +125,10 @@ export const acceptInvitation = async (token: string): Promise<void> => {
  * @param token - The invitation token from the email link
  */
 export const getInvitationDetails = async (
-  token: string
-): Promise<InvitationWithProject> => {
+  token: string,
+): Promise<InvitationResponseDto> => {
   const response = await api.get(
-    `/projects/invitations/details?token=${token}`
+    `/projects/invitations/details?token=${token}`,
   );
   return response.data;
 };
@@ -136,7 +140,7 @@ export const getInvitationDetails = async (
  * @param projectId - The ID of the project
  */
 export const getProjectMembers = async (
-  projectId: number
+  projectId: number,
 ): Promise<ProjectMemberDto[]> => {
   const response = await api.get(`/projects/${projectId}/members`);
   return response.data;
@@ -151,11 +155,11 @@ export const getProjectMembers = async (
 export const updateMemberRole = async (
   projectId: number,
   userId: string,
-  role: ProjectRole
+  role: ProjectRole,
 ): Promise<{ success: boolean; message: string }> => {
   const response = await api.patch(
     `/projects/${projectId}/members/${userId}/role`,
-    { role }
+    { role },
   );
   return response.data;
 };
@@ -167,7 +171,7 @@ export const updateMemberRole = async (
  */
 export const removeMember = async (
   projectId: number,
-  userId: string
+  userId: string,
 ): Promise<{ success: boolean; message: string }> => {
   const response = await api.delete(`/projects/${projectId}/members/${userId}`);
   return response.data;

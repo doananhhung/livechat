@@ -13,11 +13,9 @@ import { Button } from "../../ui/Button";
 import { Input } from "../../ui/Input";
 import { useToast } from "../../ui/use-toast";
 import { updateProjectSettings } from "../../../services/projectApi";
-import type {
-  ProjectWithRole,
-  IWidgetSettingsDto,
-} from "@live-chat/shared-types";
+import type { ProjectWithRole } from "@live-chat/shared-types";
 import { WidgetTheme } from "@live-chat/shared-types";
+import type { WidgetSettingsDto } from "@live-chat/shared-dtos";
 
 interface ProjectWidgetSettingsDialogProps {
   project: ProjectWithRole;
@@ -34,7 +32,7 @@ export const ProjectWidgetSettingsDialog = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [settings, setSettings] = useState<Partial<IWidgetSettingsDto>>({
+  const [settings, setSettings] = useState<WidgetSettingsDto>({
     theme: WidgetTheme.LIGHT,
     headerText: "",
     primaryColor: "",
@@ -59,14 +57,15 @@ export const ProjectWidgetSettingsDialog = ({
         backgroundImageUrl: project.widgetSettings.backgroundImageUrl,
         backgroundOpacity: project.widgetSettings.backgroundOpacity,
         fontFamily: project.widgetSettings.fontFamily || "sans-serif",
-        historyVisibility: project.widgetSettings.historyVisibility || "limit_to_active",
+        historyVisibility:
+          project.widgetSettings.historyVisibility || "limit_to_active",
       });
     }
   }, [project]);
 
   const updateSettingsMutation = useMutation({
-    mutationFn: (data: Partial<IWidgetSettingsDto>) =>
-      updateProjectSettings(project.id, data as IWidgetSettingsDto),
+    mutationFn: (data: WidgetSettingsDto) =>
+      updateProjectSettings(project.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast({
@@ -117,12 +116,22 @@ export const ProjectWidgetSettingsDialog = ({
                       id="mode-active"
                       name="historyVisibility"
                       value="limit_to_active"
-                      checked={settings.historyVisibility === 'limit_to_active'}
-                      onChange={(e) => setSettings({ ...settings, historyVisibility: 'limit_to_active' })}
+                      checked={settings.historyVisibility === "limit_to_active"}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          historyVisibility: "limit_to_active",
+                        })
+                      }
                       className="mt-1"
                     />
-                    <label htmlFor="mode-active" className="text-sm cursor-pointer">
-                      <span className="font-semibold block">{t("settings.ticketStyleDefault")}</span>
+                    <label
+                      htmlFor="mode-active"
+                      className="text-sm cursor-pointer"
+                    >
+                      <span className="font-semibold block">
+                        {t("settings.ticketStyleDefault")}
+                      </span>
                       <span className="text-muted-foreground">
                         {t("settings.ticketStyleDesc")}
                       </span>
@@ -134,12 +143,22 @@ export const ProjectWidgetSettingsDialog = ({
                       id="mode-forever"
                       name="historyVisibility"
                       value="forever"
-                      checked={settings.historyVisibility === 'forever'}
-                      onChange={(e) => setSettings({ ...settings, historyVisibility: 'forever' })}
+                      checked={settings.historyVisibility === "forever"}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          historyVisibility: "forever",
+                        })
+                      }
                       className="mt-1"
                     />
-                    <label htmlFor="mode-forever" className="text-sm cursor-pointer">
-                      <span className="font-semibold block">{t("settings.chatStyle")}</span>
+                    <label
+                      htmlFor="mode-forever"
+                      className="text-sm cursor-pointer"
+                    >
+                      <span className="font-semibold block">
+                        {t("settings.chatStyle")}
+                      </span>
                       <span className="text-muted-foreground">
                         {t("settings.chatStyleDesc")}
                       </span>
@@ -157,11 +176,18 @@ export const ProjectWidgetSettingsDialog = ({
                   className="w-full px-3 py-2 text-sm border rounded-md bg-background"
                   value={settings.theme}
                   onChange={(e) =>
-                    setSettings({ ...settings, theme: e.target.value as WidgetTheme })
+                    setSettings({
+                      ...settings,
+                      theme: e.target.value as WidgetTheme,
+                    })
                   }
                 >
-                  <option value={WidgetTheme.LIGHT}>{t("settings.themeLight")}</option>
-                  <option value={WidgetTheme.DARK}>{t("settings.themeDark")}</option>
+                  <option value={WidgetTheme.LIGHT}>
+                    {t("settings.themeLight")}
+                  </option>
+                  <option value={WidgetTheme.DARK}>
+                    {t("settings.themeDark")}
+                  </option>
                 </select>
               </div>
 
@@ -195,7 +221,10 @@ export const ProjectWidgetSettingsDialog = ({
                       type="color"
                       value={settings.primaryColor || "#6d28d9"} // Default purple for picker preview
                       onChange={(e) =>
-                        setSettings({ ...settings, primaryColor: e.target.value })
+                        setSettings({
+                          ...settings,
+                          primaryColor: e.target.value,
+                        })
                       }
                       className="w-12 h-10 p-1 cursor-pointer"
                     />
@@ -213,7 +242,9 @@ export const ProjectWidgetSettingsDialog = ({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setSettings({ ...settings, primaryColor: "" })}
+                    onClick={() =>
+                      setSettings({ ...settings, primaryColor: "" })
+                    }
                     title={t("settings.useDefaultColor")}
                   >
                     {t("settings.default")}
@@ -267,11 +298,18 @@ export const ProjectWidgetSettingsDialog = ({
                   className="w-full px-3 py-2 text-sm border rounded-md bg-background"
                   value={settings.position}
                   onChange={(e) =>
-                    setSettings({ ...settings, position: e.target.value as any })
+                    setSettings({
+                      ...settings,
+                      position: e.target.value as any,
+                    })
                   }
                 >
-                  <option value="bottom-right">{t("settings.bottomRight")}</option>
-                  <option value="bottom-left">{t("settings.bottomLeft")}</option>
+                  <option value="bottom-right">
+                    {t("settings.bottomRight")}
+                  </option>
+                  <option value="bottom-left">
+                    {t("settings.bottomLeft")}
+                  </option>
                 </select>
               </div>
 
@@ -300,7 +338,10 @@ export const ProjectWidgetSettingsDialog = ({
                   placeholder={t("widget.headerTitle")}
                   value={settings.agentDisplayName || ""}
                   onChange={(e) =>
-                    setSettings({ ...settings, agentDisplayName: e.target.value })
+                    setSettings({
+                      ...settings,
+                      agentDisplayName: e.target.value,
+                    })
                   }
                   maxLength={100}
                 />

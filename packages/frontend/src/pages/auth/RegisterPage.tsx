@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -12,9 +11,9 @@ import { Eye, EyeOff, Loader2, Mail } from "lucide-react";
 import {
   getInvitationDetails,
   acceptInvitation,
-  type InvitationWithProject,
 } from "../../services/projectApi";
 import { ProjectRole } from "@live-chat/shared-types";
+import type { InvitationResponseDto } from "@live-chat/shared-dtos";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -28,8 +27,8 @@ const RegisterPage = () => {
 
   // Invitation-related state
   const [invitationToken, setInvitationToken] = useState<string | null>(null);
-  const [invitation, setInvitation] = useState<InvitationWithProject | null>(
-    null
+  const [invitation, setInvitation] = useState<InvitationResponseDto | null>(
+    null,
   );
   const [loadingInvitation, setLoadingInvitation] = useState(false);
 
@@ -40,7 +39,7 @@ const RegisterPage = () => {
     // redirect to accept invitation page IMMEDIATELY
     if (isAuthenticated && token) {
       console.log(
-        "[RegisterPage] User already authenticated with invitation token, redirecting to accept-invitation"
+        "[RegisterPage] User already authenticated with invitation token, redirecting to accept-invitation",
       );
       navigate(`/accept-invitation?token=${token}`, { replace: true });
       return;
@@ -49,7 +48,7 @@ const RegisterPage = () => {
     // Otherwise, redirect authenticated users without invitation to inbox
     if (isAuthenticated && !token) {
       console.log(
-        "[RegisterPage] User already authenticated without invitation, redirecting to inbox"
+        "[RegisterPage] User already authenticated without invitation, redirecting to inbox",
       );
       navigate("/inbox", { replace: true });
     }
@@ -185,8 +184,8 @@ const RegisterPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-            <p>{t("auth.loadingInvitation")}</p>
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p>{t("auth.loadingInvitation")}</p>
         </div>
       </div>
     );
@@ -201,17 +200,29 @@ const RegisterPage = () => {
         <div className="mb-6 bg-primary/10 border border-primary/20 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-2">
             <Mail className="h-4 w-4 text-primary" />
-            <span className="font-semibold text-primary">{t("auth.hasInvitation")}</span>
+            <span className="font-semibold text-primary">
+              {t("auth.hasInvitation")}
+            </span>
           </div>
           <p className="text-sm">
-             {t("auth.role")}: <span className="font-bold">{invitation.role === ProjectRole.AGENT ? t("common.agent") : t("common.manager")}</span>
+            {t("auth.role")}:{" "}
+            <span className="font-bold">
+              {invitation.role === ProjectRole.AGENT
+                ? t("common.agent")
+                : t("common.manager")}
+            </span>
           </p>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2">
-          <label htmlFor="fullName" className="block text-sm font-medium text-foreground mb-1.5">{t("auth.fullName")}</label>
+          <label
+            htmlFor="fullName"
+            className="block text-sm font-medium text-foreground mb-1.5"
+          >
+            {t("auth.fullName")}
+          </label>
           <Input
             id="fullName"
             type="text"
@@ -243,13 +254,18 @@ const RegisterPage = () => {
           />
           {invitation && (
             <p className="mt-1 text-xs text-muted-foreground">
-                {t("auth.emailFromInvite")}
+              {t("auth.emailFromInvite")}
             </p>
           )}
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="password" className="block text-sm font-medium text-foreground mb-1.5">{t("auth.password")}</label>
+          <label
+            htmlFor="password"
+            className="block text-sm font-medium text-foreground mb-1.5"
+          >
+            {t("auth.password")}
+          </label>
           <div className="relative">
             <Input
               id="password"
@@ -280,7 +296,12 @@ const RegisterPage = () => {
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground mb-1.5">{t("auth.confirmPassword")}</label>
+          <label
+            htmlFor="confirmPassword"
+            className="block text-sm font-medium text-foreground mb-1.5"
+          >
+            {t("auth.confirmPassword")}
+          </label>
           <div className="relative">
             <Input
               id="confirmPassword"
@@ -311,7 +332,7 @@ const RegisterPage = () => {
         </div>
 
         <p className="text-center text-sm text-muted-foreground">
-                    {t("auth.hasAccount")}{" "}
+          {t("auth.hasAccount")}{" "}
           <Link
             to="/login"
             className="font-semibold text-primary hover:text-primary/90 transition-colors"

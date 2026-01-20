@@ -1,5 +1,4 @@
-// src/widget/services/widgetApi.ts
-import type { IWidgetSettingsDto } from "@live-chat/shared-types";
+import type { WidgetSettingsDto } from "@live-chat/shared-dtos";
 import type { WidgetConfig } from "../store/useChatStore";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -11,7 +10,7 @@ const REQUEST_TIMEOUT = 10000; // 10 seconds
 async function fetchWithTimeout(
   url: string,
   options: RequestInit = {},
-  timeout = REQUEST_TIMEOUT
+  timeout = REQUEST_TIMEOUT,
 ): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -36,8 +35,8 @@ async function fetchWithTimeout(
  * @throws An error if the request fails.
  */
 export const getWidgetSettings = async (
-  projectId: string
-): Promise<IWidgetSettingsDto> => {
+  projectId: string,
+): Promise<WidgetSettingsDto> => {
   const url = `${API_BASE_URL}/public/projects/${projectId}/settings`;
 
   // Only log in development
@@ -53,36 +52,36 @@ export const getWidgetSettings = async (
 
       if (import.meta.env.DEV) {
         console.error(
-          `[Widget] Failed to fetch settings: ${response.status} ${errorText}`
+          `[Widget] Failed to fetch settings: ${response.status} ${errorText}`,
         );
       }
 
       if (response.status === 404) {
         throw new Error(
-          `Project not found. Please check your project ID: ${projectId}`
+          `Project not found. Please check your project ID: ${projectId}`,
         );
       }
 
       if (response.status >= 500) {
         throw new Error(
-          "Server error. Please try again later or contact support."
+          "Server error. Please try again later or contact support.",
         );
       }
 
       throw new Error("Could not retrieve widget configuration.");
     }
 
-    const data: IWidgetSettingsDto = await response.json();
+    const data: WidgetSettingsDto = await response.json();
     return data;
   } catch (error) {
     if (error instanceof Error) {
       if (error.name === "AbortError") {
         throw new Error(
-          "Request timeout. Please check your internet connection."
+          "Request timeout. Please check your internet connection.",
         );
       }
       throw error;
     }
     throw new Error("An unexpected error occurred while fetching settings.");
   }
-}
+};

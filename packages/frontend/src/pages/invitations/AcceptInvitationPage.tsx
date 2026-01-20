@@ -10,7 +10,7 @@ import { useAuthStore } from "../../stores/authStore";
 
 const AcceptInvitationPage = () => {
   console.log(
-    "🟢 [AcceptInvitationPage] COMPONENT RENDERING - This is the first line!"
+    "🟢 [AcceptInvitationPage] COMPONENT RENDERING - This is the first line!",
   );
 
   const { t } = useTranslation();
@@ -19,7 +19,7 @@ const AcceptInvitationPage = () => {
   const { toast } = useToast();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [status, setStatus] = useState<"loading" | "success" | "error">(
-    "loading"
+    "loading",
   );
   const [errorMessage, setErrorMessage] = useState<string>("");
   const hasAccepted = useRef(false);
@@ -28,7 +28,7 @@ const AcceptInvitationPage = () => {
   console.log("🟢 [AcceptInvitationPage] isAuthenticated:", isAuthenticated);
   console.log(
     "🟢 [AcceptInvitationPage] searchParams:",
-    searchParams.toString()
+    searchParams.toString(),
   );
 
   useEffect(() => {
@@ -66,7 +66,7 @@ const AcceptInvitationPage = () => {
     // This is CRITICAL for API calls that should only happen once
     if (hasAccepted.current) {
       console.log(
-        "⚠️ [AcceptInvitationPage] Already accepted, skipping duplicate call (React Strict Mode)"
+        "⚠️ [AcceptInvitationPage] Already accepted, skipping duplicate call (React Strict Mode)",
       );
       return;
     }
@@ -77,11 +77,11 @@ const AcceptInvitationPage = () => {
       try {
         console.log(
           "🚀 [AcceptInvitationPage] Accepting invitation with token:",
-          token
+          token,
         );
-        await acceptInvitation(token);
+        await acceptInvitation({ token });
         console.log(
-          "✅ [AcceptInvitationPage] Invitation accepted successfully!"
+          "✅ [AcceptInvitationPage] Invitation accepted successfully!",
         );
         setStatus("success");
         toast({
@@ -97,16 +97,15 @@ const AcceptInvitationPage = () => {
       } catch (error: any) {
         console.error(
           "❌ [AcceptInvitationPage] Failed to accept invitation:",
-          error
+          error,
         );
         console.error(
           "❌ [AcceptInvitationPage] Error response:",
-          error.response?.data
+          error.response?.data,
         );
         setStatus("error");
         const message =
-          error.response?.data?.message ||
-          t("members.accept.genericError");
+          error.response?.data?.message || t("members.accept.genericError");
         setErrorMessage(message);
         toast({
           title: t("common.error"),
@@ -130,8 +129,8 @@ const AcceptInvitationPage = () => {
         isPending
           ? t("members.accept.processing")
           : isSuccess
-          ? t("members.accept.successTitle")
-          : t("members.accept.title")
+            ? t("members.accept.successTitle")
+            : t("members.accept.title")
       }
     >
       <div className="w-full max-w-md">
@@ -139,7 +138,9 @@ const AcceptInvitationPage = () => {
           {isPending && (
             <div className="text-center py-8 space-y-4">
               <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-              <p className="text-muted-foreground">{t("members.accept.wait")}</p>
+              <p className="text-muted-foreground">
+                {t("members.accept.wait")}
+              </p>
             </div>
           )}
 
@@ -164,9 +165,7 @@ const AcceptInvitationPage = () => {
                 <h3 className="text-xl font-semibold text-destructive">
                   {t("members.accept.failTitle")}
                 </h3>
-                <p className="text-muted-foreground">
-                  {errorMessage}
-                </p>
+                <p className="text-muted-foreground">{errorMessage}</p>
                 <div className="flex gap-4 justify-center">
                   <Button variant="outline" onClick={() => navigate("/")}>
                     {t("members.accept.home")}
