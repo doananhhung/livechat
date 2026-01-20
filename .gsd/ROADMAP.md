@@ -15,7 +15,7 @@
 
 ### Phase 1: Auth & User Settings Unification
 
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Unified DTO adoption for Authentication and Security.
 **Included DTOs**:
 
