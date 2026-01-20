@@ -5,35 +5,68 @@
 
 ## Must-Haves
 
-- [ ] Migration of `authApi.ts` and `settingsApi.ts` to shared DTOs.
-- [ ] Migration of `inboxApi.ts` and `visitorApi.ts` to shared DTOs.
-- [ ] Migration of `projectApi.ts` (including new `InvitationResponseDto`) to shared DTOs.
-- [ ] Migration of widget `socketService.ts` to shared DTOs.
-- [ ] Zero TypeScript errors in `packages/frontend` related to DTO usage.
+- [ ] Migration of Unified Auth & Security flows.
+- [ ] Migration of Inbox & Messaging flows.
+- [ ] Migration of Project Management & Invitations.
+- [ ] Migration of Widget Socket & Actions.
+- [ ] Deletion of truly orphaned DTOs (`InvitationResponseDto`, `ReplyToCommentDto`).
 
 ## Phases
 
 ### Phase 1: Auth & User Settings Unification
 
 **Status**: ⬜ Not Started
-**Objective**: Update authentication and profile settings services to use shared DTOs for login, registration, and user updates.
+**Objective**: Unified DTO adoption for Authentication and Security.
+**Included DTOs**:
 
-### Phase 2: Inbox & Conversation Management Unification
+- `ExchangeCodeDto`
+- `RecoveryCodeDto`
+- `ResendVerificationDto`
+- `TurnOn2faDto`
+  **Affected Services**: `authApi.ts`, `settingsApi.ts`
 
-**Status**: ⬜ Not Started
-**Objective**: Standardize conversation lists, messaging, and agent typing status using shared inbox-related DTOs.
-
-### Phase 3: Project & Invitation Lifecycle Unification
-
-**Status**: ⬜ Not Started
-**Objective**: Refactor project management and invitation flows, utilizing the newly updated `InvitationResponseDto`.
-
-### Phase 4: Widget & Action Submissions Unification
+### Phase 2: Inbox & Conversation Management
 
 **Status**: ⬜ Not Started
-**Objective**: Ensure the widget uses shared DTOs for socket communication and form submissions, eliminating the `SubmitFormDto` vs `SubmitFormAsVisitorDto` confusion.
+**Objective**: Unified DTO adoption for the Inbox and Visitor management.
+**Included DTOs**:
 
-### Phase 5: Final Verification & Cleanup
+- `AgentTypingDto`
+- `ListMessagesDto`
+- `SendReplyDto`
+- `VisitorResponseDto`
+  **Affected Services**: `inboxApi.ts`, `visitorApi.ts`
+
+### Phase 3: Project & Invitation Lifecycle
 
 **Status**: ⬜ Not Started
-**Objective**: Run comprehensive type checks and regression tests to ensure end-to-end functionality remains intact.
+**Objective**: Unified DTO adoption for Project administration and the updated Invitation flow.
+**Included DTOs**:
+
+- `AcceptInvitationDto`
+- `InvitationResponseDto` (Refactored)
+  **Affected Services**: `projectApi.ts`
+
+### Phase 4: Widget & Action Submissions
+
+**Status**: ⬜ Not Started
+**Objective**: Unified DTO adoption for the Visitor Widget and Dynamic Actions.
+**Included DTOs**:
+
+- `ActionDefinitionDto`
+- `ActionFieldDefinitionDto`
+- `CreateActionSubmissionDto`
+- `SubmitFormAsVisitorDto`
+- `UpdateSubmissionDto`
+- `VisitorFillingFormDto`
+  **Affected Services**: `socketService.ts`, Widget Action components
+
+### Phase 5: Final Verification & Orphan Cleanup
+
+**Status**: ⬜ Not Started
+**Objective**: Delete orphaned code and perform final global type validation.
+**Tasks**:
+
+- [ ] Delete `InvitationResponseDto` (if determined redundant after refactor).
+- [ ] Delete `ReplyToCommentDto`.
+- [ ] Run `npm run check-types` across monorepo.
