@@ -12,6 +12,10 @@ import type {
   ListConversationsDto,
   UpdateConversationDto,
   AssignConversationDto,
+  AgentTypingDto,
+  SendReplyDto,
+  ListMessagesDto,
+  VisitorResponseDto,
 } from "@live-chat/shared-dtos";
 import type {
   Conversation,
@@ -47,18 +51,16 @@ export const updateConversationStatus = async ({
 export const sendAgentTypingStatus = async ({
   projectId,
   conversationId,
-  isTyping,
+  payload,
 }: {
   projectId: number;
   conversationId: number;
-  isTyping: boolean;
+  payload: AgentTypingDto;
 }) => {
   // This API returns 204 No Content, so no need to process response.data
   await api.post(
     `/projects/${projectId}/inbox/conversations/${conversationId}/typing`,
-    {
-      isTyping,
-    },
+    payload,
   );
 };
 
@@ -81,11 +83,12 @@ const getConversationsByProjectId = async (
 const getMessages = async (
   projectId: number,
   conversationId: number,
+  params?: ListMessagesDto,
 ): Promise<Message[]> => {
   const response = await api.get(
     `/projects/${projectId}/inbox/conversations/${conversationId}/messages`,
     {
-      params: { limit: 1000 }, // Set a high limit to fetch more messages
+      params,
     },
   );
   return response.data.data; // Assuming paginated response
@@ -94,7 +97,7 @@ const getMessages = async (
 const getVisitorById = async (
   projectId: number,
   visitorId: number,
-): Promise<Visitor> => {
+): Promise<VisitorResponseDto> => {
   const response = await api.get(
     `/projects/${projectId}/inbox/visitors/${visitorId}`,
   );
@@ -104,17 +107,15 @@ const getVisitorById = async (
 const sendAgentReply = async ({
   projectId,
   conversationId,
-  text,
+  payload,
 }: {
   projectId: number;
   conversationId: number;
-  text: string;
+  payload: SendReplyDto;
 }): Promise<Message> => {
   const response = await api.post(
     `/projects/${projectId}/inbox/conversations/${conversationId}/messages`,
-    {
-      text,
-    },
+    payload,
   );
   return response.data;
 };
@@ -145,10 +146,14 @@ export const useGetConversations = (
   });
 };
 
-export const useGetMessages = (projectId?: number, conversationId?: number) => {
+export const useGetMessages = (
+  projectId?: number,
+  conversationId?: number,
+  params?: ListMessagesDto,
+) => {
   return useQuery({
-    queryKey: ["messages", projectId, conversationId],
-    queryFn: () => getMessages(projectId!, conversationId!),
+    queryKey: ["messages", projectId, conversationId, params],
+    queryFn: () => getMessages(projectId!, conversationId!, params),
     enabled: !!projectId && !!conversationId,
   });
 };
@@ -169,7 +174,7 @@ export const useSendAgentReply = () => {
     onMutate: async (newMessagePayload: {
       projectId: number;
       conversationId: number;
-      text: string;
+      payload: SendReplyDto;
     }) => {
       const queryKey = [
         "messages",
@@ -181,7 +186,7 @@ export const useSendAgentReply = () => {
       const optimisticMessage: Message = {
         id: uuidv4(),
         conversationId: newMessagePayload.conversationId,
-        content: newMessagePayload.text,
+        content: newMessagePayload.payload.text,
         contentType: "text",
         status: MessageStatus.SENDING,
         fromCustomer: false,

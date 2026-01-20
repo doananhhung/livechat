@@ -1,10 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../lib/api";
 import type { VisitorNote } from "@live-chat/shared-types";
-import type { CreateVisitorNoteDto, UpdateVisitorNoteDto } from "@live-chat/shared-dtos";
+import type {
+  CreateVisitorNoteDto,
+  UpdateVisitorNoteDto,
+  VisitorResponseDto,
+} from "@live-chat/shared-dtos";
 
-export const getVisitorNotes = async (projectId: number, visitorId: number): Promise<VisitorNote[]> => {
-  const response = await api.get(`/projects/${projectId}/visitors/${visitorId}/notes`);
+export const getVisitorNotes = async (
+  projectId: number,
+  visitorId: number,
+): Promise<VisitorNote[]> => {
+  const response = await api.get(
+    `/projects/${projectId}/visitors/${visitorId}/notes`,
+  );
   return response.data;
 };
 
@@ -17,7 +26,10 @@ export const createVisitorNote = async ({
   visitorId: number;
   data: CreateVisitorNoteDto;
 }): Promise<VisitorNote> => {
-  const response = await api.post(`/projects/${projectId}/visitors/${visitorId}/notes`, data);
+  const response = await api.post(
+    `/projects/${projectId}/visitors/${visitorId}/notes`,
+    data,
+  );
   return response.data;
 };
 
@@ -34,7 +46,7 @@ export const updateVisitorNote = async ({
 }): Promise<VisitorNote> => {
   const response = await api.patch(
     `/projects/${projectId}/visitors/${visitorId}/notes/${noteId}`,
-    data
+    data,
   );
   return response.data;
 };
@@ -48,7 +60,9 @@ export const deleteVisitorNote = async ({
   visitorId: number;
   noteId: string;
 }) => {
-  await api.delete(`/projects/${projectId}/visitors/${visitorId}/notes/${noteId}`);
+  await api.delete(
+    `/projects/${projectId}/visitors/${visitorId}/notes/${noteId}`,
+  );
 };
 
 // --- Hooks ---
