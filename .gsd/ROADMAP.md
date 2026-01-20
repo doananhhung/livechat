@@ -6,7 +6,7 @@
 ## Must-Haves
 
 - [x] Migration of Unified Auth & Security flows.
-- [ ] Migration of Inbox & Messaging flows.
+- [x] Migration of Inbox & Messaging flows.
 - [ ] Migration of Project Management & Invitations.
 - [ ] Migration of Widget Socket & Actions.
 - [ ] Deletion of truly orphaned DTOs (`InvitationResponseDto`, `ReplyToCommentDto`).
