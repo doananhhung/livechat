@@ -63,13 +63,19 @@ const PasswordStrengthIndicator = ({ password }: { password: string }) => {
   const strength = getPasswordStrength(password);
 
   const requirements = [
-    { label: t("security.passwordStrength.minChars"), met: password.length >= 8 },
+    {
+      label: t("security.passwordStrength.minChars"),
+      met: password.length >= 8,
+    },
     {
       label: t("security.passwordStrength.mixedCase"),
       met: /[a-z]/.test(password) && /[A-Z]/.test(password),
     },
     { label: t("security.passwordStrength.number"), met: /\d/.test(password) },
-    { label: t("security.passwordStrength.specialChar"), met: /[^a-zA-Z\d]/.test(password) },
+    {
+      label: t("security.passwordStrength.specialChar"),
+      met: /[^a-zA-Z\d]/.test(password),
+    },
   ];
 
   const strengthColors = [
@@ -174,55 +180,61 @@ const TwoFactorAuthSection = () => {
   const handleVerify2FA = (e: React.FormEvent) => {
     e.preventDefault();
     if (twoFactorCode) {
-      turnOn2FAMutation.mutate(twoFactorCode, {
-        onSuccess: (data) => {
-          setRecoveryCodes(data.recoveryCodes);
-          setSetupDialogOpen(false);
-          setRecoveryCodesDialogOpen(true);
-          if (user) {
-            setUser({ ...user, isTwoFactorAuthenticationEnabled: true });
-          }
-          toast({
-            title: t("common.success"),
-            description: t("security.2fa.enabledSuccess"),
-          });
+      turnOn2FAMutation.mutate(
+        { code: twoFactorCode },
+        {
+          onSuccess: (data) => {
+            setRecoveryCodes(data.recoveryCodes);
+            setSetupDialogOpen(false);
+            setRecoveryCodesDialogOpen(true);
+            if (user) {
+              setUser({ ...user, isTwoFactorAuthenticationEnabled: true });
+            }
+            toast({
+              title: t("common.success"),
+              description: t("security.2fa.enabledSuccess"),
+            });
+          },
+          onError: (error) => {
+            console.error("Failed to turn on 2FA:", error);
+            toast({
+              title: t("common.error"),
+              description: t("security.2fa.error"),
+              variant: "destructive",
+            });
+          },
         },
-        onError: (error) => {
-          console.error("Failed to turn on 2FA:", error);
-          toast({
-            title: t("common.error"),
-            description: t("security.2fa.error"),
-            variant: "destructive",
-          });
-        },
-      });
+      );
     }
   };
 
   const handleDisable2FA = (e: React.FormEvent) => {
     e.preventDefault();
     if (code) {
-      disable2FAMutation.mutate(code, {
-        onSuccess: () => {
-          if (user) {
-            setUser({ ...user, isTwoFactorAuthenticationEnabled: false });
-          }
-          setDisableDialogOpen(false);
-          setCode("");
-          toast({
-            title: t("common.success"),
-            description: t("security.2fa.disabledSuccess"),
-          });
+      disable2FAMutation.mutate(
+        { code },
+        {
+          onSuccess: () => {
+            if (user) {
+              setUser({ ...user, isTwoFactorAuthenticationEnabled: false });
+            }
+            setDisableDialogOpen(false);
+            setCode("");
+            toast({
+              title: t("common.success"),
+              description: t("security.2fa.disabledSuccess"),
+            });
+          },
+          onError: (error) => {
+            console.error("Failed to disable 2FA:", error);
+            toast({
+              title: t("common.error"),
+              description: t("security.2fa.error"),
+              variant: "destructive",
+            });
+          },
         },
-        onError: (error) => {
-          console.error("Failed to disable 2FA:", error);
-          toast({
-            title: t("common.error"),
-            description: t("security.2fa.error"),
-            variant: "destructive",
-          });
-        },
-      });
+      );
     }
   };
 
@@ -271,7 +283,9 @@ const TwoFactorAuthSection = () => {
               onClick={handleGenerate2FA}
               disabled={generate2FAMutation.isPending}
             >
-              {generate2FAMutation.isPending ? t("security.2fa.generating") : t("security.2fa.enableBtn")}
+              {generate2FAMutation.isPending
+                ? t("security.2fa.generating")
+                : t("security.2fa.enableBtn")}
             </Button>
           </div>
         )}
@@ -281,9 +295,7 @@ const TwoFactorAuthSection = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("security.2fa.setupTitle")}</DialogTitle>
-            <DialogDescription>
-              {t("security.2fa.setupDesc")}
-            </DialogDescription>
+            <DialogDescription>{t("security.2fa.setupDesc")}</DialogDescription>
           </DialogHeader>
           <div className="flex justify-center my-4">
             {qrCode ? (
@@ -361,7 +373,7 @@ const TwoFactorAuthSection = () => {
               }}
             >
               <Copy className="h-4 w-4 mr-2" />
-              {t("project.list.copySnippet").split(' ')[0]} 
+              {t("project.list.copySnippet").split(" ")[0]}
             </Button>
             <Button
               onClick={() => setRecoveryCodesDialogOpen(false)}
@@ -395,7 +407,9 @@ const TwoFactorAuthSection = () => {
                 variant="destructive"
                 disabled={disable2FAMutation.isPending}
               >
-                {disable2FAMutation.isPending ? t("security.2fa.disabling") : t("security.2fa.disableConfirm")}
+                {disable2FAMutation.isPending
+                  ? t("security.2fa.disabling")
+                  : t("security.2fa.disableConfirm")}
               </Button>
             </DialogFooter>
           </form>
@@ -447,9 +461,7 @@ const ChangePasswordForm = () => {
             }
             toast({
               title: t("common.success"),
-              description:
-                data.message ||
-                t("security.password.successChange"),
+              description: data.message || t("security.password.successChange"),
             });
             reset();
           },
@@ -461,7 +473,7 @@ const ChangePasswordForm = () => {
               variant: "destructive",
             });
           },
-        }
+        },
       );
     }
     // If user doesn't have password (OAuth account), use set password endpoint
@@ -489,7 +501,7 @@ const ChangePasswordForm = () => {
               variant: "destructive",
             });
           },
-        }
+        },
       );
     }
   };
@@ -505,7 +517,9 @@ const ChangePasswordForm = () => {
         </div>
         <div>
           <h3 className="text-lg font-medium">
-            {hasPassword ? t("security.password.changeTitle") : t("security.password.getTitle")}
+            {hasPassword
+              ? t("security.password.changeTitle")
+              : t("security.password.getTitle")}
           </h3>
           <p className="text-sm text-muted-foreground">
             {hasPassword
@@ -633,8 +647,8 @@ const ChangePasswordForm = () => {
             {isLoading
               ? t("security.password.updating")
               : hasPassword
-              ? t("security.password.updateBtn")
-              : t("security.password.setBtn")}
+                ? t("security.password.updateBtn")
+                : t("security.password.setBtn")}
           </Button>
         </div>
       </form>
@@ -658,7 +672,7 @@ const LinkedAccountsSection = () => {
   const [accountToUnlink, setAccountToUnlink] = useState<string | null>(null);
 
   const isGoogleLinked = linkedAccounts?.some(
-    (account) => account.provider === "google"
+    (account) => account.provider === "google",
   );
 
   const handleLinkGoogle = () => {
@@ -693,7 +707,8 @@ const LinkedAccountsSection = () => {
         onSuccess: (data) => {
           toast({
             title: t("common.success"),
-            description: data.message || t("security.linkedAccounts.unlinkSuccess"),
+            description:
+              data.message || t("security.linkedAccounts.unlinkSuccess"),
           });
           setIsUnlinkDialogOpen(false);
           setAccountToUnlink(null);
@@ -702,11 +717,12 @@ const LinkedAccountsSection = () => {
           toast({
             title: t("common.error"),
             description:
-              error.response?.data?.message || t("security.linkedAccounts.unlinkError"),
+              error.response?.data?.message ||
+              t("security.linkedAccounts.unlinkError"),
             variant: "destructive",
           });
         },
-      }
+      },
     );
   };
 
@@ -754,7 +770,9 @@ const LinkedAccountsSection = () => {
           <LinkIcon className="h-5 w-5 text-primary" />
         </div>
         <div>
-          <h3 className="text-lg font-medium">{t("security.linkedAccounts.title")}</h3>
+          <h3 className="text-lg font-medium">
+            {t("security.linkedAccounts.title")}
+          </h3>
           <p className="text-sm text-muted-foreground">
             {t("security.linkedAccounts.description")}
           </p>
@@ -772,9 +790,13 @@ const LinkedAccountsSection = () => {
               <div>
                 <p className="font-medium">Google</p>
                 {isGoogleLinked ? (
-                  <p className="text-xs text-muted-foreground">{t("security.linkedAccounts.linked")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("security.linkedAccounts.linked")}
+                  </p>
                 ) : (
-                  <p className="text-xs text-muted-foreground">{t("security.linkedAccounts.notLinked")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("security.linkedAccounts.notLinked")}
+                  </p>
                 )}
               </div>
             </div>
@@ -818,20 +840,32 @@ const LinkedAccountsSection = () => {
       <Dialog open={isUnlinkDialogOpen} onOpenChange={setIsUnlinkDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t("security.linkedAccounts.confirmTitle")}</DialogTitle>
+            <DialogTitle>
+              {t("security.linkedAccounts.confirmTitle")}
+            </DialogTitle>
             <DialogDescription>
               {!user?.hasPassword ? (
                 <>
                   <p className="mb-2">
-                    <strong>{t("security.linkedAccounts.warningNoPassword")}</strong>
+                    <strong>
+                      {t("security.linkedAccounts.warningNoPassword")}
+                    </strong>
                   </p>
                   <p>
-                    {t("security.linkedAccounts.setPwdMessage", { provider: accountToUnlink ? getProviderName(accountToUnlink) : "" })}
+                    {t("security.linkedAccounts.setPwdMessage", {
+                      provider: accountToUnlink
+                        ? getProviderName(accountToUnlink)
+                        : "",
+                    })}
                   </p>
                 </>
               ) : (
                 <>
-                  {t("security.linkedAccounts.confirmMessage", { provider: accountToUnlink ? getProviderName(accountToUnlink) : "" })}
+                  {t("security.linkedAccounts.confirmMessage", {
+                    provider: accountToUnlink
+                      ? getProviderName(accountToUnlink)
+                      : "",
+                  })}
                 </>
               )}
             </DialogDescription>
@@ -849,7 +883,9 @@ const LinkedAccountsSection = () => {
                 onClick={confirmUnlink}
                 disabled={unlinkMutation.isPending}
               >
-                {unlinkMutation.isPending ? t("security.linkedAccounts.unlinking") : t("security.linkedAccounts.confirm")}
+                {unlinkMutation.isPending
+                  ? t("security.linkedAccounts.unlinking")
+                  : t("security.linkedAccounts.confirm")}
               </Button>
             )}
           </DialogFooter>
@@ -919,12 +955,11 @@ const ChangeEmailForm = () => {
           toast({
             title: t("common.error"),
             description:
-              error.response?.data?.message ||
-              t("security.email.requestError"),
+              error.response?.data?.message || t("security.email.requestError"),
             variant: "destructive",
           });
         },
-      }
+      },
     );
   };
 
@@ -957,7 +992,9 @@ const ChangeEmailForm = () => {
                 {t("security.email.pendingRequest")}
               </h4>
               <p className="text-sm text-muted-foreground mb-3">
-                {t("security.email.pendingDesc", { email: pendingEmailChange.newEmail })}
+                {t("security.email.pendingDesc", {
+                  email: pendingEmailChange.newEmail,
+                })}
               </p>
               <div className="text-xs text-muted-foreground mb-4">
                 <p>
@@ -965,11 +1002,11 @@ const ChangeEmailForm = () => {
                   {new Date(pendingEmailChange.expiresAt).toLocaleString(
                     // Using undefined locale/options for default browser behavior or specific if needed
                     // But to keep it simple and localized by dateUtils might be better, but staying consistent:
-                    undefined, 
+                    undefined,
                     {
                       dateStyle: "medium",
                       timeStyle: "short",
-                    }
+                    },
                   )}
                 </p>
               </div>
@@ -999,7 +1036,7 @@ const ChangeEmailForm = () => {
                 {t("security.email.noPwdTitle")}
               </h4>
               <p className="text-sm text-muted-foreground mb-3">
-                 {t("security.email.noPwdDesc")}
+                {t("security.email.noPwdDesc")}
               </p>
               <p className="text-sm text-muted-foreground">
                 {t("security.email.noPwdAction")}
@@ -1030,7 +1067,9 @@ const ChangeEmailForm = () => {
             <Input
               id="newEmail"
               type="email"
-              {...register("newEmail", { required: t("security.email.newEmailRequired") })}
+              {...register("newEmail", {
+                required: t("security.email.newEmailRequired"),
+              })}
             />
             {errors.newEmail && (
               <p className="text-xs text-destructive mt-1">
@@ -1094,7 +1133,7 @@ export const SecurityPage = () => {
       toast({
         title: t("common.error"),
         description: decodeURIComponent(
-          error || t("security.genericLinkError")
+          error || t("security.genericLinkError"),
         ),
         variant: "destructive",
       });

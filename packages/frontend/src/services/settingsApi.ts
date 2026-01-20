@@ -6,6 +6,7 @@ import type {
   SetPasswordDto,
   EmailChangeDto,
   UpdateUserDto,
+  TurnOn2faDto,
 } from "@live-chat/shared-dtos";
 import type { User, UserIdentity } from "@live-chat/shared-types";
 
@@ -46,21 +47,21 @@ interface UnlinkOAuthAccountPayload {
 // === QUERY KEYS ===
 
 export const changePassword = async (
-  payload: ChangePasswordDto
+  payload: ChangePasswordDto,
 ): Promise<ChangePasswordResponse> => {
   const response = await api.post("/auth/change-password", payload);
   return response.data;
 };
 
 export const setPassword = async (
-  payload: SetPasswordDto
+  payload: SetPasswordDto,
 ): Promise<ChangePasswordResponse> => {
   const response = await api.post("/auth/set-password", payload);
   return response.data;
 };
 
 export const requestEmailChange = async (
-  payload: EmailChangeDto
+  payload: EmailChangeDto,
 ): Promise<{ message: string; warning?: string }> => {
   const response = await api.post("/user/request-email-change", payload);
   return response.data;
@@ -103,15 +104,17 @@ export const generate2FASecret = async (): Promise<Generate2FAResponse> => {
   return response.data;
 };
 
-export const turnOn2FA = async (code: string): Promise<TurnOn2FAResponse> => {
-  const response = await api.post("/2fa/turn-on", { code });
+export const turnOn2FA = async (
+  payload: TurnOn2faDto,
+): Promise<TurnOn2FAResponse> => {
+  const response = await api.post("/2fa/turn-on", payload);
   return response.data;
 };
 
 export const disable2FA = async (
-  code: string
+  payload: TurnOn2faDto,
 ): Promise<{ message: string }> => {
-  const response = await api.post("/2fa/turn-off", { code });
+  const response = await api.post("/2fa/turn-off", payload);
   return response.data;
 };
 
@@ -132,7 +135,7 @@ export const initiateLinkGoogleAccount =
   };
 
 export const unlinkOAuthAccount = async (
-  payload: UnlinkOAuthAccountPayload
+  payload: UnlinkOAuthAccountPayload,
 ): Promise<{ message: string }> => {
   const response = await api.post("/auth/unlink-oauth", payload);
   return response.data;
@@ -216,9 +219,8 @@ export const useGenerate2faMutation = () => {
 
 export const useTurnOn2faMutation = () => {
   const queryClient = useQueryClient();
-  return useMutation<TurnOn2FAResponse, Error, string>({
-    // <TData, TError, TVariables>
-    mutationFn: (code: string) => turnOn2FA(code),
+  return useMutation<TurnOn2FAResponse, Error, TurnOn2faDto>({
+    mutationFn: turnOn2FA,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: settingsKeys.profile });
     },
@@ -227,8 +229,8 @@ export const useTurnOn2faMutation = () => {
 
 export const useDisable2faMutation = () => {
   const queryClient = useQueryClient();
-  return useMutation<{ message: string }, Error, string>({
-    mutationFn: (code: string) => disable2FA(code),
+  return useMutation<{ message: string }, Error, TurnOn2faDto>({
+    mutationFn: disable2FA,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: settingsKeys.profile });
     },
