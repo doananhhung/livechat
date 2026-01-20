@@ -1,63 +1,60 @@
 ---
 phase: 1
 plan: 2
-wave: 2
+wave: 1
 ---
 
-# Plan 1.2: Refactor FormRequestMessage to Use CSS Variables
+# Plan 1.2: Settings API DTO Unification
 
 ## Objective
 
-Replace all inline style conditionals in `FormRequestMessage.tsx` with CSS variable references. This is the largest component with 8 inline theme conditionals.
+Standards the `settingsApi.ts` service and the `SecurityPage.tsx` component to use shared DTOs for 2FA actions and OAuth unlinking.
 
 ## Context
 
-- `.gsd/phases/1/1-PLAN.md` — CSS variables from Plan 1.1
-- `packages/frontend/src/widget/components/FormRequestMessage.tsx` — Target file
+- `packages/frontend/src/services/settingsApi.ts`
+- `packages/frontend/src/pages/settings/SecurityPage.tsx`
+- `packages/shared-dtos/src/turn-on-2fa.dto.ts`
 
 ## Tasks
 
 <task type="auto">
-  <name>Refactor FormRequestMessage styles</name>
-  <files>packages/frontend/src/widget/components/FormRequestMessage.tsx</files>
+  <name>Refactor settingsApi.ts to use TurnOn2faDto</name>
+  <files>
+    <file>packages/frontend/src/services/settingsApi.ts</file>
+  </files>
   <action>
-    Replace the following inline style conditionals with CSS variable references:
-
-    **containerStyle:**
-    - `backgroundColor: theme === 'light' ? '#ffffff' : '#1f2937'`
-      → `backgroundColor: 'var(--widget-card-background)'`
-    - `border: theme === 'light' ? '2px solid #e5e7eb' : '2px solid #374151'`
-      → `border: '2px solid var(--widget-card-border)'`
-
-    **labelStyle:**
-    - `color: theme === 'light' ? '#374151' : '#d1d5db'`
-      → `color: 'var(--widget-label-text)'`
-
-    **inputStyle:**
-    - `border: theme === 'light' ? '1px solid #d1d5db' : '1px solid #4b5563'`
-      → `border: '1px solid var(--widget-input-border)'`
-    - `backgroundColor: theme === 'light' ? '#ffffff' : '#374151'`
-      → `backgroundColor: 'var(--widget-input-background)'`
-    - `color: theme === 'light' ? '#1f2937' : '#f3f4f6'`
-      → `color: 'var(--widget-input-text)'`
-
-    **h3 style (line 233):**
-    - `color: theme === 'light' ? '#1f2937' : '#f3f4f6'`
-      → `color: 'var(--widget-text-primary)'`
-
-    **p style (line 241):**
-    - `color: theme === 'light' ? '#6b7280' : '#9ca3af'`
-      → `color: 'var(--widget-text-muted)'`
-
-    Remove `theme` from useMemo dependency arrays where no longer used.
-    Keep `theme` prop for any remaining usages.
-
+    - Import `TurnOn2faDto` from `@live-chat/shared-dtos`.
+    - Update `turnOn2FA` and `disable2FA` signatures to accept `payload: TurnOn2faDto` instead of `code: string`.
+    - Use passing `payload` directly in `api.post` calls.
+    - Update `useTurnOn2faMutation` and `useDisable2faMutation` to match the new function signatures.
   </action>
-  <verify>grep -c "theme === 'light'" packages/frontend/src/widget/components/FormRequestMessage.tsx</verify>
-  <done>Count returns 0 — all inline conditionals removed</done>
+  <verify>
+    npm run check-types --workspace=@live-chat/frontend
+  </verify>
+  <done>
+    `settingsApi.ts` 2FA functions use DTO types and compile successfully.
+  </done>
+</task>
+
+<task type="auto">
+  <name>Update SecurityPage.tsx to match new 2FA service signatures</name>
+  <files>
+    <file>packages/frontend/src/pages/settings/SecurityPage.tsx</file>
+  </files>
+  <action>
+    - Update `mutate` calls for `turnOn2FAMutation` and `disable2FAMutation` to pass an object `{ code }` instead of a raw string.
+  </action>
+  <verify>
+    Check `SecurityPage.tsx` for TypeScript errors.
+  </verify>
+  <done>
+    `SecurityPage.tsx` correctly passes DTO-shaped objects to 2FA mutations.
+  </done>
 </task>
 
 ## Success Criteria
 
-- [ ] All 8 inline theme conditionals replaced
-- [ ] Component renders correctly in both themes (verified in Phase 4)
+- [ ] `settingsApi.ts` 2FA logic fully utilizes shared DTOs.
+- [ ] Security settings UI remains functional.
+- [ ] Zero TypeScript errors in affected files.
