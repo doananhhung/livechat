@@ -1,23 +1,32 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Unique } from 'typeorm';
-import { Project } from '../../database/entities/project.entity';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Unique,
+} from 'typeorm';
+import { Project } from '../../projects/entities/project.entity';
 
-@Entity("canned_responses")
-@Unique(["projectId", "shortcut"])
+@Entity('canned_responses')
+@Unique(['projectId', 'shortcut'])
 export class CannedResponse {
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: "int" })
+  @Column({ type: 'int' })
   projectId: number;
 
-  @ManyToOne(() => Project, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "project_id" })
+  @ManyToOne(() => Project, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'project_id' })
   project: Project;
 
-  @Column({ type: "varchar", length: 50 })
+  @Column({ type: 'varchar', length: 50 })
   shortcut: string;
 
-  @Column({ type: "text" })
+  @Column({ type: 'text' })
   content: string;
 
   @CreateDateColumn()

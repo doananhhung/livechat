@@ -9,7 +9,7 @@ import {
   UpdateDateColumn,
   Unique, // Import Unique
 } from 'typeorm';
-import { User } from './user.entity';
+import { User } from '../../users/entities/user.entity';
 import { Project } from './project.entity';
 import { ProjectRole } from '@live-chat/shared-types';
 

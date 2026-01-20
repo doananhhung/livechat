@@ -2,7 +2,7 @@ import { TestHarness } from './utils/test-harness';
 import request from 'supertest';
 import { ProjectRole } from '@live-chat/shared-types';
 import { CreateProjectDto } from '../src/projects/dto/create-project.dto'; // Assuming this DTO exists
-import { Visitor } from '../src/database/entities/visitor.entity';
+import { Visitor } from '../src/visitors/entities/visitor.entity';
 
 describe('Visitors Module (E2E)', () => {
   const harness = new TestHarness();
@@ -45,47 +45,68 @@ describe('Visitors Module (E2E)', () => {
 
     // Register manager user
     await agent.post('/auth/register').send(managerUserData).expect(201);
-    
+
     // Verify manager email
-    const managerConfirmationEmail = harness.mailService.findEmailByType('CONFIRMATION');
+    const managerConfirmationEmail =
+      harness.mailService.findEmailByType('CONFIRMATION');
     if (managerConfirmationEmail) {
-       await agent.get('/auth/verify-email').query({ token: managerConfirmationEmail.token }).expect(200);
+      await agent
+        .get('/auth/verify-email')
+        .query({ token: managerConfirmationEmail.token })
+        .expect(200);
     }
     harness.mailService.clear(); // Clear emails for next user
 
     // Login manager
-    const managerLoginResponse = await agent.post('/auth/login').send({ email: managerUserData.email, password: managerUserData.password }).expect(200);
+    const managerLoginResponse = await agent
+      .post('/auth/login')
+      .send({
+        email: managerUserData.email,
+        password: managerUserData.password,
+      })
+      .expect(200);
     userAccessToken = managerLoginResponse.body.accessToken;
 
     // Register agent user
     await agent.post('/auth/register').send(agentUserData).expect(201);
-    
+
     // Verify agent email
-    const agentConfirmationEmail = harness.mailService.findEmailByType('CONFIRMATION');
+    const agentConfirmationEmail =
+      harness.mailService.findEmailByType('CONFIRMATION');
     if (agentConfirmationEmail) {
-       await agent.get('/auth/verify-email').query({ token: agentConfirmationEmail.token }).expect(200);
+      await agent
+        .get('/auth/verify-email')
+        .query({ token: agentConfirmationEmail.token })
+        .expect(200);
     }
     harness.mailService.clear();
 
     // Login agent
-    const agentLoginResponse = await agent.post('/auth/login').send({ email: agentUserData.email, password: agentUserData.password }).expect(200);
+    const agentLoginResponse = await agent
+      .post('/auth/login')
+      .send({ email: agentUserData.email, password: agentUserData.password })
+      .expect(200);
     agentAccessToken = agentLoginResponse.body.accessToken;
 
     // Register regular user (not part of the project initially)
     await agent.post('/auth/register').send(regularUserData).expect(201);
-    
+
     // Verify regular user email
-    const regularConfirmationEmail = harness.mailService.findEmailByType('CONFIRMATION');
+    const regularConfirmationEmail =
+      harness.mailService.findEmailByType('CONFIRMATION');
     if (regularConfirmationEmail) {
-       await agent.get('/auth/verify-email').query({ token: regularConfirmationEmail.token }).expect(200);
+      await agent
+        .get('/auth/verify-email')
+        .query({ token: regularConfirmationEmail.token })
+        .expect(200);
     }
     harness.mailService.clear();
     // No need to get access token for regular user if they won't interact authenticated
 
     // Create a project
-    const createProjectDto: CreateProjectDto = { 
+    const createProjectDto: CreateProjectDto = {
       name: 'Test Project',
-      whitelistedDomains: ['localhost:3000']
+      whitelistedDomains: ['localhost:3000'],
     };
     const projectResponse = await agent
       .post('/projects')
@@ -120,7 +141,9 @@ describe('Visitors Module (E2E)', () => {
     expect(response.body.displayName).toBe(newDisplayName);
     expect(response.body.id).toBe(visitor.id);
 
-    const updatedVisitorInDb = await harness.dataSource.getRepository(Visitor).findOne({ where: { id: visitor.id } });
+    const updatedVisitorInDb = await harness.dataSource
+      .getRepository(Visitor)
+      .findOne({ where: { id: visitor.id } });
     expect(updatedVisitorInDb).toBeDefined(); // Ensure it's not null
     expect(updatedVisitorInDb!.displayName).toBe(newDisplayName);
   });
@@ -136,7 +159,9 @@ describe('Visitors Module (E2E)', () => {
     expect(response.body.displayName).toBe(newDisplayName);
     expect(response.body.id).toBe(visitor.id);
 
-    const updatedVisitorInDb = await harness.dataSource.getRepository(Visitor).findOne({ where: { id: visitor.id } });
+    const updatedVisitorInDb = await harness.dataSource
+      .getRepository(Visitor)
+      .findOne({ where: { id: visitor.id } });
     expect(updatedVisitorInDb).toBeDefined(); // Ensure it's not null
     expect(updatedVisitorInDb!.displayName).toBe(newDisplayName);
   });
@@ -148,7 +173,9 @@ describe('Visitors Module (E2E)', () => {
       .send({ displayName: '' })
       .expect(400);
 
-    const visitorInDb = await harness.dataSource.getRepository(Visitor).findOne({ where: { id: visitor.id } });
+    const visitorInDb = await harness.dataSource
+      .getRepository(Visitor)
+      .findOne({ where: { id: visitor.id } });
     expect(visitorInDb).toBeDefined(); // Ensure it's not null
     expect(visitorInDb!.displayName).toBe('Visitor #123'); // Should not be changed
   });
@@ -160,7 +187,9 @@ describe('Visitors Module (E2E)', () => {
       .send({ displayName: 'a'.repeat(51) })
       .expect(400);
 
-    const visitorInDb = await harness.dataSource.getRepository(Visitor).findOne({ where: { id: visitor.id } });
+    const visitorInDb = await harness.dataSource
+      .getRepository(Visitor)
+      .findOne({ where: { id: visitor.id } });
     expect(visitorInDb).toBeDefined(); // Ensure it's not null
     expect(visitorInDb!.displayName).toBe('Visitor #123'); // Should not be changed
   });
@@ -179,14 +208,22 @@ describe('Visitors Module (E2E)', () => {
       .send({ displayName: 'Unauthorized Attempt' })
       .expect(401);
 
-    const visitorInDb = await harness.dataSource.getRepository(Visitor).findOne({ where: { id: visitor.id } });
+    const visitorInDb = await harness.dataSource
+      .getRepository(Visitor)
+      .findOne({ where: { id: visitor.id } });
     expect(visitorInDb).toBeDefined(); // Ensure it's not null
     expect(visitorInDb!.displayName).toBe('Visitor #123'); // Should not be changed
   });
 
   it('PATCH /projects/:projectId/visitors/:visitorId should return 403 if user is not a project member (global user)', async () => {
     // Login regular user
-    const regularUserLoginResponse = await agent.post('/auth/login').send({ email: regularUserData.email, password: regularUserData.password }).expect(200);
+    const regularUserLoginResponse = await agent
+      .post('/auth/login')
+      .send({
+        email: regularUserData.email,
+        password: regularUserData.password,
+      })
+      .expect(200);
     const regularUserAccessToken = regularUserLoginResponse.body.accessToken;
 
     await agent
@@ -195,7 +232,9 @@ describe('Visitors Module (E2E)', () => {
       .send({ displayName: 'Forbidden Attempt' })
       .expect(403);
 
-    const visitorInDb = await harness.dataSource.getRepository(Visitor).findOne({ where: { id: visitor.id } });
+    const visitorInDb = await harness.dataSource
+      .getRepository(Visitor)
+      .findOne({ where: { id: visitor.id } });
     expect(visitorInDb).toBeDefined(); // Ensure it's not null
     expect(visitorInDb!.displayName).toBe('Visitor #123'); // Should not be changed
   });

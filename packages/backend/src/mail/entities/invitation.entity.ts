@@ -9,8 +9,8 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { ProjectRole } from '@live-chat/shared-types';
-import { Project } from './project.entity';
-import { User } from './user.entity';
+import { Project } from '../../projects/entities/project.entity';
+import { User } from '../../users/entities/user.entity';
 
 export enum InvitationStatus {
   PENDING = 'pending',

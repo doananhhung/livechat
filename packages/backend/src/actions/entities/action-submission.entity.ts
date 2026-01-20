@@ -10,10 +10,10 @@ import {
   Index,
 } from 'typeorm';
 import { ActionTemplate } from './action-template.entity';
-import { Conversation } from '../../database/entities/conversation.entity';
-import { User } from '../../database/entities/user.entity';
-import { Visitor } from '../../database/entities/visitor.entity';
-import { Message } from '../../database/entities/message.entity';
+import { Conversation } from '../../inbox/entities/conversation.entity';
+import { User } from '../../users/entities/user.entity';
+import { Visitor } from '../../visitors/entities/visitor.entity';
+import { Message } from '../../inbox/entities/message.entity';
 import { ActionSubmissionStatus } from '@live-chat/shared-types';
 
 /**

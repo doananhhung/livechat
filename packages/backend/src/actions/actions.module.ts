@@ -1,13 +1,13 @@
-import { Module } from "@nestjs/common";
-import { TypeOrmModule } from "@nestjs/typeorm";
-import { ActionsService } from "./actions.service";
-import { ActionsController } from "./actions.controller";
-import { ActionTemplate } from "./entities/action-template.entity";
-import { ActionSubmission } from "./entities/action-submission.entity";
-import { ProjectModule } from "../projects/project.module";
-import { Conversation } from "../database/entities/conversation.entity";
-import { Message } from "../database/entities/message.entity";
-import { Visitor } from "../database/entities/visitor.entity";
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ActionsService } from './actions.service';
+import { ActionsController } from './actions.controller';
+import { ActionTemplate } from './entities/action-template.entity';
+import { ActionSubmission } from './entities/action-submission.entity';
+import { ProjectModule } from '../projects/project.module';
+import { Conversation } from '../inbox/entities/conversation.entity';
+import { Message } from '../inbox/entities/message.entity';
+import { Visitor } from '../visitors/entities/visitor.entity';
 
 @Module({
   imports: [
@@ -25,4 +25,3 @@ import { Visitor } from "../database/entities/visitor.entity";
   exports: [ActionsService],
 })
 export class ActionsModule {}
-

@@ -6,25 +6,29 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
-} from "typeorm";
-import { Conversation } from "./conversation.entity";
-import { MessageStatus, Attachment, MessageContentType } from "@live-chat/shared-types";
+} from 'typeorm';
+import { Conversation } from './conversation.entity';
+import {
+  MessageStatus,
+  Attachment,
+  MessageContentType,
+} from '@live-chat/shared-types';
 
-@Entity("messages")
+@Entity('messages')
 export class Message {
-  @PrimaryGeneratedColumn("increment", { type: "bigint" })
+  @PrimaryGeneratedColumn('increment', { type: 'bigint' })
   id: string;
 
-  @Column({ type: "bigint", name: "conversation_id" })
+  @Column({ type: 'bigint', name: 'conversation_id' })
   conversationId: number;
 
   @ManyToOne(() => Conversation, (conversation) => conversation.messages, {
-    onDelete: "CASCADE",
+    onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: "conversation_id" })
+  @JoinColumn({ name: 'conversation_id' })
   conversation: Conversation;
 
-  @Column({ type: "text", nullable: true })
+  @Column({ type: 'text', nullable: true })
   content: string | null;
 
   /**
@@ -34,10 +38,10 @@ export class Message {
    * - form_submission: Filled form submitted
    */
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: MessageContentType,
     default: MessageContentType.TEXT,
-    name: "content_type",
+    name: 'content_type',
   })
   contentType: MessageContentType;
 
@@ -46,30 +50,29 @@ export class Message {
    * - For form_request: FormRequestMetadata
    * - For form_submission: FormSubmissionMetadata
    */
-  @Column({ type: "jsonb", nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   metadata: Record<string, unknown> | null;
 
-  @Column({ type: "jsonb", nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   attachments: Attachment[] | null;
 
-  @Column({ type: "varchar", name: "sender_id" })
+  @Column({ type: 'varchar', name: 'sender_id' })
   senderId: string;
 
-  @Column({ type: "varchar", name: "recipient_id" })
+  @Column({ type: 'varchar', name: 'recipient_id' })
   recipientId: string;
 
-  @Column({ type: "boolean", name: "from_customer" })
+  @Column({ type: 'boolean', name: 'from_customer' })
   fromCustomer: boolean;
 
   @Index()
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: MessageStatus,
     default: MessageStatus.SENDING,
   })
   status: MessageStatus;
 
-  @CreateDateColumn({ type: "timestamptz", name: "created_at" })
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 }
-

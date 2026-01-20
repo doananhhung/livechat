@@ -1,6 +1,11 @@
-import { WidgetMessageDto, VisitorSessionMetadata, ConversationUpdatedPayload, MessageSentPayload } from '@live-chat/shared-types';
+import {
+  WidgetMessageDto,
+  VisitorSessionMetadata,
+  ConversationUpdatedPayload,
+  MessageSentPayload,
+} from '@live-chat/shared-types';
 import { Conversation, Visitor } from '../database/entities';
-import { Message } from '../database/entities/message.entity';
+import { Message } from './entities/message.entity';
 
 export class VisitorMessageReceivedEvent {
   tempId: string;

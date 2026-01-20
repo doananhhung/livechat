@@ -1,28 +1,18 @@
 # ROADMAP.md
 
-> **Current Milestone**: v1.2 - Theme Unification
-> **Goal**: Widget and Dashboard use identical CSS color tokens for light/dark modes.
+## Phase 1: Restoration
 
-## Must-Haves
+- [ ] Create `src/database/entities/index.ts`
+- [ ] Update `src/database/data-source.ts`
+- [ ] Update `src/database/database.config.ts`
 
-- [x] Shared theme tokens file
-- [x] Widget components refactored to use CSS variables (not inline styles)
-- [x] Dashboard CSS values documented and aligned
-- [ ] Visual parity verified
+## Phase 2: Cleanup
 
-## Phases
+- [ ] Fix manual property access errors in `src/auth/services/oauth.service.ts`
+- [ ] Fix manual property access errors in `src/inbox/services/conversation.service.ts`
+- [ ] Fix manual property access errors in `src/inbox/services/message.service.ts`
 
-### Phase 1: Define Shared Tokens & Widget CSS Variables
+## Phase 3: Verification
 
-**Status**: ✅ Complete
-**Objective**: Created tokens.ts, CSS generator, refactored all widget components.
-
-### Phase 2: Align Dashboard CSS
-
-**Status**: ✅ Complete
-**Objective**: Documented color mapping between tokens.ts (hex) and index.css (HSL). Verified visual equivalence.
-
-### Phase 3: Verification
-
-**Status**: ⬜ Not Started
-**Objective**: Verify visual parity between dashboard and widget in both modes.
+- [ ] Run `tsc`
+- [ ] Run tests

@@ -7,6 +7,8 @@
     "sourceMap": true,
     "incremental": true,
     "strictNullChecks": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "noImplicitAny": false,
     "strictPropertyInitialization": false,
     "types": [

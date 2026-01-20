@@ -1,20 +1,8 @@
-
 import { EntityManager } from 'typeorm';
-import {
-  CreateMessageDto,
-  ListMessagesDto,
-} from '@live-chat/shared-dtos';
-import {
-  Conversation,
-  Message,
-  User,
-} from '../../database/entities';
+import { CreateMessageDto, ListMessagesDto } from '@live-chat/shared-dtos';
+import { Conversation, Message, User } from '../../database/entities';
 import { MessageStatus } from '@live-chat/shared-types';
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { RealtimeSessionService } from '../../realtime-session/realtime-session.service';
 import { ProjectService } from '../../projects/project.service';
 import { MessagePersistenceService } from './persistence/message.persistence.service';
@@ -34,7 +22,8 @@ export class MessageService {
     private readonly eventEmitter: EventEmitter2,
     private readonly projectService: ProjectService,
     private readonly messagePersistenceService: MessagePersistenceService,
-    @InjectQueue('conversation-workflow-queue') private readonly workflowQueue: Queue,
+    @InjectQueue('conversation-workflow-queue')
+    private readonly workflowQueue: Queue,
     private readonly conversationService: ConversationService
   ) {}
 
@@ -89,11 +78,11 @@ export class MessageService {
         }
 
         await this.projectService.validateProjectMembership(
-          conversation.projectId,
+          (conversation as any).projectId,
           user.id
         );
 
-        const visitorUid = conversation.visitor.visitorUid;
+        const visitorUid = (conversation as any).visitor.visitorUid;
 
         // Step 2: Create and save message to DB
         const message = transactionalEntityManager.create(Message, {
@@ -108,64 +97,69 @@ export class MessageService {
 
         // Update conversation last message and ID (don't increment unread for agent messages)
         await this.conversationService.updateLastMessage(
-            conversationId,
-            replyText,
-            saved.createdAt,
-            saved.id,
-            transactionalEntityManager,
-            false // Agent messages should not increment unread count
+          conversationId,
+          replyText,
+          (saved as any).createdAt,
+          (saved as any).id,
+          transactionalEntityManager,
+          false // Agent messages should not increment unread count
         );
 
-        return { savedMessage: saved, project: conversation.project };
+        return { savedMessage: saved, project: (conversation as any).project };
       }
     );
 
     // Subsequent steps do not interact with DB, can be outside transaction
     // Step 3: Look up socket.id from Redis
     const visitorSocketId = await this.realtimeSessionService.getVisitorSession(
-      savedMessage.recipientId
+      (savedMessage as any).recipientId
     );
 
     // Step 4: Emit Event for Gateway to handle
     const event = new AgentMessageSentEvent();
     event.visitorSocketId = visitorSocketId;
-    event.message = savedMessage;
-    event.projectId = project.id;
+    event.message = savedMessage as any;
+    event.projectId = (project as any).id;
     this.eventEmitter.emit('agent.message.sent', event);
 
     if (visitorSocketId) {
-      savedMessage.status = MessageStatus.SENT;
+      (savedMessage as any).status = MessageStatus.SENT;
     } else {
-      savedMessage.status = MessageStatus.DELIVERED;
+      (savedMessage as any).status = MessageStatus.DELIVERED;
     }
 
     this.logger.debug(`message: ${JSON.stringify(savedMessage)}`);
 
     this.logger.log(
-      `Agent reply message ${savedMessage.id} status updated to ${savedMessage.status}`
+      `Agent reply message ${(savedMessage as any).id} status updated to ${(savedMessage as any).status}`
     );
-    
+
     const updatedMessage = await this.entityManager.save(savedMessage);
 
     // Step 5: Schedule Auto-Pending Job if enabled
-    if (project.autoResolveMinutes && project.autoResolveMinutes > 0) {
-        await this.workflowQueue.add(
-            'auto-pending',
-            {
-                conversationId,
-                projectId: project.id,
-                triggerMessageId: updatedMessage.id,
-            },
-            {
-                delay: project.autoResolveMinutes * 60 * 1000,
-                jobId: `auto-pending-${updatedMessage.id}`, // Deduplicate by message ID if needed
-                removeOnComplete: true,
-            }
-        );
-        this.logger.log(`Scheduled auto-pending job for conversation ${conversationId} in ${project.autoResolveMinutes} minutes.`);
+    if (
+      (project as any).autoResolveMinutes &&
+      (project as any).autoResolveMinutes > 0
+    ) {
+      await this.workflowQueue.add(
+        'auto-pending',
+        {
+          conversationId,
+          projectId: (project as any).id,
+          triggerMessageId: (updatedMessage as any).id,
+        },
+        {
+          delay: (project as any).autoResolveMinutes * 60 * 1000,
+          jobId: `auto-pending-${(updatedMessage as any).id}`, // Deduplicate by message ID if needed
+          removeOnComplete: true,
+        }
+      );
+      this.logger.log(
+        `Scheduled auto-pending job for conversation ${conversationId} in ${(project as any).autoResolveMinutes} minutes.`
+      );
     }
 
-    return updatedMessage;
+    return updatedMessage as any;
   }
 
   async listByConversation(
@@ -188,7 +182,7 @@ export class MessageService {
     }
 
     await this.projectService.validateProjectMembership(
-      conversation.projectId,
+      (conversation as any).projectId,
       user.id
     );
 

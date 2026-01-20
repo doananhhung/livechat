@@ -1,12 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleAsyncOptions } from '@nestjs/typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
-import { WebhookSubscription } from '../webhooks/entities/webhook-subscription.entity';
-import { WebhookDelivery } from '../webhooks/entities/webhook-delivery.entity';
-import { AuditLog } from '../audit-logs/audit.entity';
-import { CannedResponse } from '../canned-responses/entities/canned-response.entity';
-import { ActionTemplate } from '../actions/entities/action-template.entity';
-import { ActionSubmission } from '../actions/entities/action-submission.entity';
 import {
   Conversation,
   EmailChangeRequest,
@@ -21,7 +15,13 @@ import {
   Visitor,
   OutboxEvent,
   VisitorNote,
+  WebhookSubscription,
+  WebhookDelivery,
+  CannedResponse,
+  ActionTemplate,
+  ActionSubmission,
 } from './entities';
+import { AuditLog } from '../audit-logs/audit.entity';
 
 /**
  * All database entities used in the application.

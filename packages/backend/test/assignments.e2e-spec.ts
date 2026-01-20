@@ -1,7 +1,7 @@
 import { TestHarness } from './utils/test-harness';
 import request from 'supertest';
 import { ConversationStatus } from '@live-chat/shared-types';
-import { Conversation } from '../src/database/entities/conversation.entity';
+import { Conversation } from '../src/inbox/entities/conversation.entity';
 import { ProjectRole } from '@live-chat/shared-types';
 import { randomUUID } from 'crypto';
 
@@ -31,41 +31,70 @@ describe('Assignments Engine (E2E)', () => {
     // 1. Setup Users
     // Manager
     const managerRes = await agent.post('/auth/register').send({
-      email: 'manager@example.com', password: 'Password123!', fullName: 'Manager'
+      email: 'manager@example.com',
+      password: 'Password123!',
+      fullName: 'Manager',
     });
-    managerId = (await harness.dataSource.query(`SELECT id FROM users WHERE email = 'manager@example.com'`))[0].id;
+    managerId = (
+      await harness.dataSource.query(
+        `SELECT id FROM users WHERE email = 'manager@example.com'`
+      )
+    )[0].id;
     // Verify & Login Manager
     const mgrEmail = harness.mailService.findEmailByType('CONFIRMATION');
     await agent.get('/auth/verify-email').query({ token: mgrEmail.token });
-    const mgrLogin = await agent.post('/auth/login').send({ email: 'manager@example.com', password: 'Password123!' });
+    const mgrLogin = await agent
+      .post('/auth/login')
+      .send({ email: 'manager@example.com', password: 'Password123!' });
     managerToken = mgrLogin.body.accessToken;
 
     // Member
     await agent.post('/auth/register').send({
-      email: 'member@example.com', password: 'Password123!', fullName: 'Member'
+      email: 'member@example.com',
+      password: 'Password123!',
+      fullName: 'Member',
     });
-    memberId = (await harness.dataSource.query(`SELECT id FROM users WHERE email = 'member@example.com'`))[0].id;
+    memberId = (
+      await harness.dataSource.query(
+        `SELECT id FROM users WHERE email = 'member@example.com'`
+      )
+    )[0].id;
     const memEmail = harness.mailService.findEmailByType('CONFIRMATION'); // Note: logic might pick last one
     // A cleaner way is to mock verify or just use SQL update for verify
-    await harness.dataSource.query(`UPDATE users SET "is_email_verified" = true WHERE id = '${memberId}'`);
-    const memLogin = await agent.post('/auth/login').send({ email: 'member@example.com', password: 'Password123!' });
+    await harness.dataSource.query(
+      `UPDATE users SET "is_email_verified" = true WHERE id = '${memberId}'`
+    );
+    const memLogin = await agent
+      .post('/auth/login')
+      .send({ email: 'member@example.com', password: 'Password123!' });
     memberToken = memLogin.body.accessToken;
 
     // Stranger
     await agent.post('/auth/register').send({
-      email: 'stranger@example.com', password: 'Password123!', fullName: 'Stranger'
+      email: 'stranger@example.com',
+      password: 'Password123!',
+      fullName: 'Stranger',
     });
-    const strId = (await harness.dataSource.query(`SELECT id FROM users WHERE email = 'stranger@example.com'`))[0].id;
-    await harness.dataSource.query(`UPDATE users SET "is_email_verified" = true WHERE id = '${strId}'`);
-    const strLogin = await agent.post('/auth/login').send({ email: 'stranger@example.com', password: 'Password123!' });
+    const strId = (
+      await harness.dataSource.query(
+        `SELECT id FROM users WHERE email = 'stranger@example.com'`
+      )
+    )[0].id;
+    await harness.dataSource.query(
+      `UPDATE users SET "is_email_verified" = true WHERE id = '${strId}'`
+    );
+    const strLogin = await agent
+      .post('/auth/login')
+      .send({ email: 'stranger@example.com', password: 'Password123!' });
     strangerToken = strLogin.body.accessToken;
 
     // 2. Setup Project
-    const projRes = await agent.post('/projects')
+    const projRes = await agent
+      .post('/projects')
       .set('Authorization', `Bearer ${managerToken}`)
       .send({ name: 'Test Project', whitelistedDomains: ['localhost'] }) // Add whitelist to pass validation
       .expect(201);
-    
+
     projectId = projRes.body.id;
     expect(projectId).toBeDefined();
 
@@ -96,69 +125,95 @@ describe('Assignments Engine (E2E)', () => {
   describe('POST /projects/:projectId/inbox/conversations/:id/assignments', () => {
     it('should assign conversation to self (Manager)', async () => {
       await agent
-        .post(`/projects/${projectId}/inbox/conversations/${conversationId}/assignments`)
+        .post(
+          `/projects/${projectId}/inbox/conversations/${conversationId}/assignments`
+        )
         .set('Authorization', `Bearer ${managerToken}`)
         .send({ assigneeId: managerId })
         .expect(200);
 
-      const conv = await harness.dataSource.getRepository(Conversation).findOne({ where: { id: conversationId }, relations: ['assignee'] });
+      const conv = await harness.dataSource
+        .getRepository(Conversation)
+        .findOne({ where: { id: conversationId }, relations: ['assignee'] });
       expect(conv!.assigneeId).toBe(managerId);
       expect(conv!.assignedAt).toBeDefined();
     });
 
     it('should assign conversation to another member', async () => {
       await agent
-        .post(`/projects/${projectId}/inbox/conversations/${conversationId}/assignments`)
+        .post(
+          `/projects/${projectId}/inbox/conversations/${conversationId}/assignments`
+        )
         .set('Authorization', `Bearer ${managerToken}`) // Manager assigns to Member
         .send({ assigneeId: memberId })
         .expect(200);
 
-      const conv = await harness.dataSource.getRepository(Conversation).findOne({ where: { id: conversationId } });
+      const conv = await harness.dataSource
+        .getRepository(Conversation)
+        .findOne({ where: { id: conversationId } });
       expect(conv!.assigneeId).toBe(memberId);
     });
 
     it('should allow member to claim conversation', async () => {
       await agent
-        .post(`/projects/${projectId}/inbox/conversations/${conversationId}/assignments`)
+        .post(
+          `/projects/${projectId}/inbox/conversations/${conversationId}/assignments`
+        )
         .set('Authorization', `Bearer ${memberToken}`)
         .send({ assigneeId: memberId }) // Member assigns to Self
         .expect(200);
-      
-      const conv = await harness.dataSource.getRepository(Conversation).findOne({ where: { id: conversationId } });
+
+      const conv = await harness.dataSource
+        .getRepository(Conversation)
+        .findOne({ where: { id: conversationId } });
       expect(conv!.assigneeId).toBe(memberId);
     });
 
     it('should overwrite existing assignment', async () => {
       // First assign to Manager
-      await agent.post(`/conversations/${conversationId}/assignments`)
+      await agent
+        .post(`/conversations/${conversationId}/assignments`)
         .set('Authorization', `Bearer ${managerToken}`)
         .send({ assigneeId: managerId });
-      
+
       // Then re-assign to Member
-      await agent.post(`/projects/${projectId}/inbox/conversations/${conversationId}/assignments`)
+      await agent
+        .post(
+          `/projects/${projectId}/inbox/conversations/${conversationId}/assignments`
+        )
         .set('Authorization', `Bearer ${managerToken}`)
         .send({ assigneeId: memberId })
         .expect(200);
 
-      const conv = await harness.dataSource.getRepository(Conversation).findOne({ where: { id: conversationId } });
+      const conv = await harness.dataSource
+        .getRepository(Conversation)
+        .findOne({ where: { id: conversationId } });
       expect(conv!.assigneeId).toBe(memberId);
     });
 
     it('should fail if assignee is NOT in project', async () => {
       // Stranger is not in project
-      const strangerId = (await harness.dataSource.query(`SELECT id FROM users WHERE email = 'stranger@example.com'`))[0].id;
-      
+      const strangerId = (
+        await harness.dataSource.query(
+          `SELECT id FROM users WHERE email = 'stranger@example.com'`
+        )
+      )[0].id;
+
       await agent
-        .post(`/projects/${projectId}/inbox/conversations/${conversationId}/assignments`)
+        .post(
+          `/projects/${projectId}/inbox/conversations/${conversationId}/assignments`
+        )
         .set('Authorization', `Bearer ${managerToken}`)
         .send({ assigneeId: strangerId })
         .expect(403); // Or 400? The service throws Forbidden if user not in project.
-                      // ProjectService.validateProjectMembership throws ForbiddenException usually.
+      // ProjectService.validateProjectMembership throws ForbiddenException usually.
     });
 
     it('should fail if actor is NOT in project', async () => {
       await agent
-        .post(`/projects/${projectId}/inbox/conversations/${conversationId}/assignments`)
+        .post(
+          `/projects/${projectId}/inbox/conversations/${conversationId}/assignments`
+        )
         .set('Authorization', `Bearer ${strangerToken}`) // Stranger tries to assign
         .send({ assigneeId: managerId })
         .expect(403);
@@ -174,7 +229,9 @@ describe('Assignments Engine (E2E)', () => {
 
     it('should return 400 if assigneeId is invalid UUID', async () => {
       await agent
-        .post(`/projects/${projectId}/inbox/conversations/${conversationId}/assignments`)
+        .post(
+          `/projects/${projectId}/inbox/conversations/${conversationId}/assignments`
+        )
         .set('Authorization', `Bearer ${managerToken}`)
         .send({ assigneeId: 'not-a-uuid' })
         .expect(400);
@@ -184,21 +241,29 @@ describe('Assignments Engine (E2E)', () => {
   describe('DELETE /projects/:projectId/inbox/conversations/:id/assignments', () => {
     it('should unassign conversation', async () => {
       // Setup: Assign first
-      await harness.dataSource.query(`UPDATE conversations SET assignee_id = '${managerId}', assigned_at = NOW() WHERE id = ${conversationId}`);
+      await harness.dataSource.query(
+        `UPDATE conversations SET assignee_id = '${managerId}', assigned_at = NOW() WHERE id = ${conversationId}`
+      );
 
       await agent
-        .delete(`/projects/${projectId}/inbox/conversations/${conversationId}/assignments`)
+        .delete(
+          `/projects/${projectId}/inbox/conversations/${conversationId}/assignments`
+        )
         .set('Authorization', `Bearer ${managerToken}`)
         .expect(200);
 
-      const conv = await harness.dataSource.getRepository(Conversation).findOne({ where: { id: conversationId } });
+      const conv = await harness.dataSource
+        .getRepository(Conversation)
+        .findOne({ where: { id: conversationId } });
       expect(conv!.assigneeId).toBeNull();
       expect(conv!.assignedAt).toBeNull();
     });
 
     it('should succeed even if already unassigned', async () => {
-       await agent
-        .delete(`/projects/${projectId}/inbox/conversations/${conversationId}/assignments`)
+      await agent
+        .delete(
+          `/projects/${projectId}/inbox/conversations/${conversationId}/assignments`
+        )
         .set('Authorization', `Bearer ${managerToken}`)
         .expect(200);
     });

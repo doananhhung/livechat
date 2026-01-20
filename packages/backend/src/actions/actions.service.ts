@@ -20,10 +20,10 @@ import {
 } from '@live-chat/shared-dtos';
 import { validateActionData } from './utils/action-validator';
 import { ProjectService } from '../projects/project.service';
-import { Conversation } from '../database/entities/conversation.entity';
-import { User } from '../database/entities/user.entity';
-import { Visitor } from '../database/entities/visitor.entity';
-import { Message } from '../database/entities/message.entity';
+import { Conversation } from '../inbox/entities/conversation.entity';
+import { User } from '../users/entities/user.entity';
+import { Visitor } from '../visitors/entities/visitor.entity';
+import { Message } from '../inbox/entities/message.entity';
 import {
   ProjectRole,
   MessageContentType,

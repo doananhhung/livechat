@@ -1,8 +1,12 @@
 import { TestHarness } from './utils/test-harness';
 import request from 'supertest';
-import { ProjectRole, ActionFieldType, ConversationStatus } from '@live-chat/shared-types';
-import { Conversation } from '../src/database/entities/conversation.entity';
-import { Visitor } from '../src/database/entities/visitor.entity';
+import {
+  ProjectRole,
+  ActionFieldType,
+  ConversationStatus,
+} from '@live-chat/shared-types';
+import { Conversation } from '../src/inbox/entities/conversation.entity';
+import { Visitor } from '../src/visitors/entities/visitor.entity';
 import { EntityManager } from 'typeorm';
 
 type SuperTestAgent = ReturnType<typeof request.agent>;
@@ -35,14 +39,28 @@ describe('Actions & Smart Forms (E2E)', () => {
   async function registerAndLogin(testAgent: SuperTestAgent, user: any) {
     await testAgent.post('/auth/register').send(user).expect(201);
     const email = harness.mailService.findEmailByType('CONFIRMATION');
-    await testAgent.get('/auth/verify-email').query({ token: email.token }).expect(200);
-    const res = await testAgent.post('/auth/login').send({ email: user.email, password: user.password }).expect(200);
+    await testAgent
+      .get('/auth/verify-email')
+      .query({ token: email.token })
+      .expect(200);
+    const res = await testAgent
+      .post('/auth/login')
+      .send({ email: user.email, password: user.password })
+      .expect(200);
     return res.body.accessToken;
   }
 
   async function setupEnvironment() {
-    const managerUser = { email: 'manager@actions.com', password: 'Password123!', fullName: 'Manager' };
-    const agentUser = { email: 'agent@actions.com', password: 'Password123!', fullName: 'Agent' };
+    const managerUser = {
+      email: 'manager@actions.com',
+      password: 'Password123!',
+      fullName: 'Manager',
+    };
+    const agentUser = {
+      email: 'agent@actions.com',
+      password: 'Password123!',
+      fullName: 'Agent',
+    };
 
     // 1. Setup Users
     managerToken = await registerAndLogin(managerAgent, managerUser);
@@ -53,9 +71,9 @@ describe('Actions & Smart Forms (E2E)', () => {
     const createProjectRes = await managerAgent
       .post('/projects')
       .set('Authorization', `Bearer ${managerToken}`)
-      .send({ 
+      .send({
         name: 'Action Project',
-        whitelistedDomains: ['localhost.com']
+        whitelistedDomains: ['localhost.com'],
       })
       .expect(201);
     projectId = createProjectRes.body.id;
@@ -66,7 +84,7 @@ describe('Actions & Smart Forms (E2E)', () => {
       .set('Authorization', `Bearer ${managerToken}`)
       .send({
         email: agentUser.email,
-        role: ProjectRole.AGENT
+        role: ProjectRole.AGENT,
       })
       .expect(201);
 
@@ -79,7 +97,7 @@ describe('Actions & Smart Forms (E2E)', () => {
 
     // 4. Create a Conversation via DB (Bypass socket flow for speed)
     const entityManager = harness.app.get(EntityManager);
-    
+
     // Need a visitor first
     const visitor = new Visitor();
     visitor.projectId = projectId;
@@ -92,7 +110,7 @@ describe('Actions & Smart Forms (E2E)', () => {
     conversation.status = ConversationStatus.OPEN; // Fixed: was 'active'
     // conversation.channel = 'web'; // Removed: field does not exist
     await entityManager.save(Conversation, conversation);
-    
+
     conversationId = conversation.id;
   }
 
@@ -101,10 +119,20 @@ describe('Actions & Smart Forms (E2E)', () => {
       name: 'Refund Request',
       definition: {
         fields: [
-          { key: 'orderId', label: 'Order ID', type: ActionFieldType.TEXT, required: true },
-          { key: 'amount', label: 'Amount', type: ActionFieldType.NUMBER, required: true }
-        ]
-      }
+          {
+            key: 'orderId',
+            label: 'Order ID',
+            type: ActionFieldType.TEXT,
+            required: true,
+          },
+          {
+            key: 'amount',
+            label: 'Amount',
+            type: ActionFieldType.NUMBER,
+            required: true,
+          },
+        ],
+      },
     };
 
     const res = await managerAgent
@@ -120,7 +148,7 @@ describe('Actions & Smart Forms (E2E)', () => {
   it('should forbid Agent from creating Action Template', async () => {
     const templateDto = {
       name: 'Hacked Template',
-      definition: { fields: [] }
+      definition: { fields: [] },
     };
 
     await agentAgent
@@ -155,17 +183,27 @@ describe('Actions & Smart Forms (E2E)', () => {
         name: 'Refund',
         definition: {
           fields: [
-            { key: 'orderId', label: 'ID', type: ActionFieldType.TEXT, required: true },
-            { key: 'amount', label: 'Amt', type: ActionFieldType.NUMBER, required: true }
-          ]
-        }
+            {
+              key: 'orderId',
+              label: 'ID',
+              type: ActionFieldType.TEXT,
+              required: true,
+            },
+            {
+              key: 'amount',
+              label: 'Amt',
+              type: ActionFieldType.NUMBER,
+              required: true,
+            },
+          ],
+        },
       });
     const templateId = tplRes.body.id;
 
     // 2. Submit Action
     const submissionDto = {
       templateId,
-      data: { orderId: 'ORD-123', amount: 50.5 }
+      data: { orderId: 'ORD-123', amount: 50.5 },
     };
 
     const res = await agentAgent
@@ -173,7 +211,7 @@ describe('Actions & Smart Forms (E2E)', () => {
       .set('Authorization', `Bearer ${agentToken}`)
       .send(submissionDto)
       .expect(201);
-    
+
     expect(res.body.id).toBeDefined();
     expect(res.body.status).toBe('submitted');
   });
@@ -187,9 +225,14 @@ describe('Actions & Smart Forms (E2E)', () => {
         name: 'Strict',
         definition: {
           fields: [
-            { key: 'age', label: 'Age', type: ActionFieldType.NUMBER, required: true }
-          ]
-        }
+            {
+              key: 'age',
+              label: 'Age',
+              type: ActionFieldType.NUMBER,
+              required: true,
+            },
+          ],
+        },
       });
     const templateId = tplRes.body.id;
 
@@ -199,7 +242,7 @@ describe('Actions & Smart Forms (E2E)', () => {
       .set('Authorization', `Bearer ${agentToken}`)
       .send({
         templateId,
-        data: { age: "Thirty" }
+        data: { age: 'Thirty' },
       })
       .expect(400);
 
@@ -209,19 +252,19 @@ describe('Actions & Smart Forms (E2E)', () => {
       .set('Authorization', `Bearer ${agentToken}`)
       .send({
         templateId,
-        data: {}
+        data: {},
       })
       .expect(400);
 
     // 4. Submit Extra Data (Strict Mode)
     await agentAgent
-        .post(`/conversations/${conversationId}/actions`)
-        .set('Authorization', `Bearer ${agentToken}`)
-        .send({
-            templateId,
-            data: { age: 30, extra: "Malicious" }
-        })
-        .expect(400);
+      .post(`/conversations/${conversationId}/actions`)
+      .set('Authorization', `Bearer ${agentToken}`)
+      .send({
+        templateId,
+        data: { age: 30, extra: 'Malicious' },
+      })
+      .expect(400);
   });
 
   it('should retrieve action history for conversation', async () => {
@@ -259,9 +302,14 @@ describe('Actions & Smart Forms (E2E)', () => {
         name: 'Customer Feedback',
         definition: {
           fields: [
-            { key: 'rating', label: 'Rating', type: ActionFieldType.NUMBER, required: true }
-          ]
-        }
+            {
+              key: 'rating',
+              label: 'Rating',
+              type: ActionFieldType.NUMBER,
+              required: true,
+            },
+          ],
+        },
       });
     const templateId = tplRes.body.id;
 
@@ -292,7 +340,7 @@ describe('Actions & Smart Forms (E2E)', () => {
       .set('Authorization', `Bearer ${managerToken}`)
       .send({
         name: 'Disabled Form',
-        definition: { fields: [] }
+        definition: { fields: [] },
       });
     const templateId = tplRes.body.id;
 
@@ -321,9 +369,14 @@ describe('Actions & Smart Forms (E2E)', () => {
         name: 'Updateable',
         definition: {
           fields: [
-            { key: 'note', label: 'Note', type: ActionFieldType.TEXT, required: true }
-          ]
-        }
+            {
+              key: 'note',
+              label: 'Note',
+              type: ActionFieldType.TEXT,
+              required: true,
+            },
+          ],
+        },
       });
     const templateId = tplRes.body.id;
 
@@ -352,7 +405,7 @@ describe('Actions & Smart Forms (E2E)', () => {
       .set('Authorization', `Bearer ${managerToken}`)
       .send({
         name: 'Deleteable',
-        definition: { fields: [] }
+        definition: { fields: [] },
       });
     const templateId = tplRes.body.id;
 
@@ -379,4 +432,3 @@ describe('Actions & Smart Forms (E2E)', () => {
     expect(history.body).toHaveLength(0);
   });
 });
-

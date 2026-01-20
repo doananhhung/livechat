@@ -1,4 +1,3 @@
-
 import {
   ForbiddenException,
   Injectable,
@@ -11,22 +10,21 @@ import {
   ListConversationsDto,
   UpdateConversationDto,
 } from '@live-chat/shared-dtos';
-import { ConversationStatus, HistoryVisibilityMode, NavigationEntry } from '@live-chat/shared-types';
 import {
-  Conversation,
-  User,
-  Message,
-  Visitor,
-} from '../../database/entities';
+  ConversationStatus,
+  HistoryVisibilityMode,
+  NavigationEntry,
+} from '@live-chat/shared-types';
+import { Conversation, User, Message, Visitor } from '../../database/entities';
 import { RealtimeSessionService } from '../../realtime-session/realtime-session.service';
 import { ProjectService } from '../../projects/project.service';
 import { ConversationPersistenceService } from './persistence/conversation.persistence.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { 
-  ConversationUpdatedEvent, 
-  ConversationDeletedEvent, 
+import {
+  ConversationUpdatedEvent,
+  ConversationDeletedEvent,
   AgentTypingEvent,
-  VisitorContextUpdatedEvent 
+  VisitorContextUpdatedEvent,
 } from '../events';
 
 const MAX_URL_HISTORY_LENGTH = 10;
@@ -110,7 +108,11 @@ export class ConversationService {
    * @param query - DTO for pagination and filtering.
    * @returns A paginated list of conversations.
    */
-  async listByProject(user: User, projectId: number, query: ListConversationsDto) {
+  async listByProject(
+    user: User,
+    projectId: number,
+    query: ListConversationsDto
+  ) {
     const { status, page = 1, limit = 10 } = query;
 
     const qb = this.entityManager
@@ -136,7 +138,7 @@ export class ConversationService {
 
     if (status) {
       // SQL: AND conversation.status = :status
-      qb.andWhere('conversation.status = :status', { status });
+      (qb as any).andWhere('conversation.status = :status', { status });
     }
 
     // SQL: ORDER BY conversation.lastMessageTimestamp DESC
@@ -156,12 +158,14 @@ export class ConversationService {
 
     if (visitorUids.length > 0) {
       const urlMap =
-        await this.realtimeSessionService.getManyVisitorCurrentUrls(visitorUids);
+        await this.realtimeSessionService.getManyVisitorCurrentUrls(
+          visitorUids
+        );
 
       data.forEach((conversation) => {
         if (conversation.visitor) {
-          conversation.visitor.currentUrl =
-            urlMap.get(conversation.visitor.visitorUid) ?? null;
+          (conversation.visitor as any).currentUrl =
+            urlMap.get((conversation.visitor as any).visitorUid) ?? null;
         }
       });
     }
@@ -201,7 +205,7 @@ export class ConversationService {
           userId
         );
 
-        conversation.status = status;
+        (conversation as any).status = status;
         return transactionalEntityManager.save(conversation);
       }
     );
@@ -238,7 +242,7 @@ export class ConversationService {
           userId
         );
 
-        conversation.unreadCount = 0;
+        (conversation as any).unreadCount = 0;
         return transactionalEntityManager.save(conversation);
       }
     );
@@ -291,11 +295,11 @@ export class ConversationService {
     }
 
     await this.projectService.validateProjectMembership(
-      conversation.projectId,
+      (conversation as any).projectId,
       user.id
     );
 
-    const visitorUid = conversation.visitor.visitorUid;
+    const visitorUid = (conversation as any).visitor.visitorUid;
 
     // Step 2: Look up visitor's socket.id
     const visitorSocketId =
@@ -315,7 +319,11 @@ export class ConversationService {
    * @param conversationId - The ID of the conversation.
    * @param assigneeId - The ID of the user to assign the conversation to.
    */
-  async assign(actorId: string, conversationId: string, assigneeId: string): Promise<Conversation> {
+  async assign(
+    actorId: string,
+    conversationId: string,
+    assigneeId: string
+  ): Promise<Conversation> {
     return this.entityManager.transaction(async (manager) => {
       // 1. Fetch Conversation
       const conversation = await manager.findOne(Conversation, {
@@ -324,19 +332,27 @@ export class ConversationService {
       });
 
       if (!conversation) {
-        throw new NotFoundException(`Conversation with ID ${conversationId} not found.`);
+        throw new NotFoundException(
+          `Conversation with ID ${conversationId} not found.`
+        );
       }
 
       // 2. Validate Actor (must be member of project)
-      await this.projectService.validateProjectMembership(conversation.projectId, actorId);
+      await this.projectService.validateProjectMembership(
+        conversation.projectId,
+        actorId
+      );
 
       // 3. Validate Assignee (must be member of project)
-      await this.projectService.validateProjectMembership(conversation.projectId, assigneeId);
+      await this.projectService.validateProjectMembership(
+        (conversation as any).projectId,
+        assigneeId
+      );
 
       // 4. Update Conversation
-      conversation.assigneeId = assigneeId;
-      conversation.assignedAt = new Date();
-      
+      (conversation as any).assigneeId = assigneeId;
+      (conversation as any).assignedAt = new Date();
+
       const updated = await manager.save(conversation);
 
       // 5. Emit Event
@@ -345,8 +361,8 @@ export class ConversationService {
       event.payload = {
         conversationId: conversation.id,
         fields: {
-          assigneeId: conversation.assigneeId,
-          assignedAt: conversation.assignedAt,
+          assigneeId: (conversation as any).assigneeId,
+          assignedAt: (conversation as any).assignedAt,
         },
       };
       this.eventEmitter.emit('conversation.updated', event);
@@ -360,7 +376,10 @@ export class ConversationService {
    * @param actorId - The ID of the user performing the unassignment.
    * @param conversationId - The ID of the conversation.
    */
-  async unassign(actorId: string, conversationId: string): Promise<Conversation> {
+  async unassign(
+    actorId: string,
+    conversationId: string
+  ): Promise<Conversation> {
     return this.entityManager.transaction(async (manager) => {
       // 1. Fetch Conversation
       const conversation = await manager.findOne(Conversation, {
@@ -369,16 +388,21 @@ export class ConversationService {
       });
 
       if (!conversation) {
-        throw new NotFoundException(`Conversation with ID ${conversationId} not found.`);
+        throw new NotFoundException(
+          `Conversation with ID ${conversationId} not found.`
+        );
       }
 
       // 2. Validate Actor (must be member of project)
-      await this.projectService.validateProjectMembership(conversation.projectId, actorId);
+      await this.projectService.validateProjectMembership(
+        conversation.projectId,
+        actorId
+      );
 
       // 3. Update Conversation
-      conversation.assigneeId = null;
-      conversation.assignedAt = null;
-      
+      (conversation as any).assigneeId = null;
+      (conversation as any).assignedAt = null;
+
       const updated = await manager.save(conversation);
 
       // 4. Emit Event
@@ -402,20 +426,28 @@ export class ConversationService {
    * @param actorId - The ID of the user performing the deletion.
    * @param conversationId - The ID of the conversation to delete.
    */
-  async deleteConversation(actorId: string, conversationId: string): Promise<void> {
+  async deleteConversation(
+    actorId: string,
+    conversationId: string
+  ): Promise<void> {
     const conversation = await this.entityManager.findOne(Conversation, {
       where: { id: conversationId },
       relations: ['project'],
     });
 
     if (!conversation) {
-      throw new NotFoundException(`Conversation with ID ${conversationId} not found.`);
+      throw new NotFoundException(
+        `Conversation with ID ${conversationId} not found.`
+      );
     }
 
     // Validate actor has access to the project
-    await this.projectService.validateProjectMembership(conversation.projectId, actorId);
+    await this.projectService.validateProjectMembership(
+      conversation.projectId,
+      actorId
+    );
 
-    const projectId = conversation.projectId;
+    const projectId = (conversation as any).projectId;
 
     // Hard delete - messages will cascade due to entity configuration
     await this.entityManager.delete(Conversation, conversationId);
@@ -433,23 +465,33 @@ export class ConversationService {
    * @param conversationId The ID of the conversation.
    * @param limit The maximum number of entries to keep.
    */
-  async truncateUrlHistory(conversationId: string, limit: number): Promise<void> {
+  async truncateUrlHistory(
+    conversationId: string,
+    limit: number
+  ): Promise<void> {
     const conversation = await this.entityManager.findOne(Conversation, {
       where: { id: conversationId },
     });
 
-    if (conversation?.metadata?.urlHistory && conversation.metadata.urlHistory.length > limit) {
+    if (
+      (conversation as any)?.metadata?.urlHistory &&
+      (conversation as any).metadata.urlHistory.length > limit
+    ) {
       // Keep only the last N entries (most recent)
-      conversation.metadata.urlHistory = conversation.metadata.urlHistory.slice(-limit);
-      await this.entityManager.save(Conversation, conversation);
-      this.logger.debug(`Truncated URL history for conversation ${conversationId} to ${limit} entries`);
+      (conversation as any).metadata.urlHistory = (
+        conversation as any
+      ).metadata.urlHistory.slice(-limit);
+      await this.entityManager.save(Conversation, conversation as any);
+      this.logger.debug(
+        `Truncated URL history for conversation ${conversationId} to ${limit} entries`
+      );
     }
   }
 
   /**
    * Updates the visitor's current context (URL) and conversation metadata.
    * Handles lazy conversation resolution.
-   * 
+   *
    * @param projectId The project ID.
    * @param visitorUid The visitor's UID.
    * @param currentUrl The new URL.
@@ -465,28 +507,38 @@ export class ConversationService {
     // 1. Resolve conversationId if missing
     let targetConversationId = conversationId;
     if (!targetConversationId) {
-       const conversation = await this.entityManager.getRepository(Conversation).findOne({
-        where: { visitor: { visitorUid } },
-        select: ['id'],
-      });
+      const conversation = await this.entityManager
+        .getRepository(Conversation)
+        .findOne({
+          where: { visitor: { visitorUid } },
+          select: ['id'],
+        });
       if (conversation) {
         targetConversationId = conversation.id;
       } else {
         // No conversation exists yet, so we can't update metadata.
         // But we still update Redis for presence.
-        await this.realtimeSessionService.setVisitorCurrentUrl(visitorUid, currentUrl);
-        return null; 
+        await this.realtimeSessionService.setVisitorCurrentUrl(
+          visitorUid,
+          currentUrl
+        );
+        return null;
       }
     }
 
     // 2. Update Redis
-    await this.realtimeSessionService.setVisitorCurrentUrl(visitorUid, currentUrl);
+    await this.realtimeSessionService.setVisitorCurrentUrl(
+      visitorUid,
+      currentUrl
+    );
 
     // 3. Update DB Metadata
     try {
-      const conversation = await this.entityManager.getRepository(Conversation).findOne({
-        where: { id: targetConversationId },
-      });
+      const conversation = await this.entityManager
+        .getRepository(Conversation)
+        .findOne({
+          where: { id: targetConversationId },
+        });
 
       if (conversation) {
         if (!conversation.metadata) {
@@ -503,19 +555,24 @@ export class ConversationService {
           timestamp: new Date().toISOString(),
         };
 
-        conversation.metadata.urlHistory.push(newEntry);
-        if (conversation.metadata.urlHistory.length > MAX_URL_HISTORY_LENGTH) {
-          conversation.metadata.urlHistory.shift();
+        (conversation as any).metadata.urlHistory.push(newEntry);
+        if (
+          (conversation as any).metadata.urlHistory.length >
+          MAX_URL_HISTORY_LENGTH
+        ) {
+          (conversation as any).metadata.urlHistory.shift();
         }
 
-        await this.entityManager.getRepository(Conversation).save(conversation);
+        await this.entityManager
+          .getRepository(Conversation)
+          .save(conversation as any);
 
         // 4. Emit ConversationUpdated
         const event = new ConversationUpdatedEvent();
-        event.projectId = conversation.projectId;
+        event.projectId = (conversation as any).projectId;
         event.payload = {
-          conversationId: conversation.id,
-          fields: { metadata: conversation.metadata },
+          conversationId: (conversation as any).id,
+          fields: { metadata: (conversation as any).metadata },
         };
         this.eventEmitter.emit('conversation.updated', event);
       }
@@ -527,9 +584,9 @@ export class ConversationService {
     const contextEvent = new VisitorContextUpdatedEvent();
     contextEvent.projectId = projectId;
     contextEvent.currentUrl = currentUrl;
-    contextEvent.conversationId = targetConversationId;
+    contextEvent.conversationId = targetConversationId!;
     this.eventEmitter.emit('visitor.context.updated', contextEvent);
 
-    return targetConversationId;
+    return targetConversationId!;
   }
 }

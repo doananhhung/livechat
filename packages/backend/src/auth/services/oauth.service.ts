@@ -1,4 +1,3 @@
-
 import {
   Injectable,
   Inject,
@@ -22,7 +21,7 @@ export class OAuthService {
   constructor(
     private readonly entityManager: EntityManager,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-    private readonly userService: UserService,
+    private readonly userService: UserService
   ) {}
 
   async validateOAuthUser(profile: {
@@ -53,16 +52,19 @@ export class OAuthService {
 
       if (user) {
         let needsUpdate = false;
-        if (!user.avatarUrl && profile.avatarUrl) {
-          user.avatarUrl = profile.avatarUrl;
+        if (!(user as any).avatarUrl && profile.avatarUrl) {
+          (user as any).avatarUrl = profile.avatarUrl;
           needsUpdate = true;
         }
-        if ((!user.fullName || user.fullName.trim() === '') && profile.name) {
-          user.fullName = profile.name;
+        if (
+          (!(user as any).fullName || (user as any).fullName.trim() === '') &&
+          profile.name
+        ) {
+          (user as any).fullName = profile.name;
           needsUpdate = true;
         }
-        if (!user.isEmailVerified) {
-          user.isEmailVerified = true;
+        if (!(user as any).isEmailVerified) {
+          (user as any).isEmailVerified = true;
           needsUpdate = true;
         }
         if (needsUpdate) {
@@ -102,7 +104,9 @@ export class OAuthService {
     const userId = await this.cacheManager.get<string>(key);
 
     if (!userId) {
-      throw new UnauthorizedException(`No user found with key ${key}, invalid or expired code.`);
+      throw new UnauthorizedException(
+        `No user found with key ${key}, invalid or expired code.`
+      );
     }
 
     await this.cacheManager.del(key);
@@ -117,9 +121,11 @@ export class OAuthService {
       email: string;
       name: string;
       avatarUrl: string;
-    },
+    }
   ): Promise<{ message: string; user: User }> {
-    this.logger.log(`🔵 [LinkGoogleAccount] User ${userId} is linking Google account: ${profile.email}`);
+    this.logger.log(
+      `🔵 [LinkGoogleAccount] User ${userId} is linking Google account: ${profile.email}`
+    );
 
     return this.entityManager.transaction(async (entityManager) => {
       const user = await this.userService.findOneById(userId);
@@ -134,15 +140,23 @@ export class OAuthService {
 
       if (existingIdentity) {
         if (existingIdentity.user.id === userId) {
-          throw new ConflictException('This Google account is already linked to your account.');
+          throw new ConflictException(
+            'This Google account is already linked to your account.'
+          );
         } else {
-          throw new ConflictException('This Google account is already linked to another account.');
+          throw new ConflictException(
+            'This Google account is already linked to another account.'
+          );
         }
       }
 
       if (user.email !== profile.email) {
-        this.logger.warn(`⚠️ [LinkGoogleAccount] Email mismatch: user email ${user.email} vs Google email ${profile.email}`);
-        throw new BadRequestException('Google account email does not match current account email.');
+        this.logger.warn(
+          `⚠️ [LinkGoogleAccount] Email mismatch: user email ${user.email} vs Google email ${profile.email}`
+        );
+        throw new BadRequestException(
+          'Google account email does not match current account email.'
+        );
       }
 
       const newIdentity = entityManager.create(UserIdentity, {
@@ -177,7 +191,10 @@ export class OAuthService {
     });
   }
 
-  async unlinkOAuthAccount(userId: string, provider: string): Promise<{ message: string }> {
+  async unlinkOAuthAccount(
+    userId: string,
+    provider: string
+  ): Promise<{ message: string }> {
     return this.entityManager.transaction(async (entityManager) => {
       const user = await this.userService.findOneById(userId);
       if (!user) {
@@ -186,7 +203,7 @@ export class OAuthService {
 
       if (!user.passwordHash) {
         throw new BadRequestException(
-          'You must set a password before you can unlink your Google account.',
+          'You must set a password before you can unlink your Google account.'
         );
       }
 

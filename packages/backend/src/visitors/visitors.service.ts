@@ -1,8 +1,11 @@
-
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Visitor } from '../database/entities/visitor.entity';
+import { Visitor } from './entities/visitor.entity';
 import { UpdateVisitorDto } from './dto/update-visitor.dto';
 import { RealtimeSessionService } from '../realtime-session/realtime-session.service';
 import { Visitor as SharedVisitorType } from '@live-chat/shared-types';
@@ -15,7 +18,7 @@ export class VisitorsService {
     @InjectRepository(Visitor)
     private readonly visitorRepository: Repository<Visitor>,
     private readonly eventEmitter: EventEmitter2,
-    private readonly realtimeSessionService: RealtimeSessionService,
+    private readonly realtimeSessionService: RealtimeSessionService
   ) {}
 
   /**
@@ -26,16 +29,23 @@ export class VisitorsService {
    * @returns The visitor entity with the isOnline status (as SharedVisitorType).
    * @throws NotFoundException if the visitor is not found.
    */
-  async findOne(projectId: number, visitorId: number): Promise<SharedVisitorType> {
+  async findOne(
+    projectId: number,
+    visitorId: number
+  ): Promise<SharedVisitorType> {
     const visitorEntity = await this.visitorRepository.findOne({
       where: { id: visitorId, projectId: projectId },
     });
 
     if (!visitorEntity) {
-      throw new NotFoundException(`Visitor with ID ${visitorId} not found in project ${projectId}.`);
+      throw new NotFoundException(
+        `Visitor with ID ${visitorId} not found in project ${projectId}.`
+      );
     }
 
-    const isOnline = await this.realtimeSessionService.isVisitorOnline(visitorEntity.visitorUid);
+    const isOnline = await this.realtimeSessionService.isVisitorOnline(
+      visitorEntity.visitorUid
+    );
 
     // Explicitly map properties to ensure type compatibility
     const sharedVisitor: SharedVisitorType = {
@@ -70,7 +80,7 @@ export class VisitorsService {
   async updateDisplayName(
     projectId: number,
     visitorId: number,
-    updateVisitorDto: UpdateVisitorDto,
+    updateVisitorDto: UpdateVisitorDto
   ): Promise<SharedVisitorType> {
     const { displayName } = updateVisitorDto;
 
@@ -79,7 +89,9 @@ export class VisitorsService {
       throw new BadRequestException('Display name cannot be empty.');
     }
     if (displayName.length > 50) {
-        throw new BadRequestException('Display name cannot exceed 50 characters.');
+      throw new BadRequestException(
+        'Display name cannot exceed 50 characters.'
+      );
     }
 
     const visitor = await this.visitorRepository.findOne({
@@ -87,7 +99,9 @@ export class VisitorsService {
     });
 
     if (!visitor) {
-      throw new NotFoundException(`Visitor with ID ${visitorId} not found in project ${projectId}.`);
+      throw new NotFoundException(
+        `Visitor with ID ${visitorId} not found in project ${projectId}.`
+      );
     }
 
     visitor.displayName = displayName;
@@ -121,6 +135,9 @@ export class VisitorsService {
    * @param visitorUid The UID of the visitor to update.
    */
   async updateLastSeenAtByUid(visitorUid: string): Promise<void> {
-    await this.visitorRepository.update({ visitorUid }, { lastSeenAt: new Date() });
+    await this.visitorRepository.update(
+      { visitorUid },
+      { lastSeenAt: new Date() }
+    );
   }
 }

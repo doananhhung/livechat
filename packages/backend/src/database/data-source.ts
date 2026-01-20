@@ -1,9 +1,7 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import {
-  Conversation,
   Invitation,
-  Message,
   Project,
   ProjectMember,
   RefreshToken,
@@ -14,13 +12,15 @@ import {
   EmailChangeRequest,
   OutboxEvent,
   VisitorNote,
+  Conversation,
+  Message,
+  WebhookSubscription,
+  WebhookDelivery,
+  CannedResponse,
+  ActionTemplate,
+  ActionSubmission,
 } from './entities';
-import { WebhookSubscription } from '../webhooks/entities/webhook-subscription.entity';
-import { WebhookDelivery } from '../webhooks/entities/webhook-delivery.entity';
 import { AuditLog } from '../audit-logs/audit.entity';
-import { CannedResponse } from '../canned-responses/entities/canned-response.entity';
-import { ActionTemplate } from '../actions/entities/action-template.entity';
-import { ActionSubmission } from '../actions/entities/action-submission.entity';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import * as dotenv from 'dotenv';
 import { ConfigService } from '@nestjs/config';
@@ -35,7 +35,7 @@ for (const envVar of requiredEnvVars) {
   if (!configService.get<string>(envVar)) {
     throw new Error(
       `Missing required environment variable: ${envVar}. ` +
-      'Ensure your .env file is configured correctly.'
+        'Ensure your .env file is configured correctly.'
     );
   }
 }

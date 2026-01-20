@@ -3,9 +3,9 @@ import { ActionsService } from './actions.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ActionTemplate } from './entities/action-template.entity';
 import { ActionSubmission } from './entities/action-submission.entity';
-import { Conversation } from '../database/entities/conversation.entity';
-import { Message } from '../database/entities/message.entity';
-import { Visitor } from '../database/entities/visitor.entity';
+import { Conversation } from '../inbox/entities/conversation.entity';
+import { Message } from '../inbox/entities/message.entity';
+import { Visitor } from '../visitors/entities/visitor.entity';
 import { ProjectService } from '../projects/project.service';
 import {
   BadRequestException,
