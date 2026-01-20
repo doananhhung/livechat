@@ -39,7 +39,7 @@
 
 ### Phase 3: Project & Invitation Lifecycle
 
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Unified DTO adoption for Project administration and the updated Invitation flow.
 **Included DTOs**:
 
