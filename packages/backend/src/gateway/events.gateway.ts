@@ -11,7 +11,13 @@ import {
 } from '@nestjs/websockets';
 import { WsAuthService } from './services/ws-auth.service';
 import { Server, Socket } from 'socket.io';
-import { Logger, Inject, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import {
+  Logger,
+  Inject,
+  UseGuards,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { RealtimeSessionService } from '../realtime-session/realtime-session.service';
 import { type Redis } from 'ioredis';
 import { REDIS_SUBSCRIBER_CLIENT } from '../redis/redis.module';
@@ -21,17 +27,24 @@ import {
   VisitorIdentifiedEvent,
   VisitorMessageReceivedEvent,
 } from '../inbox/events';
-import { VisitorDisconnectedEvent, VisitorConnectedEvent } from '../visitors/events';
+import {
+  VisitorDisconnectedEvent,
+  VisitorConnectedEvent,
+} from '../visitors/events';
 import { Conversation, Visitor } from '../database/entities';
-import { MessageStatus, WidgetMessageDto, WebSocketEvent } from '@live-chat/shared-types';
+import {
+  MessageStatus,
+  WidgetMessageDto,
+  WebSocketEvent,
+} from '@live-chat/shared-types';
 import { ProjectService } from '../projects/project.service';
 import { ActionsService } from '../actions/actions.service';
 import { ConfigService } from '@nestjs/config';
-import { 
-  IdentifyPayload, 
-  SendMessagePayload, 
-  VisitorTypingPayload, 
-  UpdateContextPayload, 
+import {
+  IdentifyPayload,
+  SendMessagePayload,
+  VisitorTypingPayload,
+  UpdateContextPayload,
   JoinRoomPayload,
   AgentTypingPayload,
   VisitorTypingBroadcastPayload,
@@ -46,7 +59,6 @@ import {
 } from '@live-chat/shared-types';
 
 import { UpdateContextRequestEvent } from '../inbox/events';
-
 
 const NEW_MESSAGE_CHANNEL = 'new_message_channel';
 
@@ -67,7 +79,7 @@ export class EventsGateway
     private readonly eventEmitter: EventEmitter2,
     private readonly projectService: ProjectService,
     private readonly wsAuthService: WsAuthService,
-    private readonly actionsService: ActionsService,
+    private readonly actionsService: ActionsService
   ) {}
 
   public emitToProject(projectId: number, event: string, payload: any) {
@@ -75,14 +87,21 @@ export class EventsGateway
     this.server.to(`project:${projectId}`).emit(event, payload);
   }
 
-  public emitConversationUpdated(projectId: number, payload: ConversationUpdatedPayload) {
+  public emitConversationUpdated(
+    projectId: number,
+    payload: ConversationUpdatedPayload
+  ) {
     this.logger.log(`Emitting conversationUpdated to project:${projectId}`);
-    this.server.to(`project:${projectId}`).emit(WebSocketEvent.CONVERSATION_UPDATED, payload);
+    this.server
+      .to(`project:${projectId}`)
+      .emit(WebSocketEvent.CONVERSATION_UPDATED, payload);
   }
 
   public emitConversationDeleted(projectId: number, conversationId: string) {
     this.logger.log(`Emitting conversationDeleted to project:${projectId}`);
-    this.server.to(`project:${projectId}`).emit(WebSocketEvent.CONVERSATION_DELETED, { conversationId });
+    this.server
+      .to(`project:${projectId}`)
+      .emit(WebSocketEvent.CONVERSATION_DELETED, { conversationId });
   }
 
   /**
@@ -91,15 +110,27 @@ export class EventsGateway
    * @param visitorUid The UID of the visitor whose status changed.
    * @param isOnline The new online status of the visitor.
    */
-  public emitVisitorStatusChanged(projectId: number, visitorUid: string, isOnline: boolean) {
-    this.logger.log(`Emitting VISITOR_STATUS_CHANGED for visitorUid:${visitorUid} (isOnline: ${isOnline}) to project:${projectId}`);
-    const payload: VisitorStatusChangedPayload = { visitorUid, projectId, isOnline };
-    this.server.to(`project:${projectId}`).emit(WebSocketEvent.VISITOR_STATUS_CHANGED, payload);
+  public emitVisitorStatusChanged(
+    projectId: number,
+    visitorUid: string,
+    isOnline: boolean
+  ) {
+    this.logger.log(
+      `Emitting VISITOR_STATUS_CHANGED for visitorUid:${visitorUid} (isOnline: ${isOnline}) to project:${projectId}`
+    );
+    const payload: VisitorStatusChangedPayload = {
+      visitorUid,
+      projectId,
+      isOnline,
+    };
+    this.server
+      .to(`project:${projectId}`)
+      .emit(WebSocketEvent.VISITOR_STATUS_CHANGED, payload);
   }
 
   async handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
-    
+
     const result = await this.wsAuthService.validateConnection(client);
 
     if (!result.valid) {
@@ -116,10 +147,17 @@ export class EventsGateway
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
     if (client.data.visitorUid && client.data.projectId) {
-      this.realtimeSessionService.deleteVisitorSession(client.data.visitorUid, client.id);
+      this.realtimeSessionService.deleteVisitorSession(
+        client.data.visitorUid,
+        client.id
+      );
       // Emit visitor offline status change
-      this.emitVisitorStatusChanged(client.data.projectId, client.data.visitorUid, false);
-      
+      this.emitVisitorStatusChanged(
+        client.data.projectId,
+        client.data.visitorUid,
+        false
+      );
+
       // Emit visitor.disconnected event for domain handlers to process
       const disconnectedEvent = new VisitorDisconnectedEvent();
       disconnectedEvent.projectId = client.data.projectId;
@@ -183,7 +221,7 @@ export class EventsGateway
     // Handle lazy conversation creation: conversation may be null for new visitors
     if (conversation) {
       socket.data.conversationId = conversation.id;
-      
+
       if (messages.length > 0) {
         this.logger.log(
           `Loaded ${messages.length} messages for conversationId ${conversation.id}`
@@ -220,7 +258,7 @@ export class EventsGateway
     event.visitorUid = payload.visitorUid;
     event.socketId = client.id;
     this.eventEmitter.emit('visitor.identified', event);
-    
+
     // Emit visitor online status change
     this.emitVisitorStatusChanged(payload.projectId, payload.visitorUid, true);
 
@@ -262,7 +300,9 @@ export class EventsGateway
         conversationId,
         isTyping: payload.isTyping,
       };
-      this.server.to(`project:${projectId}`).emit(WebSocketEvent.VISITOR_TYPING, broadcastPayload);
+      this.server
+        .to(`project:${projectId}`)
+        .emit(WebSocketEvent.VISITOR_TYPING, broadcastPayload);
     }
   }
 
@@ -273,7 +313,7 @@ export class EventsGateway
   ): Promise<void> {
     const { projectId, visitorUid } = client.data;
     let { conversationId } = client.data;
-    
+
     this.logger.debug(
       `updateContext event from client ${client.id} for visitorUid: ${visitorUid} in projectId: ${projectId}`
     );
@@ -309,20 +349,29 @@ export class EventsGateway
   ): Promise<{ status: string; roomName: string }> {
     // Security Check: Ensure user is authenticated
     if (!client.data.user) {
-      throw new WsException('Unauthorized: You must be logged in to join a project room.');
+      throw new WsException(
+        'Unauthorized: You must be logged in to join a project room.'
+      );
     }
 
     // Security Check: Ensure user is a member of the project
     try {
-      await this.projectService.validateProjectMembership(payload.projectId, client.data.user.id);
+      await this.projectService.validateProjectMembership(
+        payload.projectId,
+        client.data.user.id
+      );
     } catch (error) {
-      this.logger.warn(`User ${client.data.user.id} attempted to join unauthorized project ${payload.projectId}`);
+      this.logger.warn(
+        `User ${client.data.user.id} attempted to join unauthorized project ${payload.projectId}`
+      );
       throw new WsException('Forbidden: You are not a member of this project.');
     }
 
     const roomName = `project:${payload.projectId}`;
     client.join(roomName);
-    this.logger.log(`Client ${client.id} (User: ${client.data.user.email}) joined room: ${roomName}`);
+    this.logger.log(
+      `Client ${client.id} (User: ${client.data.user.email}) joined room: ${roomName}`
+    );
     return { status: 'ok', roomName };
   }
 
@@ -382,7 +431,9 @@ export class EventsGateway
         conversationId: conversationId?.toString() ?? payload.conversationId,
         isFilling: payload.isFilling,
       };
-      this.server.to(`project:${projectId}`).emit(WebSocketEvent.VISITOR_FILLING_FORM, broadcastPayload);
+      this.server
+        .to(`project:${projectId}`)
+        .emit(WebSocketEvent.VISITOR_FILLING_FORM, broadcastPayload);
     }
   }
 
@@ -399,8 +450,13 @@ export class EventsGateway
 
     // INV-1: Visitor must be identified
     if (!visitorId || !conversationId) {
-      this.logger.warn(`SUBMIT_FORM rejected: missing visitorId or conversationId`);
-      return { success: false, error: 'Session not ready. Please refresh the page.' };
+      this.logger.warn(
+        `SUBMIT_FORM rejected: missing visitorId or conversationId`
+      );
+      return {
+        success: false,
+        error: 'Session not ready. Please refresh the page.',
+      };
     }
 
     try {
@@ -418,29 +474,52 @@ export class EventsGateway
         conversationId: conversationId.toString(),
         submissionId: result.submission.id,
         messageId: result.message.id.toString(),
+        message: {
+          id: result.message.id,
+          content: result.message.content,
+          senderId: result.message.senderId,
+          conversationId: Number(result.message.conversationId),
+          fromCustomer: result.message.fromCustomer,
+          status: result.message.status,
+          createdAt: result.message.createdAt.toISOString(),
+          contentType: result.message.contentType,
+          metadata: result.message.metadata ?? undefined,
+        },
         submittedBy: 'visitor',
         data: payload.data,
       };
 
       // Emit to project room (agents)
-      this.server.to(`project:${projectId}`).emit(WebSocketEvent.FORM_SUBMITTED, formSubmittedPayload);
+      this.server
+        .to(`project:${projectId}`)
+        .emit(WebSocketEvent.FORM_SUBMITTED, formSubmittedPayload);
       // Emit to visitor socket
       client.emit(WebSocketEvent.FORM_SUBMITTED, formSubmittedPayload);
 
-      this.logger.log(`Form submitted by visitor ${visitorId} for message ${payload.formRequestMessageId}`);
+      this.logger.log(
+        `Form submitted by visitor ${visitorId} for message ${payload.formRequestMessageId}`
+      );
       return { success: true };
     } catch (error: any) {
       this.logger.error(`SUBMIT_FORM failed: ${error.message}`);
-      return { success: false, error: error.message || 'Form submission failed' };
+      return {
+        success: false,
+        error: error.message || 'Form submission failed',
+      };
     }
   }
 
   /**
    * Emit form request sent event to visitor socket.
    */
-  public emitFormRequestSent(visitorSocketId: string, payload: FormRequestSentPayload) {
+  public emitFormRequestSent(
+    visitorSocketId: string,
+    payload: FormRequestSentPayload
+  ) {
     this.logger.log(`Emitting formRequestSent to ${visitorSocketId}`);
-    this.server.to(visitorSocketId).emit(WebSocketEvent.FORM_REQUEST_SENT, payload);
+    this.server
+      .to(visitorSocketId)
+      .emit(WebSocketEvent.FORM_REQUEST_SENT, payload);
   }
 
   /**
@@ -453,10 +532,14 @@ export class EventsGateway
   ) {
     this.logger.log(`Emitting formSubmitted to project:${projectId}`);
     // Emit to project room (agents)
-    this.server.to(`project:${projectId}`).emit(WebSocketEvent.FORM_SUBMITTED, payload);
+    this.server
+      .to(`project:${projectId}`)
+      .emit(WebSocketEvent.FORM_SUBMITTED, payload);
     // Also emit to visitor if socket provided
     if (visitorSocketId) {
-      this.server.to(visitorSocketId).emit(WebSocketEvent.FORM_SUBMITTED, payload);
+      this.server
+        .to(visitorSocketId)
+        .emit(WebSocketEvent.FORM_SUBMITTED, payload);
     }
   }
 
@@ -465,7 +548,9 @@ export class EventsGateway
    */
   public emitFormUpdated(projectId: number, payload: FormUpdatedPayload) {
     this.logger.log(`Emitting formUpdated to project:${projectId}`);
-    this.server.to(`project:${projectId}`).emit(WebSocketEvent.FORM_UPDATED, payload);
+    this.server
+      .to(`project:${projectId}`)
+      .emit(WebSocketEvent.FORM_UPDATED, payload);
   }
 
   /**
@@ -473,6 +558,8 @@ export class EventsGateway
    */
   public emitFormDeleted(projectId: number, payload: FormDeletedPayload) {
     this.logger.log(`Emitting formDeleted to project:${projectId}`);
-    this.server.to(`project:${projectId}`).emit(WebSocketEvent.FORM_DELETED, payload);
+    this.server
+      .to(`project:${projectId}`)
+      .emit(WebSocketEvent.FORM_DELETED, payload);
   }
 }

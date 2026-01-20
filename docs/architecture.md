@@ -107,22 +107,30 @@ Heavy operations are offloaded to BullMQ workers:
 
 ## Data Flow Patterns
 
-### Pattern 1: Visitor Message Flow
+### 1. Visitor Message → Agent Dashboard
 
 ```
-Widget → Gateway → EventEmitter → BullMQ → Worker → PostgreSQL + Outbox
-                                                  ↓
-                                            NOTIFY → Redis Pub/Sub → Gateway → Dashboard
+Widget → Socket.IO → Gateway → EventEmitter → BullMQ Queue
+                                                    ↓
+                                              Worker (DB write)
+                                                    ↓
+                                              Outbox Pattern
+                                                    ↓
+                                           PG NOTIFY → Redis Pub/Sub
+                                                    ↓
+                                           Gateway → Dashboard (broadcast)
 ```
 
-### Pattern 2: Agent Reply Flow
+### 2. Agent Reply → Widget
 
 ```
 Dashboard → REST API → MessageService → PostgreSQL
-                    ↓
-              Redis lookup (visitor socket) → Gateway → Widget
-                    ↓
-              Broadcast NEW_MESSAGE → Dashboard (all agents)
+                            ↓
+               Redis lookup (visitor socket)
+                            ↓
+                      Gateway → Widget
+                            ↓
+             Broadcast NEW_MESSAGE → other agents
 ```
 
 ### Pattern 3: Lazy Conversation Creation
@@ -166,13 +174,13 @@ Conversations are created **only when first message is sent**, not when widget o
 
 All detailed investigations are located in `docs/deep_investigation/`:
 
-| Area            | Investigation                                                                                                                                                      |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Auth            | [user-authentication-flow.md](deep_investigation/user-authentication-flow.md)                                                                                                         |
-| Projects        | [projects-feature.md](deep_investigation/projects-feature.md), [project-event-flow.md](deep_investigation/project-event-flow.md)                                                                         |
-| Inbox           | [inbox-operations.md](deep_investigation/inbox-operations.md), [conversation-assignments.md](deep_investigation/conversation-assignments.md)                                                             |
-| Messaging       | [dashboard_to_widget_message_flow.md](deep_investigation/dashboard_to_widget_message_flow.md), [widget_to_dashboard_message_flow.md](deep_investigation/widget_to_dashboard_message_flow.md)             |
-| Widget          | [widget_connection_flow.md](deep_investigation/widget_connection_flow.md), [visitor_session_management.md](deep_investigation/visitor_session_management.md)                                             |
-| Features        | [actions_template_flow.md](deep_investigation/actions_template_flow.md), [canned-responses-flow.md](deep_investigation/canned-responses-flow.md), [visitor-notes-flow.md](deep_investigation/visitor-notes-flow.md)         |
+| Area            | Investigation                                                                                                                                                                                                                                  |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Auth            | [user-authentication-flow.md](deep_investigation/user-authentication-flow.md)                                                                                                                                                                  |
+| Projects        | [projects-feature.md](deep_investigation/projects-feature.md), [project-event-flow.md](deep_investigation/project-event-flow.md)                                                                                                               |
+| Inbox           | [inbox-operations.md](deep_investigation/inbox-operations.md), [conversation-assignments.md](deep_investigation/conversation-assignments.md)                                                                                                   |
+| Messaging       | [dashboard_to_widget_message_flow.md](deep_investigation/dashboard_to_widget_message_flow.md), [widget_to_dashboard_message_flow.md](deep_investigation/widget_to_dashboard_message_flow.md)                                                   |
+| Widget          | [widget_connection_flow.md](deep_investigation/widget_connection_flow.md), [visitor_session_management.md](deep_investigation/visitor_session_management.md)                                                                                   |
+| Features        | [actions_template_flow.md](deep_investigation/actions_template_flow.md), [canned-responses-flow.md](deep_investigation/canned-responses-flow.md), [visitor-notes-flow.md](deep_investigation/visitor-notes-flow.md)                            |
 | Infrastructure  | [audit-logs-flow.md](deep_investigation/audit-logs-flow.md), [mail-service.md](deep_investigation/mail-service.md), [screenshot-service.md](deep_investigation/screenshot-service.md), [webhooks-flow.md](deep_investigation/webhooks-flow.md) |
-| User Management | [user-profile-settings.md](deep_investigation/user-profile-settings.md)                                                                                                               |
+| User Management | [user-profile-settings.md](deep_investigation/user-profile-settings.md)                                                                                                                                                                        |

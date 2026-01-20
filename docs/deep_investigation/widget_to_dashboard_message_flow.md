@@ -46,7 +46,6 @@ sequenceDiagram
 1. **User Action:** Visitor types message in `Composer` textarea, presses Enter or clicks Send button.
 
 2. **Composer.sendMessage():**
-
    - Trims content, validates non-empty
    - Checks rate limit (10 messages per 60 seconds)
    - Records timestamp for rate limiting
@@ -54,7 +53,6 @@ sequenceDiagram
    - Clears input, stops typing indicator
 
 3. **App.handleSendMessage():**
-
    - Generates `tempId` via `crypto.randomUUID()`
    - Creates optimistic message:
      ```typescript
@@ -149,36 +147,31 @@ sequenceDiagram
 ### Step-by-step Description
 
 1. **EventsGateway.handleSendMessage():**
-
    - Validates `client.data.visitorUid` and `client.data.projectId` exist
    - Creates `VisitorMessageReceivedEvent` with tempId, content, visitorUid, projectId, socketId, sessionMetadata
    - Emits `visitor.message.received` internal event
 
 2. **InboxEventHandlerService.handleVisitorMessageReceived():**
-
    - Resets visitor session in Redis via `setVisitorSession()`
    - Creates job payload with type `WorkerEventTypes.NEW_MESSAGE_FROM_VISITOR`
    - Queues to BullMQ via `bullMqProducerService.sendMessage()`
 
 3. **EventConsumerService.handleNewMessageFromVisitor()** (in worker process):
-
    - Runs in database transaction:
      - Finds or creates `Visitor` by UID
      - Fetches `Project` settings for `historyVisibility` mode
      - Finds or creates `Conversation` for visitor
      - Creates `Message` entity with status `SENT`, `fromCustomer: true`
      - Updates `Conversation.lastMessage`
-     - Inserts event into `outbox` table (triggers PostgreSQL NOTIFY)
+     - Inserts event into `outbox` table + calls `pg_notify()` (app-level, not a trigger)
 
 4. **OutboxListenerService.processOutboxEvents():**
-
    - Listens to PostgreSQL NOTIFY on `outbox_channel`
    - Fetches unprocessed events with `SELECT FOR UPDATE SKIP LOCKED`
    - Publishes each event to Redis channel `new_message_channel`
    - Deletes processed events from outbox
 
 5. **InboxEventHandlerService.handleRedisMessageReceived():**
-
    - Parses message from Redis
    - Looks up visitor socket ID from Redis
    - Emits `visitor.message.processed` event (sends MESSAGE_SENT ack to widget)
@@ -249,12 +242,10 @@ sequenceDiagram
 ### Step-by-step Description
 
 1. **Socket Event Received:**
-
    - Dashboard socket receives `NEW_MESSAGE` event at `SocketContext.tsx:L326`
    - Handler registered via `useRealtimeCacheUpdater()` hook
 
 2. **handleNewMessage():**
-
    - Parses `conversationId` from message
    - Extracts `projectId` from current URL via regex `/\/projects\/(\d+)/`
    - Updates React Query cache for messages:
@@ -266,18 +257,16 @@ sequenceDiagram
            return [...oldData, newMessage];
          }
          return oldData || [newMessage];
-       }
+       },
      );
      ```
 
 3. **Auto-Read Marking:**
-
    - Checks if message is from currently viewed conversation
    - If yes AND `newMessage.fromCustomer === true`:
      - Calls `updateConversationStatus({ read: true })`
 
 4. **Cache Invalidation:**
-
    - Invalidates conversations query with `refetchType: 'all'`
    - Forces immediate refetch to update snippets, unread counts, timestamps
 
@@ -333,14 +322,14 @@ flowchart LR
 
 ## Event Flow Summary
 
-| Event                       | Emitter               | Handler                   | Transport     |
-| --------------------------- | --------------------- | ------------------------- | ------------- |
-| `SEND_MESSAGE`              | Widget socketService  | Gateway.handleSendMessage | Socket.IO     |
-| `visitor.message.received`  | Gateway               | InboxEventHandler         | EventEmitter2 |
-| BullMQ job                  | InboxEventHandler     | EventConsumerService      | BullMQ/Redis  |
-| PostgreSQL NOTIFY           | Outbox INSERT trigger | OutboxListenerService     | PostgreSQL    |
-| Redis PUBLISH               | OutboxListenerService | InboxEventHandler         | Redis Pub/Sub |
-| `visitor.message.processed` | InboxEventHandler     | GatewayEventListener      | EventEmitter2 |
-| `agent.message.sent`        | InboxEventHandler     | GatewayEventListener      | EventEmitter2 |
-| `NEW_MESSAGE`               | GatewayEventListener  | Dashboard SocketContext   | Socket.IO     |
-| React Query update          | handleNewMessage      | MessagePane               | React         |
+| Event                       | Emitter                              | Handler                   | Transport     |
+| --------------------------- | ------------------------------------ | ------------------------- | ------------- |
+| `SEND_MESSAGE`              | Widget socketService                 | Gateway.handleSendMessage | Socket.IO     |
+| `visitor.message.received`  | Gateway                              | InboxEventHandler         | EventEmitter2 |
+| BullMQ job                  | InboxEventHandler                    | EventConsumerService      | BullMQ/Redis  |
+| PostgreSQL NOTIFY           | OutboxPersistenceService (pg_notify) | OutboxListenerService     | PostgreSQL    |
+| Redis PUBLISH               | OutboxListenerService                | InboxEventHandler         | Redis Pub/Sub |
+| `visitor.message.processed` | InboxEventHandler                    | GatewayEventListener      | EventEmitter2 |
+| `agent.message.sent`        | InboxEventHandler                    | GatewayEventListener      | EventEmitter2 |
+| `NEW_MESSAGE`               | GatewayEventListener                 | Dashboard SocketContext   | Socket.IO     |
+| React Query update          | handleNewMessage                     | MessagePane               | React         |

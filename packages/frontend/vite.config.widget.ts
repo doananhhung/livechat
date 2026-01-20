@@ -1,4 +1,5 @@
-import { defineConfig } from "vite";
+/// <reference types="vitest" />
+import { defineConfig } from "vitest/config";
 import preact from "@preact/preset-vite";
 import path from "node:path";
 import { version } from "./package.json";
@@ -6,7 +7,12 @@ import { version } from "./package.json";
 export default defineConfig({
   plugins: [preact()],
   resolve: {
-    alias: {},
+    alias: [
+      { find: "react", replacement: "preact/compat" },
+      { find: "react-dom/test-utils", replacement: "preact/test-utils" },
+      { find: "react-dom", replacement: "preact/compat" },
+      { find: "react/jsx-runtime", replacement: "preact/jsx-runtime" },
+    ],
   },
   build: {
     lib: {

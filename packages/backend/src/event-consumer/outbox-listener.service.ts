@@ -1,5 +1,10 @@
-
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+  Inject,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Client } from 'pg';
 import { ConfigService } from '@nestjs/config';
@@ -22,7 +27,7 @@ export class OutboxListenerService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     this.logger.log('Initializing Outbox Listener...');
-    
+
     this.pgClient = new Client({
       host: this.configService.get<string>('PSQL_HOST'),
       port: this.configService.get<number>('PSQL_PORT'),
@@ -33,7 +38,9 @@ export class OutboxListenerService implements OnModuleInit, OnModuleDestroy {
 
     try {
       await this.pgClient.connect();
-      this.logger.log('Dedicated PostgreSQL client connected for LISTEN/NOTIFY.');
+      this.logger.log(
+        'Dedicated PostgreSQL client connected for LISTEN/NOTIFY.'
+      );
 
       this.pgClient.on('notification', async (msg) => {
         this.logger.debug(`Received notification on channel: ${msg.channel}`);
@@ -68,10 +75,11 @@ export class OutboxListenerService implements OnModuleInit, OnModuleDestroy {
       await queryRunner.startTransaction();
 
       // Use persistence service for data access
-      const events = await this.outboxPersistenceService.fetchAndLockUnprocessedEvents(
-        queryRunner.manager,
-        100
-      );
+      const events =
+        await this.outboxPersistenceService.fetchAndLockUnprocessedEvents(
+          queryRunner.manager,
+          100
+        );
 
       if (events.length === 0) {
         await queryRunner.commitTransaction();
@@ -80,15 +88,18 @@ export class OutboxListenerService implements OnModuleInit, OnModuleDestroy {
 
       this.logger.log(`Found ${events.length} events to process.`);
 
-      for (const event of events) {
-        await this.redisPublisher.publish(
-          NEW_MESSAGE_CHANNEL,
-          JSON.stringify(event.payload)
-        );
-      }
+      // Use pipeline for batch publishing - reduces N round-trips to 1
+      const pipeline = this.redisPublisher.pipeline();
+      events.forEach((event) => {
+        pipeline.publish(NEW_MESSAGE_CHANNEL, JSON.stringify(event.payload));
+      });
+      await pipeline.exec();
 
       const eventIds = events.map((e) => e.id);
-      await this.outboxPersistenceService.deleteEvents(queryRunner.manager, eventIds);
+      await this.outboxPersistenceService.deleteEvents(
+        queryRunner.manager,
+        eventIds
+      );
 
       await queryRunner.commitTransaction();
       this.logger.log(

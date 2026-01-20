@@ -1,14 +1,25 @@
-
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
-import { VisitorIdentifiedEvent, VisitorMessageReceivedEvent, VisitorSessionReadyEvent, VisitorMessageProcessedEvent, AgentMessageSentEvent, UpdateContextRequestEvent } from './events';
+import {
+  VisitorIdentifiedEvent,
+  VisitorMessageReceivedEvent,
+  VisitorSessionReadyEvent,
+  VisitorMessageProcessedEvent,
+  AgentMessageSentEvent,
+  UpdateContextRequestEvent,
+} from './events';
 import { VisitorDisconnectedEvent } from '../visitors/events';
 import { ConversationService } from './services/conversation.service';
 import { VisitorService } from './services/visitor.service';
 import { RealtimeSessionService } from '../realtime-session/realtime-session.service';
 import { BullMqProducerService } from '../event-producer/bullmq-producer.service';
 import { EntityManager } from 'typeorm';
-import { WorkerEventTypes, WebSocketEvent, MessageSentPayload, HistoryVisibilityMode } from '@live-chat/shared-types';
+import {
+  WorkerEventTypes,
+  WebSocketEvent,
+  MessageSentPayload,
+  HistoryVisibilityMode,
+} from '@live-chat/shared-types';
 import { Project } from '../database/entities';
 
 /**
@@ -32,7 +43,9 @@ interface RedisMessagePayload {
  * Type guard to validate Redis message payload structure.
  * Returns true if the payload has all required fields with correct types.
  */
-function isValidRedisMessagePayload(data: unknown): data is RedisMessagePayload {
+function isValidRedisMessagePayload(
+  data: unknown
+): data is RedisMessagePayload {
   if (typeof data !== 'object' || data === null) {
     return false;
   }
@@ -102,12 +115,12 @@ export class InboxEventHandlerService {
           select: ['id', 'widgetSettings'],
         });
 
-        const historyMode: HistoryVisibilityMode = 
+        const historyMode: HistoryVisibilityMode =
           project?.widgetSettings?.historyVisibility || 'limit_to_active';
 
         // Lazy conversation creation: Only find existing conversation based on mode.
         // do NOT create a new one. Conversation is created on first message.
-        const conversation = 
+        const conversation =
           await this.conversationService.findConversationForWidget(
             payload.projectId,
             visitor.id,
@@ -119,16 +132,22 @@ export class InboxEventHandlerService {
     );
 
     let messagesForFrontend: any[] = [];
-    if (conversation && conversation.messages && conversation.messages.length > 0) {
+    if (
+      conversation &&
+      conversation.messages &&
+      conversation.messages.length > 0
+    ) {
       messagesForFrontend = conversation.messages.map((msg) => ({
         id: msg.id,
         content: msg.content || '',
-        sender: {
-          type: msg.fromCustomer ? 'visitor' : 'agent',
-          name: msg.senderId,
-        },
+        senderId: msg.senderId,
+        fromCustomer: msg.fromCustomer,
+        conversationId: msg.conversationId,
         status: msg.status as any,
-        timestamp: typeof msg.createdAt === 'string' ? msg.createdAt : msg.createdAt.toISOString(),
+        createdAt:
+          typeof msg.createdAt === 'string'
+            ? msg.createdAt
+            : msg.createdAt.toISOString(),
         contentType: msg.contentType,
         metadata: msg.metadata,
       }));
@@ -197,17 +216,17 @@ export class InboxEventHandlerService {
       const messageForFrontend = {
         id: message.id,
         content: message.content,
-        sender: {
-          type: message.fromCustomer ? 'visitor' : 'agent',
-        },
+        senderId: (message as any).senderId,
+        fromCustomer: message.fromCustomer,
+        conversationId: message.conversationId,
         status: message.status,
-        timestamp: message.createdAt,
+        createdAt: message.createdAt,
       };
 
       this.logger.debug(
         `message for frontend: ${JSON.stringify(messageForFrontend)}`
       );
-      
+
       if (visitorSocketId) {
         const event = new VisitorMessageProcessedEvent();
         event.visitorSocketId = visitorSocketId;
@@ -230,13 +249,13 @@ export class InboxEventHandlerService {
       // Wait, `AgentMessageSentEvent` expects `Message` entity.
       // Let's just add a `BroadcastMessageEvent`.
       // Or better, `VisitorMessageProcessedEvent` can handle the broadcast too if I add `projectId` and `message` to it.
-      
+
       // Let's modify `VisitorMessageProcessedEvent` in `src/inbox/events.ts` (I can't modify it again in this turn easily without re-outputting).
       // I'll just use `AgentMessageSentEvent` logic but I need to be careful about types.
       // Actually, I can just emit `agent.message.sent` with `visitorSocketId: null` and `message: message as any`.
       // The listener does: `if (visitorSocketId) ...; server.to(project).emit(...)`.
       // This fits perfectly.
-      
+
       const conversation = await this.conversationService.findById(
         String(message.conversationId)
       );
@@ -255,25 +274,39 @@ export class InboxEventHandlerService {
   }
 
   @OnEvent('visitor.disconnected')
-  async handleVisitorDisconnected(event: VisitorDisconnectedEvent): Promise<void> {
-    this.logger.debug(`Handling visitor.disconnected for visitorUid: ${event.visitorUid}`);
+  async handleVisitorDisconnected(
+    event: VisitorDisconnectedEvent
+  ): Promise<void> {
+    this.logger.debug(
+      `Handling visitor.disconnected for visitorUid: ${event.visitorUid}`
+    );
 
     // Truncate URL history to 5 entries on disconnect
     if (event.conversationId) {
       try {
-        await this.conversationService.truncateUrlHistory(event.conversationId, 5);
+        await this.conversationService.truncateUrlHistory(
+          event.conversationId,
+          5
+        );
       } catch (err) {
-        this.logger.error(`Failed to truncate URL history for conversation ${event.conversationId}`, err);
+        this.logger.error(
+          `Failed to truncate URL history for conversation ${event.conversationId}`,
+          err
+        );
       }
     }
   }
 
   @OnEvent('update.context.request')
-  async handleUpdateContextRequest(event: UpdateContextRequestEvent): Promise<void> {
-    this.logger.debug(`Handling update.context.request for visitorUid: ${event.visitorUid}`);
+  async handleUpdateContextRequest(
+    event: UpdateContextRequestEvent
+  ): Promise<void> {
+    this.logger.debug(
+      `Handling update.context.request for visitorUid: ${event.visitorUid}`
+    );
 
     try {
-        await this.realtimeSessionService.setVisitorCurrentUrl(
+      await this.realtimeSessionService.setVisitorCurrentUrl(
         event.visitorUid,
         event.currentUrl
       );
