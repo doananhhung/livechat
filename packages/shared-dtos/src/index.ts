@@ -40,4 +40,5 @@ export * from "./update-submission.dto";
 export * from "./gateway.dto";
 export * from "./assign-conversation.dto";
 export * from "./update-visitor.dto";
+export * from "./action-definition.dto";
 export * from "./visitor-response.dto";

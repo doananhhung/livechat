@@ -16,7 +16,7 @@ import {
   SendMessageDto,
   VisitorTypingDto,
   UpdateContextDto,
-  SubmitFormDto,
+  SubmitFormAsVisitorDto,
 } from "@live-chat/shared-dtos";
 
 // Socket.IO runs on the root domain, not /api/v1
@@ -354,7 +354,7 @@ class SocketService {
           this.instanceId,
           `📤 Emitting submitForm for ${formRequestMessageId}`,
         );
-        const payload: SubmitFormDto = { formRequestMessageId, data };
+        const payload: SubmitFormAsVisitorDto = { formRequestMessageId, data };
         this.socket.emit(
           WebSocketEvent.SUBMIT_FORM,
           payload,

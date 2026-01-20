@@ -1,10 +1,10 @@
 import { h, type JSX } from "preact";
 import { useState, useMemo, useCallback } from "preact/hooks";
-import type {
-  FormRequestMetadata,
-  ActionFieldDefinition,
+import type { FormRequestMetadata } from "@live-chat/shared-types";
+import {
+  type ActionFieldDefinitionDto as ActionFieldDefinition,
   ActionFieldType,
-} from "@live-chat/shared-types";
+} from "@live-chat/shared-dtos";
 
 interface FormRequestMessageProps {
   metadata: FormRequestMetadata;

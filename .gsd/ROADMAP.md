@@ -8,7 +8,7 @@
 - [x] Migration of Unified Auth & Security flows.
 - [x] Migration of Inbox & Messaging flows.
 - [x] Migration of Project Management & Invitations.
-- [ ] Migration of Widget Socket & Actions.
+- [x] Migration of Widget Socket & Actions.
 - [ ] Deletion of truly orphaned DTOs (`InvitationResponseDto`, `ReplyToCommentDto`).
 
 ## Phases
@@ -27,7 +27,7 @@
 
 ### Phase 2: Inbox & Conversation Management
 
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Unified DTO adoption for the Inbox and Visitor management.
 **Included DTOs**:
 
