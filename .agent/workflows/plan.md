@@ -147,7 +147,7 @@ Display:
 
 > **Skill: `investigate`**
 >
-> Read and apply `./skills/investigate/SKILL.md` before proceeding.
+> Read and apply `../.agent/skills/investigate/SKILL.md` before proceeding.
 
 Write `./.gtd/<task_name>/$PHASE/RESEARCH.md` with findings.
 

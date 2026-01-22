@@ -73,7 +73,7 @@ fi
 
 > **Skill: `investigate`**
 >
-> Read and apply `./skills/investigate/SKILL.md` before tracing.
+> Read and apply `../.agent/skills/investigate/SKILL.md` before tracing.
 
 Based on the symptom:
 

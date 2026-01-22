@@ -1,5 +1,4 @@
-import { IsString, IsNotEmpty, MaxLength } from 'class-validator';
-import { PartialType } from '@nestjs/mapped-types';
+import { IsString, IsNotEmpty, MaxLength, IsOptional } from "class-validator";
 
 export class CreateVisitorNoteDto {
   @IsString()
@@ -8,4 +7,9 @@ export class CreateVisitorNoteDto {
   content: string;
 }
 
-export class UpdateVisitorNoteDto extends PartialType(CreateVisitorNoteDto) {}
+export class UpdateVisitorNoteDto {
+  @IsString()
+  @IsOptional()
+  @MaxLength(2000)
+  content?: string;
+}

@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "../../../../ui/Button";
-import { Input } from "../../../../ui/Input"; // We might need a TextArea component if Input doesn't support multiline nicely, or just use <textarea> with styles
-import { useToast } from "../../../../ui/use-toast";
-import { updateProject } from "../../../../../services/projectApi";
+import { Button } from "../../../ui/Button";
+import { useToast } from "../../../ui/use-toast";
+import { updateProject } from "../../../../services/projectApi";
 import type { UpdateProjectDto } from "@live-chat/shared-dtos";
 import { type Project } from "@live-chat/shared-types";
-import { Switch } from "../../../../ui/Switch"; // Assuming we have a Switch component, if not we'll use a checkbox or implement one.
 
 // If Switch component doesn't exist, I'll fallback to a simple checkbox implementation or verify its existence.
 // Based on previous files, I haven't seen Switch. Let's assume standard HTML input type="checkbox" styled or check ui folder.
@@ -62,20 +60,22 @@ export const AiResponderSettingsForm = ({
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="flex items-center justify-between border p-4 rounded-lg bg-muted/20">
         <div>
-          <h3 className="font-medium text-foreground">{t("settings.aiResponderEnable")}</h3>
+          <h3 className="font-medium text-foreground">
+            {t("settings.aiResponderEnable")}
+          </h3>
           <p className="text-sm text-muted-foreground">
             {t("settings.aiResponderEnableDesc")}
           </p>
         </div>
         <div className="flex items-center">
-             <input
-                type="checkbox"
-                id="aiResponderEnabled"
-                checked={enabled}
-                onChange={(e) => setEnabled(e.target.checked)}
-                className="h-5 w-5 rounded border-input bg-background text-primary focus:ring-ring"
-                disabled={updateMutation.isPending}
-              />
+          <input
+            type="checkbox"
+            id="aiResponderEnabled"
+            checked={enabled}
+            onChange={(e) => setEnabled(e.target.checked)}
+            className="h-5 w-5 rounded border-input bg-background text-primary focus:ring-ring"
+            disabled={updateMutation.isPending}
+          />
         </div>
       </div>
 

@@ -5,7 +5,6 @@ import {
   IsBoolean,
 } from "class-validator";
 import { Type } from "class-transformer";
-import { PartialType } from "@nestjs/mapped-types";
 import { ActionDefinitionDto } from "./action-definition.dto";
 
 /**
@@ -28,9 +27,20 @@ export class CreateActionTemplateDto {
  * DTO for updating an existing action template.
  * All fields are optional. Can also update isEnabled status.
  */
-export class UpdateActionTemplateDto extends PartialType(
-  CreateActionTemplateDto,
-) {
+export class UpdateActionTemplateDto {
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ValidateNested()
+  @IsOptional()
+  @Type(() => ActionDefinitionDto)
+  definition?: ActionDefinitionDto;
+
   @IsOptional()
   @IsBoolean()
   isEnabled?: boolean;

@@ -2,9 +2,19 @@
   "name": "@live-chat/shared-dtos",
   "version": "1.0.0",
   "main": "dist/index.js",
+  "module": "dist/esm/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "browser": "./dist/frontend/index.js",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/index.js"
+    }
+  },
   "scripts": {
-    "build": "tsc --build",
+    "build": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json && npm run build:frontend",
+    "build:frontend": "tsx scripts/build-frontend.ts",
     "dev": "tsc --watch"
   },
   "dependencies": {
@@ -14,6 +24,8 @@
     "class-validator": "^0.14.1"
   },
   "devDependencies": {
+    "esbuild": "^0.27.2",
+    "glob": "^10.5.0",
     "typescript": "^5.7.3"
   }
 }
