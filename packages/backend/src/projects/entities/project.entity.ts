@@ -36,6 +36,12 @@ export class Project {
   @Column({ type: 'integer', nullable: true, name: 'auto_resolve_minutes' })
   autoResolveMinutes: number | null;
 
+  @Column({ type: 'boolean', default: false, name: 'ai_responder_enabled' })
+  aiResponderEnabled: boolean;
+
+  @Column({ type: 'text', nullable: true, name: 'ai_responder_prompt' })
+  aiResponderPrompt: string | null;
+
   @OneToMany(() => ProjectMember, (member) => member.project)
   members: ProjectMember[];
 

@@ -151,7 +151,10 @@ const App = () => {
       };
 
       addMessage(optimisticMessage);
-      const sessionMetadata = historyTracker.getMetadata(); // Get current metadata
+      const sessionMetadata = {
+        ...historyTracker.getMetadata(),
+        aiEnabled: useChatStore.getState().isAiEnabled,
+      }; // Get current metadata + AI toggle
       socketService.emitSendMessage(content, tempId, sessionMetadata); // Pass metadata
     },
     [addMessage],

@@ -1,37 +1,33 @@
 ---
-name: execute
-description: Execute a plan. Creates ./.gtd/<task_name>/{phase}/SUMMARY.md
-argument-hint: "[phase]"
+name: d-execute
+description: Execute bug fix plan. Creates ./.gtd/debug/current/FIX_SUMMARY.md
 ---
 
 <role>
-You are a plan executor. You implement tasks atomically, verify each one, and produce a summary.
+You are a bug fix executor. You implement fix tasks atomically, verify each one, and produce a summary.
 
 **Core responsibilities:**
 
-- Read and execute PLAN.md tasks in order
+- Read and execute FIX_PLAN.md tasks in order
 - Verify each task meets its done criteria
 - Handle deviations appropriately
-- Create SUMMARY.md with proposed commit message
+- Create FIX_SUMMARY.md with proposed commit message
   </role>
 
 <objective>
-Execute all tasks in a plan and produce a summary of what was done.
+Execute all fix tasks and produce a summary of what was done.
 
 **Flow:** Load Plan → Execute Tasks → Verify → Summarize
 </objective>
 
 <context>
-**Phase number:** $ARGUMENTS
-
 **Required files:**
 
-- `./.gtd/<task_name>/{phase}/PLAN.md` — Must exist
+- `./.gtd/debug/current/FIX_PLAN.md` — Must exist
 
 **Output:**
 
-- `./.gtd/<task_name>/{phase}/SUMMARY.md`
-- What have been done, and behaviour of the system before and after code change.
+- `./.gtd/debug/current/FIX_SUMMARY.md`
 
 **Skills used:**
 
@@ -50,39 +46,31 @@ After each task, check its done criteria. Don't proceed if verification fails.
 
 ## Deviation Rules
 
-| Situation                  | Action                   |
-| -------------------------- | ------------------------ |
-| Small bug found            | Auto-fix                 |
-| Missing dependency         | Install, note in summary |
-| Unclear requirement        | **STOP**, ask user       |
-| Architecture change needed | **STOP**, ask user       |
+| Situation                 | Action                   |
+| ------------------------- | ------------------------ |
+| Small related issue found | Auto-fix                 |
+| Missing dependency        | Install, note in summary |
+| Unclear requirement       | **STOP**, ask user       |
+| Scope beyond fix          | **STOP**, ask user       |
 
-## Summary Format
+## Summary With Commit Message
 
-SUMMARY.md should capture:
-
-- What was done
-- Why it was done
-- Behaviour of the system before and after executing the plan
-- Any deviations from plan
-- Proposed commit message at the end
+FIX_SUMMARY.md captures what was done with a proposed commit message.
 
 </philosophy>
 
 <process>
 
-## 1. Load Plan
+## 1. Load Fix Plan
 
-**Bash:**
+Read `./.gtd/debug/current/FIX_PLAN.md`.
 
 ```bash
-if ! test -f "./.gtd/<task_name>/$PHASE/PLAN.md"; then
-    echo "Error: No plan exists for phase $PHASE"
+if ! test -f "./.gtd/debug/current/FIX_PLAN.md"; then
+    echo "Error: No fix plan exists"
     exit 1
 fi
 ```
-
-Read `./.gtd/<task_name>/$PHASE/PLAN.md`.
 
 ---
 
@@ -90,10 +78,10 @@ Read `./.gtd/<task_name>/$PHASE/PLAN.md`.
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD ► EXECUTING PHASE {N}
+ GTD:DEBUG ► EXECUTING FIX
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Objective: {objective}
+Root Cause: {brief summary}
 
 Tasks:
 [ ] 1. {task 1 name}
@@ -142,9 +130,9 @@ Check the task's `<done>` criteria.
 
 Note any work done outside the plan:
 
-- Bugs fixed
+- Additional bugs fixed
 - Dependencies added
-- Small adjustments
+- Extra safety measures
 
 ---
 
@@ -154,10 +142,10 @@ After all tasks, check plan's success criteria:
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD ► VERIFYING PHASE {N}
+ GTD:DEBUG ► VERIFYING FIX
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-[✓] {criterion 1}
+[✓] Original symptom no longer occurs
 [✓] {criterion 2}
 ```
 
@@ -165,25 +153,48 @@ After all tasks, check plan's success criteria:
 
 ---
 
-## 5. Write SUMMARY.md
+## 5. Reproduce Symptom
 
-Write to `./.gtd/<task_name>/$PHASE/SUMMARY.md`:
+Follow the reproduction steps from `./.gtd/debug/current/SYMPTOM.md` to verify the bug is actually fixed.
 
-```markdown
-# Phase {N} Summary
+**Document the result:**
 
-**Status:** Complete
+```text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GTD:DEBUG ► REPRODUCTION TEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Following original reproduction steps...
+
+Result: {Bug no longer occurs / Issue resolved}
+```
+
+---
+
+## 6. Write FIX_SUMMARY.md
+
+Write to `./.gtd/debug/current/FIX_SUMMARY.md`:
+
+````markdown
+# Bug Fix Summary
+
+**Status:** Fixed
 **Executed:** {date}
+
+## Bug Summary
+
+**Symptom:** {Brief description of symptom}
+**Root Cause:** {Brief description of root cause}
 
 ## What Was Done
 
-{Narrative summary of implementation}
+{Narrative summary of the fix implementation}
 
 ## Behaviour
 
-**Before:** {describe system behaviour before changes}
+**Before:** {System behaviour with the bug}
 
-**After:** {describe system behaviour after changes}
+**After:** {System behaviour after fix}
 
 ## Tasks Completed
 
@@ -199,10 +210,11 @@ Write to `./.gtd/<task_name>/$PHASE/SUMMARY.md`:
 
 {List any work done outside the plan, or "None"}
 
-## Success Criteria
+## Verification
 
-- [x] {criterion 1}
-- [x] {criterion 2}
+- [x] Original symptom no longer reproduces
+- [x] {success criterion 2}
+- [x] {success criterion 3}
 
 ## Files Changed
 
@@ -210,34 +222,18 @@ Write to `./.gtd/<task_name>/$PHASE/SUMMARY.md`:
 - `{file 2}` — {what changed}
 
 ## Proposed Commit Message
-```
 
-feat(phase-{N}): {short description}
+\```
+fix({scope}): {short description of bug fix}
 
-{longer description if needed}
+{Longer description of what was fixed and why}
 
-- {bullet 1}
-- {bullet 2}
+Root cause: {brief root cause description}
 
-```
-
-```
-
----
-
-## 6. Update Roadmap Status
-
-Update `./.gtd/<task_name>/ROADMAP.md` phase status:
-
-```markdown
-### Phase {N}: {Name}
-
-**Status**: ✅ Complete
-```
-
-```
-
-```
+- {change 1}
+- {change 2}
+  \```
+````
 
 ---
 
@@ -247,20 +243,21 @@ Update `./.gtd/<task_name>/ROADMAP.md` phase status:
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GTD ► PHASE {N} COMPLETE ✓
+ GTD:DEBUG ► BUG FIXED ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Tasks: {X}/{X} complete
-Deviations: {count}
 Files changed: {count}
 
-Summary: ./gtd/{N}/SUMMARY.md
+Summary: ./.gtd/debug/current/FIX_SUMMARY.md
 
 ───────────────────────────────────────────────────────
 
-▶ Next Up
+▶ Next Steps
 
-/plan {N+1} — plan the next phase
+1. Review the fix summary
+2. Run additional tests if needed
+3. Commit using the proposed message
 
 ───────────────────────────────────────────────────────
 ```
@@ -269,10 +266,9 @@ Summary: ./gtd/{N}/SUMMARY.md
 
 <related>
 
-| Workflow   | Relationship                     |
-| ---------- | -------------------------------- |
-| `/plan`    | Creates the plan this executes   |
-| `/discuss` | Optional review before execution |
+| Workflow      | Relationship                    |
+| ------------- | ------------------------------- |
+| `/d-plan-fix` | Creates the plan this executes  |
+| `/d-symptom`  | Provides symptom for validation |
 
 </related>
-````

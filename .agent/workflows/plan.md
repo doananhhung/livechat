@@ -1,138 +1,97 @@
 ---
-description: The Strategist — Decompose requirements into executable phases in ROADMAP.md
-argument-hint: "[phase] [--research] [--skip-research] [--gaps]"
+name: plan
+description: Create execution plan for a phase. Creates ./.gtd/<task_name>/{phase}/PLAN.md
+argument-hint: "[phase] [--research] [--skip-research]"
 ---
 
-# /plan Workflow
-
 <role>
-You are a GSD planner orchestrator. You create executable phase plans with task breakdown, dependency analysis, and goal-backward verification.
+You are a plan creator. You break a phase into executable tasks with clear done criteria.
 
 **Core responsibilities:**
-- Parse arguments and validate phase
-- Handle research (unless skipped or exists)
-- Create PLAN.md files with XML task structure
-- Verify plans with checker logic
-- Iterate until plans pass (max 3 iterations)
-</role>
+
+- Parse phase argument and validate against roadmap
+- Research if needed (unless skipped)
+- Create PLAN.md with atomic tasks
+- Verify plan before writing
+  </role>
 
 <objective>
-Create executable phase prompts (PLAN.md files) for a roadmap phase with integrated research and verification.
+Create executable plans (PLAN.md files) for a roadmap phase.
 
-**Default flow:** Research (if needed) → Plan → Verify → Done
-
-**Why subagents:** Research and planning burn context fast. Verification uses fresh context. User sees the flow between agents in main context.
+**Default flow:** Research (if needed) → Plan → Verify → Write
 </objective>
 
 <context>
-**Phase number:** $ARGUMENTS (optional — auto-detects next unplanned phase if not provided)
+**Phase number:** $ARGUMENTS (optional — auto-detects next unplanned phase)
 
 **Flags:**
+
 - `--research` — Force re-research even if RESEARCH.md exists
-- `--skip-research` — Skip research entirely, go straight to planning
-- `--gaps` — Gap closure mode (reads VERIFICATION.md, skips research)
+- `--skip-research` — Skip research, go straight to planning
 
 **Required files:**
-- `.gsd/SPEC.md` — Must be FINALIZED (Planning Lock)
-- `.gsd/ROADMAP.md` — Must have phases defined
-</context>
+
+- `./gtd/SPEC.md` — Must be FINALIZED
+- `./gtd/ROADMAP.md` — Must have phases defined
+
+**Output:**
+
+- `./gtd/{phase}/PLAN.md`
+- `./gtd/{phase}/RESEARCH.md` (if research performed)
+
+**Skills used:**
+
+- `investigate` — During research phase
+  </context>
 
 <philosophy>
 
-## Solo Developer + Claude Workflow
-You are planning for ONE person (the user) and ONE implementer (Claude).
-- No teams, stakeholders, ceremonies, coordination overhead
-- User is the visionary/product owner
-- Claude is the builder
-
 ## Plans Are Prompts
-PLAN.md is NOT a document that gets transformed into a prompt.
+
 PLAN.md IS the prompt. It contains:
+
 - Objective (what and why)
-- Context (@file references)
+- Context (file references)
 - Tasks (with verification criteria)
 - Success criteria (measurable)
 
-## Quality Degradation Curve
-
-| Context Usage | Quality | State |
-|---------------|---------|-------|
-| 0-30% | PEAK | Thorough, comprehensive |
-| 30-50% | GOOD | Confident, solid work |
-| 50-70% | DEGRADING | Efficiency mode begins |
-| 70%+ | POOR | Rushed, minimal |
-
-**The rule:** Plans should complete within ~50% context. More plans, smaller scope.
-
 ## Aggressive Atomicity
+
 Each plan: **2-3 tasks max**. No exceptions.
+
+## Discovery Levels
+
+| Level        | When                                    | Action                       |
+| ------------ | --------------------------------------- | ---------------------------- |
+| 0 - Skip     | Pure internal work, no new dependencies | No research                  |
+| 1 - Quick    | Single known library, low risk          | Quick search, no RESEARCH.md |
+| 2 - Standard | 2-3 options, new integration            | Create RESEARCH.md           |
+| 3 - Deep     | Architectural decision, high risk       | Full research                |
 
 </philosophy>
 
-<discovery_levels>
-
-## Discovery Protocol
-
-Discovery is MANDATORY unless you can prove current context exists.
-
-**Level 0 — Skip** (pure internal work)
-- ALL work follows established codebase patterns
-- No new external dependencies
-- Pure internal refactoring or feature extension
-
-**Level 1 — Quick Verification** (2-5 min)
-- Single known library, confirming syntax/version
-- Low-risk decision (easily changed later)
-- Action: Quick web search, no RESEARCH.md needed
-
-**Level 2 — Standard Research** (15-30 min)
-- Choosing between 2-3 options
-- New external integration (API, service)
-- Medium-risk decision
-- Action: Create RESEARCH.md with findings
-
-**Level 3 — Deep Dive** (1+ hour)
-- Architectural decision with long-term impact
-- Novel problem without clear patterns
-- High-risk, hard to change later
-- Action: Full research with RESEARCH.md
-
-</discovery_levels>
-
 <process>
 
-## 1. Validate Environment (Planning Lock)
-
-**PowerShell:**
-```powershell
-# Check SPEC.md exists and is finalized
-$spec = Get-Content ".gsd/SPEC.md" -Raw
-if ($spec -notmatch "FINALIZED") {
-    Write-Error "SPEC.md must be FINALIZED before planning"
-    exit
-}
-```
+## 1. Validate Environment
 
 **Bash:**
+
 ```bash
-# Check SPEC.md exists and is finalized
-if ! grep -q "FINALIZED" ".gsd/SPEC.md"; then
-    echo "Error: SPEC.md must be FINALIZED before planning" >&2
+if ! test -f "./gtd/ROADMAP.md"; then
+    echo "Error: ROADMAP.md must exist"
     exit 1
 fi
 ```
 
-**If not finalized:** Error — user must complete SPEC.md first.
-
 ---
 
-## 2. Parse and Normalize Arguments
+## 2. Parse Arguments
 
 Extract from $ARGUMENTS:
+
 - Phase number (integer)
 - `--research` flag
 - `--skip-research` flag
-- `--gaps` flag
 
 **If no phase number:** Detect next unplanned phase from ROADMAP.md.
 
@@ -140,122 +99,111 @@ Extract from $ARGUMENTS:
 
 ## 3. Validate Phase
 
-**PowerShell:**
-```powershell
-Select-String -Path ".gsd/ROADMAP.md" -Pattern "Phase $PHASE:"
-```
-
 **Bash:**
+
 ```bash
-grep "Phase $PHASE:" ".gsd/ROADMAP.md"
+grep "## Phase $PHASE:" "./.gtd/<task_name>/ROADMAP.md"
 ```
 
 **If not found:** Error with available phases.
-**If found:** Extract phase name and description.
+**If found:** Extract phase name and objective.
 
 ---
 
 ## 4. Ensure Phase Directory
 
-**PowerShell:**
-```powershell
-$PHASE_DIR = ".gsd/phases/$PHASE"
-if (-not (Test-Path $PHASE_DIR)) {
-    New-Item -ItemType Directory -Path $PHASE_DIR
-}
-```
-
 **Bash:**
+
 ```bash
-PHASE_DIR=".gsd/phases/$PHASE"
-mkdir -p "$PHASE_DIR"
+mkdir -p "./.gtd/<task_name>/$PHASE"
 ```
 
 ---
 
 ## 5. Handle Research
 
-**If `--gaps` flag:** Skip research (gap closure uses VERIFICATION.md).
-
-**If `--skip-research` flag:** Skip to step 6.
+**If `--skip-research`:** Skip to step 6.
 
 **Check for existing research:**
-**PowerShell:**
-```powershell
-Test-Path "$PHASE_DIR/RESEARCH.md"
-```
 
-**Bash:**
 ```bash
-test -f "$PHASE_DIR/RESEARCH.md"
+test -f "./.gtd/<task_name>/$PHASE/RESEARCH.md"
 ```
 
-**If RESEARCH.md exists AND `--research` flag NOT set:**
-- Display: `Using existing research: $PHASE_DIR/RESEARCH.md`
+**If exists AND `--research` NOT set:**
+
+- Display: "Using existing research"
 - Skip to step 6
 
 **If research needed:**
 
-Display banner:
-```
+Display:
+
+```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GSD ► RESEARCHING PHASE {N}
+ GTD ► RESEARCHING PHASE {N}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-Perform research based on discovery level (see `<discovery_levels>`).
+> **Skill: `investigate`**
+>
+> Read and apply `./skills/investigate/SKILL.md` before proceeding.
 
-Create `$PHASE_DIR/RESEARCH.md` with findings.
+Write `./.gtd/<task_name>/$PHASE/RESEARCH.md` with findings.
 
 ---
 
-## 6. Create Plans
+## 6. Create Plan
 
-Display banner:
-```
+Display:
+
+```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GSD ► PLANNING PHASE {N}
+ GTD ► PLANNING PHASE {N}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
 ### 6a. Gather Context
+
 Load:
-- `.gsd/SPEC.md` — Requirements
-- `.gsd/ROADMAP.md` — Phase description
-- `$PHASE_DIR/RESEARCH.md` — If exists
-- `.gsd/ARCHITECTURE.md` — If exists
+
+- `./.gtd/<task_name>/SPEC.md`
+- `./.gtd/<task_name>/ROADMAP.md` (phase section)
+- `./.gtd/<task_name>/$PHASE/RESEARCH.md` (if exists)
 
 ### 6b. Decompose into Tasks
+
 For the phase goal:
+
 1. Identify all deliverables
-2. Break into atomic tasks (2-3 per plan)
-3. Determine dependencies between tasks
-4. Assign execution waves
+2. Break into atomic tasks (2-3 max)
+3. Define done criteria for each
 
-### 6c. Write PLAN.md Files
+### 6c. Write PLAN.md
 
-Create `$PHASE_DIR/{N}-PLAN.md`:
+Write to `./.gtd/<task_name>/$PHASE/PLAN.md`:
 
 ```markdown
 ---
-phase: {N}
-plan: 1
-wave: 1
+phase: { N }
+created: { date }
 ---
 
-# Plan {N}.1: {Plan Name}
+# Plan: Phase {N} - {Name}
 
 ## Objective
-{What this plan delivers and why}
+
+{What this phase delivers and why}
 
 ## Context
-- .gsd/SPEC.md
-- .gsd/ARCHITECTURE.md
+
+- ./gtd/SPEC.md
+- ./gtd/ROADMAP.md
 - {relevant source files}
 
 ## Tasks
 
-<task type="auto">
+<task id="1" type="auto">
   <name>{Task name}</name>
   <files>{exact file paths}</files>
   <action>
@@ -263,113 +211,88 @@ wave: 1
     - What to do
     - What to avoid and WHY
   </action>
-  <verify>{Command to prove task complete}</verify>
-  <done>{Measurable acceptance criteria}</done>
+  <done>{How we know this task is complete}</done>
 </task>
 
-<task type="auto">
-  ...
+<task id="2" type="auto">
+  <name>{Task name}</name>
+  <files>{exact file paths}</files>
+  <action>
+    {Specific implementation instructions}
+    - What to do
+    - What to avoid and WHY
+  </action>
+  <done>{How we know this task is complete}</done>
 </task>
-
 ## Success Criteria
+
 - [ ] {Measurable outcome 1}
 - [ ] {Measurable outcome 2}
 ```
 
 ---
 
-## 7. Verify Plans (Checker Logic)
+## 7. Verify Plan
 
-For each plan, verify:
-- [ ] All files specified exist or will be created
-- [ ] Actions are specific (no "implement X")
-- [ ] Verify commands are executable
+Check:
+
+- [ ] Tasks are specific (no "implement X")
 - [ ] Done criteria are measurable
-- [ ] Context references exist
+- [ ] 2-3 tasks max
+- [ ] All files specified
 
-**If issues found:** Fix and re-verify (max 3 iterations).
-
----
-
-## 8. Update State
-
-Update `.gsd/STATE.md`:
-```markdown
-## Current Position
-- **Phase**: {N}
-- **Task**: Planning complete
-- **Status**: Ready for execution
-
-## Next Steps
-1. /execute {N}
-```
-
----
-
-## 9. Commit Plans
-
-```bash
-git add .gsd/phases/$PHASE/
-git add .gsd/STATE.md
-git commit -m "docs(phase-$PHASE): create execution plans"
-```
-
----
-
-## 10. Offer Next Steps
-
+**If issues found:** Fix before writing.
 </process>
+
+<task_types>
+
+| Type                      | Use For                               | Autonomy         |
+| ------------------------- | ------------------------------------- | ---------------- |
+| `auto`                    | Everything agent can do independently | Fully autonomous |
+| `checkpoint:human-verify` | Visual/functional verification        | Pauses for user  |
+| `checkpoint:decision`     | Implementation choices                | Pauses for user  |
+
+**Automation-first rule:** If agent CAN do it, agent MUST do it. Checkpoints are for verification AFTER automation.
+
+</task_types>
 
 <offer_next>
 
-```
+```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GSD ► PHASE {N} PLANNED ✓
+ GTD ► PHASE {N} PLANNED ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-{X} plans created across {Y} waves
+{X} tasks defined
 
-Plans:
-• {N}.1: {Name} (wave 1)
-• {N}.2: {Name} (wave 1)
-• {N}.3: {Name} (wave 2)
+| Task | Name | Files |
+|------|------|-------|
+| 1 | {name} | {files} |
+| 2 | {name} | {files} |
+
+Research: {Completed | Used existing | Skipped}
 
 ───────────────────────────────────────────────────────
 
 ▶ Next Up
 
-/execute {N} — run all plans
+/execute {N} — run this plan
 
+───────────────────────────────────────────────────────
+
+Also available:
+- /discuss {N} — review plan before executing
 ───────────────────────────────────────────────────────
 ```
 
 </offer_next>
 
-<task_types>
-
-| Type | Use For | Autonomy |
-|------|---------|----------|
-| `auto` | Everything Claude can do independently | Fully autonomous |
-| `checkpoint:human-verify` | Visual/functional verification | Pauses for user |
-| `checkpoint:decision` | Implementation choices | Pauses for user |
-
-**Automation-first rule:** If Claude CAN do it, Claude MUST do it. Checkpoints are for verification AFTER automation.
-
-</task_types>
-
 <related>
-## Related
 
-### Workflows
-| Command | Relationship |
-|---------|--------------|
-| `/map` | Run before /plan to get codebase context |
-| `/execute` | Runs PLAN.md files created by /plan |
-| `/verify` | Validates executed plans |
+| Workflow   | Relationship                  |
+| ---------- | ----------------------------- |
+| `/roadmap` | Creates phases this reads     |
+| `/discuss` | Reviews plan before execution |
+| `/execute` | Runs the plan                 |
 
-### Skills
-| Skill | Purpose |
-|-------|---------|
-| `planner` | Detailed planning methodology |
-| `plan-checker` | Validates plans before execution |
 </related>

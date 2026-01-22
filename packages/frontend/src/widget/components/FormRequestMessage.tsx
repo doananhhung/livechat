@@ -153,7 +153,7 @@ export const FormRequestMessage = ({
 
     let input;
     switch (field.type) {
-      case "number":
+      case ActionFieldType.NUMBER:
         input = (
           <input
             {...commonProps}
@@ -168,7 +168,7 @@ export const FormRequestMessage = ({
           />
         );
         break;
-      case "date":
+      case ActionFieldType.DATE:
         input = (
           <input
             {...commonProps}
@@ -180,7 +180,7 @@ export const FormRequestMessage = ({
           />
         );
         break;
-      case "boolean":
+      case ActionFieldType.BOOLEAN:
         input = (
           <input
             {...commonProps}
@@ -193,7 +193,7 @@ export const FormRequestMessage = ({
           />
         );
         break;
-      case "select":
+      case ActionFieldType.SELECT:
         input = (
           <select
             {...commonProps}
@@ -212,6 +212,7 @@ export const FormRequestMessage = ({
         );
         break;
       default:
+        // Text and others
         input = (
           <input
             {...commonProps}

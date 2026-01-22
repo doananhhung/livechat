@@ -22,6 +22,7 @@ interface ChatState {
   isSessionReady: boolean;
   submittedFormMessageIds: Set<string>;
   conversationId: number | null;
+  isAiEnabled: boolean;
 
   // Actions
   setWidgetConfig: (config: WidgetConfig) => void;
@@ -39,6 +40,7 @@ interface ChatState {
   loadConversationHistory: (history: Message[]) => void;
   setSessionReady: (isReady: boolean) => void;
   markFormAsSubmitted: (messageId: string) => void;
+  toggleAiEnabled: () => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -52,6 +54,7 @@ export const useChatStore = create<ChatState>((set) => ({
   isSessionReady: false,
   submittedFormMessageIds: new Set<string>(),
   conversationId: null,
+  isAiEnabled: localStorage.getItem("live_chat_ai_enabled") !== "false", // Default true
 
   // Actions Implementation
   setWidgetConfig: (config) => set({ widgetConfig: config }),
@@ -127,4 +130,11 @@ export const useChatStore = create<ChatState>((set) => ({
         messageId,
       ]),
     })),
+
+  toggleAiEnabled: () =>
+    set((state) => {
+      const newValue = !state.isAiEnabled;
+      localStorage.setItem("live_chat_ai_enabled", String(newValue));
+      return { isAiEnabled: newValue };
+    }),
 }));

@@ -64,6 +64,23 @@ export class IdentifyVisitorDto {
   visitorUid: string;
 }
 
+export class SubmitFormDto {
+  @ApiProperty({
+    description: "The ID of the form request message being submitted",
+  })
+  @IsString()
+  @IsNotEmpty()
+  formRequestMessageId: string;
+
+  @ApiProperty({
+    description: "The submitted form data",
+    type: "object",
+    additionalProperties: true,
+  })
+  @IsNotEmpty()
+  data: Record<string, unknown>;
+}
+
 export class VisitorFillingFormDto {
   @ApiPropertyOptional({ description: "The conversation ID" })
   @IsOptional()

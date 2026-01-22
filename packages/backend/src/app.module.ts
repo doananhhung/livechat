@@ -29,6 +29,7 @@ import { CannedResponsesModule } from './canned-responses/canned-responses.modul
 import { VisitorNotesModule } from './visitor-notes/visitor-notes.module';
 import { VisitorsModule } from './visitors/visitors.module'; // Import VisitorsModule
 import { ActionsModule } from './actions/actions.module';
+import { AiResponderModule } from './ai-responder/ai-responder.module';
 
 @Module({
   imports: [
@@ -82,6 +83,7 @@ import { ActionsModule } from './actions/actions.module';
     VisitorNotesModule,
     VisitorsModule, // Add VisitorsModule here
     ActionsModule,
+    AiResponderModule,
   ],
   controllers: [AppController],
   providers: [

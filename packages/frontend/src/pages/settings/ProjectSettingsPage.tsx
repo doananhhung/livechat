@@ -12,6 +12,7 @@ import { PermissionGate } from "../../components/PermissionGate";
 import { ProjectRole, WidgetPosition, WidgetTheme } from "@live-chat/shared-types";
 import type { HistoryVisibilityMode } from "@live-chat/shared-types";
 import { ProjectBasicSettingsForm } from "../../components/features/projects/ProjectBasicSettingsForm";
+import { AiResponderSettingsForm } from "../../components/features/projects/ai-responder/AiResponderSettingsForm";
 import type { WidgetSettingsDto } from "@live-chat/shared-dtos";
 import { getWidgetSnippet } from "../../lib/widget";
 
@@ -25,10 +26,12 @@ export const ProjectSettingsPage = () => {
   const [expandedSections, setExpandedSections] = useState<{
     basic: boolean;
     widget: boolean;
+    ai: boolean;
     snippet: boolean;
   }>({
     basic: true,
     widget: false,
+    ai: false,
     snippet: false,
   });
 
@@ -434,6 +437,46 @@ export const ProjectSettingsPage = () => {
                     </Button>
                   </div>
                 </form>
+              </PermissionGate>
+            </div>
+          )}
+        </div>
+
+        {/* AI Responder Settings */}
+        <div className="bg-card border rounded-lg overflow-hidden">
+          <button
+            onClick={() => toggleSection("ai")}
+            className="group w-full px-6 py-4 flex items-center justify-between hover:bg-accent transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Zap className="h-5 w-5 text-muted-foreground" />
+              <div className="text-left">
+                <h2 className="text-lg font-semibold text-foreground">
+                  {t("settings.aiResponder")}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {t("settings.aiResponderDesc")}
+                </p>
+              </div>
+            </div>
+            <ChevronRight
+              className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
+                expandedSections.ai ? "rotate-90" : ""
+              }`}
+            />
+          </button>
+          {expandedSections.ai && (
+            <div className="px-6 pb-6 border-t animate-slide-in pt-6">
+              <PermissionGate
+                projectId={currentProject.id}
+                requiredRole={ProjectRole.MANAGER}
+                fallback={
+                  <p className="text-sm text-muted-foreground py-4">
+                    {t("settings.managerOnlyAi")}
+                  </p>
+                }
+              >
+                <AiResponderSettingsForm project={currentProject} />
               </PermissionGate>
             </div>
           )}

@@ -565,4 +565,15 @@ export class EventsGateway
       .to(`project:${projectId}`)
       .emit(WebSocketEvent.FORM_DELETED, payload);
   }
+
+  /**
+   * Returns the number of authenticated agents currently online in a project room.
+   * @param projectId The ID of the project.
+   */
+  public async getOnlineAgentCount(projectId: number): Promise<number> {
+    const roomName = `project:${projectId}`;
+    const sockets = await this.server.in(roomName).fetchSockets();
+    // Agents have user data attached during connection validation
+    return sockets.filter((socket) => !!socket.data.user).length;
+  }
 }

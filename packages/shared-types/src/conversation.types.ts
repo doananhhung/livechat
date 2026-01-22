@@ -21,6 +21,7 @@ export interface VisitorSessionMetadata {
   urlHistory: NavigationEntry[];
   browser?: string;            // User-Agent summary (optional future proofing)
   os?: string;                 // OS summary (optional future proofing)
+  aiEnabled?: boolean;         // Visitor opt-in/out for AI Responder
 }
 
 export interface Conversation {

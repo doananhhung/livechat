@@ -1,4 +1,3 @@
-
 import {
   IsString,
   IsOptional,
@@ -8,6 +7,7 @@ import {
   ValidateNested,
   IsInt,
   Min,
+  IsBoolean,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
@@ -56,4 +56,22 @@ export class UpdateProjectDto {
   @IsInt()
   @Min(0)
   autoResolveMinutes?: number | null;
+
+  @ApiProperty({
+    example: true,
+    description: "Enable AI auto-responder for this project when agents are offline.",
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  aiResponderEnabled?: boolean;
+
+  @ApiProperty({
+    example: "You are a helpful assistant.",
+    description: "System prompt for the AI responder.",
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  aiResponderPrompt?: string;
 }
