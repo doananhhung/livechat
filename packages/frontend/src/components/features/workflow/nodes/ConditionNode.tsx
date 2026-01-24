@@ -1,8 +1,11 @@
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { GitFork } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export const ConditionNode = memo(({ id }: NodeProps) => {
+  const { t } = useTranslation();
+
   return (
     <div className="px-4 py-2 shadow-md rounded-md bg-card border-2 border-orange-500 min-w-[150px] text-card-foreground">
       <Handle
@@ -15,8 +18,12 @@ export const ConditionNode = memo(({ id }: NodeProps) => {
           <GitFork size={16} />
         </div>
         <div className="flex flex-col">
-          <div className="font-bold text-sm">Router</div>
-          <div className="text-xs text-muted-foreground">AI Decides Path</div>
+          <div className="font-bold text-sm">
+            {t("workflow.nodes.condition")}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {t("workflow.nodes.conditionDescription")}
+          </div>
         </div>
       </div>
 
@@ -24,7 +31,7 @@ export const ConditionNode = memo(({ id }: NodeProps) => {
       <div className="flex justify-between mt-3 -mb-1 px-2">
         <div className="flex flex-col items-center">
           <span className="text-[10px] text-green-600 dark:text-green-400 font-medium mb-1">
-            Yes
+            {t("workflow.nodes.handleYes")}
           </span>
           <Handle
             type="source"
@@ -35,7 +42,7 @@ export const ConditionNode = memo(({ id }: NodeProps) => {
         </div>
         <div className="flex flex-col items-center">
           <span className="text-[10px] text-red-600 dark:text-red-400 font-medium mb-1">
-            No
+            {t("workflow.nodes.handleNo")}
           </span>
           <Handle
             type="source"

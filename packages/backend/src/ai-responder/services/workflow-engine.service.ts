@@ -1,8 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  WorkflowDefinition,
-  WorkflowNode,
-} from '@live-chat/shared-types';
+import { WorkflowDefinition, WorkflowNode } from '@live-chat/shared-types';
 import { ToolDefinition, ToolCall } from '../interfaces/llm-provider.interface';
 import { AiToolExecutor } from './ai-tool.executor';
 
@@ -19,6 +16,8 @@ export interface WorkflowStepResult {
   nextNodeId: string | null;
   output: string | null; // Text response to user
   toolCalls?: ToolCall[]; // Tools to be executed by the main loop
+  requiresRouting?: boolean; // If true, caller must ask LLM for route decision
+  routingPrompt?: string; // Prompt for the routing decision
 }
 
 @Injectable()
@@ -51,25 +50,16 @@ export class WorkflowEngineService {
         return this.handleStartNode(node, workflow);
 
       case 'action':
-        this.logger.debug(`[Workflow] Action node ${node.id} executing tool: ${node.data.toolName}`);
+        this.logger.debug(
+          `[Workflow] Action node ${node.id} executing tool: ${node.data.toolName}`
+        );
         return this.handleActionNode(node, workflow, context);
 
       case 'condition': // Router
-        this.logger.debug(`[Workflow] Condition node ${node.id} waiting for AI decision`);
-        // For router nodes, we usually need LLM to decide path.
-        // We return a special flag or handle it by returning tool definition for router?
-        // Simpler for MVP: Router node implies we ask LLM "Which path?".
-        // But here we want the Engine to drive.
-        // If it's a router, we might need to return a "System Prompt" update to the caller
-        // so the caller (AiResponderService) can ask the LLM.
-        // BUT, AiResponderService expects a result.
-        // Let's assume Router Node has a "systemPrompt" in data.
-        return {
-          nextNodeId: currentNodeId, // Stay here until LLM decides?
-          // Actually, if we are in 'orchestrator' mode, the LLM loop handles the decision.
-          // The Workflow Engine helps construct the prompt.
-          output: null,
-        };
+        this.logger.debug(
+          `[Workflow] Condition node ${node.id} requires routing decision`
+        );
+        return this.handleConditionNode(node, context);
 
       default:
         return { nextNodeId: null, output: null };
@@ -79,12 +69,60 @@ export class WorkflowEngineService {
   private getNextNodeId(
     currentNode: WorkflowNode,
     workflow: WorkflowDefinition,
-    handle?: string
+    handleSuffix?: string
   ): string | null {
+    const sourceHandle = handleSuffix
+      ? `${currentNode.id}-${handleSuffix}`
+      : undefined;
     const edge = workflow.edges.find(
-      (e) => e.source === currentNode.id && (!handle || e.label === handle) // Simplified handle logic
+      (e) =>
+        e.source === currentNode.id &&
+        (!sourceHandle || e.sourceHandle === sourceHandle)
     );
     return edge ? edge.target : null;
+  }
+
+  private handleConditionNode(
+    node: WorkflowNode,
+    context: WorkflowContext
+  ): WorkflowStepResult {
+    const routingPrompt =
+      (node.data.prompt as string) ||
+      'Based on the conversation, decide which path to take. Use the route_decision tool with path "yes" or "no".';
+
+    return {
+      nextNodeId: null, // Will be determined after LLM makes decision
+      output: null,
+      requiresRouting: true,
+      routingPrompt,
+    };
+  }
+
+  /**
+   * Process the route decision from the LLM and return the next node ID.
+   * Called by AiResponderService after LLM calls route_decision tool.
+   */
+  processRouteDecision(
+    node: WorkflowNode,
+    workflow: WorkflowDefinition,
+    decision: 'yes' | 'no'
+  ): string | null {
+    this.logger.debug(
+      `[Workflow] Processing route decision: ${decision} for node ${node.id}`
+    );
+
+    const nextNodeId = this.getNextNodeId(node, workflow, decision);
+
+    if (!nextNodeId) {
+      this.logger.warn(
+        `[Workflow] No edge found for decision "${decision}" from node ${node.id}`
+      );
+      // Fallback: try to find any edge from this node
+      const fallbackEdge = workflow.edges.find((e) => e.source === node.id);
+      return fallbackEdge ? fallbackEdge.target : null;
+    }
+
+    return nextNodeId;
   }
 
   private handleStartNode(
@@ -102,8 +140,8 @@ export class WorkflowEngineService {
     context: WorkflowContext
   ): Promise<WorkflowStepResult> {
     // Action node executes a tool immediately.
-    const toolName = node.data.toolName;
-    const toolArgs = node.data.toolArgs || {};
+    const toolName = node.data.toolName as string | undefined;
+    const toolArgs = (node.data.toolArgs as Record<string, unknown>) || {};
 
     if (toolName) {
       // Execute the tool directly via ToolExecutor
@@ -140,9 +178,9 @@ export class WorkflowEngineService {
     node: WorkflowNode,
     workflow: WorkflowDefinition,
     context?: {
-      visitor?: any;
-      conversation?: any;
-      project?: any;
+      visitor?: unknown;
+      conversation?: unknown;
+      project?: unknown;
     }
   ): {
     systemPrompt: string;
@@ -153,25 +191,68 @@ export class WorkflowEngineService {
     let tools: ToolDefinition[] = [];
 
     if (node.data?.prompt) {
-      systemPrompt = this.replaceVariables(node.data.prompt, context);
+      systemPrompt = this.replaceVariables(node.data.prompt as string, context);
     }
 
     // If node allows tools, add them.
-    if (node.type === 'condition' || node.type === 'trigger' || node.type === 'llm') {
-       tools = this.toolExecutor.getTools();
+    if (
+      node.type === 'condition' ||
+      node.type === 'trigger' ||
+      node.type === 'llm'
+    ) {
+      tools = this.toolExecutor.getTools();
     }
 
-    // Append Global Tools
+    // Append Global Tools with instructions
     if (workflow.globalTools && workflow.globalTools.length > 0) {
       const allTools = this.toolExecutor.getTools();
-      const globalToolDefs = allTools.filter(t => workflow.globalTools!.includes(t.function.name));
-      
-      // Merge unique tools
-      const existingNames = new Set(tools.map(t => t.function.name));
-      for (const tool of globalToolDefs) {
-        if (!existingNames.has(tool.function.name)) {
-          tools.push(tool);
+      const globalToolInstructions: string[] = [];
+
+      // Handle new GlobalToolConfig[] format
+      for (const globalToolConfig of workflow.globalTools) {
+        // Check if it's the new format (object with enabled/instruction)
+        if (
+          typeof globalToolConfig === 'object' &&
+          'name' in globalToolConfig
+        ) {
+          if (!globalToolConfig.enabled) continue;
+
+          const toolDef = allTools.find(
+            (t) => t.function.name === globalToolConfig.name
+          );
+          if (toolDef) {
+            // Check if tool is already in the list
+            const existingNames = new Set(tools.map((t) => t.function.name));
+            if (!existingNames.has(toolDef.function.name)) {
+              tools.push(toolDef);
+            }
+
+            // Collect instruction for system prompt
+            if (globalToolConfig.instruction) {
+              globalToolInstructions.push(
+                `- ${toolDef.function.name}: ${globalToolConfig.instruction}`
+              );
+            }
+          }
+        } else if (typeof globalToolConfig === 'string') {
+          // Backward compatibility: old string[] format
+          const toolDef = allTools.find(
+            (t) => t.function.name === globalToolConfig
+          );
+          if (toolDef) {
+            const existingNames = new Set(tools.map((t) => t.function.name));
+            if (!existingNames.has(toolDef.function.name)) {
+              tools.push(toolDef);
+            }
+          }
         }
+      }
+
+      // Append global tool instructions to system prompt
+      if (globalToolInstructions.length > 0) {
+        systemPrompt +=
+          '\n\nGlobal Tool Usage Guidelines:\n' +
+          globalToolInstructions.join('\n');
       }
     }
 
@@ -184,7 +265,7 @@ export class WorkflowEngineService {
     return text.replace(/{{([^}]+)}}/g, (match, key) => {
       const parts = key.trim().split('.');
       let value = context;
-      
+
       for (const part of parts) {
         if (value && typeof value === 'object' && part in value) {
           value = value[part];

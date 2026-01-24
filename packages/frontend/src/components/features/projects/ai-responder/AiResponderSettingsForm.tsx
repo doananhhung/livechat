@@ -10,6 +10,7 @@ import type {
   WorkflowDefinition,
   WorkflowNode,
   WorkflowEdge,
+  GlobalToolConfig,
 } from "@live-chat/shared-types";
 import { WorkflowEditor } from "../../workflow/WorkflowEditor";
 
@@ -31,7 +32,7 @@ export const AiResponderSettingsForm = ({
   // Workflow State
   const [nodes, setNodes] = useState<WorkflowNode[]>([]);
   const [edges, setEdges] = useState<WorkflowEdge[]>([]);
-  const [globalTools, setGlobalTools] = useState<string[]>([]);
+  const [globalTools, setGlobalTools] = useState<GlobalToolConfig[]>([]);
 
   useEffect(() => {
     setEnabled(project.aiResponderEnabled ?? false);
@@ -41,7 +42,20 @@ export const AiResponderSettingsForm = ({
     const config = project.aiConfig as WorkflowDefinition | null;
     setNodes(config?.nodes || []);
     setEdges(config?.edges || []);
-    setGlobalTools(config?.globalTools || []);
+    // Handle migration from old string[] format to new GlobalToolConfig[] format
+    const rawGlobalTools = config?.globalTools || [];
+    if (rawGlobalTools.length > 0 && typeof rawGlobalTools[0] === "string") {
+      // Old format: convert to new format
+      setGlobalTools(
+        (rawGlobalTools as unknown as string[]).map((name) => ({
+          name,
+          enabled: true,
+          instruction: "",
+        })),
+      );
+    } else {
+      setGlobalTools(rawGlobalTools as GlobalToolConfig[]);
+    }
   }, [project]);
 
   const updateMutation = useMutation({
@@ -66,13 +80,13 @@ export const AiResponderSettingsForm = ({
     (
       newNodes: WorkflowNode[],
       newEdges: WorkflowEdge[],
-      newGlobalTools: string[]
+      newGlobalTools: GlobalToolConfig[],
     ) => {
       setNodes(newNodes);
       setEdges(newEdges);
       setGlobalTools(newGlobalTools);
     },
-    []
+    [],
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -109,7 +123,10 @@ export const AiResponderSettingsForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 transition-all duration-300 ease-in-out">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-6 transition-all duration-300 ease-in-out"
+    >
       <div className="flex items-center justify-between border p-4 rounded-lg bg-muted/20">
         <div>
           <h3 className="font-medium text-foreground">

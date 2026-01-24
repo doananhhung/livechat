@@ -865,7 +865,43 @@
             "addCondition": "Điều kiện"
         },
         "configPanel": {
-            "deleteNode": "Xóa Node"
+            "deleteNode": "Xóa Node",
+            "title": "Cấu hình {{type}}",
+            "startDescription": "Đây là điểm bắt đầu của quy trình. Nó được kích hoạt khi khách truy cập bắt đầu cuộc trò chuyện.",
+            "actionToolLabel": "Công cụ",
+            "actionToolPlaceholder": "Chọn một công cụ...",
+            "toolSendForm": "Gửi biểu mẫu",
+            "toolChangeStatus": "Thay đổi trạng thái",
+            "toolAddNote": "Thêm ghi chú",
+            "templateIdLabel": "ID Biểu mẫu",
+            "statusLabel": "Trạng thái mới",
+            "noteContentLabel": "Nội dung ghi chú",
+            "llmPromptLabel": "System Prompt",
+            "llmPromptPlaceholder": "Hướng dẫn cho AI tại bước này...",
+            "conditionDescription": "AI sẽ đánh giá ý định của khách và điều hướng theo lộ trình phù hợp.",
+            "routingPromptLabel": "Prompt điều hướng",
+            "routingPromptPlaceholder": "Mô tả cách AI nên quyết định giữa đường Yes/No..."
+        },
+        "globalTools": {
+            "title": "Công cụ toàn cục",
+            "description": "Các công cụ AI có thể gọi bất kỳ lúc nào trong quy trình.",
+            "addVisitorNote": "Thêm ghi chú khách",
+            "changeStatus": "Thay đổi trạng thái",
+            "sendForm": "Gửi biểu mẫu",
+            "instructionPlaceholder": "Khi nào AI nên gọi công cụ này? (VD: 'Khi khách đề cập tên hoặc email')",
+            "enabledCount": "{{count}} đã bật"
+        },
+        "nodes": {
+            "start": "Bắt đầu",
+            "startDescription": "Điểm vào",
+            "action": "Hành động",
+            "actionDescription": "Chọn công cụ",
+            "llm": "AI Phản hồi",
+            "llmDescription": "Prompt mặc định",
+            "condition": "Bộ định tuyến",
+            "conditionDescription": "AI quyết định đường đi",
+            "handleYes": "Có",
+            "handleNo": "Không"
         }
     }
 }

@@ -1,0 +1,29 @@
+feat(workflow): polish workflow editor with configurable global tools, condition routing, and i18n
+
+Completed the Workflow Editor polish by implementing proper configuration for
+Global Tools, enabling functional AI Condition (Router) node routing, and
+ensuring full internationalization of all node labels. Added a new collapsible
+Global Tools panel for better UX.
+
+## Behaviour Changes
+
+**Before:**
+- Global Tools were simple checkboxes with no AI instructions.
+- Condition (Router) nodes had no config UI and backend routing was not functional.
+- Node labels on the canvas were hardcoded in English.
+- Global Tools panel occupied constant space on screen.
+
+**After:**
+- Global Tools now have custom instructions to guide AI behavior.
+- Condition nodes have a configurable prompt field and functional backend routing using a `route_decision` tool.
+- All node labels across the canvas are fully internationalized (en/vi).
+- Global Tools panel is collapsible with an enabled tool count badge.
+
+## Implementation Details
+
+The task was completed over 4 phases:
+
+Phase 1: Refactored Global Tools data model to `GlobalToolConfig[]` and created a new configurable UI panel. Updated backend to inject instructions into LLM context.
+Phase 2: Implemented routing logic for Condition nodes, including the `route_decision` tool and a configurable prompt field in the configuration panel.
+Phase 3: Internationalized all node components (Start, Action, LLM, Condition) using standard i18n infrastructure.
+Phase 4: Added collapsible functionality to the Global Tools panel to optimize workspace usage.

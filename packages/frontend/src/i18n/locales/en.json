@@ -865,7 +865,43 @@
             "addCondition": "Condition"
         },
         "configPanel": {
-            "deleteNode": "Delete Node"
+            "deleteNode": "Delete Node",
+            "title": "{{type}} Configuration",
+            "startDescription": "This is the entry point of your workflow. It triggers when a visitor starts a conversation.",
+            "actionToolLabel": "Tool",
+            "actionToolPlaceholder": "Select a tool...",
+            "toolSendForm": "Send Form",
+            "toolChangeStatus": "Change Status",
+            "toolAddNote": "Add Note",
+            "templateIdLabel": "Template ID",
+            "statusLabel": "New Status",
+            "noteContentLabel": "Note Content",
+            "llmPromptLabel": "System Prompt",
+            "llmPromptPlaceholder": "Instructions for the AI at this step...",
+            "conditionDescription": "The AI will evaluate the visitor's intent and route to the appropriate path.",
+            "routingPromptLabel": "Routing Prompt",
+            "routingPromptPlaceholder": "Describe how the AI should decide between Yes/No paths..."
+        },
+        "globalTools": {
+            "title": "Global Tools",
+            "description": "Tools the AI can call at any time during the workflow.",
+            "addVisitorNote": "Add Visitor Note",
+            "changeStatus": "Change Status",
+            "sendForm": "Send Form",
+            "instructionPlaceholder": "When should the AI call this tool? (e.g., 'When visitor mentions their name or email')",
+            "enabledCount": "{{count}} enabled"
+        },
+        "nodes": {
+            "start": "Start",
+            "startDescription": "Entry Point",
+            "action": "Action",
+            "actionDescription": "Select Tool",
+            "llm": "AI Responder",
+            "llmDescription": "Default Prompt",
+            "condition": "Router",
+            "conditionDescription": "AI Decides Path",
+            "handleYes": "Yes",
+            "handleNo": "No"
         }
     }
 }

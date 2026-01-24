@@ -10,6 +10,7 @@ import {
   type Connection,
   type NodeTypes,
   type Node,
+  type Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -19,7 +20,12 @@ import { LlmNode } from "./nodes/LlmNode";
 import { ConditionNode } from "./nodes/ConditionNode";
 import { NodeConfigPanel } from "./NodeConfigPanel";
 import { NodeToolbar } from "./NodeToolbar";
-import type { WorkflowNode, WorkflowEdge } from "@live-chat/shared-types";
+import { GlobalToolsPanel } from "./GlobalToolsPanel";
+import type {
+  WorkflowNode,
+  WorkflowEdge,
+  GlobalToolConfig,
+} from "@live-chat/shared-types";
 import { useThemeStore } from "../../../stores/themeStore";
 
 type NodeType = "start" | "action" | "llm" | "condition";
@@ -30,11 +36,11 @@ const DEFAULT_POSITION = { x: 250, y: 150 };
 interface WorkflowEditorProps {
   initialNodes?: WorkflowNode[];
   initialEdges?: WorkflowEdge[];
-  initialGlobalTools?: string[];
+  initialGlobalTools?: GlobalToolConfig[];
   onChange?: (
     nodes: WorkflowNode[],
     edges: WorkflowEdge[],
-    globalTools: string[],
+    globalTools: GlobalToolConfig[],
   ) => void;
 }
 
@@ -67,27 +73,20 @@ export const WorkflowEditor = ({
     return initialNodes;
   }, [initialNodes]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(defaultNodes as any);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges as any);
-  const [globalTools, setGlobalTools] = useState<string[]>(initialGlobalTools);
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-
-  const handleGlobalToolsChange = useCallback(
-    (tool: string, checked: boolean) => {
-      setGlobalTools((prev) => {
-        const newTools = checked
-          ? [...prev, tool]
-          : prev.filter((t) => t !== tool);
-        return newTools;
-      });
-    },
-    [],
+  const [nodes, setNodes, onNodesChange] = useNodesState(
+    defaultNodes as Node[],
   );
+  const [edges, setEdges, onEdgesChange] = useEdgesState(
+    initialEdges as Edge[],
+  );
+  const [globalTools, setGlobalTools] =
+    useState<GlobalToolConfig[]>(initialGlobalTools);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   // Propagate changes to parent
   useMemo(() => {
     if (onChange) {
-      onChange(nodes as any, edges as any, globalTools);
+      onChange(nodes as WorkflowNode[], edges as WorkflowEdge[], globalTools);
     }
   }, [nodes, edges, globalTools, onChange]);
 
@@ -161,35 +160,7 @@ export const WorkflowEditor = ({
 
   return (
     <div className="w-full h-full relative bg-background text-foreground">
-      <div className="absolute top-4 left-4 z-10 bg-card text-card-foreground p-4 rounded-lg shadow-md border border-border max-w-xs">
-        <h3 className="font-bold text-sm mb-2 uppercase tracking-wider text-muted-foreground">
-          Global Tools
-        </h3>
-        <div className="space-y-2">
-          <label className="flex items-center space-x-2 text-sm cursor-pointer hover:text-primary transition-colors">
-            <input
-              type="checkbox"
-              checked={globalTools.includes("add_visitor_note")}
-              onChange={(e) =>
-                handleGlobalToolsChange("add_visitor_note", e.target.checked)
-              }
-              className="rounded border-input bg-background text-primary focus:ring-ring h-4 w-4"
-            />
-            <span>Add Visitor Note</span>
-          </label>
-          <label className="flex items-center space-x-2 text-sm cursor-pointer hover:text-primary transition-colors">
-            <input
-              type="checkbox"
-              checked={globalTools.includes("change_status")}
-              onChange={(e) =>
-                handleGlobalToolsChange("change_status", e.target.checked)
-              }
-              className="rounded border-input bg-background text-primary focus:ring-ring h-4 w-4"
-            />
-            <span>Change Status</span>
-          </label>
-        </div>
-      </div>
+      <GlobalToolsPanel tools={globalTools} onChange={setGlobalTools} />
 
       <NodeToolbar onAddNode={handleAddNode} />
 

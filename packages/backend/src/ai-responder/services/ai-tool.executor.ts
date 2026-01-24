@@ -70,6 +70,27 @@ const SEND_FORM_TOOL: ToolDefinition = {
   },
 };
 
+const ROUTE_DECISION_TOOL: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'route_decision',
+    description:
+      'Decide which path to take in the workflow based on the routing prompt',
+    parameters: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          enum: ['yes', 'no'],
+          description:
+            'The path to take: "yes" for the positive/affirmative path, "no" for the negative/alternative path',
+        },
+      },
+      required: ['path'],
+    },
+  },
+};
+
 @Injectable()
 export class AiToolExecutor {
   private readonly logger = new Logger(AiToolExecutor.name);
@@ -82,6 +103,10 @@ export class AiToolExecutor {
 
   getTools(): ToolDefinition[] {
     return [ADD_NOTE_TOOL, CHANGE_STATUS_TOOL, SEND_FORM_TOOL];
+  }
+
+  getRoutingTool(): ToolDefinition {
+    return ROUTE_DECISION_TOOL;
   }
 
   async executeTool(
@@ -155,7 +180,10 @@ export class AiToolExecutor {
           return `Error: Tool ${name} not found.`;
       }
     } catch (error) {
-      this.logger.error(`Failed to execute tool ${toolCall.function.name}`, error);
+      this.logger.error(
+        `Failed to execute tool ${toolCall.function.name}`,
+        error
+      );
       return `Error executing tool: ${error instanceof Error ? error.message : String(error)}`;
     }
   }

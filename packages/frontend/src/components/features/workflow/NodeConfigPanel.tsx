@@ -31,7 +31,7 @@ export const NodeConfigPanel = ({
     <div className="absolute top-4 right-4 bottom-4 w-80 bg-card text-card-foreground shadow-xl rounded-lg border border-border flex flex-col z-10 animate-in slide-in-from-right duration-200">
       <div className="p-4 border-b border-border flex justify-between items-center bg-muted/30 rounded-t-lg">
         <h3 className="font-bold text-sm uppercase tracking-tight text-foreground">
-          {selectedNode.type} Configuration
+          {t("workflow.configPanel.title", { type: selectedNode.type })}
         </h3>
         <Button
           variant="ghost"
@@ -51,8 +51,7 @@ export const NodeConfigPanel = ({
         {/* Start Node */}
         {selectedNode.type === "start" && (
           <p className="text-sm text-muted-foreground leading-relaxed">
-            This is the entry point of your workflow. It triggers when a visitor
-            starts a conversation.
+            {t("workflow.configPanel.startDescription")}
           </p>
         )}
 
@@ -61,24 +60,32 @@ export const NodeConfigPanel = ({
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
-                Tool
+                {t("workflow.configPanel.actionToolLabel")}
               </label>
               <select
                 className="w-full border border-input bg-background rounded-md p-2 text-sm focus:ring-2 focus:ring-ring transition-shadow"
                 value={(selectedNode.data.toolName as string) || ""}
                 onChange={(e) => handleChange("toolName", e.target.value)}
               >
-                <option value="">Select a tool...</option>
-                <option value="send_form">Send Form</option>
-                <option value="change_status">Change Status</option>
-                <option value="add_visitor_note">Add Note</option>
+                <option value="">
+                  {t("workflow.configPanel.actionToolPlaceholder")}
+                </option>
+                <option value="send_form">
+                  {t("workflow.configPanel.toolSendForm")}
+                </option>
+                <option value="change_status">
+                  {t("workflow.configPanel.toolChangeStatus")}
+                </option>
+                <option value="add_visitor_note">
+                  {t("workflow.configPanel.toolAddNote")}
+                </option>
               </select>
             </div>
 
             {selectedNode.data.toolName === "send_form" && (
               <div>
                 <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
-                  Template ID
+                  {t("workflow.configPanel.templateIdLabel")}
                 </label>
                 <Input
                   type="number"
@@ -97,7 +104,7 @@ export const NodeConfigPanel = ({
             {selectedNode.data.toolName === "change_status" && (
               <div>
                 <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
-                  New Status
+                  {t("workflow.configPanel.statusLabel")}
                 </label>
                 <select
                   className="w-full border border-input bg-background rounded-md p-2 text-sm"
@@ -109,9 +116,13 @@ export const NodeConfigPanel = ({
                     })
                   }
                 >
-                  <option value="open">Open</option>
-                  <option value="pending">Pending</option>
-                  <option value="solved">Solved</option>
+                  <option value="open">{t("conversations.status.open")}</option>
+                  <option value="pending">
+                    {t("conversations.status.pending")}
+                  </option>
+                  <option value="solved">
+                    {t("conversations.status.solved")}
+                  </option>
                 </select>
               </div>
             )}
@@ -119,7 +130,7 @@ export const NodeConfigPanel = ({
             {selectedNode.data.toolName === "add_visitor_note" && (
               <div>
                 <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
-                  Note Content
+                  {t("workflow.configPanel.noteContentLabel")}
                 </label>
                 <Input
                   type="text"
@@ -141,11 +152,11 @@ export const NodeConfigPanel = ({
         {selectedNode.type === "llm" && (
           <div>
             <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
-              System Prompt
+              {t("workflow.configPanel.llmPromptLabel")}
             </label>
             <textarea
               className="w-full border border-input bg-background rounded-md p-2 text-sm h-48 focus:ring-2 focus:ring-ring transition-shadow resize-none"
-              placeholder="Instructions for the AI at this step..."
+              placeholder={t("workflow.configPanel.llmPromptPlaceholder")}
               value={(selectedNode.data.prompt as string) || ""}
               onChange={(e) => handleChange("prompt", e.target.value)}
             />
@@ -154,10 +165,22 @@ export const NodeConfigPanel = ({
 
         {/* Condition Node */}
         {selectedNode.type === "condition" && (
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            The AI will evaluate the visitor's intent and route to the
-            appropriate path. (Branching configuration coming soon)
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {t("workflow.configPanel.conditionDescription")}
+            </p>
+            <div>
+              <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
+                {t("workflow.configPanel.routingPromptLabel")}
+              </label>
+              <textarea
+                className="w-full border border-input bg-background rounded-md p-2 text-sm h-32 focus:ring-2 focus:ring-ring transition-shadow resize-none"
+                placeholder={t("workflow.configPanel.routingPromptPlaceholder")}
+                value={(selectedNode.data.prompt as string) || ""}
+                onChange={(e) => handleChange("prompt", e.target.value)}
+              />
+            </div>
+          </div>
         )}
       </div>
 
