@@ -41,7 +41,7 @@
 
 - **`auth/`**: Comprehensive system supporting JWT access/refresh rotation, TOTP 2FA, and Google OAuth with automatic account linking.
 - **`inbox/`**: Conversation management engine using optimistic updates and cursor-based pagination.
-- **`ai-responder/`**: Extensible LLM integration (Groq, OpenAI) that supports two modes: 'simple' (text-only) and 'orchestrator' (tool-enabled). Automatically triggers when `agentCount === 0`.
+- **`ai-responder/`**: Extensible LLM integration (Groq, OpenAI) that supports two modes: 'simple' (text-only) and 'orchestrator' (tool-enabled). Config is returned via `ProjectService.findAllForUser`.
 - **`gateway/`**: Socket.io layer using project-based rooms (`project:{id}`) for multi-tenancy isolation.
 - **`database/`**: TypeORM entities and migrations tracking 20+ tables.
 - **`audit-logs/`**: Decorator-based system (`@Auditable`) for automatic action logging.
@@ -53,6 +53,12 @@
 **Type:** UI | API Client
 **Architecture:** Modular React/Preact with Zustand for lightweight state management.
 
+#### Mandatory rules:
+
+- All display text must be follow the i18n structure.
+- All display Component must support current like, dark theme logic.
+- **Theme Support:** Use semantic color classes (e.g., `bg-background`, `text-foreground`, `bg-card`) which automatically adapt to light/dark mode via CSS variables defined in `packages/frontend/src/index.css`.
+
 - **Dashboard**: React-based administration interface for agents.
 - **Widget**: Preact-based embeddable chat widget using **Shadow DOM** for CSS isolation and a custom script loader.
 - **`services/`**: Feature-split API layer (e.g., `inboxApi.ts`, `authApi.ts`) built on Axios.
@@ -60,8 +66,8 @@
 - **`i18n/`**: Localization support for `vi` and `en` (including `docs` namespace).
 - **`pages/public/`**: Landing Page and Documentation pages (`HomePage`, `DocsLayout`). (Added: 2026-01-24)
 - **`components/features/docs/`**: Documentation-specific UI components (Sidebar, etc.). (Added: 2026-01-24)
-- **`components/features/projects/ai-responder/`**: Configuration UI for AI modes ('Simple' vs 'Orchestrator') and prompts.
-- **`components/features/workflow/`**: Visual Workflow Editor (React Flow) for configuring the AI Orchestrator graph. (Added: 2026-01-24)
+- **`components/features/projects/ai-responder/`**: Unified configuration UI for AI modes and inline workflow editing.
+- **`components/features/workflow/`**: Inline Workflow Editor using **React Flow** (@xyflow/react) for configuring AI logic graphs. (Updated: 2026-01-24)
 
 ## Entry Points
 
@@ -83,6 +89,8 @@
 - **AI Provider Failover**: Uses a circuit-breaker pattern to switch between LLM providers (e.g., Groq to OpenAI) based on health and configured preference.
 - **AI Tool Orchestration**: Uses a multi-turn loop (max 3 turns) to execute tools (like `add_visitor_note`) and feed results back to the LLM for a final text response.
 - **AI Workflow Engine**: Graph-based state machine (`WorkflowEngineService`) driving AI logic via a persisted `WorkflowDefinition` (Start, Action, LLM, Condition nodes).
+- **Inline Logic Editor**: Complex graph structures (Workflow) are integrated directly into standard settings forms, sharing a single submission flow.
+- **Theme-Aware Canvas**: Visual editors (React Flow) must explicitly subscribe to `useThemeStore` and pass `colorMode` to synchronize the canvas with the application theme.
 - **System-Authored Entities**: Entities like `VisitorNote` support nullable `author_id` to allow creation by the AI system.
 
 ## Critical Dependencies
@@ -94,6 +102,7 @@
 - **`lucide-react`**: Standard icon set used across the Dashboard and Public pages.
 - **`openai`**: SDK used for interacting with both OpenAI and Groq (via baseURL) for LLM capabilities.
 - **`@xyflow/react`**: React Flow library used for the visual workflow builder.
+- **`tailwindcss-animate`**: Standard utility for enter/exit animations in dynamic UI sections.
 
 ## Verified Documentation (docs/)
 

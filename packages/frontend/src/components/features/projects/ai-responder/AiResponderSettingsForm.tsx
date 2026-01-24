@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../../ui/Button";
@@ -6,9 +6,12 @@ import { useToast } from "../../../ui/use-toast";
 import { updateProject } from "../../../../services/projectApi";
 import type { UpdateProjectDto } from "@live-chat/shared-dtos";
 import { type Project } from "@live-chat/shared-types";
-import type { WorkflowDefinition } from "@live-chat/shared-types";
-import { WorkflowBuilderModal } from "../../workflow/WorkflowBuilderModal";
-import { Network } from "lucide-react";
+import type {
+  WorkflowDefinition,
+  WorkflowNode,
+  WorkflowEdge,
+} from "@live-chat/shared-types";
+import { WorkflowEditor } from "../../workflow/WorkflowEditor";
 
 interface AiResponderSettingsFormProps {
   project: Project;
@@ -23,13 +26,22 @@ export const AiResponderSettingsForm = ({
 
   const [enabled, setEnabled] = useState(false);
   const [prompt, setPrompt] = useState("");
-  const [mode, setMode] = useState<'simple' | 'orchestrator'>("simple");
-  const [isWorkflowModalOpen, setIsWorkflowModalOpen] = useState(false);
+  const [mode, setMode] = useState<"simple" | "orchestrator">("simple");
+
+  // Workflow State
+  const [nodes, setNodes] = useState<WorkflowNode[]>([]);
+  const [edges, setEdges] = useState<WorkflowEdge[]>([]);
+  const [globalTools, setGlobalTools] = useState<string[]>([]);
 
   useEffect(() => {
     setEnabled(project.aiResponderEnabled ?? false);
     setPrompt(project.aiResponderPrompt ?? "");
     setMode(project.aiMode ?? "simple");
+
+    const config = project.aiConfig as WorkflowDefinition | null;
+    setNodes(config?.nodes || []);
+    setEdges(config?.edges || []);
+    setGlobalTools(config?.globalTools || []);
   }, [project]);
 
   const updateMutation = useMutation({
@@ -50,35 +62,54 @@ export const AiResponderSettingsForm = ({
     },
   });
 
+  const handleWorkflowChange = useCallback(
+    (
+      newNodes: WorkflowNode[],
+      newEdges: WorkflowEdge[],
+      newGlobalTools: string[]
+    ) => {
+      setNodes(newNodes);
+      setEdges(newEdges);
+      setGlobalTools(newGlobalTools);
+    },
+    []
+  );
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateMutation.mutate({
+
+    const updateData: UpdateProjectDto = {
       aiResponderEnabled: enabled,
       aiResponderPrompt: prompt,
       aiMode: mode,
-    });
-  };
+    };
 
-  const handleSaveWorkflow = (workflow: WorkflowDefinition) => {
-    // Basic validation: ensure at least one Start node exists
-    const hasStartNode = workflow.nodes.some(node => node.type === 'start');
-    
-    if (!hasStartNode) {
-      toast({
-        title: t("common.error"),
-        description: "Workflow must have at least one Start node.",
-        variant: "destructive",
-      });
-      return; // Do not save
+    if (mode === "orchestrator") {
+      // Basic validation: ensure at least one Start node exists
+      const hasStartNode = nodes.some((node) => node.type === "start");
+
+      if (!hasStartNode) {
+        toast({
+          title: t("common.error"),
+          description: "Workflow must have at least one Start node.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      updateData.aiConfig = {
+        nodes,
+        edges,
+        globalTools,
+        variables: (project.aiConfig as WorkflowDefinition)?.variables || {},
+      } as any;
     }
 
-    updateMutation.mutate({
-      aiConfig: workflow as any, // Cast to any to satisfy DTO constraint if needed, ideally DTO supports WorkflowDefinition
-    });
+    updateMutation.mutate(updateData);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 transition-all duration-300 ease-in-out">
       <div className="flex items-center justify-between border p-4 rounded-lg bg-muted/20">
         <div>
           <h3 className="font-medium text-foreground">
@@ -104,7 +135,7 @@ export const AiResponderSettingsForm = ({
         <label className="block text-sm font-medium text-foreground mb-2">
           {t("settings.aiOperationMode")}
         </label>
-        
+
         <div className="flex flex-col gap-3">
           <div className="flex items-start gap-2">
             <input
@@ -118,7 +149,9 @@ export const AiResponderSettingsForm = ({
               className="mt-1"
             />
             <label htmlFor="mode-simple" className="text-sm cursor-pointer">
-              <span className="font-semibold block">{t("settings.modeSimple")}</span>
+              <span className="font-semibold block">
+                {t("settings.modeSimple")}
+              </span>
               <span className="text-muted-foreground">
                 {t("settings.modeSimpleDesc")}
               </span>
@@ -137,9 +170,12 @@ export const AiResponderSettingsForm = ({
               className="mt-1"
             />
             <div className="flex-1">
-              <label htmlFor="mode-orchestrator" className="text-sm cursor-pointer block mb-2">
+              <label
+                htmlFor="mode-orchestrator"
+                className="text-sm cursor-pointer block mb-2"
+              >
                 <span className="font-semibold block">
-                  {t("settings.modeOrchestrator")} 
+                  {t("settings.modeOrchestrator")}
                   <span className="ml-2 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
                     {t("common.advanced")}
                   </span>
@@ -148,58 +184,55 @@ export const AiResponderSettingsForm = ({
                   {t("settings.modeOrchestratorDesc")}
                 </span>
               </label>
-              
-              {mode === "orchestrator" && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsWorkflowModalOpen(true)}
-                  disabled={!enabled}
-                  className="mt-2"
-                >
-                  <Network className="w-4 h-4 mr-2" />
-                  Edit Workflow
-                </Button>
-              )}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="space-y-2">
-        <label
-          htmlFor="aiResponderPrompt"
-          className="block text-sm font-medium text-foreground"
-        >
-          {t("settings.aiResponderPrompt")}
-        </label>
-        <p className="text-xs text-muted-foreground">
-          {t("settings.aiResponderPromptDesc")}
-        </p>
-        <textarea
-          id="aiResponderPrompt"
-          rows={6}
-          className="w-full min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          placeholder={t("settings.aiResponderPromptPlaceholder")}
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          disabled={!enabled || updateMutation.isPending}
-        />
-      </div>
+      {mode === "orchestrator" && (
+        <div className="space-y-2 animate-in fade-in zoom-in-95 duration-300">
+          <label className="block text-sm font-medium text-foreground">
+            Workflow Logic
+          </label>
+          <div className="h-[600px] border rounded-lg overflow-hidden bg-muted/5 relative">
+            <WorkflowEditor
+              initialNodes={nodes}
+              initialEdges={edges}
+              initialGlobalTools={globalTools}
+              onChange={handleWorkflowChange}
+            />
+          </div>
+        </div>
+      )}
+
+      {mode === "simple" && (
+        <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+          <label
+            htmlFor="aiResponderPrompt"
+            className="block text-sm font-medium text-foreground"
+          >
+            {t("settings.aiResponderPrompt")}
+          </label>
+          <p className="text-xs text-muted-foreground">
+            {t("settings.aiResponderPromptDesc")}
+          </p>
+          <textarea
+            id="aiResponderPrompt"
+            rows={6}
+            className="w-full min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            placeholder={t("settings.aiResponderPromptPlaceholder")}
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            disabled={!enabled || updateMutation.isPending}
+          />
+        </div>
+      )}
 
       <div className="flex justify-end pt-4 border-t">
         <Button type="submit" disabled={updateMutation.isPending}>
           {updateMutation.isPending ? t("common.saving") : t("common.save")}
         </Button>
       </div>
-
-      <WorkflowBuilderModal 
-        isOpen={isWorkflowModalOpen}
-        onOpenChange={setIsWorkflowModalOpen}
-        initialWorkflow={project.aiConfig as WorkflowDefinition}
-        onSave={handleSaveWorkflow}
-      />
     </form>
   );
 };

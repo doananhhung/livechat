@@ -84,6 +84,10 @@ export class ProjectService {
       widgetSettings: membership.project.widgetSettings,
       whitelistedDomains: membership.project.whitelistedDomains,
       autoResolveMinutes: membership.project.autoResolveMinutes,
+      aiResponderEnabled: membership.project.aiResponderEnabled,
+      aiResponderPrompt: membership.project.aiResponderPrompt,
+      aiMode: membership.project.aiMode,
+      aiConfig: membership.project.aiConfig,
       createdAt: membership.project.createdAt,
       members: membership.project.members.map((member) => ({
         userId: member.userId,

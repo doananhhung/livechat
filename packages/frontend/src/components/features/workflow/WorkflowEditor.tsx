@@ -21,6 +21,7 @@ import { LlmNode } from "./nodes/LlmNode";
 import { ConditionNode } from "./nodes/ConditionNode";
 import { NodeConfigPanel } from "./NodeConfigPanel";
 import type { WorkflowNode, WorkflowEdge } from "@live-chat/shared-types";
+import { useThemeStore } from "../../../stores/themeStore";
 
 interface WorkflowEditorProps {
   initialNodes?: WorkflowNode[];
@@ -42,6 +43,8 @@ export const WorkflowEditor = ({
   initialGlobalTools = [],
   onChange,
 }: WorkflowEditorProps) => {
+  const { theme } = useThemeStore();
+  
   const defaultNodes = useMemo(() => {
     if (initialNodes.length === 0) {
       return [
@@ -107,25 +110,25 @@ export const WorkflowEditor = ({
   );
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <div className="absolute top-4 left-4 z-10 bg-white p-4 rounded-lg shadow-md border max-w-xs">
-        <h3 className="font-bold text-sm mb-2">Global Tools</h3>
+    <div className="w-full h-full relative bg-background text-foreground">
+      <div className="absolute top-4 left-4 z-10 bg-card text-card-foreground p-4 rounded-lg shadow-md border border-border max-w-xs">
+        <h3 className="font-bold text-sm mb-2 uppercase tracking-wider text-muted-foreground">Global Tools</h3>
         <div className="space-y-2">
-          <label className="flex items-center space-x-2 text-sm">
+          <label className="flex items-center space-x-2 text-sm cursor-pointer hover:text-primary transition-colors">
             <input 
               type="checkbox" 
               checked={globalTools.includes('add_visitor_note')}
               onChange={(e) => handleGlobalToolsChange('add_visitor_note', e.target.checked)}
-              className="rounded border-gray-300"
+              className="rounded border-input bg-background text-primary focus:ring-ring h-4 w-4"
             />
             <span>Add Visitor Note</span>
           </label>
-          <label className="flex items-center space-x-2 text-sm">
+          <label className="flex items-center space-x-2 text-sm cursor-pointer hover:text-primary transition-colors">
             <input 
               type="checkbox" 
               checked={globalTools.includes('change_status')}
               onChange={(e) => handleGlobalToolsChange('change_status', e.target.checked)}
-              className="rounded border-gray-300"
+              className="rounded border-input bg-background text-primary focus:ring-ring h-4 w-4"
             />
             <span>Change Status</span>
           </label>
@@ -141,6 +144,7 @@ export const WorkflowEditor = ({
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
+        colorMode={theme}
         fitView
       >
         <Background />
