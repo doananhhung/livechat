@@ -1,30 +1,25 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventsGateway } from '../gateway/events.gateway';
 import { ProjectService } from '../projects/project.service';
-import OpenAI from 'openai';
-import { ConfigService } from '@nestjs/config';
 import { OnEvent } from '@nestjs/event-emitter';
-import {
-  VisitorMessageReceivedEvent,
-  AgentMessageSentEvent,
-  ConversationUpdatedEvent,
-} from '../inbox/events';
+import { VisitorMessageReceivedEvent } from '../inbox/events';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Conversation, Message, Project } from '../database/entities';
 import { MessageStatus } from '@live-chat/shared-types';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { RealtimeSessionService } from '../realtime-session/realtime-session.service';
+import { LLMProviderManager } from './services/llm-provider.manager';
+import { ChatMessage } from './interfaces/llm-provider.interface';
 
 @Injectable()
 export class AiResponderService {
   private readonly logger = new Logger(AiResponderService.name);
-  private openai: OpenAI;
 
   constructor(
     private readonly eventsGateway: EventsGateway,
     private readonly projectService: ProjectService,
-    private readonly configService: ConfigService,
+    private readonly llmProviderManager: LLMProviderManager,
     @InjectRepository(Conversation)
     private readonly conversationRepository: Repository<Conversation>,
     @InjectRepository(Message)
@@ -32,18 +27,8 @@ export class AiResponderService {
     @InjectRepository(Project)
     private readonly projectRepository: Repository<Project>,
     private readonly eventEmitter: EventEmitter2,
-    private readonly realtimeSessionService: RealtimeSessionService,
-  ) {
-    const apiKey = this.configService.get<string>('GROQ_API_KEY');
-    if (apiKey) {
-      this.openai = new OpenAI({
-        apiKey: apiKey,
-        baseURL: 'https://api.groq.com/openai/v1',
-      });
-    } else {
-      this.logger.warn('GROQ_API_KEY is not set. AI Responder will not work.');
-    }
-  }
+    private readonly realtimeSessionService: RealtimeSessionService
+  ) {}
 
   /**
    * Determines if the AI responder should be active for a given project.
@@ -63,35 +48,6 @@ export class AiResponderService {
     this.logger.debug(`Project ${projectId} agent count: ${agentCount}`);
 
     return agentCount === 0;
-  }
-
-  /**
-   * Generates a response using Groq.
-   * @param messages List of conversation messages.
-   * @param systemPrompt The system instruction for the AI.
-   */
-  private async generateResponse(
-    messages: any[],
-    systemPrompt: string,
-  ): Promise<string> {
-    if (!this.openai) {
-      throw new Error('OpenAI client is not initialized');
-    }
-
-    try {
-      const completion = await this.openai.chat.completions.create({
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...messages,
-        ],
-        model: 'llama3-70b-8192', // Or configurable model
-      });
-
-      return completion.choices[0]?.message?.content || '';
-    } catch (error) {
-      this.logger.error('Failed to generate response from Groq', error);
-      throw error;
-    }
   }
 
   @OnEvent('visitor.message.received')
@@ -131,7 +87,7 @@ export class AiResponderService {
       // 3. Wait a bit to simulate processing/prevent race conditions with the message being saved
       // Ideally we would listen to 'message.created' but 'visitor.message.received' is upstream.
       // We need to fetch the conversation context.
-      
+
       // Let's look up the conversation by visitorUid
       const conversation = await this.conversationRepository.findOne({
         where: {
@@ -156,9 +112,9 @@ export class AiResponderService {
       });
 
       // 5. Format messages for OpenAI
-      const messages = history.reverse().map((msg) => ({
+      const messages: ChatMessage[] = history.reverse().map((msg) => ({
         role: msg.fromCustomer ? 'user' : 'assistant',
-        content: msg.content,
+        content: msg.content || '',
       }));
 
       // Append the new message if it wasn't in DB yet (it might not be if event is async parallel)
@@ -170,10 +126,12 @@ export class AiResponderService {
       }
 
       // 6. Generate Response
-      this.logger.log(`Generating AI response for project ${payload.projectId}`);
+      this.logger.log(
+        `Generating AI response for project ${payload.projectId}`
+      );
       // Show typing indicator? (Nice to have)
-      
-      const aiResponseText = await this.generateResponse(
+
+      const aiResponseText = await this.llmProviderManager.generateResponse(
         messages,
         systemPrompt
       );
@@ -212,9 +170,8 @@ export class AiResponderService {
       };
 
       this.eventEmitter.emit('agent.message.sent', eventPayload);
-      
-      this.logger.log(`AI Response sent: ${savedMessage.id}`);
 
+      this.logger.log(`AI Response sent: ${savedMessage.id}`);
     } catch (error) {
       this.logger.error('Error in handleVisitorMessage:', error);
     }
