@@ -68,6 +68,38 @@
                 "title": "Bắt đầu nhắn tin",
                 "desc": "Trò chuyện với khách truy cập của bạn trong thời gian thực."
             }
+        },
+        "advantages": {
+            "title": "Tại sao chọn Live Chat?",
+            "subtitle": "Mọi thứ bạn cần để cung cấp dịch vụ hỗ trợ khách hàng đẳng cấp thế giới.",
+            "ai": {
+                "title": "Tự động hóa AI",
+                "desc": "Xử lý yêu cầu 24/7 với bot AI tự động tiếp quản khi đội ngũ của bạn vắng mặt."
+            },
+            "widget": {
+                "title": "Widget nhúng",
+                "desc": "Tích hợp mượt mà cửa sổ chat vào bất kỳ trang web nào chỉ với một dòng mã."
+            },
+            "management": {
+                "title": "Quản lý tập trung",
+                "desc": "Tổ chức hoạt động hỗ trợ của bạn với quy trình làm việc đa dự án và theo nhóm."
+            },
+            "context": {
+                "title": "Ngữ cảnh khách truy cập",
+                "desc": "Xem chính xác khách hàng đang xem gì trong thời gian thực để hỗ trợ tốt hơn."
+            },
+            "canned": {
+                "title": "Mẫu câu trả lời",
+                "desc": "Trả lời các câu hỏi thường gặp trong tích tắc bằng phím tắt văn bản mạnh mẽ."
+            },
+            "notes": {
+                "title": "Ghi chú nội bộ",
+                "desc": "Cùng đội ngũ hỗ trợ khách hàng với các ghi chú riêng tư cho mỗi khách truy cập."
+            },
+            "templates": {
+                "title": "Mẫu hành động",
+                "desc": "Thu thập thông tin có cấu trúc từ khách bằng các biểu mẫu tùy chỉnh."
+            }
         }
     },
     "docs": {

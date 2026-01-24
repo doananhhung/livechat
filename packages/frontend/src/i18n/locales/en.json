@@ -68,6 +68,38 @@
                 "title": "Start Messaging",
                 "desc": "Chat with your visitors in real-time."
             }
+        },
+        "advantages": {
+            "title": "Why Choose Live Chat?",
+            "subtitle": "Everything you need to deliver world-class customer support.",
+            "ai": {
+                "title": "AI Automation",
+                "desc": "Handle inquiries 24/7 with an AI bot that takes over when your team is away."
+            },
+            "widget": {
+                "title": "Embedded Widget",
+                "desc": "Seamlessly integrate our chat window into any website with a single line of code."
+            },
+            "management": {
+                "title": "Centralized Management",
+                "desc": "Organize your support operations with multi-project and team-based workflows."
+            },
+            "context": {
+                "title": "Visitor Context",
+                "desc": "See exactly what your customers are viewing in real-time to provide better help."
+            },
+            "canned": {
+                "title": "Canned Responses",
+                "desc": "Respond to common questions in milliseconds using powerful text shortcuts."
+            },
+            "notes": {
+                "title": "Internal Notes",
+                "desc": "Collaborate with your team behind the scenes with private notes on any visitor."
+            },
+            "templates": {
+                "title": "Action Templates",
+                "desc": "Collect structured information from visitors using custom forms and workflows."
+            }
         }
     },
     "docs": {

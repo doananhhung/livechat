@@ -41,7 +41,7 @@
 
 - **`auth/`**: Comprehensive system supporting JWT access/refresh rotation, TOTP 2FA, and Google OAuth with automatic account linking.
 - **`inbox/`**: Conversation management engine using optimistic updates and cursor-based pagination.
-- **`ai-responder/`**: Extensible LLM integration (OpenAI) with provider failover logic.
+- **`ai-responder/`**: Extensible LLM integration (Groq, OpenAI) that triggers automatically when no agents are online (`agentCount === 0`) for a project.
 - **`gateway/`**: Socket.io layer using project-based rooms (`project:{id}`) for multi-tenancy isolation.
 - **`database/`**: TypeORM entities and migrations tracking 20+ tables.
 - **`audit-logs/`**: Decorator-based system (`@Auditable`) for automatic action logging.
@@ -77,6 +77,7 @@
 - **Optimistic UI**: Frontend state (Zustand) updates immediately on message send, syncing via socket events.
 - **Multi-Tenancy**: Stringent isolation via `projectId` across DB, Sockets, and Auth Guards.
 - **Layout-Based Routing**: Frontend uses distinct layouts (`PublicLayout`, `DocsLayout`, `MainLayout`) to separate public, documentation, and authenticated app contexts.
+- **AI Provider Failover**: Uses a circuit-breaker pattern to switch between LLM providers (e.g., Groq to OpenAI) based on health and configured preference.
 
 ## Critical Dependencies
 
