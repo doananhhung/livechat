@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
 } from "./DropdownMenu";
 
 // Simple SVG icons for Sun and Moon
@@ -54,7 +55,7 @@ const MoonIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export const ThemeToggleButton = () => {
   const { t } = useTranslation();
-  const { setTheme } = useThemeStore();
+  const { theme, setTheme } = useThemeStore();
 
   return (
     <DropdownMenu modal={false}>
@@ -66,19 +67,71 @@ export const ThemeToggleButton = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        onCloseAutoFocus={(event: Event) => event.preventDefault()} // ADD onCloseAutoFocus prop
+        onCloseAutoFocus={(event: Event) => event.preventDefault()}
+        className="max-h-80 overflow-y-auto"
       >
+        {/* Base themes */}
         <DropdownMenuItem onClick={() => setTheme("light")}>
           {t("settings.themeLight")}
+          {theme === "light" && <span className="ml-auto">✓</span>}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
           {t("settings.themeDark")}
+          {theme === "dark" && <span className="ml-auto">✓</span>}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
           {t("settings.themeSystem")}
+          {theme === "system" && <span className="ml-auto">✓</span>}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {/* Dark themes */}
+        <DropdownMenuItem onClick={() => setTheme("oled-void")}>
+          {t("settings.themeOledVoid")}
+          {theme === "oled-void" && <span className="ml-auto">✓</span>}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("nordic-frost")}>
+          {t("settings.themeNordicFrost")}
+          {theme === "nordic-frost" && <span className="ml-auto">✓</span>}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("cyberpunk")}>
+          {t("settings.themeCyberpunk")}
+          {theme === "cyberpunk" && <span className="ml-auto">✓</span>}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("terminal")}>
+          {t("settings.themeTerminal")}
+          {theme === "terminal" && <span className="ml-auto">✓</span>}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("dracula")}>
+          {t("settings.themeDracula")}
+          {theme === "dracula" && <span className="ml-auto">✓</span>}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("solarized-dark")}>
+          {t("settings.themeSolarizedDark")}
+          {theme === "solarized-dark" && <span className="ml-auto">✓</span>}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {/* Light themes */}
+        <DropdownMenuItem onClick={() => setTheme("paperback")}>
+          {t("settings.themePaperback")}
+          {theme === "paperback" && <span className="ml-auto">✓</span>}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("matcha")}>
+          {t("settings.themeMatcha")}
+          {theme === "matcha" && <span className="ml-auto">✓</span>}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("lavender-mist")}>
+          {t("settings.themeLavenderMist")}
+          {theme === "lavender-mist" && <span className="ml-auto">✓</span>}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("high-contrast")}>
+          {t("settings.themeHighContrast")}
+          {theme === "high-contrast" && <span className="ml-auto">✓</span>}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("solarized-light")}>
+          {t("settings.themeSolarizedLight")}
+          {theme === "solarized-light" && <span className="ml-auto">✓</span>}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 };
-

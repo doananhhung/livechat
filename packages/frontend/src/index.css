@@ -77,6 +77,420 @@
   }
 }
 
+/* 
+  Custom Themes
+  Placed outside @layer base to prevent Tailwind JIT from purging them 
+  since the class names are constructed dynamically in JS (e.g., `theme-${theme}`).
+*/
+
+/* 1. OLED Void (Pure Black) */
+.theme-oled-void {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 98%;
+  --card: 0 0% 5%;
+  --card-foreground: 0 0% 98%;
+  --popover: 0 0% 5%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 221 83% 53%; /* Royal Blue */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 12%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 0% 60%;
+  --accent: 0 0% 12%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 90% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 142 76% 40%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 0%;
+  --info: 199 89% 48%;
+  --info-foreground: 0 0% 100%;
+  --online: 142 76% 40%;
+  --away: 38 92% 50%;
+  --offline: 0 0% 40%;
+  --border: 0 0% 15%;
+  --input: 0 0% 15%;
+  --ring: 221 83% 53%;
+  --chart-1: 221 83% 53%;
+  --chart-2: 142 76% 40%;
+  --chart-3: 38 92% 50%;
+  --chart-4: 280 70% 50%;
+  --chart-5: 0 90% 50%;
+}
+
+/* 2. Paperback (Warm Cream) */
+.theme-paperback {
+  --background: 37 40% 92%;
+  --foreground: 25 30% 15%;
+  --card: 37 40% 90%;
+  --card-foreground: 25 30% 15%;
+  --popover: 37 40% 90%;
+  --popover-foreground: 25 30% 15%;
+  --primary: 25 40% 35%;
+  --primary-foreground: 37 40% 95%;
+  --secondary: 100 20% 80%;
+  --secondary-foreground: 25 30% 15%;
+  --muted: 37 30% 85%;
+  --muted-foreground: 25 20% 40%;
+  --accent: 100 20% 80%;
+  --accent-foreground: 25 30% 15%;
+  --destructive: 0 50% 40%;
+  --destructive-foreground: 37 40% 95%;
+  --success: 120 30% 35%;
+  --success-foreground: 37 40% 95%;
+  --warning: 30 60% 45%;
+  --warning-foreground: 25 30% 15%;
+  --info: 200 40% 40%;
+  --info-foreground: 37 40% 95%;
+  --online: 120 30% 35%;
+  --away: 30 60% 45%;
+  --offline: 25 15% 50%;
+  --border: 25 20% 80%;
+  --input: 25 20% 80%;
+  --ring: 25 40% 35%;
+  --chart-1: 25 40% 35%;
+  --chart-2: 120 30% 35%;
+  --chart-3: 200 40% 40%;
+  --chart-4: 30 60% 45%;
+  --chart-5: 100 20% 50%;
+}
+
+/* 3. Nordic Frost (Blue-Grey) */
+.theme-nordic-frost {
+  --background: 220 16% 22%;
+  --foreground: 218 27% 92%;
+  --card: 220 16% 28%;
+  --card-foreground: 218 27% 92%;
+  --popover: 220 16% 28%;
+  --popover-foreground: 218 27% 92%;
+  --primary: 193 43% 67%;
+  --primary-foreground: 220 16% 22%;
+  --secondary: 220 16% 32%;
+  --secondary-foreground: 218 27% 92%;
+  --muted: 220 16% 32%;
+  --muted-foreground: 218 10% 60%;
+  --accent: 220 16% 36%;
+  --accent-foreground: 218 27% 92%;
+  --destructive: 354 42% 56%;
+  --destructive-foreground: 218 27% 92%;
+  --success: 92 28% 65%;
+  --success-foreground: 220 16% 22%;
+  --warning: 40 71% 73%;
+  --warning-foreground: 220 16% 22%;
+  --info: 179 25% 65%;
+  --info-foreground: 220 16% 22%;
+  --online: 92 28% 65%;
+  --away: 40 71% 73%;
+  --offline: 218 10% 50%;
+  --border: 220 16% 36%;
+  --input: 220 16% 36%;
+  --ring: 193 43% 67%;
+  --chart-1: 193 43% 67%;
+  --chart-2: 92 28% 65%;
+  --chart-3: 40 71% 73%;
+  --chart-4: 311 16% 62%;
+  --chart-5: 354 42% 56%;
+}
+
+/* 4. Cyberpunk (High Saturation) */
+.theme-cyberpunk {
+  --background: 260 60% 5%;
+  --foreground: 180 100% 50%;
+  --card: 260 60% 10%;
+  --card-foreground: 180 100% 50%;
+  --popover: 260 60% 10%;
+  --popover-foreground: 180 100% 50%;
+  --primary: 320 100% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 180 100% 10%;
+  --secondary-foreground: 180 100% 50%;
+  --muted: 260 40% 15%;
+  --muted-foreground: 320 100% 70%;
+  --accent: 180 100% 15%;
+  --accent-foreground: 180 100% 70%;
+  --destructive: 0 100% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 180 100% 50%;
+  --success-foreground: 260 60% 5%;
+  --warning: 60 100% 50%;
+  --warning-foreground: 260 60% 5%;
+  --info: 200 100% 60%;
+  --info-foreground: 260 60% 5%;
+  --online: 180 100% 50%;
+  --away: 60 100% 50%;
+  --offline: 260 40% 40%;
+  --border: 320 100% 50%;
+  --input: 260 60% 20%;
+  --ring: 320 100% 50%;
+  --chart-1: 320 100% 50%;
+  --chart-2: 180 100% 50%;
+  --chart-3: 60 100% 50%;
+  --chart-4: 280 100% 60%;
+  --chart-5: 0 100% 50%;
+}
+
+/* 5. Terminal (Monospace) */
+.theme-terminal {
+  --background: 0 0% 0%;
+  --foreground: 120 100% 50%;
+  --card: 0 0% 3%;
+  --card-foreground: 120 100% 50%;
+  --popover: 0 0% 3%;
+  --popover-foreground: 120 100% 50%;
+  --primary: 120 100% 50%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 120 100% 10%;
+  --secondary-foreground: 120 100% 50%;
+  --muted: 0 0% 10%;
+  --muted-foreground: 120 100% 30%;
+  --accent: 120 100% 15%;
+  --accent-foreground: 120 100% 60%;
+  --destructive: 0 100% 50%;
+  --destructive-foreground: 0 0% 0%;
+  --success: 120 100% 50%;
+  --success-foreground: 0 0% 0%;
+  --warning: 45 100% 50%;
+  --warning-foreground: 0 0% 0%;
+  --info: 180 100% 50%;
+  --info-foreground: 0 0% 0%;
+  --online: 120 100% 50%;
+  --away: 45 100% 50%;
+  --offline: 120 100% 20%;
+  --border: 120 100% 50%;
+  --input: 0 0% 0%;
+  --ring: 120 100% 50%;
+  --radius: 0;
+  --chart-1: 120 100% 50%;
+  --chart-2: 180 100% 50%;
+  --chart-3: 45 100% 50%;
+  --chart-4: 0 100% 50%;
+  --chart-5: 280 100% 50%;
+}
+
+/* 6. Matcha (Natural) */
+.theme-matcha {
+  --background: 100 30% 90%;
+  --foreground: 120 40% 20%;
+  --card: 100 30% 88%;
+  --card-foreground: 120 40% 20%;
+  --popover: 100 30% 88%;
+  --popover-foreground: 120 40% 20%;
+  --primary: 120 30% 35%;
+  --primary-foreground: 100 30% 95%;
+  --secondary: 80 20% 80%;
+  --secondary-foreground: 120 40% 20%;
+  --muted: 100 20% 80%;
+  --muted-foreground: 120 30% 40%;
+  --accent: 80 20% 75%;
+  --accent-foreground: 120 40% 25%;
+  --destructive: 0 50% 45%;
+  --destructive-foreground: 100 30% 95%;
+  --success: 140 40% 40%;
+  --success-foreground: 100 30% 95%;
+  --warning: 40 60% 50%;
+  --warning-foreground: 120 40% 20%;
+  --info: 190 40% 45%;
+  --info-foreground: 100 30% 95%;
+  --online: 140 40% 40%;
+  --away: 40 60% 50%;
+  --offline: 100 10% 50%;
+  --border: 120 20% 70%;
+  --input: 120 20% 70%;
+  --ring: 120 30% 35%;
+  --chart-1: 120 30% 35%;
+  --chart-2: 140 40% 40%;
+  --chart-3: 40 60% 50%;
+  --chart-4: 190 40% 45%;
+  --chart-5: 80 30% 50%;
+}
+
+/* 7. Dracula (Developer) */
+.theme-dracula {
+  --background: 231 15% 18%;
+  --foreground: 60 30% 96%;
+  --card: 231 15% 22%;
+  --card-foreground: 60 30% 96%;
+  --popover: 231 15% 22%;
+  --popover-foreground: 60 30% 96%;
+  --primary: 326 100% 74%;
+  --primary-foreground: 231 15% 18%;
+  --secondary: 265 89% 78%;
+  --secondary-foreground: 231 15% 18%;
+  --muted: 231 10% 30%;
+  --muted-foreground: 60 20% 70%;
+  --accent: 191 97% 77%;
+  --accent-foreground: 231 15% 18%;
+  --destructive: 0 100% 67%;
+  --destructive-foreground: 231 15% 18%;
+  --success: 135 94% 65%;
+  --success-foreground: 231 15% 18%;
+  --warning: 65 92% 76%;
+  --warning-foreground: 231 15% 18%;
+  --info: 191 97% 77%;
+  --info-foreground: 231 15% 18%;
+  --online: 135 94% 65%;
+  --away: 65 92% 76%;
+  --offline: 231 10% 45%;
+  --border: 231 15% 30%;
+  --input: 231 15% 30%;
+  --ring: 326 100% 74%;
+  --chart-1: 326 100% 74%;
+  --chart-2: 135 94% 65%;
+  --chart-3: 65 92% 76%;
+  --chart-4: 265 89% 78%;
+  --chart-5: 191 97% 77%;
+}
+
+/* 8. Lavender Mist (Pastel) */
+.theme-lavender-mist {
+  --background: 260 100% 98%;
+  --foreground: 260 60% 20%;
+  --card: 0 0% 100%;
+  --card-foreground: 260 60% 20%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 260 60% 20%;
+  --primary: 260 80% 75%;
+  --primary-foreground: 260 60% 20%;
+  --secondary: 260 100% 95%;
+  --secondary-foreground: 260 60% 25%;
+  --muted: 260 30% 90%;
+  --muted-foreground: 260 20% 50%;
+  --accent: 260 80% 92%;
+  --accent-foreground: 260 60% 20%;
+  --destructive: 0 70% 65%;
+  --destructive-foreground: 260 60% 20%;
+  --success: 150 50% 60%;
+  --success-foreground: 260 60% 20%;
+  --warning: 40 80% 70%;
+  --warning-foreground: 260 60% 20%;
+  --info: 200 60% 65%;
+  --info-foreground: 260 60% 20%;
+  --online: 150 50% 60%;
+  --away: 40 80% 70%;
+  --offline: 260 20% 60%;
+  --border: 260 50% 90%;
+  --input: 260 50% 90%;
+  --ring: 260 80% 75%;
+  --chart-1: 260 80% 75%;
+  --chart-2: 150 50% 60%;
+  --chart-3: 40 80% 70%;
+  --chart-4: 320 60% 70%;
+  --chart-5: 200 60% 65%;
+}
+
+/* 9. High Contrast (Accessibility) */
+.theme-high-contrast {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 0%;
+  --primary: 0 0% 0%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 95%;
+  --secondary-foreground: 0 0% 0%;
+  --muted: 0 0% 90%;
+  --muted-foreground: 0 0% 20%;
+  --accent: 0 0% 0%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 100% 40%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 120 100% 25%;
+  --success-foreground: 0 0% 100%;
+  --warning: 45 100% 40%;
+  --warning-foreground: 0 0% 0%;
+  --info: 210 100% 40%;
+  --info-foreground: 0 0% 100%;
+  --online: 120 100% 25%;
+  --away: 45 100% 40%;
+  --offline: 0 0% 50%;
+  --border: 0 0% 0%;
+  --input: 0 0% 0%;
+  --ring: 0 0% 0%;
+  --chart-1: 0 0% 0%;
+  --chart-2: 120 100% 25%;
+  --chart-3: 45 100% 40%;
+  --chart-4: 210 100% 40%;
+  --chart-5: 0 100% 40%;
+}
+
+/* 10a. Solarized Light */
+.theme-solarized-light {
+  --background: 44 87% 94%;
+  --foreground: 192 10% 36%;
+  --card: 45 61% 88%;
+  --card-foreground: 192 10% 40%;
+  --popover: 45 61% 88%;
+  --popover-foreground: 192 10% 40%;
+  --primary: 18 80% 44%;
+  --primary-foreground: 44 87% 94%;
+  --secondary: 44 80% 85%;
+  --secondary-foreground: 192 10% 30%;
+  --muted: 45 30% 80%;
+  --muted-foreground: 192 5% 45%;
+  --accent: 175 59% 40%;
+  --accent-foreground: 44 87% 94%;
+  --destructive: 1 71% 52%;
+  --destructive-foreground: 44 87% 94%;
+  --success: 68 100% 30%;
+  --success-foreground: 44 87% 94%;
+  --warning: 45 100% 35%;
+  --warning-foreground: 192 10% 36%;
+  --info: 175 59% 40%;
+  --info-foreground: 44 87% 94%;
+  --online: 68 100% 30%;
+  --away: 45 100% 35%;
+  --offline: 192 5% 50%;
+  --border: 45 40% 80%;
+  --input: 45 40% 80%;
+  --ring: 18 80% 44%;
+  --chart-1: 18 80% 44%;
+  --chart-2: 68 100% 30%;
+  --chart-3: 175 59% 40%;
+  --chart-4: 331 64% 52%;
+  --chart-5: 237 45% 58%;
+}
+
+/* 10b. Solarized Dark */
+.theme-solarized-dark {
+  --background: 192 100% 11%;
+  --foreground: 186 8% 76%;
+  --card: 192 90% 13%;
+  --card-foreground: 186 8% 80%;
+  --popover: 192 90% 13%;
+  --popover-foreground: 186 8% 80%;
+  --primary: 175 59% 40%;
+  --primary-foreground: 192 100% 11%;
+  --secondary: 192 50% 15%;
+  --secondary-foreground: 186 8% 80%;
+  --muted: 192 30% 18%;
+  --muted-foreground: 186 4% 50%;
+  --accent: 65 89% 37%;
+  --accent-foreground: 192 100% 11%;
+  --destructive: 1 71% 52%;
+  --destructive-foreground: 186 8% 80%;
+  --success: 68 100% 30%;
+  --success-foreground: 192 100% 11%;
+  --warning: 45 100% 35%;
+  --warning-foreground: 192 100% 11%;
+  --info: 175 59% 40%;
+  --info-foreground: 192 100% 11%;
+  --online: 68 100% 30%;
+  --away: 45 100% 35%;
+  --offline: 192 30% 40%;
+  --border: 192 40% 20%;
+  --input: 192 40% 20%;
+  --ring: 175 59% 40%;
+  --chart-1: 175 59% 40%;
+  --chart-2: 68 100% 30%;
+  --chart-3: 45 100% 35%;
+  --chart-4: 331 64% 52%;
+  --chart-5: 237 45% 58%;
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -84,6 +498,30 @@
 
   body {
     @apply bg-background text-foreground;
+    transition:
+      background-color 150ms ease-in-out,
+      color 150ms ease-in-out;
+  }
+
+  /* Smooth transitions for common elements during theme switch */
+  .bg-background,
+  .bg-card,
+  .bg-muted,
+  .bg-accent,
+  .bg-primary,
+  .bg-secondary {
+    transition: background-color 150ms ease-in-out;
+  }
+
+  .text-foreground,
+  .text-muted-foreground,
+  .text-primary,
+  .text-secondary {
+    transition: color 150ms ease-in-out;
+  }
+
+  .border-border {
+    transition: border-color 150ms ease-in-out;
   }
 
   input:-webkit-autofill,

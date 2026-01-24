@@ -49,9 +49,9 @@ export const UserNav = ({ isCollapsed = false }: UserNavProps) => {
           type="button"
           className={cn(
             "flex items-center justify-center rounded-full transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-            isCollapsed 
-              ? "h-12 w-12" 
-              : "w-full gap-2 px-2 py-2 justify-start rounded-md"
+            isCollapsed
+              ? "h-12 w-12"
+              : "w-full gap-2 px-2 py-2 justify-start rounded-md",
           )}
         >
           <Avatar
@@ -62,7 +62,9 @@ export const UserNav = ({ isCollapsed = false }: UserNavProps) => {
           />
           {!isCollapsed && (
             <div className="flex flex-col space-y-1 text-left min-w-0">
-              <p className="text-sm font-medium leading-none truncate">{user.fullName}</p>
+              <p className="text-sm font-medium leading-none truncate">
+                {user.fullName}
+              </p>
               <p className="text-xs leading-none text-muted-foreground truncate">
                 {user.email}
               </p>
@@ -91,32 +93,120 @@ export const UserNav = ({ isCollapsed = false }: UserNavProps) => {
           <Settings className="mr-2 h-4 w-4" />
           <span>{t("settings.myProfile")}</span>
         </DropdownMenuItem>
-        
+
         {/* Theme submenu */}
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
             <Sun className="mr-2 h-4 w-4" />
             <span>{t("settings.theme")}</span>
           </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent>
+          <DropdownMenuSubContent className="max-h-80 overflow-y-auto">
+            {/* Base themes */}
             <DropdownMenuItem onClick={() => setTheme("light")}>
               <Sun className="mr-2 h-4 w-4" />
               <span>{t("settings.themeLight")}</span>
-              {theme === "light" && <span className="ml-auto text-primary">✓</span>}
+              {theme === "light" && (
+                <span className="ml-auto text-primary">✓</span>
+              )}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setTheme("dark")}>
               <Moon className="mr-2 h-4 w-4" />
               <span>{t("settings.themeDark")}</span>
-              {theme === "dark" && <span className="ml-auto text-primary">✓</span>}
+              {theme === "dark" && (
+                <span className="ml-auto text-primary">✓</span>
+              )}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setTheme("system")}>
               <Monitor className="mr-2 h-4 w-4" />
               <span>{t("settings.themeSystem")}</span>
-              {theme === "system" && <span className="ml-auto text-primary">✓</span>}
+              {theme === "system" && (
+                <span className="ml-auto text-primary">✓</span>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {/* Dark themes */}
+            <DropdownMenuItem onClick={() => setTheme("oled-void")}>
+              <Moon className="mr-2 h-4 w-4" />
+              <span>{t("settings.themeOledVoid")}</span>
+              {theme === "oled-void" && (
+                <span className="ml-auto text-primary">✓</span>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme("nordic-frost")}>
+              <Moon className="mr-2 h-4 w-4" />
+              <span>{t("settings.themeNordicFrost")}</span>
+              {theme === "nordic-frost" && (
+                <span className="ml-auto text-primary">✓</span>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme("cyberpunk")}>
+              <Moon className="mr-2 h-4 w-4" />
+              <span>{t("settings.themeCyberpunk")}</span>
+              {theme === "cyberpunk" && (
+                <span className="ml-auto text-primary">✓</span>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme("terminal")}>
+              <Moon className="mr-2 h-4 w-4" />
+              <span>{t("settings.themeTerminal")}</span>
+              {theme === "terminal" && (
+                <span className="ml-auto text-primary">✓</span>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme("dracula")}>
+              <Moon className="mr-2 h-4 w-4" />
+              <span>{t("settings.themeDracula")}</span>
+              {theme === "dracula" && (
+                <span className="ml-auto text-primary">✓</span>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme("solarized-dark")}>
+              <Moon className="mr-2 h-4 w-4" />
+              <span>{t("settings.themeSolarizedDark")}</span>
+              {theme === "solarized-dark" && (
+                <span className="ml-auto text-primary">✓</span>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {/* Light themes */}
+            <DropdownMenuItem onClick={() => setTheme("paperback")}>
+              <Sun className="mr-2 h-4 w-4" />
+              <span>{t("settings.themePaperback")}</span>
+              {theme === "paperback" && (
+                <span className="ml-auto text-primary">✓</span>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme("matcha")}>
+              <Sun className="mr-2 h-4 w-4" />
+              <span>{t("settings.themeMatcha")}</span>
+              {theme === "matcha" && (
+                <span className="ml-auto text-primary">✓</span>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme("lavender-mist")}>
+              <Sun className="mr-2 h-4 w-4" />
+              <span>{t("settings.themeLavenderMist")}</span>
+              {theme === "lavender-mist" && (
+                <span className="ml-auto text-primary">✓</span>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme("high-contrast")}>
+              <Sun className="mr-2 h-4 w-4" />
+              <span>{t("settings.themeHighContrast")}</span>
+              {theme === "high-contrast" && (
+                <span className="ml-auto text-primary">✓</span>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme("solarized-light")}>
+              <Sun className="mr-2 h-4 w-4" />
+              <span>{t("settings.themeSolarizedLight")}</span>
+              {theme === "solarized-light" && (
+                <span className="ml-auto text-primary">✓</span>
+              )}
             </DropdownMenuItem>
           </DropdownMenuSubContent>
         </DropdownMenuSub>
-        
+
         {/* Language submenu */}
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
@@ -126,15 +216,19 @@ export const UserNav = ({ isCollapsed = false }: UserNavProps) => {
           <DropdownMenuSubContent>
             <DropdownMenuItem onClick={() => i18n.changeLanguage("en")}>
               <span>English</span>
-              {i18n.language === "en" && <span className="ml-auto text-primary">✓</span>}
+              {i18n.language === "en" && (
+                <span className="ml-auto text-primary">✓</span>
+              )}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => i18n.changeLanguage("vi")}>
               <span>Tiếng Việt</span>
-              {i18n.language === "vi" && <span className="ml-auto text-primary">✓</span>}
+              {i18n.language === "vi" && (
+                <span className="ml-auto text-primary">✓</span>
+              )}
             </DropdownMenuItem>
           </DropdownMenuSubContent>
         </DropdownMenuSub>
-        
+
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />

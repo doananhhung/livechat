@@ -23,17 +23,17 @@
 
 ### Phase 1: Store & Infrastructure
 
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Update the internal `Theme` type in `themeStore.ts`, modify the theme application logic to support arbitrary theme strings, and add i18n keys for all new themes.
 
 ### Phase 2: Theme Palette Definition
 
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Define the CSS variable sets for all 10 new themes in `index.css`. This involves creating 10 new CSS class blocks (e.g., `.theme-oled-void`) with their respective HSL values.
 
 ### Phase 3: UI Integration
 
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Update `UserNav.tsx` and `ThemeToggleButton.tsx` to display the new theme options in their dropdown menus. Ensure the active theme is indicated with a checkmark.
 
 </must-have>
@@ -42,6 +42,6 @@
 
 ### Phase 4 (optional): Polish & Refinement
 
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Implement theme-specific scrollbar styling and add global CSS transitions to ensure smooth color shifting when switching themes.
 </nice-to-have>
