@@ -6,7 +6,7 @@ export enum ConversationStatus {
   OPEN = "open",
   PENDING = "pending",
   SOLVED = "solved", // Was 'closed'
-  SPAM = "spam"
+  SPAM = "spam",
 }
 
 export interface NavigationEntry {
@@ -15,13 +15,18 @@ export interface NavigationEntry {
   timestamp: string; // ISO 8601
 }
 
+export interface WorkflowState {
+  currentNodeId: string | null;
+}
+
 export interface VisitorSessionMetadata {
-  referrer: string | null;     // e.g., "https://google.com" or null (direct)
-  landingPage: string;         // The first page they hit
+  referrer: string | null; // e.g., "https://google.com" or null (direct)
+  landingPage: string; // The first page they hit
   urlHistory: NavigationEntry[];
-  browser?: string;            // User-Agent summary (optional future proofing)
-  os?: string;                 // OS summary (optional future proofing)
-  aiEnabled?: boolean;         // Visitor opt-in/out for AI Responder
+  browser?: string; // User-Agent summary (optional future proofing)
+  os?: string; // OS summary (optional future proofing)
+  aiEnabled?: boolean; // Visitor opt-in/out for AI Responder
+  workflowState?: WorkflowState; // Workflow orchestrator state
 }
 
 export interface Conversation {

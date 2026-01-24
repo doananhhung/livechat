@@ -880,7 +880,7 @@
             "llmPromptPlaceholder": "Instructions for the AI at this step...",
             "conditionDescription": "The AI will evaluate the visitor's intent and route to the appropriate path.",
             "routingPromptLabel": "Routing Prompt",
-            "routingPromptPlaceholder": "Describe how the AI should decide between Yes/No paths..."
+            "routingPromptPlaceholder": "Describe how the AI should decide between Yes/No paths. For example: If user provide email, route to yes, else route to no."
         },
         "globalTools": {
             "title": "Global Tools",

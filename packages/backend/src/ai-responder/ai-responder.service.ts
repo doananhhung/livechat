@@ -15,8 +15,14 @@ import {
   ToolDefinition,
 } from './interfaces/llm-provider.interface';
 import { AiToolExecutor } from './services/ai-tool.executor';
-import { WorkflowEngineService } from './services/workflow-engine.service';
-import { WorkflowDefinition } from '@live-chat/shared-types';
+import {
+  WorkflowEngineService,
+  WorkflowContext,
+} from './services/workflow-engine.service';
+import {
+  WorkflowDefinition,
+  VisitorSessionMetadata,
+} from '@live-chat/shared-types';
 
 @Injectable()
 export class AiResponderService {
@@ -132,31 +138,101 @@ export class AiResponderService {
       let systemPrompt =
         project.aiResponderPrompt || 'You are a helpful assistant.';
       let tools: ToolDefinition[] | undefined = undefined;
+      let workflowCtx: WorkflowContext | null = null;
+      let isConditionRouting = false;
+      let conditionNode: { id: string; type: string; data: unknown } | null =
+        null;
 
       if (project.aiMode === 'orchestrator' && project.aiConfig) {
         // Load Workflow
         const workflow = project.aiConfig as WorkflowDefinition;
+        const metadata =
+          (conversation.metadata as VisitorSessionMetadata) || {};
 
         // Determine Current Node
-        let currentNodeId = (conversation as any).metadata?.workflowState
-          ?.currentNodeId;
+        let currentNodeId = metadata.workflowState?.currentNodeId ?? null;
 
         if (!currentNodeId) {
+          // Find start node and execute to get first real node
           const startNode = workflow.nodes.find((n) => n.type === 'start');
-          currentNodeId = startNode?.id;
+          if (startNode) {
+            const startCtx: WorkflowContext = {
+              projectId: project.id,
+              visitorId: conversation.visitor.id,
+              conversationId: String(conversation.id),
+              currentNodeId: startNode.id,
+              workflow: workflow,
+              history: messages,
+            };
+            const startResult = await this.workflowEngine.executeStep(startCtx);
+            currentNodeId = startResult.nextNodeId;
+          }
         }
 
-        if (currentNodeId) {
-          const currentNode = workflow.nodes.find((n) => n.id === currentNodeId);
-          if (currentNode) {
-            const context = this.workflowEngine.getNodeContext(currentNode, workflow, {
-              visitor: conversation.visitor,
-              conversation: conversation,
-              project: project,
-            });
+        // Auto-execute Action nodes until we hit LLM or Condition
+        let currentNode = currentNodeId
+          ? workflow.nodes.find((n) => n.id === currentNodeId)
+          : null;
+
+        while (currentNode && currentNode.type === 'action') {
+          this.logger.debug(
+            `[Workflow] Auto-executing action node: ${currentNode.id}`
+          );
+          const actionCtx: WorkflowContext = {
+            projectId: project.id,
+            visitorId: conversation.visitor.id,
+            conversationId: String(conversation.id),
+            currentNodeId: currentNode.id,
+            workflow: workflow,
+            history: messages,
+          };
+          const actionResult = await this.workflowEngine.executeStep(actionCtx);
+          currentNodeId = actionResult.nextNodeId;
+          currentNode = currentNodeId
+            ? workflow.nodes.find((n) => n.id === currentNodeId)
+            : null;
+        }
+
+        if (currentNodeId && currentNode) {
+          // Check if this is a Condition (Router) node
+          if (currentNode.type === 'condition') {
+            isConditionRouting = true;
+            conditionNode = currentNode;
+
+            // Get routing prompt from node data or use default
+            const routingPrompt =
+              (currentNode.data?.prompt as string) ||
+              'Based on the conversation, decide which path to take. Use the route_decision tool with path "yes" or "no".';
+            systemPrompt = routingPrompt;
+            tools = [this.aiToolExecutor.getRoutingTool()];
+
+            this.logger.debug(
+              `[Workflow] Condition node ${currentNode.id} - using route_decision tool`
+            );
+          } else {
+            // LLM node - get normal context
+            const context = this.workflowEngine.getNodeContext(
+              currentNode,
+              workflow,
+              {
+                visitor: conversation.visitor,
+                conversation: conversation,
+                project: project,
+              }
+            );
             systemPrompt = context.systemPrompt;
             tools = context.tools;
           }
+
+          // Store context for later state persistence
+          workflowCtx = {
+            projectId: project.id,
+            visitorId: conversation.visitor.id,
+            conversationId: String(conversation.id),
+            currentNodeId: currentNodeId,
+            workflow: workflow,
+            history: messages,
+          };
         } else {
           // Fallback if workflow invalid
           tools = this.aiToolExecutor.getTools();
@@ -170,11 +246,14 @@ export class AiResponderService {
       // -- WORKFLOW LOGIC END --
 
       // 6. Generate Response Loop
-      this.logger.log(`Generating AI response for project ${payload.projectId}`);
+      this.logger.log(
+        `Generating AI response for project ${payload.projectId}`
+      );
 
       let aiResponseText: string | null = null;
       let turns = 0;
       const MAX_TURNS = 3;
+      let routeDecisionMade: string | null = null;
 
       while (turns < MAX_TURNS) {
         turns++;
@@ -200,6 +279,25 @@ export class AiResponderService {
         });
 
         for (const toolCall of aiResponse.toolCalls) {
+          // Special handling for route_decision tool
+          if (toolCall.function.name === 'route_decision') {
+            const args = JSON.parse(toolCall.function.arguments) as {
+              path: 'yes' | 'no';
+            };
+            routeDecisionMade = args.path;
+            this.logger.debug(`[Workflow] Route decision: ${args.path}`);
+
+            // Push a tool response to satisfy the API
+            messages.push({
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              name: toolCall.function.name,
+              content: `Routing to path: ${args.path}`,
+            });
+            continue;
+          }
+
+          // Normal tool execution
           const result = await this.aiToolExecutor.executeTool(toolCall, {
             projectId: payload.projectId,
             visitorId: conversation.visitor.id,
@@ -214,7 +312,46 @@ export class AiResponderService {
             content: result,
           });
         }
+
+        // If route decision was made, break out of loop
+        if (routeDecisionMade) {
+          break;
+        }
         // Loop continues to send tool results back to LLM
+      }
+
+      // Handle routing decisions (no message to send, just advance workflow)
+      if (
+        isConditionRouting &&
+        routeDecisionMade &&
+        workflowCtx &&
+        conditionNode
+      ) {
+        const workflow = workflowCtx.workflow;
+        const nextNodeId = this.workflowEngine.processRouteDecision(
+          conditionNode as Parameters<
+            typeof this.workflowEngine.processRouteDecision
+          >[0],
+          workflow,
+          routeDecisionMade as 'yes' | 'no'
+        );
+
+        const currentMetadata =
+          (conversation.metadata as VisitorSessionMetadata) || {};
+        conversation.metadata = {
+          ...currentMetadata,
+          workflowState: {
+            currentNodeId: nextNodeId,
+          },
+        };
+
+        await this.conversationRepository.save(conversation);
+
+        this.logger.debug(`[Workflow] Condition routed to: ${nextNodeId}`);
+
+        // Re-invoke handler to process the next node immediately
+        // This allows chaining through multiple nodes in one turn
+        return this.handleVisitorMessage(payload);
       }
 
       if (!aiResponseText) {
@@ -237,9 +374,33 @@ export class AiResponderService {
 
       const savedMessage = await this.messageRepository.save(aiMessage);
 
-      // 8. Update Conversation Last Message
+      // 8. Update Conversation Last Message & Workflow State
       conversation.lastMessageSnippet = aiResponseText;
       conversation.lastMessageTimestamp = savedMessage.createdAt;
+
+      // Advance workflow state if in orchestrator mode
+      if (workflowCtx) {
+        const stepResult = await this.workflowEngine.executeStep(workflowCtx);
+        const currentMetadata =
+          (conversation.metadata as VisitorSessionMetadata) || {};
+        conversation.metadata = {
+          ...currentMetadata,
+          workflowState: {
+            currentNodeId: stepResult.nextNodeId,
+          },
+        };
+
+        if (stepResult.nextNodeId === null) {
+          this.logger.log(
+            `[Workflow] Workflow completed for conversation ${conversation.id}. Will restart on next message.`
+          );
+        } else {
+          this.logger.debug(
+            `[Workflow] Advanced to node: ${stepResult.nextNodeId}`
+          );
+        }
+      }
+
       await this.conversationRepository.save(conversation);
 
       // 9. Resolve socket ID and Emit Event

@@ -1,7 +1,7 @@
 # Codebase Overview
 
 **Generated:** 2026-01-24
-**Last Updated:** 2026-01-24 (Workflow Editor Polish)
+**Last Updated:** 2026-01-24 (Workflow Orchestrator Integration)
 
 ## Tech Stack
 
@@ -41,7 +41,7 @@
 
 - **`auth/`**: Comprehensive system supporting JWT access/refresh rotation, TOTP 2FA, and Google OAuth with automatic account linking.
 - **`inbox/`**: Conversation management engine using optimistic updates and cursor-based pagination.
-- **`ai-responder/`**: Extensible LLM integration (Groq, OpenAI) that supports two modes: 'simple' (text-only) and 'orchestrator' (tool-enabled). Config is returned via `ProjectService.findAllForUser`.
+- **`ai-responder/`**: Extensible LLM integration (Groq, OpenAI) that supports two modes: 'simple' (text-only) and 'orchestrator' (workflow-enabled). Orchestrator mode persists workflow state in `conversation.metadata.workflowState.currentNodeId` and advances through nodes across messages. Action nodes auto-execute in a loop; Condition nodes inject `route_decision` tool for LLM-driven path selection.
 - **`gateway/`**: Socket.io layer using project-based rooms (`project:{id}`) for multi-tenancy isolation.
 - **`database/`**: TypeORM entities and migrations tracking 20+ tables.
 - **`audit-logs/`**: Decorator-based system (`@Auditable`) for automatic action logging.
@@ -88,7 +88,12 @@
 - **Layout-Based Routing**: Frontend uses distinct layouts (`PublicLayout`, `DocsLayout`, `MainLayout`) to separate public, documentation, and authenticated app contexts.
 - **AI Provider Failover**: Uses a circuit-breaker pattern to switch between LLM providers (e.g., Groq to OpenAI) based on health and configured preference.
 - **AI Tool Orchestration**: Uses a multi-turn loop (max 3 turns) to execute tools (like `add_visitor_note`) and feed results back to the LLM for a final text response.
-- **AI Workflow Engine**: Graph-based state machine (`WorkflowEngineService`) driving AI logic via a persisted `WorkflowDefinition` (Start, Action, LLM, Condition nodes). Condition nodes use `route_decision` tool for LLM-driven path selection.
+- **AI Workflow Engine**: Graph-based state machine (`WorkflowEngineService`) driving AI logic via a persisted `WorkflowDefinition` (Start, Action, LLM, Condition nodes). Key behaviors: (Updated: 2026-01-24)
+  - **State Persistence:** `conversation.metadata.workflowState.currentNodeId` tracks position across messages
+  - **Action Auto-Execution:** Action nodes execute in a loop until an LLM or Condition node is reached
+  - **Condition Routing:** Condition nodes inject `route_decision` tool; LLM calls `{path: "yes"|"no"}` for path selection via `processRouteDecision()`
+  - **Recursive Chaining:** After condition routing, handler re-invokes to immediately process the next node
+  - **Terminal Detection:** Nodes with no outgoing edges set `currentNodeId: null` and restart workflow on next message
 - **Inline Logic Editor**: Complex graph structures (Workflow) are integrated directly into standard settings forms, sharing a single submission flow.
 - **Theme-Aware Canvas**: Visual editors (React Flow) must explicitly subscribe to `useThemeStore` and pass `colorMode` to synchronize the canvas with the application theme.
 - **System-Authored Entities**: Entities like `VisitorNote` support nullable `author_id` to allow creation by the AI system.

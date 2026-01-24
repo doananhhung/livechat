@@ -880,7 +880,7 @@
             "llmPromptPlaceholder": "Hướng dẫn cho AI tại bước này...",
             "conditionDescription": "AI sẽ đánh giá ý định của khách và điều hướng theo lộ trình phù hợp.",
             "routingPromptLabel": "Prompt điều hướng",
-            "routingPromptPlaceholder": "Mô tả cách AI nên quyết định giữa đường Yes/No..."
+            "routingPromptPlaceholder": "Mô tả cách AI nên quyết định giữa đường Có/Không. ví dụ: nếu khách hàng cung cấp email, chuyển hướng tới có, ngược lại chuyển hướng tới không"
         },
         "globalTools": {
             "title": "Công cụ toàn cục",

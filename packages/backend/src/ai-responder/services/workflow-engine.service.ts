@@ -61,6 +61,15 @@ export class WorkflowEngineService {
         );
         return this.handleConditionNode(node, context);
 
+      case 'llm':
+        this.logger.debug(
+          `[Workflow] LLM node ${node.id} - context provided, advancing to next node`
+        );
+        return {
+          nextNodeId: this.getNextNodeId(node, workflow),
+          output: null, // LLM response is handled by AiResponderService
+        };
+
       default:
         return { nextNodeId: null, output: null };
     }
