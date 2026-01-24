@@ -82,23 +82,119 @@
         },
         "index": {
             "title": "Tài liệu",
-            "description": "Chào mừng đến với tài liệu Live Chat. Tại đây bạn sẽ tìm thấy mọi thứ cần thiết để bắt đầu và quản lý tài khoản của mình."
+            "description": "Chào mừng đến với tài liệu Live Chat. Tại đây bạn sẽ tìm thấy mọi thứ cần thiết để bắt đầu và quản lý tài khoản của mình.",
+            "intro": {
+                "title": "Nền tảng Live Chat",
+                "desc": "Nền tảng của chúng tôi giúp đội ngũ của bạn hỗ trợ khách hàng theo thời gian thực một cách dễ dàng. Với tự động hóa AI tiên tiến, công cụ cộng tác nhóm liền mạch và bảo mật mạnh mẽ, nó được thiết kế để mở rộng cùng doanh nghiệp của bạn."
+            },
+            "quickStart": {
+                "title": "Hướng dẫn nhanh",
+                "step1": {
+                    "title": "Đăng ký tài khoản",
+                    "desc": "Đăng ký tài khoản miễn phí để bắt đầu. Bạn cũng có thể đăng nhập bằng tài khoản Google."
+                },
+                "step2": {
+                    "title": "Tạo dự án",
+                    "desc": "Tạo không gian làm việc cho trang web của bạn. Bạn có thể có nhiều dự án trong một tài khoản."
+                },
+                "step3": {
+                    "title": "Nhúng Widget",
+                    "desc": "Sao chép thẻ script được tạo và dán vào HTML của trang web để bắt đầu trò chuyện với khách ngay lập tức."
+                }
+            }
         },
         "security": {
             "title": "Tính năng Bảo mật",
-            "description": "Tìm hiểu cách bảo vệ tài khoản của bạn với Xác thực Hai yếu tố (2FA) và quản lý phiên."
+            "description": "Tìm hiểu cách bảo vệ tài khoản của bạn với Xác thực Hai yếu tố (2FA) và quản lý phiên.",
+            "twoFactor": {
+                "title": "Xác thực Hai yếu tố (2FA)",
+                "desc": "Chúng tôi khuyến nghị bật 2FA để thêm một lớp bảo mật bổ sung cho tài khoản của bạn.",
+                "step1": "Đi đến Cài đặt Bảo mật.",
+                "step2": "Nhấn 'Bật 2FA' và quét mã QR bằng ứng dụng xác thực (ví dụ: Google Authenticator).",
+                "step3": "Nhập mã xác minh để hoàn tất cài đặt.",
+                "note": "Hãy chắc chắn lưu các mã khôi phục ở nơi an toàn."
+            },
+            "password": {
+                "title": "Quản lý Mật khẩu",
+                "desc": "Giữ tài khoản an toàn bằng cách sử dụng mật khẩu mạnh và duy nhất.",
+                "reset": "Nếu bạn quên mật khẩu, sử dụng liên kết 'Quên mật khẩu' trên trang đăng nhập để đặt lại qua email.",
+                "change": "Bạn có thể đổi mật khẩu bất cứ lúc nào từ cài đặt Hồ sơ."
+            },
+            "links": {
+                "configure2FA": "Cấu hình 2FA trong Cài đặt",
+                "manageProfile": "Quản lý Hồ sơ & Mật khẩu"
+            }
         },
         "management": {
             "title": "Quản lý Dự án",
-            "description": "Hướng dẫn tạo dự án, mời thành viên nhóm và cấu hình cài đặt."
+            "description": "Hướng dẫn tạo dự án, mời thành viên nhóm và cấu hình cài đặt.",
+            "projects": {
+                "title": "Tạo & Quản lý Dự án",
+                "desc": "Dự án giúp bạn tổ chức các cuộc hội thoại và cài đặt cho các trang web hoặc đội ngũ khác nhau.",
+                "create": "Để tạo dự án mới, hãy đi đến trang Dự án và nhấn 'Tạo dự án'.",
+                "switch": "Bạn có thể chuyển đổi giữa các dự án bằng menu thả xuống ở thanh bên."
+            },
+            "members": {
+                "title": "Thành viên Nhóm",
+                "desc": "Mời đội ngũ của bạn cùng tham gia giải quyết các yêu cầu từ khách hàng.",
+                "roles": {
+                    "title": "Vai trò & Quyền hạn",
+                    "owner": "Chủ sở hữu: Quyền truy cập đầy đủ vào mọi thứ, bao gồm cả thanh toán (nếu có).",
+                    "manager": "Quản lý: Có thể quản lý cài đặt, mời thành viên, nhưng không thể xóa dự án.",
+                    "agent": "Nhân viên: Chỉ có thể xem và trả lời các cuộc hội thoại."
+                },
+                "invite": "Đi đến Cài đặt Dự án > Mời thành viên để gửi lời mời qua email."
+            },
+            "audit": {
+                "title": "Nhật ký Hoạt động",
+                "desc": "Theo dõi các hành động quan trọng được thực hiện trong dự án của bạn để đảm bảo bảo mật và tuân thủ.",
+                "view": "Điều hướng đến Cài đặt Dự án > Nhật ký hoạt động để xem lịch sử thay đổi."
+            },
+            "links": {
+                "manageProjects": "Quản lý Dự án",
+                "inviteMembers": "Mời Thành viên"
+            }
         },
         "efficiency": {
             "title": "Công cụ Hiệu quả",
-            "description": "Tăng năng suất của bạn với Mẫu câu trả lời và Mẫu hành động."
+            "description": "Tăng năng suất của bạn với Mẫu câu trả lời và Mẫu hành động.",
+            "canned": {
+                "title": "Mẫu câu trả lời",
+                "desc": "Mẫu câu trả lời là các tin nhắn soạn sẵn giúp nhân viên trả lời nhanh các câu hỏi thường gặp.",
+                "usage": "Gõ '/' trong khung chat để xem danh sách các phím tắt khả dụng.",
+                "manage": "Bạn có thể tạo, sửa và xóa phím tắt trong Cài đặt Dự án > Mẫu câu trả lời."
+            },
+            "actions": {
+                "title": "Mẫu hành động",
+                "desc": "Mẫu hành động là các biểu mẫu có cấu trúc (ví dụ: 'Thông tin liên hệ', 'Yêu cầu hỗ trợ') mà nhân viên có thể gửi cho khách truy cập trong cuộc trò chuyện.",
+                "usage": "Nhân viên chọn một mẫu từ Bảng hành động, mẫu này sau đó sẽ xuất hiện trong widget chat của khách để họ điền thông tin.",
+                "manage": "Định nghĩa các biểu mẫu và trường tùy chỉnh của bạn trong Cài đặt Dự án > Mẫu hành động."
+            },
+            "links": {
+                "manageCanned": "Quản lý Mẫu câu",
+                "manageActions": "Quản lý Mẫu hành động"
+            }
         },
         "automation": {
             "title": "Tự động hóa",
-            "description": "Cấu hình AI Responder để xử lý các câu hỏi khi bạn vắng mặt."
+            "description": "Tận dụng AI để cung cấp hỗ trợ 24/7 ngay cả khi đội ngũ của bạn đang ngoại tuyến.",
+            "ai": {
+                "title": "AI Responder",
+                "desc": "AI Responder tự động xử lý các yêu cầu của khách khi không có nhân viên hỗ trợ nào trực tuyến, đảm bảo khách hàng của bạn không bao giờ phải chờ đợi câu trả lời.",
+                "setup": "Để kích hoạt, hãy đi đến Cài đặt Dự án > AI Responder. Bạn có thể tùy chỉnh tính cách và kiến thức của AI bằng cách sử dụng System Prompt (Câu lệnh hệ thống).",
+                "persona": "System Prompt hướng dẫn AI cách hành xử (ví dụ: 'Bạn là một nhân viên hỗ trợ nhiệt tình cho một cửa hàng giày').",
+                "enable": "Bật 'Kích hoạt AI Responder' để cho phép bot tiếp quản trong thời gian ngoại tuyến."
+            },
+            "widget": {
+                "title": "Tùy chỉnh Chat Widget",
+                "desc": "Tùy chỉnh giao diện của widget chat để phù hợp với thương hiệu của bạn.",
+                "customize": "Bạn có thể thay đổi giao diện (Sáng/Tối), màu chủ đạo, vị trí và tin nhắn chào mừng trong Cài đặt Dự án > Cài đặt Widget.",
+                "embed": "Sau khi tùy chỉnh, sao chép Mã nhúng và dán vào trang web của bạn."
+            },
+            "links": {
+                "configureAI": "Cấu hình AI Responder",
+                "customizeWidget": "Tùy chỉnh Widget"
+            }
         },
         "comingSoon": "Tài liệu chi tiết sẽ sớm ra mắt..."
     },

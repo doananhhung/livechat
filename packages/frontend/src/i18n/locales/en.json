@@ -82,23 +82,119 @@
         },
         "index": {
             "title": "Documentation",
-            "description": "Welcome to the Live Chat documentation. Here you'll find everything you need to get started and manage your account."
+            "description": "Welcome to the Live Chat documentation. Here you'll find everything you need to get started and manage your account.",
+            "intro": {
+                "title": "Live Chat Platform",
+                "desc": "Our platform empowers your team to deliver real-time support with ease. Featuring advanced AI automation, seamless team collaboration tools, and robust security, it is designed to scale with your business."
+            },
+            "quickStart": {
+                "title": "Quick Start Guide",
+                "step1": {
+                    "title": "Register an Account",
+                    "desc": "Sign up for a free account to get started. You can also log in with your Google account."
+                },
+                "step2": {
+                    "title": "Create a Project",
+                    "desc": "Create a workspace for your website. You can have multiple projects under one account."
+                },
+                "step3": {
+                    "title": "Embed the Widget",
+                    "desc": "Copy the generated script tag and paste it into your website's HTML to start chatting with visitors immediately."
+                }
+            }
         },
         "security": {
             "title": "Security Features",
-            "description": "Learn how to secure your account with Two-Factor Authentication (2FA) and manage sessions."
+            "description": "Learn how to secure your account with Two-Factor Authentication (2FA) and manage sessions.",
+            "twoFactor": {
+                "title": "Two-Factor Authentication (2FA)",
+                "desc": "We highly recommend enabling 2FA to add an extra layer of security to your account.",
+                "step1": "Go to Security Settings.",
+                "step2": "Click 'Enable 2FA' and scan the QR code with your authenticator app (e.g., Google Authenticator).",
+                "step3": "Enter the verification code to confirm setup.",
+                "note": "Make sure to save your recovery codes in a safe place."
+            },
+            "password": {
+                "title": "Password Management",
+                "desc": "Keep your account safe by using a strong, unique password.",
+                "reset": "If you forgot your password, use the 'Forgot Password' link on the login page to reset it via email.",
+                "change": "You can change your password at any time from your Profile settings."
+            },
+            "links": {
+                "configure2FA": "Configure 2FA in Settings",
+                "manageProfile": "Manage Profile & Password"
+            }
         },
         "management": {
             "title": "Project Management",
-            "description": "Guides on creating projects, inviting team members, and configuring settings."
+            "description": "Guides on creating projects, inviting team members, and configuring settings.",
+            "projects": {
+                "title": "Creating & Managing Projects",
+                "desc": "Projects allow you to organize your conversations and settings for different websites or teams.",
+                "create": "To create a new project, go to the Projects page and click 'Create Project'.",
+                "switch": "You can switch between projects using the dropdown in the sidebar."
+            },
+            "members": {
+                "title": "Team Members",
+                "desc": "Invite your team to collaborate on resolving customer inquiries.",
+                "roles": {
+                    "title": "Roles & Permissions",
+                    "owner": "Owner: Full access to everything, including billing (if applicable).",
+                    "manager": "Manager: Can manage settings, invite members, but cannot delete the project.",
+                    "agent": "Agent: Can only view and reply to conversations."
+                },
+                "invite": "Go to Project Settings > Invite Members to send invitations via email."
+            },
+            "audit": {
+                "title": "Audit Logs",
+                "desc": "Track important actions taken within your project for security and compliance.",
+                "view": "Navigate to Project Settings > Audit Logs to view the history of changes."
+            },
+            "links": {
+                "manageProjects": "Manage Projects",
+                "inviteMembers": "Invite Members"
+            }
         },
         "efficiency": {
             "title": "Efficiency Tools",
-            "description": "Boost your productivity with Canned Responses and Action Templates."
+            "description": "Boost your productivity with Canned Responses and Action Templates.",
+            "canned": {
+                "title": "Canned Responses",
+                "desc": "Canned responses are pre-written messages that help agents answer common questions quickly.",
+                "usage": "Type '/' in the chat input to see a list of available shortcuts.",
+                "manage": "You can create, edit, and delete shortcuts in Project Settings > Canned Responses."
+            },
+            "actions": {
+                "title": "Action Templates",
+                "desc": "Action templates are structured forms (e.g., 'Contact Info', 'Support Request') that agents can send to visitors during a conversation.",
+                "usage": "Agents select a template from the Action Panel, which then appears in the visitor's chat widget for them to fill out.",
+                "manage": "Define your custom forms and fields in Project Settings > Action Templates."
+            },
+            "links": {
+                "manageCanned": "Manage Canned Responses",
+                "manageActions": "Manage Action Templates"
+            }
         },
         "automation": {
             "title": "Automation",
-            "description": "Configure the AI Responder to handle inquiries when you're away."
+            "description": "Leverage AI to provide 24/7 support even when your team is offline.",
+            "ai": {
+                "title": "AI Responder",
+                "desc": "The AI Responder automatically handles visitor inquiries when no support agents are online, ensuring your customers never wait for an answer.",
+                "setup": "To enable it, go to Project Settings > AI Responder. You can customize the AI's persona and knowledge using the System Prompt.",
+                "persona": "The System Prompt tells the AI how to behave (e.g., 'You are a helpful support agent for a shoe store').",
+                "enable": "Toggle 'Enable AI Responder' to allow the bot to take over during offline hours."
+            },
+            "widget": {
+                "title": "Chat Widget Customization",
+                "desc": "Customize the look and feel of the chat widget to match your brand.",
+                "customize": "You can change the theme (Light/Dark), primary color, position, and welcome message in Project Settings > Widget Settings.",
+                "embed": "Once customized, copy the Embed Code and paste it into your website."
+            },
+            "links": {
+                "configureAI": "Configure AI Responder",
+                "customizeWidget": "Customize Widget"
+            }
         },
         "comingSoon": "Detailed documentation coming soon..."
     },
