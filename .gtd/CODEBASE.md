@@ -1,7 +1,7 @@
 # Codebase Overview
 
 **Generated:** 2026-01-24
-**Last Updated:** 2026-01-24
+**Last Updated:** 2026-01-24 (Workflow Editor Polish)
 
 ## Tech Stack
 
@@ -67,7 +67,7 @@
 - **`pages/public/`**: Landing Page and Documentation pages (`HomePage`, `DocsLayout`). (Added: 2026-01-24)
 - **`components/features/docs/`**: Documentation-specific UI components (Sidebar, etc.). (Added: 2026-01-24)
 - **`components/features/projects/ai-responder/`**: Unified configuration UI for AI modes and inline workflow editing.
-- **`components/features/workflow/`**: Inline Workflow Editor using **React Flow** (@xyflow/react) for configuring AI logic graphs. (Updated: 2026-01-24)
+- **`components/features/workflow/`**: Inline Workflow Editor using **React Flow** (@xyflow/react) for configuring AI logic graphs. Includes `GlobalToolsPanel` for per-tool AI instructions and i18n-ready node components. (Updated: 2026-01-24)
 
 ## Entry Points
 
@@ -88,10 +88,11 @@
 - **Layout-Based Routing**: Frontend uses distinct layouts (`PublicLayout`, `DocsLayout`, `MainLayout`) to separate public, documentation, and authenticated app contexts.
 - **AI Provider Failover**: Uses a circuit-breaker pattern to switch between LLM providers (e.g., Groq to OpenAI) based on health and configured preference.
 - **AI Tool Orchestration**: Uses a multi-turn loop (max 3 turns) to execute tools (like `add_visitor_note`) and feed results back to the LLM for a final text response.
-- **AI Workflow Engine**: Graph-based state machine (`WorkflowEngineService`) driving AI logic via a persisted `WorkflowDefinition` (Start, Action, LLM, Condition nodes).
+- **AI Workflow Engine**: Graph-based state machine (`WorkflowEngineService`) driving AI logic via a persisted `WorkflowDefinition` (Start, Action, LLM, Condition nodes). Condition nodes use `route_decision` tool for LLM-driven path selection.
 - **Inline Logic Editor**: Complex graph structures (Workflow) are integrated directly into standard settings forms, sharing a single submission flow.
 - **Theme-Aware Canvas**: Visual editors (React Flow) must explicitly subscribe to `useThemeStore` and pass `colorMode` to synchronize the canvas with the application theme.
 - **System-Authored Entities**: Entities like `VisitorNote` support nullable `author_id` to allow creation by the AI system.
+- **Global Tool Instructions**: Each global tool can have a custom instruction injected into the LLM system prompt via `GlobalToolConfig.instruction`.
 
 ## Critical Dependencies
 
