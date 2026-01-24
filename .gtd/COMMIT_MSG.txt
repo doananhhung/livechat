@@ -1,0 +1,27 @@
+feat(workflow-editor): complete node management and branching logic
+
+Implemented full CRUD capabilities for the WorkflowEditor, including a
+node toolbar for adding nodes, a delete mechanism in the configuration
+panel, and keyboard shortcuts for element removal. Enhanced the 
+ConditionNode with Yes/No branching handles and added box selection 
+for improved UX.
+
+## Behaviour Changes
+
+**Before:** Users could only view and configure existing workflow nodes. 
+There was no way to add new nodes, delete elements, or create 
+conditional branches.
+
+**After:** Users can now add all node types (Start, Action, LLM, Condition) 
+via a dedicated toolbar. Nodes and edges can be deleted via UI buttons 
+or keyboard shortcuts. Condition nodes support specific Yes/No 
+branching, and users can multi-select elements using box selection.
+
+## Implementation Details
+
+Phase 1: Created NodeToolbar component and implemented node addition logic 
+with unique ID generation and smart positioning.
+Phase 2: Added Delete button to NodeConfigPanel and implemented node/edge 
+deletion logic in WorkflowEditor.
+Phase 3: Enhanced ConditionNode with dual output handles (Yes/No) and 
+enabled box selection/keyboard deletion in React Flow.

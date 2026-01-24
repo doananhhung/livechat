@@ -855,5 +855,17 @@
             "ipAddress": "IP Address",
             "metadata": "Metadata"
         }
+    },
+    "workflow": {
+        "toolbar": {
+            "title": "Add Node",
+            "addStart": "Start",
+            "addAction": "Action",
+            "addLlm": "LLM",
+            "addCondition": "Condition"
+        },
+        "configPanel": {
+            "deleteNode": "Delete Node"
+        }
     }
 }

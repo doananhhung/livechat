@@ -855,5 +855,17 @@
             "ipAddress": "Địa chỉ IP",
             "metadata": "Dữ liệu chi tiết"
         }
+    },
+    "workflow": {
+        "toolbar": {
+            "title": "Thêm Node",
+            "addStart": "Bắt đầu",
+            "addAction": "Hành động",
+            "addLlm": "LLM",
+            "addCondition": "Điều kiện"
+        },
+        "configPanel": {
+            "deleteNode": "Xóa Node"
+        }
     }
 }

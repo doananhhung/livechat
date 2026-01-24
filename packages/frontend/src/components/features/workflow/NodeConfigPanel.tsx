@@ -5,13 +5,15 @@ import { useTranslation } from "react-i18next";
 
 interface NodeConfigPanelProps {
   selectedNode: Node | null;
-  onChange: (nodeId: string, data: any) => void;
+  onChange: (nodeId: string, data: Record<string, unknown>) => void;
+  onDelete: (nodeId: string) => void;
   onClose: () => void;
 }
 
 export const NodeConfigPanel = ({
   selectedNode,
   onChange,
+  onDelete,
   onClose,
 }: NodeConfigPanelProps) => {
   const { t } = useTranslation();
@@ -31,7 +33,12 @@ export const NodeConfigPanel = ({
         <h3 className="font-bold text-sm uppercase tracking-tight text-foreground">
           {selectedNode.type} Configuration
         </h3>
-        <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onClose}
+          className="h-8 w-8 p-0"
+        >
           ✕
         </Button>
       </div>
@@ -53,7 +60,9 @@ export const NodeConfigPanel = ({
         {selectedNode.type === "action" && (
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">Tool</label>
+              <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
+                Tool
+              </label>
               <select
                 className="w-full border border-input bg-background rounded-md p-2 text-sm focus:ring-2 focus:ring-ring transition-shadow"
                 value={(selectedNode.data.toolName as string) || ""}
@@ -66,25 +75,39 @@ export const NodeConfigPanel = ({
               </select>
             </div>
 
-            {selectedNode.data.toolName === 'send_form' && (
+            {selectedNode.data.toolName === "send_form" && (
               <div>
-                <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">Template ID</label>
+                <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
+                  Template ID
+                </label>
                 <Input
                   type="number"
                   placeholder="e.g. 1"
-                  value={(selectedNode.data.toolArgs as any)?.templateId || ''}
-                  onChange={(e) => handleChange('toolArgs', { ...(selectedNode.data.toolArgs as any), templateId: parseInt(e.target.value) })}
+                  value={(selectedNode.data.toolArgs as any)?.templateId || ""}
+                  onChange={(e) =>
+                    handleChange("toolArgs", {
+                      ...(selectedNode.data.toolArgs as any),
+                      templateId: parseInt(e.target.value),
+                    })
+                  }
                 />
               </div>
             )}
 
-            {selectedNode.data.toolName === 'change_status' && (
+            {selectedNode.data.toolName === "change_status" && (
               <div>
-                <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">New Status</label>
+                <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
+                  New Status
+                </label>
                 <select
                   className="w-full border border-input bg-background rounded-md p-2 text-sm"
-                  value={(selectedNode.data.toolArgs as any)?.status || ''}
-                  onChange={(e) => handleChange('toolArgs', { ...(selectedNode.data.toolArgs as any), status: e.target.value })}
+                  value={(selectedNode.data.toolArgs as any)?.status || ""}
+                  onChange={(e) =>
+                    handleChange("toolArgs", {
+                      ...(selectedNode.data.toolArgs as any),
+                      status: e.target.value,
+                    })
+                  }
                 >
                   <option value="open">Open</option>
                   <option value="pending">Pending</option>
@@ -93,14 +116,21 @@ export const NodeConfigPanel = ({
               </div>
             )}
 
-            {selectedNode.data.toolName === 'add_visitor_note' && (
+            {selectedNode.data.toolName === "add_visitor_note" && (
               <div>
-                <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">Note Content</label>
+                <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
+                  Note Content
+                </label>
                 <Input
                   type="text"
                   placeholder="Note text..."
-                  value={(selectedNode.data.toolArgs as any)?.content || ''}
-                  onChange={(e) => handleChange('toolArgs', { ...(selectedNode.data.toolArgs as any), content: e.target.value })}
+                  value={(selectedNode.data.toolArgs as any)?.content || ""}
+                  onChange={(e) =>
+                    handleChange("toolArgs", {
+                      ...(selectedNode.data.toolArgs as any),
+                      content: e.target.value,
+                    })
+                  }
                 />
               </div>
             )}
@@ -129,6 +159,20 @@ export const NodeConfigPanel = ({
             appropriate path. (Branching configuration coming soon)
           </p>
         )}
+      </div>
+
+      <div className="p-4 border-t border-border">
+        <Button
+          variant="destructive"
+          size="sm"
+          className="w-full"
+          onClick={() => {
+            onDelete(selectedNode.id);
+            onClose();
+          }}
+        >
+          {t("workflow.configPanel.deleteNode")}
+        </Button>
       </div>
     </div>
   );
