@@ -1,7 +1,7 @@
 # Codebase Overview
 
 **Generated:** 2026-01-24
-**Last Updated:** 2026-01-24 (Workflow Orchestrator Integration)
+**Last Updated:** 2026-01-25 (System User Tool Execution)
 
 ## Tech Stack
 
@@ -47,6 +47,18 @@
 - **`audit-logs/`**: Decorator-based system (`@Auditable`) for automatic action logging.
 - **`event-consumer/`**: Implementation of the **Transactional Outbox Pattern** for reliable event delivery.
 - **`visitor-notes/`**: Manages internal notes attached to visitors. Supports both human (User) and AI (System/null) authors.
+
+#### Mandatory rules:
+
+- **System User Bypass in Permission-Protected Services:** Services that check project membership (e.g., `ConversationService.updateStatus()`, `ActionsService.sendFormRequest()`) MUST include a bypass for `SYSTEM_USER_ID` when the operation can be triggered by AI tools. Pattern:
+  ```typescript
+  import { SYSTEM_USER_ID } from "@live-chat/shared-types";
+  // ...
+  if (userId !== SYSTEM_USER_ID) {
+    await this.projectService.validateProjectMembership(projectId, userId);
+  }
+  ```
+  This prevents `ForbiddenException` during AI workflow execution. **Evidence:** `conversation.service.ts:203-209`, `actions.service.ts:301-310`.
 
 ### Frontend (packages/frontend)
 
@@ -96,7 +108,11 @@
   - **Terminal Detection:** Nodes with no outgoing edges set `currentNodeId: null` and restart workflow on next message
 - **Inline Logic Editor**: Complex graph structures (Workflow) are integrated directly into standard settings forms, sharing a single submission flow.
 - **Theme-Aware Canvas**: Visual editors (React Flow) must explicitly subscribe to `useThemeStore` and pass `colorMode` to synchronize the canvas with the application theme.
-- **System-Authored Entities**: Entities like `VisitorNote` support nullable `author_id` to allow creation by the AI system.
+- **System User for AI Actions**: A dedicated System user (`SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000001'`) exists in the database for auditable AI-driven mutations. When adding new AI tools in `AiToolExecutor` that call permission-protected services:
+  1. Import `SYSTEM_USER_ID` from `@live-chat/shared-types`
+  2. Pass `SYSTEM_USER_ID` as the `userId` parameter
+  3. Update the target service to bypass membership check for this ID (see Backend Mandatory Rules)
+     **Evidence:** `ai-tool.executor.ts:9,147-150`, `system-actor.ts:8`.
 - **Global Tool Instructions**: Each global tool can have a custom instruction injected into the LLM system prompt via `GlobalToolConfig.instruction`.
 
 ## Critical Dependencies

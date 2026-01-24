@@ -5,4 +5,5 @@
 export enum GlobalRole {
   ADMIN = "admin", // Full system access, can access admin dashboard
   USER = "user", // Regular user, can use all application features
+  SYSTEM = "system", // System actor for automated actions (cannot login)
 }

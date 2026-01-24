@@ -204,11 +204,7 @@ export class WorkflowEngineService {
     }
 
     // If node allows tools, add them.
-    if (
-      node.type === 'condition' ||
-      node.type === 'trigger' ||
-      node.type === 'llm'
-    ) {
+    if (node.type === 'condition' || node.type === 'llm') {
       tools = this.toolExecutor.getTools();
     }
 

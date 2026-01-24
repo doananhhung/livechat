@@ -2,12 +2,10 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import type { GlobalToolConfig } from "@live-chat/shared-types";
-
-const AVAILABLE_TOOLS = [
-  { name: "add_visitor_note", labelKey: "workflow.globalTools.addVisitorNote" },
-  { name: "change_status", labelKey: "workflow.globalTools.changeStatus" },
-  { name: "send_form", labelKey: "workflow.globalTools.sendForm" },
-] as const;
+import {
+  AVAILABLE_ACTION_TOOLS,
+  AI_TOOL_LABEL_KEYS,
+} from "@live-chat/shared-types";
 
 interface GlobalToolsPanelProps {
   tools: GlobalToolConfig[];
@@ -83,23 +81,23 @@ export const GlobalToolsPanel = ({
             {t("workflow.globalTools.description")}
           </p>
           <div className="space-y-3">
-            {AVAILABLE_TOOLS.map((tool) => {
-              const config = getToolConfig(tool.name);
+            {AVAILABLE_ACTION_TOOLS.map((toolName) => {
+              const config = getToolConfig(toolName);
               return (
                 <div
-                  key={tool.name}
+                  key={toolName}
                   className="border border-border rounded-md p-2 bg-background"
                 >
                   <label className="flex items-center space-x-2 text-sm cursor-pointer hover:text-primary transition-colors">
                     <input
                       type="checkbox"
                       checked={config.enabled}
-                      onChange={(e) =>
-                        handleToggle(tool.name, e.target.checked)
-                      }
+                      onChange={(e) => handleToggle(toolName, e.target.checked)}
                       className="rounded border-input bg-background text-primary focus:ring-ring h-4 w-4"
                     />
-                    <span className="font-medium">{t(tool.labelKey)}</span>
+                    <span className="font-medium">
+                      {t(AI_TOOL_LABEL_KEYS[toolName])}
+                    </span>
                   </label>
                   {config.enabled && (
                     <textarea
@@ -109,7 +107,7 @@ export const GlobalToolsPanel = ({
                       )}
                       value={config.instruction}
                       onChange={(e) =>
-                        handleInstructionChange(tool.name, e.target.value)
+                        handleInstructionChange(toolName, e.target.value)
                       }
                     />
                   )}

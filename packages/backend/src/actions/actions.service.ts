@@ -30,6 +30,7 @@ import {
   MessageStatus,
   FormRequestMetadata,
   FormSubmissionMetadata,
+  SYSTEM_USER_ID,
 } from '@live-chat/shared-types';
 
 @Injectable()
@@ -298,13 +299,15 @@ export class ActionsService {
       throw new NotFoundException('Conversation not found');
     }
 
-    // Permission Check
-    const hasAccess = await this.projectService.isProjectMember(
-      user.id,
-      Number(conversation.projectId)
-    );
-    if (!hasAccess) {
-      throw new ForbiddenException('You do not have access to this project');
+    // Permission Check: System user bypasses (used by AI tool execution)
+    if (user.id !== SYSTEM_USER_ID) {
+      const hasAccess = await this.projectService.isProjectMember(
+        user.id,
+        Number(conversation.projectId)
+      );
+      if (!hasAccess) {
+        throw new ForbiddenException('You do not have access to this project');
+      }
     }
 
     // INV-1: Template must exist and be enabled

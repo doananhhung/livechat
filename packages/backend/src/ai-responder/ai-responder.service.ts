@@ -19,6 +19,7 @@ import {
   WorkflowEngineService,
   WorkflowContext,
 } from './services/workflow-engine.service';
+import { VisitorLockService } from './services/visitor-lock.service';
 import {
   WorkflowDefinition,
   VisitorSessionMetadata,
@@ -41,7 +42,8 @@ export class AiResponderService {
     private readonly eventEmitter: EventEmitter2,
     private readonly realtimeSessionService: RealtimeSessionService,
     private readonly aiToolExecutor: AiToolExecutor,
-    private readonly workflowEngine: WorkflowEngineService
+    private readonly workflowEngine: WorkflowEngineService,
+    private readonly visitorLockService: VisitorLockService
   ) {}
 
   /**
@@ -69,6 +71,17 @@ export class AiResponderService {
     this.logger.log(
       `Checking AI response for visitor ${payload.visitorUid} in project ${payload.projectId}`
     );
+
+    // Acquire lock to prevent concurrent processing for the same visitor
+    const lockId = await this.visitorLockService.acquireLock(
+      payload.visitorUid
+    );
+    if (!lockId) {
+      this.logger.warn(
+        `Message processing skipped, lock held for visitor ${payload.visitorUid}`
+      );
+      return;
+    }
 
     try {
       // 0. Check Visitor Preference (Opt-out)
@@ -420,6 +433,9 @@ export class AiResponderService {
       this.logger.log(`AI Response sent: ${savedMessage.id}`);
     } catch (error) {
       this.logger.error('Error in handleVisitorMessage:', error);
+    } finally {
+      // Always release the lock
+      await this.visitorLockService.releaseLock(payload.visitorUid, lockId);
     }
   }
 }

@@ -2,6 +2,11 @@ import { type Node } from "@xyflow/react";
 import { Button } from "../../ui/Button";
 import { Input } from "../../ui/Input";
 import { useTranslation } from "react-i18next";
+import {
+  AiToolName,
+  AVAILABLE_ACTION_TOOLS,
+  AI_TOOL_CONFIG_LABEL_KEYS,
+} from "@live-chat/shared-types";
 
 interface NodeConfigPanelProps {
   selectedNode: Node | null;
@@ -70,19 +75,15 @@ export const NodeConfigPanel = ({
                 <option value="">
                   {t("workflow.configPanel.actionToolPlaceholder")}
                 </option>
-                <option value="send_form">
-                  {t("workflow.configPanel.toolSendForm")}
-                </option>
-                <option value="change_status">
-                  {t("workflow.configPanel.toolChangeStatus")}
-                </option>
-                <option value="add_visitor_note">
-                  {t("workflow.configPanel.toolAddNote")}
-                </option>
+                {AVAILABLE_ACTION_TOOLS.map((toolName) => (
+                  <option key={toolName} value={toolName}>
+                    {t(AI_TOOL_CONFIG_LABEL_KEYS[toolName])}
+                  </option>
+                ))}
               </select>
             </div>
 
-            {selectedNode.data.toolName === "send_form" && (
+            {selectedNode.data.toolName === AiToolName.SEND_FORM && (
               <div>
                 <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
                   {t("workflow.configPanel.templateIdLabel")}
@@ -101,7 +102,7 @@ export const NodeConfigPanel = ({
               </div>
             )}
 
-            {selectedNode.data.toolName === "change_status" && (
+            {selectedNode.data.toolName === AiToolName.CHANGE_STATUS && (
               <div>
                 <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
                   {t("workflow.configPanel.statusLabel")}
@@ -127,7 +128,7 @@ export const NodeConfigPanel = ({
               </div>
             )}
 
-            {selectedNode.data.toolName === "add_visitor_note" && (
+            {selectedNode.data.toolName === AiToolName.ADD_VISITOR_NOTE && (
               <div>
                 <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
                   {t("workflow.configPanel.noteContentLabel")}

@@ -1,16 +1,7 @@
-
-import {
-  Injectable,
-  Logger,
-} from '@nestjs/common';
-import {
-  CreateUserDto,
-  UpdateUserDto,
-} from '@live-chat/shared-dtos';
-import {
-  User,
-} from '../database/entities';
-import { UserStatus } from '@live-chat/shared-types';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { CreateUserDto, UpdateUserDto } from '@live-chat/shared-dtos';
+import { User } from '../database/entities';
+import { SYSTEM_USER_ID, UserStatus } from '@live-chat/shared-types';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 
@@ -21,7 +12,7 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly entityManager: EntityManager,
+    private readonly entityManager: EntityManager
   ) {}
 
   /**
@@ -85,5 +76,17 @@ export class UserService {
     const user = await this.findOneById(id);
     user.status = UserStatus.INACTIVE;
     return this.userRepository.save(user);
+  }
+
+  /**
+   * Delete a user by ID.
+   * The System user cannot be deleted.
+   */
+  async delete(id: string): Promise<void> {
+    if (id === SYSTEM_USER_ID) {
+      throw new ForbiddenException('Cannot delete system user');
+    }
+    const user = await this.findOneById(id);
+    await this.userRepository.remove(user);
   }
 }

@@ -1,19 +1,11 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-  Inject,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
-import {
-  ListConversationsDto,
-  UpdateConversationDto,
-} from '@live-chat/shared-dtos';
+import { ListConversationsDto } from '@live-chat/shared-dtos';
 import {
   ConversationStatus,
   HistoryVisibilityMode,
   NavigationEntry,
+  SYSTEM_USER_ID,
 } from '@live-chat/shared-types';
 import { Conversation, User, Message, Visitor } from '../../database/entities';
 import { RealtimeSessionService } from '../../realtime-session/realtime-session.service';
@@ -200,10 +192,13 @@ export class ConversationService {
           );
         }
 
-        await this.projectService.validateProjectMembership(
-          conversation.projectId,
-          userId
-        );
+        // System user bypasses project membership check (used by AI tool execution)
+        if (userId !== SYSTEM_USER_ID) {
+          await this.projectService.validateProjectMembership(
+            conversation.projectId,
+            userId
+          );
+        }
 
         (conversation as any).status = status;
         return transactionalEntityManager.save(conversation);

@@ -11,8 +11,10 @@ import { LLMProviderManager } from './services/llm-provider.manager';
 import { VisitorNotesModule } from '../visitor-notes/visitor-notes.module';
 import { AiToolExecutor } from './services/ai-tool.executor';
 import { WorkflowEngineService } from './services/workflow-engine.service';
+import { VisitorLockService } from './services/visitor-lock.service';
 import { InboxModule } from '../inbox/inbox.module';
 import { ActionsModule } from '../actions/actions.module';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
   imports: [
@@ -22,6 +24,7 @@ import { ActionsModule } from '../actions/actions.module';
     VisitorNotesModule,
     InboxModule, // For ConversationService
     ActionsModule, // For ActionsService
+    RedisModule, // For VisitorLockService
     TypeOrmModule.forFeature([Conversation, Message, Project]),
   ],
   providers: [
@@ -31,6 +34,7 @@ import { ActionsModule } from '../actions/actions.module';
     LLMProviderManager,
     AiToolExecutor,
     WorkflowEngineService,
+    VisitorLockService,
   ],
   exports: [AiResponderService],
 })
