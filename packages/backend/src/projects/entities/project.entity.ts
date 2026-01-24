@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import { Conversation } from '../../inbox/entities/conversation.entity';
 import { ProjectMember } from './project-member.entity';
-import type { IWidgetSettingsDto } from '@live-chat/shared-types';
+import type { IWidgetSettingsDto, WorkflowDefinition } from '@live-chat/shared-types';
 
 @Entity('projects')
 export class Project {
@@ -46,7 +46,7 @@ export class Project {
   aiMode: 'simple' | 'orchestrator';
 
   @Column({ type: 'jsonb', nullable: true, name: 'ai_config' })
-  aiConfig: Record<string, any> | null;
+  aiConfig: WorkflowDefinition | Record<string, any> | null;
 
   @OneToMany(() => ProjectMember, (member) => member.project)
   members: ProjectMember[];

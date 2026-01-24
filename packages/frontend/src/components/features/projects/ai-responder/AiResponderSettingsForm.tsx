@@ -6,10 +6,9 @@ import { useToast } from "../../../ui/use-toast";
 import { updateProject } from "../../../../services/projectApi";
 import type { UpdateProjectDto } from "@live-chat/shared-dtos";
 import { type Project } from "@live-chat/shared-types";
-
-// If Switch component doesn't exist, I'll fallback to a simple checkbox implementation or verify its existence.
-// Based on previous files, I haven't seen Switch. Let's assume standard HTML input type="checkbox" styled or check ui folder.
-// I'll check ui folder in next step if needed, but for now I'll use standard input.
+import type { WorkflowDefinition } from "@live-chat/shared-types";
+import { WorkflowBuilderModal } from "../../workflow/WorkflowBuilderModal";
+import { Network } from "lucide-react";
 
 interface AiResponderSettingsFormProps {
   project: Project;
@@ -25,6 +24,7 @@ export const AiResponderSettingsForm = ({
   const [enabled, setEnabled] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [mode, setMode] = useState<'simple' | 'orchestrator'>("simple");
+  const [isWorkflowModalOpen, setIsWorkflowModalOpen] = useState(false);
 
   useEffect(() => {
     setEnabled(project.aiResponderEnabled ?? false);
@@ -56,6 +56,24 @@ export const AiResponderSettingsForm = ({
       aiResponderEnabled: enabled,
       aiResponderPrompt: prompt,
       aiMode: mode,
+    });
+  };
+
+  const handleSaveWorkflow = (workflow: WorkflowDefinition) => {
+    // Basic validation: ensure at least one Start node exists
+    const hasStartNode = workflow.nodes.some(node => node.type === 'start');
+    
+    if (!hasStartNode) {
+      toast({
+        title: t("common.error"),
+        description: "Workflow must have at least one Start node.",
+        variant: "destructive",
+      });
+      return; // Do not save
+    }
+
+    updateMutation.mutate({
+      aiConfig: workflow as any, // Cast to any to satisfy DTO constraint if needed, ideally DTO supports WorkflowDefinition
     });
   };
 
@@ -118,17 +136,33 @@ export const AiResponderSettingsForm = ({
               disabled={!enabled || updateMutation.isPending}
               className="mt-1"
             />
-            <label htmlFor="mode-orchestrator" className="text-sm cursor-pointer">
-              <span className="font-semibold block">
-                {t("settings.modeOrchestrator")} 
-                <span className="ml-2 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                  {t("common.advanced")}
+            <div className="flex-1">
+              <label htmlFor="mode-orchestrator" className="text-sm cursor-pointer block mb-2">
+                <span className="font-semibold block">
+                  {t("settings.modeOrchestrator")} 
+                  <span className="ml-2 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                    {t("common.advanced")}
+                  </span>
                 </span>
-              </span>
-              <span className="text-muted-foreground">
-                {t("settings.modeOrchestratorDesc")}
-              </span>
-            </label>
+                <span className="text-muted-foreground">
+                  {t("settings.modeOrchestratorDesc")}
+                </span>
+              </label>
+              
+              {mode === "orchestrator" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsWorkflowModalOpen(true)}
+                  disabled={!enabled}
+                  className="mt-2"
+                >
+                  <Network className="w-4 h-4 mr-2" />
+                  Edit Workflow
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -159,6 +193,13 @@ export const AiResponderSettingsForm = ({
           {updateMutation.isPending ? t("common.saving") : t("common.save")}
         </Button>
       </div>
+
+      <WorkflowBuilderModal 
+        isOpen={isWorkflowModalOpen}
+        onOpenChange={setIsWorkflowModalOpen}
+        initialWorkflow={project.aiConfig as WorkflowDefinition}
+        onSave={handleSaveWorkflow}
+      />
     </form>
   );
 };

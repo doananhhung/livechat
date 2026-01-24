@@ -41,11 +41,12 @@
 
 - **`auth/`**: Comprehensive system supporting JWT access/refresh rotation, TOTP 2FA, and Google OAuth with automatic account linking.
 - **`inbox/`**: Conversation management engine using optimistic updates and cursor-based pagination.
-- **`ai-responder/`**: Extensible LLM integration (Groq, OpenAI) that triggers automatically when no agents are online (`agentCount === 0`) for a project.
+- **`ai-responder/`**: Extensible LLM integration (Groq, OpenAI) that supports two modes: 'simple' (text-only) and 'orchestrator' (tool-enabled). Automatically triggers when `agentCount === 0`.
 - **`gateway/`**: Socket.io layer using project-based rooms (`project:{id}`) for multi-tenancy isolation.
 - **`database/`**: TypeORM entities and migrations tracking 20+ tables.
 - **`audit-logs/`**: Decorator-based system (`@Auditable`) for automatic action logging.
 - **`event-consumer/`**: Implementation of the **Transactional Outbox Pattern** for reliable event delivery.
+- **`visitor-notes/`**: Manages internal notes attached to visitors. Supports both human (User) and AI (System/null) authors.
 
 ### Frontend (packages/frontend)
 
@@ -59,6 +60,8 @@
 - **`i18n/`**: Localization support for `vi` and `en` (including `docs` namespace).
 - **`pages/public/`**: Landing Page and Documentation pages (`HomePage`, `DocsLayout`). (Added: 2026-01-24)
 - **`components/features/docs/`**: Documentation-specific UI components (Sidebar, etc.). (Added: 2026-01-24)
+- **`components/features/projects/ai-responder/`**: Configuration UI for AI modes ('Simple' vs 'Orchestrator') and prompts.
+- **`components/features/workflow/`**: Visual Workflow Editor (React Flow) for configuring the AI Orchestrator graph. (Added: 2026-01-24)
 
 ## Entry Points
 
@@ -78,6 +81,9 @@
 - **Multi-Tenancy**: Stringent isolation via `projectId` across DB, Sockets, and Auth Guards.
 - **Layout-Based Routing**: Frontend uses distinct layouts (`PublicLayout`, `DocsLayout`, `MainLayout`) to separate public, documentation, and authenticated app contexts.
 - **AI Provider Failover**: Uses a circuit-breaker pattern to switch between LLM providers (e.g., Groq to OpenAI) based on health and configured preference.
+- **AI Tool Orchestration**: Uses a multi-turn loop (max 3 turns) to execute tools (like `add_visitor_note`) and feed results back to the LLM for a final text response.
+- **AI Workflow Engine**: Graph-based state machine (`WorkflowEngineService`) driving AI logic via a persisted `WorkflowDefinition` (Start, Action, LLM, Condition nodes).
+- **System-Authored Entities**: Entities like `VisitorNote` support nullable `author_id` to allow creation by the AI system.
 
 ## Critical Dependencies
 
@@ -86,6 +92,8 @@
 - **`typeorm`**: Handling complex relations between Projects, Users, Conversations, and Visitors.
 - **`puppeteer`**: Used specifically for capturing visitor page snapshots for agent context.
 - **`lucide-react`**: Standard icon set used across the Dashboard and Public pages.
+- **`openai`**: SDK used for interacting with both OpenAI and Groq (via baseURL) for LLM capabilities.
+- **`@xyflow/react`**: React Flow library used for the visual workflow builder.
 
 ## Verified Documentation (docs/)
 

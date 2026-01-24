@@ -14,25 +14,9 @@ import {
   ChatMessage,
   ToolDefinition,
 } from './interfaces/llm-provider.interface';
-import { VisitorNotesService } from '../visitor-notes/visitor-notes.service';
-
-const ADD_NOTE_TOOL: ToolDefinition = {
-  type: 'function',
-  function: {
-    name: 'add_visitor_note',
-    description: 'Adds an internal note about the visitor for agents to see.',
-    parameters: {
-      type: 'object',
-      properties: {
-        content: {
-          type: 'string',
-          description: 'The content of the note.',
-        },
-      },
-      required: ['content'],
-    },
-  },
-};
+import { AiToolExecutor } from './services/ai-tool.executor';
+import { WorkflowEngineService } from './services/workflow-engine.service';
+import { WorkflowDefinition } from '@live-chat/shared-types';
 
 @Injectable()
 export class AiResponderService {
@@ -50,7 +34,8 @@ export class AiResponderService {
     private readonly projectRepository: Repository<Project>,
     private readonly eventEmitter: EventEmitter2,
     private readonly realtimeSessionService: RealtimeSessionService,
-    private readonly visitorNotesService: VisitorNotesService
+    private readonly aiToolExecutor: AiToolExecutor,
+    private readonly workflowEngine: WorkflowEngineService
   ) {}
 
   /**
@@ -104,9 +89,6 @@ export class AiResponderService {
       });
       if (!project) return;
 
-      const systemPrompt =
-        project.aiResponderPrompt || 'You are a helpful assistant.';
-
       // 3. Wait a bit to simulate processing/prevent race conditions with the message being saved
       // Ideally we would listen to 'message.created' but 'visitor.message.received' is upstream.
       // We need to fetch the conversation context.
@@ -146,47 +128,98 @@ export class AiResponderService {
         messages.push({ role: 'user', content: payload.content });
       }
 
-      // 6. Generate Response
-      this.logger.log(
-        `Generating AI response for project ${payload.projectId}`
-      );
+      // -- WORKFLOW LOGIC START --
+      let systemPrompt =
+        project.aiResponderPrompt || 'You are a helpful assistant.';
+      let tools: ToolDefinition[] | undefined = undefined;
 
-      const tools: ToolDefinition[] | undefined =
-        project.aiMode === 'orchestrator' ? [ADD_NOTE_TOOL] : undefined;
+      if (project.aiMode === 'orchestrator' && project.aiConfig) {
+        // Load Workflow
+        const workflow = project.aiConfig as WorkflowDefinition;
 
-      const aiResponse = await this.llmProviderManager.generateResponse(
-        messages,
-        systemPrompt,
-        tools
-      );
+        // Determine Current Node
+        let currentNodeId = (conversation as any).metadata?.workflowState
+          ?.currentNodeId;
 
-      // 6.1 Handle Tool Calls
-      if (aiResponse.toolCalls && aiResponse.toolCalls.length > 0) {
-        for (const toolCall of aiResponse.toolCalls) {
-          if (toolCall.function.name === 'add_visitor_note') {
-            try {
-              const args = JSON.parse(toolCall.function.arguments);
-              this.logger.log(
-                `AI executing add_visitor_note for visitor ${conversation.visitor.id}`
-              );
-              await this.visitorNotesService.create(
-                payload.projectId,
-                conversation.visitor.id,
-                null, // No author ID for AI notes
-                { content: args.content }
-              );
-            } catch (e) {
-              this.logger.error('Failed to parse or execute tool call', e);
-            }
+        if (!currentNodeId) {
+          const startNode = workflow.nodes.find((n) => n.type === 'start');
+          currentNodeId = startNode?.id;
+        }
+
+        if (currentNodeId) {
+          const currentNode = workflow.nodes.find((n) => n.id === currentNodeId);
+          if (currentNode) {
+            const context = this.workflowEngine.getNodeContext(currentNode, workflow, {
+              visitor: conversation.visitor,
+              conversation: conversation,
+              project: project,
+            });
+            systemPrompt = context.systemPrompt;
+            tools = context.tools;
           }
+        } else {
+          // Fallback if workflow invalid
+          tools = this.aiToolExecutor.getTools();
+        }
+      } else {
+        // Fallback to simple Orchestrator mode (all tools) if config is missing but mode is set
+        if (project.aiMode === 'orchestrator') {
+          tools = this.aiToolExecutor.getTools();
         }
       }
+      // -- WORKFLOW LOGIC END --
 
-      const aiResponseText = aiResponse.content || '';
+      // 6. Generate Response Loop
+      this.logger.log(`Generating AI response for project ${payload.projectId}`);
+
+      let aiResponseText: string | null = null;
+      let turns = 0;
+      const MAX_TURNS = 3;
+
+      while (turns < MAX_TURNS) {
+        turns++;
+        const aiResponse = await this.llmProviderManager.generateResponse(
+          messages,
+          systemPrompt,
+          tools
+        );
+
+        this.logger.debug(`AI response payload: ${JSON.stringify(aiResponse)}`);
+
+        // If simple text response, we are done
+        if (!aiResponse.toolCalls || aiResponse.toolCalls.length === 0) {
+          aiResponseText = aiResponse.content;
+          break;
+        }
+
+        // Handle Tool Calls
+        messages.push({
+          role: 'assistant',
+          content: aiResponse.content || null,
+          tool_calls: aiResponse.toolCalls,
+        });
+
+        for (const toolCall of aiResponse.toolCalls) {
+          const result = await this.aiToolExecutor.executeTool(toolCall, {
+            projectId: payload.projectId,
+            visitorId: conversation.visitor.id,
+            conversationId: String(conversation.id),
+            userId: 'AI_SYSTEM',
+          });
+
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            name: toolCall.function.name,
+            content: result,
+          });
+        }
+        // Loop continues to send tool results back to LLM
+      }
 
       if (!aiResponseText) {
         this.logger.warn(
-          'AI generated empty response (possibly tool call only). Skipping message creation.'
+          'AI generated empty response after max turns. Skipping message creation.'
         );
         return;
       }
@@ -195,11 +228,11 @@ export class AiResponderService {
       const aiMessage = this.messageRepository.create({
         conversationId: Number(conversation.id),
         content: aiResponseText,
-        senderId: 'AI_BOT', // Special ID
+        senderId: 'AI_BOT',
         recipientId: conversation.visitor.visitorUid,
         fromCustomer: false,
         status: MessageStatus.SENT,
-        createdAt: new Date(), // Explicitly set if needed
+        createdAt: new Date(),
       });
 
       const savedMessage = await this.messageRepository.save(aiMessage);
