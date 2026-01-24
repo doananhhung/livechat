@@ -4,6 +4,8 @@ import OpenAI from 'openai';
 import {
   LLMProvider,
   ChatMessage,
+  ToolDefinition,
+  LLMResponse,
 } from '../interfaces/llm-provider.interface';
 
 @Injectable()
@@ -24,7 +26,9 @@ export class GroqProvider implements LLMProvider, OnModuleInit {
       });
       this.logger.log('GroqProvider initialized.');
     } else {
-      this.logger.warn('GROQ_API_KEY is not set. GroqProvider will fail if used.');
+      this.logger.warn(
+        'GROQ_API_KEY is not set. GroqProvider will fail if used.'
+      );
     }
 
     const model = this.configService.get<string>('GROQ_MODEL');
@@ -40,19 +44,55 @@ export class GroqProvider implements LLMProvider, OnModuleInit {
 
   async generateResponse(
     messages: ChatMessage[],
-    systemPrompt: string
-  ): Promise<string> {
+    systemPrompt: string,
+    tools?: ToolDefinition[]
+  ): Promise<LLMResponse> {
     if (!this.openai) {
       throw new Error('Groq client is not initialized (missing API key).');
     }
 
     try {
+      // Map internal ToolDefinition to OpenAI ChatCompletionTool
+      const openAiTools: OpenAI.Chat.Completions.ChatCompletionTool[] | undefined =
+        tools?.map((tool) => ({
+          type: 'function',
+          function: {
+            name: tool.function.name,
+            description: tool.function.description,
+            parameters: tool.function.parameters,
+          },
+        }));
+
+      // Construct messages with system prompt
+      const openAiMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
+        [
+          { role: 'system', content: systemPrompt },
+          ...(messages as unknown as OpenAI.Chat.Completions.ChatCompletionMessageParam[]),
+        ];
+
       const completion = await this.openai.chat.completions.create({
-        messages: [{ role: 'system', content: systemPrompt }, ...messages],
+        messages: openAiMessages,
         model: this.model,
+        tools: openAiTools,
       });
 
-      return completion.choices[0]?.message?.content || '';
+      const message = completion.choices[0]?.message;
+
+      const toolCalls = message?.tool_calls
+        ?.filter((tc) => tc.type === 'function')
+        .map((tc) => ({
+          id: tc.id,
+          type: 'function' as const,
+          function: {
+            name: tc.function.name,
+            arguments: tc.function.arguments,
+          },
+        }));
+
+      return {
+        content: message?.content || null,
+        toolCalls: toolCalls,
+      };
     } catch (error) {
       this.logger.error('Failed to generate response from Groq', error);
       throw error;

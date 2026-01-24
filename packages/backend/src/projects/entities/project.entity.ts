@@ -42,6 +42,12 @@ export class Project {
   @Column({ type: 'text', nullable: true, name: 'ai_responder_prompt' })
   aiResponderPrompt: string | null;
 
+  @Column({ type: 'varchar', default: 'simple', name: 'ai_mode' })
+  aiMode: 'simple' | 'orchestrator';
+
+  @Column({ type: 'jsonb', nullable: true, name: 'ai_config' })
+  aiConfig: Record<string, any> | null;
+
   @OneToMany(() => ProjectMember, (member) => member.project)
   members: ProjectMember[];
 

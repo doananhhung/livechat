@@ -8,12 +8,14 @@ import { RealtimeSessionModule } from '../realtime-session/realtime-session.modu
 import { GroqProvider } from './providers/groq.provider';
 import { OpenAIProvider } from './providers/openai.provider';
 import { LLMProviderManager } from './services/llm-provider.manager';
+import { VisitorNotesModule } from '../visitor-notes/visitor-notes.module';
 
 @Module({
   imports: [
     GatewayModule,
     ProjectModule,
     RealtimeSessionModule,
+    VisitorNotesModule,
     TypeOrmModule.forFeature([Conversation, Message, Project]),
   ],
   providers: [

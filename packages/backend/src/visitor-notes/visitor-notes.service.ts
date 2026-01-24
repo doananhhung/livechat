@@ -24,12 +24,12 @@ export class VisitorNotesService {
   async create(
     projectId: number,
     visitorId: number,
-    authorId: string,
+    authorId: string | null,
     dto: CreateVisitorNoteDto
   ): Promise<VisitorNote> {
     const note = this.noteRepo.create({
       visitorId,
-      authorId,
+      authorId, // TypeORM handles null correctly if column is nullable
       content: dto.content,
     });
 

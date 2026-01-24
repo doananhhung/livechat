@@ -9,5 +9,6 @@ import { GatewayModule } from '../gateway/gateway.module';
   imports: [TypeOrmModule.forFeature([VisitorNote]), GatewayModule],
   controllers: [VisitorNotesController],
   providers: [VisitorNotesService],
+  exports: [VisitorNotesService],
 })
 export class VisitorNotesModule {}

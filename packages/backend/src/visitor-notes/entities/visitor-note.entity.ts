@@ -22,12 +22,12 @@ export class VisitorNote {
   @JoinColumn({ name: 'visitor_id' })
   visitor: Visitor;
 
-  @Column({ type: 'uuid' })
-  authorId: string;
+  @Column({ type: 'uuid', nullable: true })
+  authorId: string | null;
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'CASCADE', nullable: true })
   @JoinColumn({ name: 'author_id' })
-  author: User;
+  author: User | null;
 
   @Column({ type: 'text' })
   content: string;

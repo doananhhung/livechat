@@ -24,10 +24,12 @@ export const AiResponderSettingsForm = ({
 
   const [enabled, setEnabled] = useState(false);
   const [prompt, setPrompt] = useState("");
+  const [mode, setMode] = useState<'simple' | 'orchestrator'>("simple");
 
   useEffect(() => {
     setEnabled(project.aiResponderEnabled ?? false);
     setPrompt(project.aiResponderPrompt ?? "");
+    setMode(project.aiMode ?? "simple");
   }, [project]);
 
   const updateMutation = useMutation({
@@ -53,6 +55,7 @@ export const AiResponderSettingsForm = ({
     updateMutation.mutate({
       aiResponderEnabled: enabled,
       aiResponderPrompt: prompt,
+      aiMode: mode,
     });
   };
 
@@ -76,6 +79,57 @@ export const AiResponderSettingsForm = ({
             className="h-5 w-5 rounded border-input bg-background text-primary focus:ring-ring"
             disabled={updateMutation.isPending}
           />
+        </div>
+      </div>
+
+      <div className="space-y-4 border p-4 rounded-lg bg-card">
+        <label className="block text-sm font-medium text-foreground mb-2">
+          {t("settings.aiOperationMode")}
+        </label>
+        
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start gap-2">
+            <input
+              type="radio"
+              id="mode-simple"
+              name="aiMode"
+              value="simple"
+              checked={mode === "simple"}
+              onChange={() => setMode("simple")}
+              disabled={!enabled || updateMutation.isPending}
+              className="mt-1"
+            />
+            <label htmlFor="mode-simple" className="text-sm cursor-pointer">
+              <span className="font-semibold block">{t("settings.modeSimple")}</span>
+              <span className="text-muted-foreground">
+                {t("settings.modeSimpleDesc")}
+              </span>
+            </label>
+          </div>
+
+          <div className="flex items-start gap-2">
+            <input
+              type="radio"
+              id="mode-orchestrator"
+              name="aiMode"
+              value="orchestrator"
+              checked={mode === "orchestrator"}
+              onChange={() => setMode("orchestrator")}
+              disabled={!enabled || updateMutation.isPending}
+              className="mt-1"
+            />
+            <label htmlFor="mode-orchestrator" className="text-sm cursor-pointer">
+              <span className="font-semibold block">
+                {t("settings.modeOrchestrator")} 
+                <span className="ml-2 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                  {t("common.advanced")}
+                </span>
+              </span>
+              <span className="text-muted-foreground">
+                {t("settings.modeOrchestratorDesc")}
+              </span>
+            </label>
+          </div>
         </div>
       </div>
 

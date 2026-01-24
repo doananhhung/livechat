@@ -9,6 +9,8 @@ export interface IProject {
   autoResolveMinutes?: number | null;
   aiResponderEnabled?: boolean;
   aiResponderPrompt?: string | null;
+  aiMode?: 'simple' | 'orchestrator';
+  aiConfig?: Record<string, any> | null;
   members: ProjectMemberDto[]; // Frontend needs this for displaying project members
   createdAt: Date;
 }

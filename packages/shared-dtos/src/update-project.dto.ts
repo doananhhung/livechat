@@ -74,4 +74,25 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsString()
   aiResponderPrompt?: string;
+
+  @ApiProperty({
+    example: "simple",
+    description: "AI operation mode: 'simple' (chat only) or 'orchestrator' (can call tools).",
+    enum: ['simple', 'orchestrator'],
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^(simple|orchestrator)$/, {
+    message: "aiMode must be either 'simple' or 'orchestrator'",
+  })
+  aiMode?: 'simple' | 'orchestrator';
+
+  @ApiProperty({
+    example: { someKey: "someValue" },
+    description: "Configuration for the AI Orchestrator nodes.",
+    required: false,
+  })
+  @IsOptional()
+  aiConfig?: Record<string, any>;
 }

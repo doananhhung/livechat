@@ -10,7 +10,29 @@ import { MessageStatus } from '@live-chat/shared-types';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { RealtimeSessionService } from '../realtime-session/realtime-session.service';
 import { LLMProviderManager } from './services/llm-provider.manager';
-import { ChatMessage } from './interfaces/llm-provider.interface';
+import {
+  ChatMessage,
+  ToolDefinition,
+} from './interfaces/llm-provider.interface';
+import { VisitorNotesService } from '../visitor-notes/visitor-notes.service';
+
+const ADD_NOTE_TOOL: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'add_visitor_note',
+    description: 'Adds an internal note about the visitor for agents to see.',
+    parameters: {
+      type: 'object',
+      properties: {
+        content: {
+          type: 'string',
+          description: 'The content of the note.',
+        },
+      },
+      required: ['content'],
+    },
+  },
+};
 
 @Injectable()
 export class AiResponderService {
@@ -27,7 +49,8 @@ export class AiResponderService {
     @InjectRepository(Project)
     private readonly projectRepository: Repository<Project>,
     private readonly eventEmitter: EventEmitter2,
-    private readonly realtimeSessionService: RealtimeSessionService
+    private readonly realtimeSessionService: RealtimeSessionService,
+    private readonly visitorNotesService: VisitorNotesService
   ) {}
 
   /**
@@ -111,15 +134,13 @@ export class AiResponderService {
         take: 10,
       });
 
-      // 5. Format messages for OpenAI
+      // 5. Format messages for LLM
       const messages: ChatMessage[] = history.reverse().map((msg) => ({
         role: msg.fromCustomer ? 'user' : 'assistant',
         content: msg.content || '',
       }));
 
-      // Append the new message if it wasn't in DB yet (it might not be if event is async parallel)
-      // But typically 'visitor.message.received' triggers creation.
-      // If we see the last message in history is NOT the new one, append it.
+      // Append the new message if it wasn't in DB yet
       const lastMsg = messages[messages.length - 1];
       if (!lastMsg || lastMsg.content !== payload.content) {
         messages.push({ role: 'user', content: payload.content });
@@ -129,12 +150,46 @@ export class AiResponderService {
       this.logger.log(
         `Generating AI response for project ${payload.projectId}`
       );
-      // Show typing indicator? (Nice to have)
 
-      const aiResponseText = await this.llmProviderManager.generateResponse(
+      const tools: ToolDefinition[] | undefined =
+        project.aiMode === 'orchestrator' ? [ADD_NOTE_TOOL] : undefined;
+
+      const aiResponse = await this.llmProviderManager.generateResponse(
         messages,
-        systemPrompt
+        systemPrompt,
+        tools
       );
+
+      // 6.1 Handle Tool Calls
+      if (aiResponse.toolCalls && aiResponse.toolCalls.length > 0) {
+        for (const toolCall of aiResponse.toolCalls) {
+          if (toolCall.function.name === 'add_visitor_note') {
+            try {
+              const args = JSON.parse(toolCall.function.arguments);
+              this.logger.log(
+                `AI executing add_visitor_note for visitor ${conversation.visitor.id}`
+              );
+              await this.visitorNotesService.create(
+                payload.projectId,
+                conversation.visitor.id,
+                null, // No author ID for AI notes
+                { content: args.content }
+              );
+            } catch (e) {
+              this.logger.error('Failed to parse or execute tool call', e);
+            }
+          }
+        }
+      }
+
+      const aiResponseText = aiResponse.content || '';
+
+      if (!aiResponseText) {
+        this.logger.warn(
+          'AI generated empty response (possibly tool call only). Skipping message creation.'
+        );
+        return;
+      }
 
       // 7. Save AI Message
       const aiMessage = this.messageRepository.create({
@@ -152,9 +207,6 @@ export class AiResponderService {
       // 8. Update Conversation Last Message
       conversation.lastMessageSnippet = aiResponseText;
       conversation.lastMessageTimestamp = savedMessage.createdAt;
-      // Do NOT increment unread count for AI messages (or do? depends if we want agents to see it as unread)
-      // Usually AI handling means agent doesn't need to see it immediately.
-      // Let's keep it 0 or unchanged.
       await this.conversationRepository.save(conversation);
 
       // 9. Resolve socket ID and Emit Event

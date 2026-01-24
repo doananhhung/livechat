@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import {
   LLMProvider,
   ChatMessage,
+  ToolDefinition,
+  LLMResponse,
 } from '../interfaces/llm-provider.interface';
 import { GroqProvider } from '../providers/groq.provider';
 import { OpenAIProvider } from '../providers/openai.provider';
@@ -45,8 +47,9 @@ export class LLMProviderManager {
    */
   async generateResponse(
     messages: ChatMessage[],
-    systemPrompt: string
-  ): Promise<string> {
+    systemPrompt: string,
+    tools?: ToolDefinition[]
+  ): Promise<LLMResponse> {
     const preference = this.configService.get<string>(
       'LLM_PROVIDER_PREFERENCE',
       'groq,openai'
@@ -78,7 +81,7 @@ export class LLMProviderManager {
           `Attempting generation with provider: ${providerName}`
         );
         return await breaker.execute(() =>
-          provider.generateResponse(messages, systemPrompt)
+          provider.generateResponse(messages, systemPrompt, tools)
         );
       } catch (error) {
         lastError = error;
