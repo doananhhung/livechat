@@ -8,8 +8,21 @@ import { Toaster } from "./components/ui/Toaster";
 import { useAuthStore } from "./stores/authStore";
 import { Spinner } from "./components/ui/Spinner";
 import { MainLayout } from "./components/layout/MainLayout";
+import { PublicLayout } from "./components/layout/PublicLayout";
 
 // --- Lazy loaded pages ---
+const HomePage = lazy(() => import("./pages/public/HomePage"));
+const DocsLayout = lazy(() =>
+  import("./components/layout/DocsLayout").then((m) => ({
+    default: m.DocsLayout,
+  }))
+);
+const DocsIndex = lazy(() => import("./pages/public/docs/DocsIndex"));
+const SecurityDocs = lazy(() => import("./pages/public/docs/SecurityDocs"));
+const ManagementDocs = lazy(() => import("./pages/public/docs/ManagementDocs"));
+const EfficiencyDocs = lazy(() => import("./pages/public/docs/EfficiencyDocs"));
+const AutomationDocs = lazy(() => import("./pages/public/docs/AutomationDocs"));
+
 const LoginPage = lazy(() => import("./pages/auth/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/auth/RegisterPage"));
 const ForgotPasswordPage = lazy(
@@ -147,6 +160,18 @@ function App() {
         }
       >
         <Routes>
+          {/* === Public Landing & Docs === */}
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="docs" element={<DocsLayout />}>
+              <Route index element={<DocsIndex />} />
+              <Route path="security" element={<SecurityDocs />} />
+              <Route path="management" element={<ManagementDocs />} />
+              <Route path="efficiency" element={<EfficiencyDocs />} />
+              <Route path="automation" element={<AutomationDocs />} />
+            </Route>
+          </Route>
+
           {/* === Public Routes with Guard === */}
           <Route
             path="/login"

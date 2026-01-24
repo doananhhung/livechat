@@ -35,6 +35,73 @@
         "agent": "Nhân viên",
         "manager": "Quản lý"
     },
+    "nav": {
+        "home": "Trang chủ",
+        "docs": "Tài liệu",
+        "login": "Đăng nhập",
+        "register": "Đăng ký",
+        "goToInbox": "Vào Hộp thư",
+        "dashboard": "Bảng điều khiển"
+    },
+    "home": {
+        "hero": {
+            "title": "Kết nối với khách hàng ngay lập tức",
+            "subtitle": "Giải pháp chat trực tuyến mã nguồn mở mạnh mẽ cho doanh nghiệp của bạn. Dễ dàng thiết lập, dễ dàng sử dụng.",
+            "cta": "Bắt đầu ngay",
+            "secondaryCta": "Xem tài liệu"
+        },
+        "steps": {
+            "title": "Cách hoạt động",
+            "step1": {
+                "title": "Đăng ký",
+                "desc": "Tạo tài khoản của bạn trong vài giây."
+            },
+            "step2": {
+                "title": "Tạo dự án",
+                "desc": "Thiết lập không gian làm việc cho trang web của bạn."
+            },
+            "step3": {
+                "title": "Nhúng Widget",
+                "desc": "Sao chép và dán thẻ script vào trang web của bạn."
+            },
+            "step4": {
+                "title": "Bắt đầu nhắn tin",
+                "desc": "Trò chuyện với khách truy cập của bạn trong thời gian thực."
+            }
+        }
+    },
+    "docs": {
+        "nav": {
+            "title": "Tài liệu",
+            "menu": "Menu",
+            "overview": "Tổng quan",
+            "security": "Bảo mật",
+            "management": "Quản lý",
+            "efficiency": "Hiệu quả",
+            "automation": "Tự động hóa"
+        },
+        "index": {
+            "title": "Tài liệu",
+            "description": "Chào mừng đến với tài liệu Live Chat. Tại đây bạn sẽ tìm thấy mọi thứ cần thiết để bắt đầu và quản lý tài khoản của mình."
+        },
+        "security": {
+            "title": "Tính năng Bảo mật",
+            "description": "Tìm hiểu cách bảo vệ tài khoản của bạn với Xác thực Hai yếu tố (2FA) và quản lý phiên."
+        },
+        "management": {
+            "title": "Quản lý Dự án",
+            "description": "Hướng dẫn tạo dự án, mời thành viên nhóm và cấu hình cài đặt."
+        },
+        "efficiency": {
+            "title": "Công cụ Hiệu quả",
+            "description": "Tăng năng suất của bạn với Mẫu câu trả lời và Mẫu hành động."
+        },
+        "automation": {
+            "title": "Tự động hóa",
+            "description": "Cấu hình AI Responder để xử lý các câu hỏi khi bạn vắng mặt."
+        },
+        "comingSoon": "Tài liệu chi tiết sẽ sớm ra mắt..."
+    },
     "conversations": {
         "status": {
             "open": "Mở",

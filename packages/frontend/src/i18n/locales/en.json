@@ -35,6 +35,73 @@
         "agent": "Agent",
         "manager": "Manager"
     },
+    "nav": {
+        "home": "Home",
+        "docs": "Documentation",
+        "login": "Login",
+        "register": "Sign Up",
+        "goToInbox": "Go to Inbox",
+        "dashboard": "Dashboard"
+    },
+    "home": {
+        "hero": {
+            "title": "Connect with your customers instantly",
+            "subtitle": "A powerful, open-source live chat solution for your business. Easy to setup, easy to use.",
+            "cta": "Get Started",
+            "secondaryCta": "Read Documentation"
+        },
+        "steps": {
+            "title": "How it works",
+            "step1": {
+                "title": "Sign Up",
+                "desc": "Create your account in seconds."
+            },
+            "step2": {
+                "title": "Create Project",
+                "desc": "Set up a workspace for your website."
+            },
+            "step3": {
+                "title": "Embed Widget",
+                "desc": "Copy and paste the script tag into your site."
+            },
+            "step4": {
+                "title": "Start Messaging",
+                "desc": "Chat with your visitors in real-time."
+            }
+        }
+    },
+    "docs": {
+        "nav": {
+            "title": "Documentation",
+            "menu": "Menu",
+            "overview": "Overview",
+            "security": "Security",
+            "management": "Management",
+            "efficiency": "Efficiency",
+            "automation": "Automation"
+        },
+        "index": {
+            "title": "Documentation",
+            "description": "Welcome to the Live Chat documentation. Here you'll find everything you need to get started and manage your account."
+        },
+        "security": {
+            "title": "Security Features",
+            "description": "Learn how to secure your account with Two-Factor Authentication (2FA) and manage sessions."
+        },
+        "management": {
+            "title": "Project Management",
+            "description": "Guides on creating projects, inviting team members, and configuring settings."
+        },
+        "efficiency": {
+            "title": "Efficiency Tools",
+            "description": "Boost your productivity with Canned Responses and Action Templates."
+        },
+        "automation": {
+            "title": "Automation",
+            "description": "Configure the AI Responder to handle inquiries when you're away."
+        },
+        "comingSoon": "Detailed documentation coming soon..."
+    },
     "conversations": {
         "status": {
             "open": "Open",
