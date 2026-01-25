@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { WorkflowDefinition, WorkflowNode } from '@live-chat/shared-types';
+import {
+  WorkflowDefinition,
+  WorkflowNode,
+  AiConfig,
+} from '@live-chat/shared-types';
 import { ToolDefinition, ToolCall } from '../interfaces/llm-provider.interface';
 import { AiToolExecutor } from './ai-tool.executor';
 import {
@@ -120,9 +124,14 @@ export class WorkflowEngineService {
     node: ValidatedWorkflowNode,
     context: WorkflowContext
   ): WorkflowStepResult {
+    const aiConfig = context.workflow as AiConfig;
+    const isVi = aiConfig.language === 'vi';
+    const defaultPrompt = isVi
+      ? 'Dựa vào cuộc trò chuyện, hãy quyết định hướng đi tiếp theo. Sử dụng công cụ route_decision với path là "yes" hoặc "no".'
+      : 'Based on the conversation, decide which path to take. Use the route_decision tool with path "yes" or "no".';
+
     const routingPrompt =
-      (node.type === 'condition' && node.data.prompt) ||
-      'Based on the conversation, decide which path to take. Use the route_decision tool with path "yes" or "no".';
+      (node.type === 'condition' && node.data.prompt) || defaultPrompt;
 
     return {
       nextNodeId: null, // Will be determined after LLM makes decision
@@ -225,12 +234,20 @@ export class WorkflowEngineService {
     const caseList = data.cases
       .map((c) => `- "${c.route}": ${c.when}`)
       .join('\n');
-    const defaultCaseInfo =
-      '\n- "default": If none of the above conditions match';
+    const aiConfig = context.workflow as AiConfig;
+    const isVi = aiConfig.language === 'vi';
+
+    const defaultCaseInfo = isVi
+      ? '\n- "default": Nếu không có điều kiện nào ở trên phù hợp'
+      : '\n- "default": If none of the above conditions match';
+
+    const defaultPrompt = isVi
+      ? `Chọn trường hợp phù hợp dựa trên cuộc trò chuyện.\n\nCác trường hợp có sẵn:\n${caseList}${defaultCaseInfo}\n\nSử dụng công cụ switch_decision với tên trường hợp.`
+      : `Choose the appropriate case based on the conversation.\n\nAvailable cases:\n${caseList}${defaultCaseInfo}\n\nUse the switch_decision tool with the case name.`;
 
     const routingPrompt = data.prompt
-      ? `${data.prompt}\n\nAvailable cases:\n${caseList}${defaultCaseInfo}`
-      : `Choose the appropriate case based on the conversation.\n\nAvailable cases:\n${caseList}${defaultCaseInfo}\n\nUse the switch_decision tool with the case name.`;
+      ? `${data.prompt}\n\n${isVi ? 'Các trường hợp có sẵn:' : 'Available cases:'}\n${caseList}${defaultCaseInfo}`
+      : defaultPrompt;
 
     return {
       nextNodeId: null,
@@ -369,6 +386,14 @@ export class WorkflowEngineService {
           '\n\nGlobal Tool Usage Guidelines:\n' +
           globalToolInstructions.join('\n');
       }
+    }
+
+    // Inject Language Instruction
+    const aiConfig = workflow as AiConfig;
+    if (aiConfig.language === 'vi') {
+      systemPrompt += '\n\nBẠN PHẢI TRẢ LỜI VÀ SUY LUẬN BẰNG TIẾNG VIỆT.';
+    } else if (aiConfig.language === 'en') {
+      systemPrompt += '\n\nYou must reply and reason in English.';
     }
 
     return { systemPrompt, tools };

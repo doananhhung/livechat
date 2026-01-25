@@ -12,6 +12,7 @@ import type {
   WorkflowNode,
   WorkflowEdge,
   GlobalToolConfig,
+  AiConfig,
 } from "@live-chat/shared-types";
 import { WorkflowEditor } from "../../workflow/WorkflowEditor";
 import { Switch } from "../../../ui/Switch";
@@ -35,15 +36,22 @@ export const AiResponderSettingsForm = ({
   const [nodes, setNodes] = useState<WorkflowNode[]>([]);
   const [edges, setEdges] = useState<WorkflowEdge[]>([]);
   const [globalTools, setGlobalTools] = useState<GlobalToolConfig[]>([]);
+  const [language, setLanguage] = useState<"en" | "vi">("en");
 
   useEffect(() => {
     setEnabled(project.aiResponderEnabled ?? false);
     setPrompt(project.aiResponderPrompt ?? "");
     setMode(project.aiMode ?? "simple");
 
-    const config = project.aiConfig as WorkflowDefinition | null;
+    const config = project.aiConfig as AiConfig | null;
     setNodes(config?.nodes || []);
     setEdges(config?.edges || []);
+    // Default to current interface language if not set, otherwise fallback to 'en'
+    const currentLang =
+      typeof window !== "undefined"
+        ? (localStorage.getItem("i18nextLng") as "en" | "vi" | null)
+        : "en";
+    setLanguage(config?.language || (currentLang === "vi" ? "vi" : "en"));
     // Handle migration from old string[] format to new GlobalToolConfig[] format
     const rawGlobalTools = config?.globalTools || [];
     if (rawGlobalTools.length > 0 && typeof rawGlobalTools[0] === "string") {
@@ -118,6 +126,16 @@ export const AiResponderSettingsForm = ({
         edges,
         globalTools,
         variables: (project.aiConfig as WorkflowDefinition)?.variables || {},
+        language,
+      } as AiConfig;
+    } else {
+      // preserve other config but update language if needed in simple mode?
+      // Actually, simple mode doesn't strictly use AiConfig for prompts, but we should save the language preference regardless.
+      // For simple mode, we might want to store it in aiConfig if that's where we agreed.
+      // The Spec says "project.aiConfig JSON structure".
+      updateData.aiConfig = {
+        ...(project.aiConfig as object),
+        language,
       } as any;
     }
 
@@ -202,6 +220,43 @@ export const AiResponderSettingsForm = ({
               </label>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="space-y-4 border p-4 rounded-lg bg-card">
+        <label className="block text-sm font-medium text-foreground mb-2">
+          {t("settings.aiLanguage") || "AI Language"}
+        </label>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="aiLanguage"
+                value="en"
+                checked={language === "en"}
+                onChange={() => setLanguage("en")}
+                disabled={!enabled || updateMutation.isPending}
+              />
+              <span className="text-sm">English</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="aiLanguage"
+                value="vi"
+                checked={language === "vi"}
+                onChange={() => setLanguage("vi")}
+                disabled={!enabled || updateMutation.isPending}
+              />
+              <span className="text-sm">Tiếng Việt</span>
+            </label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {language === "vi"
+              ? "AI sẽ được hướng dẫn trả lời và suy luận bằng Tiếng Việt."
+              : "The AI will be instructed to reply and reason in English."}
+          </p>
         </div>
       </div>
 
