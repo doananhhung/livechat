@@ -1,5 +1,4 @@
-import { h } from "preact";
-import { useMemo } from "preact/hooks";
+import { useMemo } from "react";
 import type { FormSubmissionMetadata } from "@live-chat/shared-types";
 
 interface FormSubmissionMessageProps {

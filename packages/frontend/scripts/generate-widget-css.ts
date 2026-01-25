@@ -24,16 +24,33 @@ function generateCssVariables(
     .join("\n");
 }
 
-function generateThemeBlock(themeName: string, tokens: any): string {
+function generateThemeBlock(
+  themeName: string,
+  tokens: any,
+  rootSelector: string,
+  isCompound: boolean,
+): string {
   const vars = generateCssVariables(tokens, "widget");
   const isDefault = themeName === "light";
-  const selector = isDefault ? ":host" : `:host .theme-${themeName}`;
+
+  let selector;
+  if (rootSelector === ":host") {
+    // Shadow DOM logic
+    selector = isDefault ? ":host" : `:host .theme-${themeName}`;
+  } else {
+    // Preview logic (Compound class)
+    // If isDefault, we want base variables on the root.
+    // If named theme, we want override variables on the root WITH that class.
+    selector = isDefault
+      ? rootSelector
+      : `${rootSelector}.theme-${themeName}`;
+  }
 
   // Map semantic primary colors to the variables used in widget styles
   const primaryOverrides = `
   --widget-primary-color: ${tokens.primary};
   --widget-text-on-primary: ${tokens.primaryForeground};
-  --widget-primary-gradient: linear-gradient(135deg, var(--widget-primary-color), var(--widget-primary-color));`;
+  --widget-primary-gradient: linear-gradient(135deg, var(--widget-primary-color), var(--widget-primary-color)));`;
 
   return `${selector} {
 ${primaryOverrides}
@@ -41,36 +58,56 @@ ${vars}
 }`;
 }
 
-const themeBlocks = Object.entries(themeTokens)
-  .map(([name, tokens]) => generateThemeBlock(name, tokens))
-  .join("\n\n");
+function generateCssContent(rootSelector: string, isCompound: boolean): string {
+  const themeBlocks = Object.entries(themeTokens)
+    .map(([name, tokens]) =>
+      generateThemeBlock(name, tokens, rootSelector, isCompound),
+    )
+    .join("\n\n");
 
-const cssContent = `/* AUTO-GENERATED from tokens.ts — DO NOT EDIT MANUALLY */
+  // Generate shadow/common vars block
+  // Need to gather all theme names for the specific overrides
+  const themeNames = Object.keys(themeTokens).filter((t) => t !== "light");
+  const darkThemeSelectors = themeNames
+    .map((name) =>
+      rootSelector === ":host"
+        ? `:host .theme-${name}`
+        : `${rootSelector}.theme-${name}`,
+    )
+    .join(", \n");
+
+  return `/* AUTO-GENERATED from tokens.ts — DO NOT EDIT MANUALLY */
 /* Run: npm run generate:widget-css */
 
 ${themeBlocks}
 
 /* Global Shadows & Common Vars */
-:host {
+${rootSelector} {
   --widget-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   --widget-shadow-glow: 0 0 15px rgba(139, 92, 246, 0.3);
 }
 
-:host .theme-dark, 
-:host .theme-oled-void, 
-:host .theme-dracula, 
-:host .theme-nordic-frost, 
-:host .theme-cyberpunk, 
-:host .theme-terminal, 
-:host .theme-solarized-dark {
+${darkThemeSelectors} {
   --widget-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
   --widget-shadow-glow: 0 0 20px rgba(139, 92, 246, 0.2);
 }
 `;
+}
 
-const outputPath = path.resolve(
+// 1. Generate Production CSS (:host)
+const prodCss = generateCssContent(":host", false);
+const prodPath = path.resolve(
   __dirname,
   "../src/widget/styles/_generated-vars.css",
 );
-fs.writeFileSync(outputPath, cssContent, "utf-8");
-console.log(`✅ Generated: ${outputPath}`);
+fs.writeFileSync(prodPath, prodCss, "utf-8");
+console.log(`✅ Generated Production CSS: ${prodPath}`);
+
+// 2. Generate Preview CSS (.widget-preview-root)
+const previewCss = generateCssContent(".widget-preview-root", true);
+const previewPath = path.resolve(
+  __dirname,
+  "../src/widget/styles/_generated-preview-vars.css",
+);
+fs.writeFileSync(previewPath, previewCss, "utf-8");
+console.log(`✅ Generated Preview CSS: ${previewPath}`);

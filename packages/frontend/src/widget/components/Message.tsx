@@ -6,7 +6,7 @@ import type {
   FormRequestMetadata,
   FormSubmissionMetadata,
 } from "@live-chat/shared-types";
-import { useMemo } from "preact/hooks";
+import { useMemo } from "react";
 import { FormRequestMessage } from "./FormRequestMessage";
 import { FormSubmissionMessage } from "./FormSubmissionMessage";
 

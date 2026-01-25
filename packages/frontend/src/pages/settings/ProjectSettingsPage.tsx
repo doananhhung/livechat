@@ -15,7 +15,7 @@ import { ProjectBasicSettingsForm } from "../../components/features/projects/Pro
 import { AiResponderSettingsForm } from "../../components/features/projects/ai-responder/AiResponderSettingsForm";
 import type { WidgetSettingsDto } from "@live-chat/shared-dtos";
 import { getWidgetSnippet } from "../../lib/widget";
-import { WidgetThemePreview } from "../../components/features/projects/WidgetThemePreview";
+import { WidgetPreview } from "../../components/features/projects/WidgetPreview";
 
 export const ProjectSettingsPage = () => {
   const { t } = useTranslation();
@@ -49,6 +49,17 @@ export const ProjectSettingsPage = () => {
   const [historyVisibility, setHistoryVisibility] = useState<HistoryVisibilityMode>(
     "limit_to_active"
   );
+  // Offline message is missing in the state but used in ProjectWidgetSettingsDialog.
+  // We should add it here to be consistent, although the original file didn't seem to have it in the state?
+  // Checking original file: It had it in useEffect setters but maybe not useState initial?
+  // Original file: `const [offlineMessage, setOfflineMessage] = useState("")` was NOT present in my read.
+  // Wait, let me check the read output again.
+  // Original file Line 40+: theme, headerText, welcomeMessage, position, companyLogoUrl, agentDisplayName, fontFamily, historyVisibility.
+  // NO offlineMessage. But useEffect set it: `offlineMessage: project.widgetSettings.offlineMessage` was NOT in useEffect either.
+  // Ah, the original ProjectSettingsPage seemed incomplete compared to the Dialog?
+  // Let's stick to what was there, but `WidgetPreview` needs `offlineMessage`.
+  // I'll add `offlineMessage` state to support the preview better.
+  const [offlineMessage, setOfflineMessage] = useState("");
 
   const { data: projects, isLoading } = useQuery({
     queryKey: ["projects"],
@@ -69,6 +80,7 @@ export const ProjectSettingsPage = () => {
       setAgentDisplayName(settings.agentDisplayName || "");
       setFontFamily(settings.fontFamily || "sans-serif");
       setHistoryVisibility(settings.historyVisibility || "limit_to_active");
+      setOfflineMessage(settings.offlineMessage || "");
     }
   }, [currentProject]);
 
@@ -109,6 +121,7 @@ export const ProjectSettingsPage = () => {
       agentDisplayName: agentDisplayName.trim() || undefined,
       fontFamily: fontFamily.trim() || undefined,
       historyVisibility,
+      offlineMessage: offlineMessage.trim() || undefined,
     });
   };
 
@@ -138,6 +151,20 @@ export const ProjectSettingsPage = () => {
       </div>
     );
   }
+
+  // Construct current settings object for preview
+  const currentSettings: WidgetSettingsDto & { projectId: string } = {
+    theme,
+    headerText,
+    welcomeMessage,
+    position,
+    companyLogoUrl,
+    agentDisplayName,
+    fontFamily,
+    historyVisibility,
+    offlineMessage,
+    projectId: String(currentProject.id),
+  };
 
   return (
     <div className="max-w-6xl mx-auto pb-20">
@@ -235,172 +262,186 @@ export const ProjectSettingsPage = () => {
                   </p>
                 }
               >
-                <form onSubmit={handleWidgetSubmit} className="space-y-6 pt-6">
-                  {/* History Visibility Mode */}
-                  <div className="border p-3 rounded-md bg-muted/20">
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t("settings.chatHistory")}
-                    </label>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-start space-x-2">
-                        <input
-                          type="radio"
-                          id="mode-active-page"
-                          name="historyVisibility"
-                          value="limit_to_active"
-                          checked={historyVisibility === 'limit_to_active'}
-                          onChange={() => setHistoryVisibility('limit_to_active')}
-                          disabled={updateWidgetMutation.isPending}
-                          className="mt-1"
-                        />
-                        <label htmlFor="mode-active-page" className="text-sm cursor-pointer">
-                          <span className="font-semibold block">{t("settings.ticketStyleDefault")}</span>
-                          <span className="text-muted-foreground">
-                            {t("settings.ticketStyleDesc")}
-                          </span>
+                <form onSubmit={handleWidgetSubmit} className="pt-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Left Column: Form Fields */}
+                    <div className="space-y-6">
+                      {/* History Visibility Mode */}
+                      <div className="border p-3 rounded-md bg-muted/20">
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          {t("settings.chatHistory")}
                         </label>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-start space-x-2">
+                            <input
+                              type="radio"
+                              id="mode-active-page"
+                              name="historyVisibility"
+                              value="limit_to_active"
+                              checked={historyVisibility === 'limit_to_active'}
+                              onChange={() => setHistoryVisibility('limit_to_active')}
+                              disabled={updateWidgetMutation.isPending}
+                              className="mt-1"
+                            />
+                            <label htmlFor="mode-active-page" className="text-sm cursor-pointer">
+                              <span className="font-semibold block">{t("settings.ticketStyleDefault")}</span>
+                              <span className="text-muted-foreground">
+                                {t("settings.ticketStyleDesc")}
+                              </span>
+                            </label>
+                          </div>
+                          <div className="flex items-start space-x-2">
+                            <input
+                              type="radio"
+                              id="mode-forever-page"
+                              name="historyVisibility"
+                              value="forever"
+                              checked={historyVisibility === 'forever'}
+                              onChange={() => setHistoryVisibility('forever')}
+                              disabled={updateWidgetMutation.isPending}
+                              className="mt-1"
+                            />
+                            <label htmlFor="mode-forever-page" className="text-sm cursor-pointer">
+                              <span className="font-semibold block">{t("settings.chatStyle")}</span>
+                              <span className="text-muted-foreground">
+                                {t("settings.chatStyleDesc")}
+                              </span>
+                            </label>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-start space-x-2">
-                        <input
-                          type="radio"
-                          id="mode-forever-page"
-                          name="historyVisibility"
-                          value="forever"
-                          checked={historyVisibility === 'forever'}
-                          onChange={() => setHistoryVisibility('forever')}
-                          disabled={updateWidgetMutation.isPending}
-                          className="mt-1"
-                        />
-                        <label htmlFor="mode-forever-page" className="text-sm cursor-pointer">
-                          <span className="font-semibold block">{t("settings.chatStyle")}</span>
-                          <span className="text-muted-foreground">
-                            {t("settings.chatStyleDesc")}
-                          </span>
+
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          {t("settings.widgetTheme")}
                         </label>
+                        <select
+                          value={theme}
+                          onChange={(e) =>
+                            setTheme(e.target.value as WidgetTheme)
+                          }
+                          disabled={updateWidgetMutation.isPending}
+                          className="w-full px-3 py-2 border border-input bg-background rounded-md"
+                        >
+                          {Object.values(WidgetTheme).map((themeValue) => (
+                            <option key={themeValue} value={themeValue}>
+                              {t(getThemeLabelKey(themeValue))}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          {t("settings.widgetHeader")}
+                        </label>
+                        <Input
+                          type="text"
+                          placeholder={t("widget.enterTitle")}
+                          value={headerText}
+                          onChange={(e) => setHeaderText(e.target.value)}
+                          disabled={updateWidgetMutation.isPending}
+                          maxLength={50}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1 text-right">
+                          {headerText.length}/50
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          {t("settings.fontFamily")}
+                        </label>
+                        <Input
+                          type="text"
+                          placeholder="sans-serif"
+                          value={fontFamily}
+                          onChange={(e) => setFontFamily(e.target.value)}
+                          disabled={updateWidgetMutation.isPending}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          {t("settings.welcomeMessage")}
+                        </label>
+                        <Input
+                          type="text"
+                          placeholder={t("widget.enterGreeting")}
+                          value={welcomeMessage}
+                          onChange={(e) => setWelcomeMessage(e.target.value)}
+                          disabled={updateWidgetMutation.isPending}
+                          maxLength={200}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1 text-right">
+                          {welcomeMessage.length}/200
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          {t("settings.widgetPosition")}
+                        </label>
+                        <select
+                          value={position}
+                          onChange={(e) =>
+                            setPosition(e.target.value as WidgetPosition)
+                          }
+                          disabled={updateWidgetMutation.isPending}
+                          className="w-full px-3 py-2 border border-input bg-background rounded-md"
+                        >
+                          <option value={WidgetPosition.BOTTOM_RIGHT}>
+                            {t("settings.bottomRight")}
+                          </option>
+                          <option value={WidgetPosition.BOTTOM_LEFT}>
+                            {t("settings.bottomLeft")}
+                          </option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          {t("settings.companyLogoUrl")}
+                        </label>
+                        <Input
+                          type="url"
+                          placeholder="https://example.com/logo.png"
+                          value={companyLogoUrl}
+                          onChange={(e) => setCompanyLogoUrl(e.target.value)}
+                          disabled={updateWidgetMutation.isPending}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          {t("settings.agentDisplayName")}
+                        </label>
+                        <Input
+                          type="text"
+                          placeholder={t("members.agent")}
+                          value={agentDisplayName}
+                          onChange={(e) => setAgentDisplayName(e.target.value)}
+                          disabled={updateWidgetMutation.isPending}
+                          maxLength={100}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1 text-right">
+                          {agentDisplayName.length}/100
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Preview (Desktop) */}
+                    <div className="hidden lg:flex flex-col items-center justify-start bg-muted/20 rounded-lg p-6 border sticky top-6 self-start">
+                      <h3 className="text-sm font-medium text-muted-foreground mb-4 uppercase tracking-wider">
+                        {t("common.preview")}
+                      </h3>
+                      <div className="w-full flex items-center justify-center scale-90 origin-top">
+                        <WidgetPreview config={currentSettings} />
                       </div>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t("settings.widgetTheme")}
-                    </label>
-                    <select
-                      value={theme}
-                      onChange={(e) =>
-                        setTheme(e.target.value as WidgetTheme)
-                      }
-                      disabled={updateWidgetMutation.isPending}
-                      className="w-full px-3 py-2 border border-input bg-background rounded-md"
-                    >
-                      {Object.values(WidgetTheme).map((themeValue) => (
-                        <option key={themeValue} value={themeValue}>
-                          {t(getThemeLabelKey(themeValue))}
-                        </option>
-                      ))}
-                    </select>
-                    <WidgetThemePreview theme={theme} />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t("settings.widgetHeader")}
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder={t("widget.enterTitle")}
-                      value={headerText}
-                      onChange={(e) => setHeaderText(e.target.value)}
-                      disabled={updateWidgetMutation.isPending}
-                      maxLength={50}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1 text-right">
-                      {headerText.length}/50
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t("settings.fontFamily")}
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="sans-serif"
-                      value={fontFamily}
-                      onChange={(e) => setFontFamily(e.target.value)}
-                      disabled={updateWidgetMutation.isPending}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t("settings.welcomeMessage")}
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder={t("widget.enterGreeting")}
-                      value={welcomeMessage}
-                      onChange={(e) => setWelcomeMessage(e.target.value)}
-                      disabled={updateWidgetMutation.isPending}
-                      maxLength={200}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1 text-right">
-                      {welcomeMessage.length}/200
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t("settings.widgetPosition")}
-                    </label>
-                    <select
-                      value={position}
-                      onChange={(e) =>
-                        setPosition(e.target.value as WidgetPosition)
-                      }
-                      disabled={updateWidgetMutation.isPending}
-                      className="w-full px-3 py-2 border border-input bg-background rounded-md"
-                    >
-                      <option value={WidgetPosition.BOTTOM_RIGHT}>
-                        {t("settings.bottomRight")}
-                      </option>
-                      <option value={WidgetPosition.BOTTOM_LEFT}>
-                        {t("settings.bottomLeft")}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t("settings.companyLogoUrl")}
-                    </label>
-                    <Input
-                      type="url"
-                      placeholder="https://example.com/logo.png"
-                      value={companyLogoUrl}
-                      onChange={(e) => setCompanyLogoUrl(e.target.value)}
-                      disabled={updateWidgetMutation.isPending}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t("settings.agentDisplayName")}
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder={t("members.agent")}
-                      value={agentDisplayName}
-                      onChange={(e) => setAgentDisplayName(e.target.value)}
-                      disabled={updateWidgetMutation.isPending}
-                      maxLength={100}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1 text-right">
-                      {agentDisplayName.length}/100
-                    </p>
-                  </div>
-
-                  <div className="flex justify-end pt-4 border-t">
+                  <div className="flex justify-end pt-4 border-t mt-6">
                     <Button
                       type="submit"
                       disabled={updateWidgetMutation.isPending}

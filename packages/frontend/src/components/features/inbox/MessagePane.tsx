@@ -18,6 +18,7 @@ import { Button } from "../../ui/Button";
 import { formatMessageTime } from "../../../lib/dateUtils";
 import { cn } from "../../../lib/utils";
 import { useToast } from "../../ui/use-toast";
+import { useInView } from "react-intersection-observer";
 import {
   ChevronDown,
   CheckCircle,
@@ -75,13 +76,26 @@ const MessageList = ({
   messages,
   conversationId,
   visitorName,
+  hasNextPage,
+  isFetchingNextPage,
+  fetchNextPage,
 }: {
   messages: Message[];
   conversationId: number;
   visitorName?: string;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  fetchNextPage?: () => void;
 }) => {
   const { typingStatus } = useTypingStore();
   const isTyping = typingStatus[conversationId];
+  const { ref, inView } = useInView();
+
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage && fetchNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Map request IDs to their submission messages
   const submissionMap = new Map<string, Message>();
@@ -225,6 +239,10 @@ const MessageList = ({
             })}
           </div>
         ))}
+        {/* Loading trigger for infinite scroll - at the 'top' visually (end of list in flex-col-reverse) */}
+        <div ref={ref} className="h-8 flex items-center justify-center w-full">
+          {isFetchingNextPage && <Spinner className="h-4 w-4" />}
+        </div>
       </div>
     </div>
   );
@@ -246,10 +264,17 @@ export const MessagePane = () => {
   const numericProjectId = projectId ? parseInt(projectId, 10) : undefined;
   const convoId = conversationId ? parseInt(conversationId, 10) : undefined;
 
-  const { data: messages, isLoading } = useGetMessages(
-    numericProjectId,
-    convoId,
-  );
+  const {
+    data: infiniteData,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useGetMessages(numericProjectId, convoId);
+
+  // Flatten pages into a single message list
+  const messages = infiniteData?.pages.flat() || [];
+
   const { mutate: updateConversation, isPending: isUpdatingStatus } =
     useUpdateConversationStatus();
 
@@ -434,9 +459,12 @@ export const MessagePane = () => {
       </header>
 
       <MessageList
-        messages={messages || []}
+        messages={messages}
         conversationId={convoId}
         visitorName={conversation?.visitor?.displayName || "Anonymous"}
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        fetchNextPage={fetchNextPage}
       />
 
       {numericProjectId && convoId && (

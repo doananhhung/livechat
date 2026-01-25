@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "preact/hooks";
+import { useEffect, useRef } from "react";
 import { type WidgetMessageDto as MessageType } from "@live-chat/shared-types";
 import { Message } from "./Message";
 

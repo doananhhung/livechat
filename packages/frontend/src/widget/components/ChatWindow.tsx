@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "preact/hooks";
+import { useEffect, useRef } from "react";
 import { Header } from "./Header";
 import { MessageList } from "./MessageList";
 import { Composer } from "./Composer";

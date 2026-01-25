@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "preact/hooks";
+import { useState, useRef, useEffect } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import { type ConnectionStatus } from "../types";
 

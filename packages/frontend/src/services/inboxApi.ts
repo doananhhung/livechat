@@ -5,6 +5,7 @@ import {
   useMutation,
   useQueryClient,
   useInfiniteQuery,
+  type InfiniteData,
 } from "@tanstack/react-query";
 import api from "../lib/api";
 import { v4 as uuidv4 } from "uuid";
@@ -149,12 +150,31 @@ export const useGetConversations = (
 export const useGetMessages = (
   projectId?: number,
   conversationId?: number,
-  params?: ListMessagesDto,
+  params?: Omit<ListMessagesDto, "cursor">,
 ) => {
   const queryKey = ["messages", projectId, conversationId, params];
-  return useQuery({
+
+  return useInfiniteQuery({
     queryKey,
-    queryFn: () => getMessages(projectId!, conversationId!, params),
+    queryFn: ({ pageParam }) => {
+      if (!projectId || !conversationId) return Promise.resolve([]);
+      return getMessages(projectId, conversationId, {
+        ...params,
+        cursor: pageParam as string | undefined,
+        limit: 20, // Default limit
+      });
+    },
+    getNextPageParam: (lastPage) => {
+      if (!lastPage || lastPage.length < 20) return undefined;
+      // Messages are typically returned newest first.
+      // The cursor for the next page (older messages) is the ID or timestamp of the last message in the list.
+      // Assuming backend supports ID-based cursor or timestamp.
+      // Checking ListMessagesDto (it has cursor string).
+      // Usually the last item in the array is the oldest in that batch.
+      const oldestMessage = lastPage[lastPage.length - 1];
+      return oldestMessage ? oldestMessage.id : undefined;
+    },
+    initialPageParam: undefined,
     enabled: !!projectId && !!conversationId,
   });
 };
@@ -199,10 +219,31 @@ export const useSendAgentReply = () => {
         attachments: [],
       };
 
-      queryClient.setQueryData<Message[]>(queryKey, (oldData = []) => [
-        ...oldData,
-        optimisticMessage,
-      ]);
+      // Optimistic update for Infinite Query
+      queryClient.setQueryData<InfiniteData<Message[]>>(
+        queryKey,
+        (oldData) => {
+          if (!oldData) {
+            return {
+              pages: [[optimisticMessage]],
+              pageParams: [undefined],
+            };
+          }
+
+          // Append to the first page (newest messages)
+          const newPages = [...oldData.pages];
+          if (newPages.length > 0) {
+            newPages[0] = [...newPages[0], optimisticMessage];
+          } else {
+            newPages[0] = [optimisticMessage];
+          }
+
+          return {
+            ...oldData,
+            pages: newPages,
+          };
+        },
+      );
 
       return { optimisticMessageId: optimisticMessage.id };
     },
@@ -214,22 +255,32 @@ export const useSendAgentReply = () => {
         undefined,
       ];
 
-      queryClient.setQueryData<Message[]>(queryKey, (oldData = []) => {
-        // Check if the final message already exists (e.g., received via socket)
-        const exists = oldData.some((msg) => msg.id === finalMessage.id);
+      queryClient.setQueryData<InfiniteData<Message[]>>(
+        queryKey,
+        (oldData) => {
+          if (!oldData) return oldData;
 
-        if (exists) {
-          // If it exists, just remove the optimistic one to avoid duplicates
-          return oldData.filter(
-            (msg) => msg.id !== context?.optimisticMessageId,
-          );
-        } else {
-          // Otherwise, replace optimistic with final
-          return oldData.map((msg) =>
-            msg.id === context?.optimisticMessageId ? finalMessage : msg,
-          );
-        }
-      });
+          const newPages = oldData.pages.map((page) => {
+            // Check if message exists in this page
+            const exists = page.some((msg) => msg.id === finalMessage.id);
+            if (exists) {
+              // Remove optimistic message if real one exists
+              return page.filter(
+                (msg) => msg.id !== context?.optimisticMessageId,
+              );
+            }
+            // Replace optimistic with real
+            return page.map((msg) =>
+              msg.id === context?.optimisticMessageId ? finalMessage : msg,
+            );
+          });
+
+          return {
+            ...oldData,
+            pages: newPages,
+          };
+        },
+      );
       console.log("Message sent successfully:", finalMessage);
     },
     onError: (_err, variables, context) => {
@@ -239,12 +290,21 @@ export const useSendAgentReply = () => {
         variables.conversationId,
         undefined,
       ];
-      queryClient.setQueryData<Message[]>(queryKey, (oldData = []) =>
-        oldData.map((msg) =>
-          msg.id === context?.optimisticMessageId
-            ? { ...msg, status: MessageStatus.FAILED }
-            : msg,
-        ),
+      queryClient.setQueryData<InfiniteData<Message[]>>(
+        queryKey,
+        (oldData) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page) =>
+              page.map((msg) =>
+                msg.id === context?.optimisticMessageId
+                  ? { ...msg, status: MessageStatus.FAILED }
+                  : msg,
+              ),
+            ),
+          };
+        },
       );
     },
     onSettled: () => {
