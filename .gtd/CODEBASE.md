@@ -1,7 +1,7 @@
 # Codebase Overview
 
 **Generated:** 2026-01-24
-**Last Updated:** 2026-01-25 (Unified Theme & Optimistic UI)
+**Last Updated:** 2026-01-25 (Infinite Scroll Pagination)
 
 ## Tech Stack
 
@@ -115,6 +115,9 @@
   - **Validation Integrity:** All node types MUST have a corresponding Zod schema in `workflow.schemas.ts` and be registered in `WorkflowNodeSchema` to prevent runtime crashes.
 - **Inline Logic Editor**: Complex graph structures (Workflow) are integrated directly into standard settings forms, sharing a single submission flow.
 - **Theme-Aware Canvas**: Visual editors (React Flow) must explicitly subscribe to `useThemeStore` and pass `colorMode` to synchronize the canvas with the application theme.
+- **Cursor-Based Pagination (Infinite Scroll)**: `useInfiniteQuery` for message lists uses backend-provided `hasNextPage` and `nextCursor`. Frontend MUST NOT derive cursors from array indices. Pages are appended by default; for reverse-chronological display (newest at bottom), reverse the pages array before flattening: `pages.slice().reverse().flatMap(p => p.data)`. (Added: 2026-01-25)
+- **Intersection Observer in flex-col-reverse**: When using `useInView` inside a `flex-col-reverse` container, place the observer element at the **DOM start** (first child inside the scrollable area) to make it appear at the **visual top**. Placing it at DOM end puts it at visual bottom, causing immediate triggers on load. (Added: 2026-01-25)
+- **Query Param Type Coercion**: NestJS query params arrive as strings. Always use `Number(query.limit)` or similar explicit parsing in services, as DTO `@Type(() => Number)` may not apply. String concatenation bugs (e.g., `"20" + 1 = "201"`) are common failures. (Added: 2026-01-25)
 - **System User for AI Actions**: A dedicated System user (`SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000001'`) exists in the database for auditable AI-driven mutations. When adding new AI tools in `AiToolExecutor` that call permission-protected services:
   1. Import `SYSTEM_USER_ID` from `@live-chat/shared-types`
   2. Pass `SYSTEM_USER_ID` as the `userId` parameter

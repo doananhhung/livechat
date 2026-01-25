@@ -13,7 +13,7 @@ import { Spinner } from "../../../components/ui/Spinner";
 import { Avatar } from "../../../components/ui/Avatar";
 import { useTypingStore } from "../../../stores/typingStore";
 import { TypingIndicator } from "./TypingIndicator";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "../../ui/Button";
 import { formatMessageTime } from "../../../lib/dateUtils";
 import { cn } from "../../../lib/utils";
@@ -89,13 +89,20 @@ const MessageList = ({
 }) => {
   const { typingStatus } = useTypingStore();
   const isTyping = typingStatus[conversationId];
-  const { ref, inView } = useInView();
+  const { ref, inView } = useInView({ threshold: 0.1 });
+  const isFirstRender = useRef(true);
 
+  // Trigger fetch when scroll observer fires
+  // Skip first observation (happens immediately when observer mounts due to viewport not filled)
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     if (inView && hasNextPage && !isFetchingNextPage && fetchNextPage) {
       fetchNextPage();
     }
-  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [inView, hasNextPage, fetchNextPage]);
 
   // Map request IDs to their submission messages
   const submissionMap = new Map<string, Message>();
@@ -149,6 +156,15 @@ const MessageList = ({
         </div>
       )}
       <div className="space-y-4">
+        {/* Loading trigger for infinite scroll - only render after initial data loaded */}
+        {messages.length > 0 && (
+          <div
+            ref={ref}
+            className="h-8 flex items-center justify-center w-full"
+          >
+            {isFetchingNextPage && <Spinner className="h-4 w-4" />}
+          </div>
+        )}
         {groupedMessages.map((group, groupIndex) => (
           <div key={groupIndex} className="space-y-1">
             {group.map((msg, msgIndex) => {
@@ -239,10 +255,6 @@ const MessageList = ({
             })}
           </div>
         ))}
-        {/* Loading trigger for infinite scroll - at the 'top' visually (end of list in flex-col-reverse) */}
-        <div ref={ref} className="h-8 flex items-center justify-center w-full">
-          {isFetchingNextPage && <Spinner className="h-4 w-4" />}
-        </div>
       </div>
     </div>
   );
@@ -273,7 +285,12 @@ export const MessagePane = () => {
   } = useGetMessages(numericProjectId, convoId);
 
   // Flatten pages into a single message list
-  const messages = infiniteData?.pages.flat() || [];
+  // Pages are fetched newest-first, so reverse to get chronological order (oldest first)
+  const messages =
+    infiniteData?.pages
+      .slice()
+      .reverse()
+      .flatMap((page) => page.data) || [];
 
   const { mutate: updateConversation, isPending: isUpdatingStatus } =
     useUpdateConversationStatus();

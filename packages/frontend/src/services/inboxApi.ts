@@ -81,18 +81,25 @@ const getConversationsByProjectId = async (
   return response.data;
 };
 
+/** Response shape from backend for paginated messages */
+interface PaginatedMessages {
+  data: Message[];
+  hasNextPage: boolean;
+  nextCursor: string | null;
+}
+
 const getMessages = async (
   projectId: number,
   conversationId: number,
   params?: ListMessagesDto,
-): Promise<Message[]> => {
+): Promise<PaginatedMessages> => {
   const response = await api.get(
     `/projects/${projectId}/inbox/conversations/${conversationId}/messages`,
     {
       params,
     },
   );
-  return response.data.data; // Assuming paginated response
+  return response.data;
 };
 
 const getVisitorById = async (
@@ -154,25 +161,31 @@ export const useGetMessages = (
 ) => {
   const queryKey = ["messages", projectId, conversationId, params];
 
-  return useInfiniteQuery({
+  return useInfiniteQuery<
+    PaginatedMessages,
+    Error,
+    InfiniteData<PaginatedMessages>,
+    typeof queryKey,
+    string | undefined
+  >({
     queryKey,
     queryFn: ({ pageParam }) => {
-      if (!projectId || !conversationId) return Promise.resolve([]);
+      if (!projectId || !conversationId) {
+        return Promise.resolve({
+          data: [],
+          hasNextPage: false,
+          nextCursor: null,
+        });
+      }
       return getMessages(projectId, conversationId, {
         ...params,
-        cursor: pageParam as string | undefined,
-        limit: 20, // Default limit
+        cursor: pageParam,
+        limit: 20,
       });
     },
     getNextPageParam: (lastPage) => {
-      if (!lastPage || lastPage.length < 20) return undefined;
-      // Messages are typically returned newest first.
-      // The cursor for the next page (older messages) is the ID or timestamp of the last message in the list.
-      // Assuming backend supports ID-based cursor or timestamp.
-      // Checking ListMessagesDto (it has cursor string).
-      // Usually the last item in the array is the oldest in that batch.
-      const oldestMessage = lastPage[lastPage.length - 1];
-      return oldestMessage ? oldestMessage.id : undefined;
+      if (!lastPage.hasNextPage) return undefined;
+      return lastPage.nextCursor ?? undefined;
     },
     initialPageParam: undefined,
     enabled: !!projectId && !!conversationId,
@@ -220,30 +233,27 @@ export const useSendAgentReply = () => {
       };
 
       // Optimistic update for Infinite Query
-      queryClient.setQueryData<InfiniteData<Message[]>>(
-        queryKey,
-        (oldData) => {
-          if (!oldData) {
-            return {
-              pages: [[optimisticMessage]],
-              pageParams: [undefined],
-            };
-          }
-
-          // Append to the first page (newest messages)
-          const newPages = [...oldData.pages];
-          if (newPages.length > 0) {
-            newPages[0] = [...newPages[0], optimisticMessage];
-          } else {
-            newPages[0] = [optimisticMessage];
-          }
-
+      queryClient.setQueryData<InfiniteData<Message[]>>(queryKey, (oldData) => {
+        if (!oldData) {
           return {
-            ...oldData,
-            pages: newPages,
+            pages: [[optimisticMessage]],
+            pageParams: [undefined],
           };
-        },
-      );
+        }
+
+        // Append to the first page (newest messages)
+        const newPages = [...oldData.pages];
+        if (newPages.length > 0) {
+          newPages[0] = [...newPages[0], optimisticMessage];
+        } else {
+          newPages[0] = [optimisticMessage];
+        }
+
+        return {
+          ...oldData,
+          pages: newPages,
+        };
+      });
 
       return { optimisticMessageId: optimisticMessage.id };
     },
@@ -255,32 +265,29 @@ export const useSendAgentReply = () => {
         undefined,
       ];
 
-      queryClient.setQueryData<InfiniteData<Message[]>>(
-        queryKey,
-        (oldData) => {
-          if (!oldData) return oldData;
+      queryClient.setQueryData<InfiniteData<Message[]>>(queryKey, (oldData) => {
+        if (!oldData) return oldData;
 
-          const newPages = oldData.pages.map((page) => {
-            // Check if message exists in this page
-            const exists = page.some((msg) => msg.id === finalMessage.id);
-            if (exists) {
-              // Remove optimistic message if real one exists
-              return page.filter(
-                (msg) => msg.id !== context?.optimisticMessageId,
-              );
-            }
-            // Replace optimistic with real
-            return page.map((msg) =>
-              msg.id === context?.optimisticMessageId ? finalMessage : msg,
+        const newPages = oldData.pages.map((page) => {
+          // Check if message exists in this page
+          const exists = page.some((msg) => msg.id === finalMessage.id);
+          if (exists) {
+            // Remove optimistic message if real one exists
+            return page.filter(
+              (msg) => msg.id !== context?.optimisticMessageId,
             );
-          });
+          }
+          // Replace optimistic with real
+          return page.map((msg) =>
+            msg.id === context?.optimisticMessageId ? finalMessage : msg,
+          );
+        });
 
-          return {
-            ...oldData,
-            pages: newPages,
-          };
-        },
-      );
+        return {
+          ...oldData,
+          pages: newPages,
+        };
+      });
       console.log("Message sent successfully:", finalMessage);
     },
     onError: (_err, variables, context) => {
@@ -290,22 +297,19 @@ export const useSendAgentReply = () => {
         variables.conversationId,
         undefined,
       ];
-      queryClient.setQueryData<InfiniteData<Message[]>>(
-        queryKey,
-        (oldData) => {
-          if (!oldData) return oldData;
-          return {
-            ...oldData,
-            pages: oldData.pages.map((page) =>
-              page.map((msg) =>
-                msg.id === context?.optimisticMessageId
-                  ? { ...msg, status: MessageStatus.FAILED }
-                  : msg,
-              ),
+      queryClient.setQueryData<InfiniteData<Message[]>>(queryKey, (oldData) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) =>
+            page.map((msg) =>
+              msg.id === context?.optimisticMessageId
+                ? { ...msg, status: MessageStatus.FAILED }
+                : msg,
             ),
-          };
-        },
-      );
+          ),
+        };
+      });
     },
     onSettled: () => {
       // Cache is already updated by onSuccess. No need to invalidate/refetch.

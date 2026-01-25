@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import { type ConnectionStatus } from "../types";
+import { WidgetTheme } from "@live-chat/shared-types";
 
 interface ComposerProps {
   onSendMessage: (content: string) => void;
   onTypingChange: (isTyping: boolean) => void;
   connectionStatus: ConnectionStatus;
   offlineMessage?: string;
-  theme: "light" | "dark";
+  theme: WidgetTheme;
 }
 
 // Constants
@@ -16,7 +17,7 @@ const TYPING_TIMEOUT = 1500; // ms
 const RATE_LIMIT_COUNT = 10; // Max messages
 const RATE_LIMIT_WINDOW = 60000; // Per 60 seconds
 
-const getStyles = (theme: "light" | "dark") => ({
+const getStyles = (theme: WidgetTheme) => ({
   form: {
     padding: "1rem",
     backgroundColor: "transparent",

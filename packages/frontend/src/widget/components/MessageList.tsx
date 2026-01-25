@@ -1,5 +1,8 @@
 import { useEffect, useRef } from "react";
-import { type WidgetMessageDto as MessageType } from "@live-chat/shared-types";
+import {
+  type WidgetMessageDto as MessageType,
+  WidgetTheme,
+} from "@live-chat/shared-types";
 import { Message } from "./Message";
 
 interface MessageListProps {
@@ -7,7 +10,7 @@ interface MessageListProps {
   welcomeMessage?: string;
   isAgentTyping: boolean;
   primaryColor?: string;
-  theme: "light" | "dark";
+  theme: WidgetTheme;
   onFormSubmit?: (
     messageId: string,
     data: Record<string, unknown>,

@@ -177,7 +177,8 @@ export class MessageService {
     conversationId: string,
     query: ListMessagesDto
   ): Promise<any> {
-    const { limit = 20, cursor } = query;
+    const limit = Number(query.limit) || 20;
+    const { cursor } = query;
 
     // Permission check: Ensure user has access to this conversation
     const conversation = await this.entityManager.findOne(Conversation, {
