@@ -873,7 +873,8 @@
             "addStart": "Bắt đầu",
             "addAction": "Hành động",
             "addLlm": "LLM",
-            "addCondition": "Điều kiện"
+            "addCondition": "Điều kiện",
+            "addSwitch": "Chuyển mạch"
         },
         "configPanel": {
             "deleteNode": "Xóa Node",
@@ -891,7 +892,14 @@
             "llmPromptPlaceholder": "Hướng dẫn cho AI tại bước này...",
             "conditionDescription": "AI sẽ đánh giá ý định của khách và điều hướng theo lộ trình phù hợp.",
             "routingPromptLabel": "Prompt điều hướng",
-            "routingPromptPlaceholder": "Mô tả cách AI nên quyết định giữa đường Có/Không. ví dụ: nếu khách hàng cung cấp email, chuyển hướng tới có, ngược lại chuyển hướng tới không"
+            "routingPromptPlaceholder": "Mô tả cách AI nên quyết định giữa đường Có/Không. ví dụ: nếu khách hàng cung cấp email, chuyển hướng tới có, ngược lại chuyển hướng tới không",
+            "switchDescription": "Điều hướng tới các đường dẫn khác nhau dựa trên nhiều điều kiện. AI sẽ đánh giá trường hợp nào phù hợp nhất.",
+            "casesLabel": "Các trường hợp",
+            "routePlaceholder": "Tên đường đi",
+            "whenPlaceholder": "Khi điều kiện này được đáp ứng...",
+            "addCase": "Thêm trường hợp",
+            "switchPromptLabel": "Prompt điều hướng (tùy chọn)",
+            "switchPromptPlaceholder": "Hướng dẫn bổ sung cho cách AI nên lựa chọn..."
         },
         "globalTools": {
             "title": "Công cụ toàn cục",
@@ -912,7 +920,10 @@
             "condition": "Bộ định tuyến",
             "conditionDescription": "AI quyết định đường đi",
             "handleYes": "Có",
-            "handleNo": "Không"
+            "handleNo": "Không",
+            "switch": "Chuyển mạch",
+            "switchDescription": "Định tuyến đa trường hợp",
+            "handleDefault": "mặc định"
         }
     }
 }

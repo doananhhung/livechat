@@ -1,6 +1,7 @@
 import { type Node } from "@xyflow/react";
 import { Button } from "../../ui/Button";
 import { Input } from "../../ui/Input";
+import { ArrowUp, ArrowDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   AiToolName,
@@ -177,6 +178,166 @@ export const NodeConfigPanel = ({
               <textarea
                 className="w-full border border-input bg-background rounded-md p-2 text-sm h-32 focus:ring-2 focus:ring-ring transition-shadow resize-none"
                 placeholder={t("workflow.configPanel.routingPromptPlaceholder")}
+                value={(selectedNode.data.prompt as string) || ""}
+                onChange={(e) => handleChange("prompt", e.target.value)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Switch Node */}
+        {selectedNode.type === "switch" && (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {t("workflow.configPanel.switchDescription")}
+            </p>
+
+            {/* Cases Table */}
+            <div>
+              <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
+                {t("workflow.configPanel.casesLabel")}
+              </label>
+              <div className="space-y-2">
+                {(
+                  (selectedNode.data.cases as {
+                    route: string;
+                    when: string;
+                  }[]) || []
+                ).map((c, idx) => (
+                  <div key={idx} className="flex gap-2 items-start">
+                    <Input
+                      placeholder={t("workflow.configPanel.routePlaceholder")}
+                      value={c.route}
+                      onChange={(e) => {
+                        const cases = [
+                          ...((selectedNode.data.cases as {
+                            route: string;
+                            when: string;
+                          }[]) || []),
+                        ];
+                        cases[idx] = { ...cases[idx], route: e.target.value };
+                        handleChange("cases", cases);
+                      }}
+                      className="w-24"
+                    />
+                    <Input
+                      placeholder={t("workflow.configPanel.whenPlaceholder")}
+                      value={c.when}
+                      onChange={(e) => {
+                        const cases = [
+                          ...((selectedNode.data.cases as {
+                            route: string;
+                            when: string;
+                          }[]) || []),
+                        ];
+                        cases[idx] = { ...cases[idx], when: e.target.value };
+                        handleChange("cases", cases);
+                      }}
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="px-2"
+                      disabled={idx === 0}
+                      onClick={() => {
+                        const cases = [
+                          ...((selectedNode.data.cases as {
+                            route: string;
+                            when: string;
+                          }[]) || []),
+                        ];
+                        if (idx > 0) {
+                          [cases[idx - 1], cases[idx]] = [
+                            cases[idx],
+                            cases[idx - 1],
+                          ];
+                          handleChange("cases", cases);
+                        }
+                      }}
+                    >
+                      <ArrowUp size={14} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="px-2"
+                      disabled={
+                        idx ===
+                        ((selectedNode.data.cases as any[]) || []).length - 1
+                      }
+                      onClick={() => {
+                        const cases = [
+                          ...((selectedNode.data.cases as {
+                            route: string;
+                            when: string;
+                          }[]) || []),
+                        ];
+                        if (idx < cases.length - 1) {
+                          [cases[idx + 1], cases[idx]] = [
+                            cases[idx],
+                            cases[idx + 1],
+                          ];
+                          handleChange("cases", cases);
+                        }
+                      }}
+                    >
+                      <ArrowDown size={14} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="px-2 text-destructive hover:text-destructive"
+                      onClick={() => {
+                        const cases = (
+                          (selectedNode.data.cases as {
+                            route: string;
+                            when: string;
+                          }[]) || []
+                        ).filter((_, i) => i !== idx);
+                        handleChange("cases", cases);
+                      }}
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              {(
+                (selectedNode.data.cases as {
+                  route: string;
+                  when: string;
+                }[]) || []
+              ).length < 10 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => {
+                    const cases = [
+                      ...((selectedNode.data.cases as {
+                        route: string;
+                        when: string;
+                      }[]) || []),
+                      { route: "", when: "" },
+                    ];
+                    handleChange("cases", cases);
+                  }}
+                >
+                  {t("workflow.configPanel.addCase")}
+                </Button>
+              )}
+            </div>
+
+            {/* Prompt */}
+            <div>
+              <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
+                {t("workflow.configPanel.switchPromptLabel")}
+              </label>
+              <textarea
+                className="w-full border border-input bg-background rounded-md p-2 text-sm h-24 focus:ring-2 focus:ring-ring transition-shadow resize-none"
+                placeholder={t("workflow.configPanel.switchPromptPlaceholder")}
                 value={(selectedNode.data.prompt as string) || ""}
                 onChange={(e) => handleChange("prompt", e.target.value)}
               />

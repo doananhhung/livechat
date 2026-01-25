@@ -18,6 +18,8 @@ export enum AiToolName {
   SEND_FORM = "send_form",
   /** Internal tool for workflow routing decisions */
   ROUTE_DECISION = "route_decision",
+  /** Internal tool for switch node multi-case routing */
+  SWITCH_DECISION = "switch_decision",
 }
 
 /**
@@ -44,6 +46,7 @@ export const AI_TOOL_LABEL_KEYS: Record<AiToolName, string> = {
   [AiToolName.CHANGE_STATUS]: "workflow.globalTools.changeStatus",
   [AiToolName.SEND_FORM]: "workflow.globalTools.sendForm",
   [AiToolName.ROUTE_DECISION]: "workflow.globalTools.routeDecision",
+  [AiToolName.SWITCH_DECISION]: "workflow.globalTools.switchDecision",
 };
 
 /**

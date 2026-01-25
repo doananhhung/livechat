@@ -95,6 +95,25 @@ const ROUTE_DECISION_TOOL: ToolDefinition = {
   },
 };
 
+const SWITCH_DECISION_TOOL: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: AiToolName.SWITCH_DECISION,
+    description:
+      'Choose which case to route to based on the defined conditions',
+    parameters: {
+      type: 'object',
+      properties: {
+        case: {
+          type: 'string',
+          description: 'The case name to route to',
+        },
+      },
+      required: ['case'],
+    },
+  },
+};
+
 @Injectable()
 export class AiToolExecutor {
   private readonly logger = new Logger(AiToolExecutor.name);
@@ -111,6 +130,26 @@ export class AiToolExecutor {
 
   getRoutingTool(): ToolDefinition {
     return ROUTE_DECISION_TOOL;
+  }
+
+  getSwitchTool(cases: string[]): ToolDefinition {
+    return {
+      ...SWITCH_DECISION_TOOL,
+      function: {
+        ...SWITCH_DECISION_TOOL.function,
+        parameters: {
+          type: 'object',
+          properties: {
+            case: {
+              type: 'string',
+              enum: [...cases, 'default'],
+              description: 'The case name to route to',
+            },
+          },
+          required: ['case'],
+        },
+      },
+    };
   }
 
   async executeTool(

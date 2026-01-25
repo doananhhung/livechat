@@ -1,7 +1,7 @@
 // src/stores/themeStore.ts
 import { create } from "zustand";
 
-type Theme =
+export type Theme =
   | "light"
   | "dark"
   | "system"

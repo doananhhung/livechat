@@ -873,7 +873,8 @@
             "addStart": "Start",
             "addAction": "Action",
             "addLlm": "LLM",
-            "addCondition": "Condition"
+            "addCondition": "Condition",
+            "addSwitch": "Switch"
         },
         "configPanel": {
             "deleteNode": "Delete Node",
@@ -891,7 +892,14 @@
             "llmPromptPlaceholder": "Instructions for the AI at this step...",
             "conditionDescription": "The AI will evaluate the visitor's intent and route to the appropriate path.",
             "routingPromptLabel": "Routing Prompt",
-            "routingPromptPlaceholder": "Describe how the AI should decide between Yes/No paths. For example: If user provide email, route to yes, else route to no."
+            "routingPromptPlaceholder": "Describe how the AI should decide between Yes/No paths. For example: If user provide email, route to yes, else route to no.",
+            "switchDescription": "Route to different paths based on multiple conditions. The AI will evaluate which case matches best.",
+            "casesLabel": "Cases",
+            "routePlaceholder": "Route name",
+            "whenPlaceholder": "When this condition is met...",
+            "addCase": "Add Case",
+            "switchPromptLabel": "Routing Prompt (optional)",
+            "switchPromptPlaceholder": "Additional instructions for how the AI should choose..."
         },
         "globalTools": {
             "title": "Global Tools",
@@ -912,7 +920,10 @@
             "condition": "Router",
             "conditionDescription": "AI Decides Path",
             "handleYes": "Yes",
-            "handleNo": "No"
+            "handleNo": "No",
+            "switch": "Switch",
+            "switchDescription": "Multi-Case Router",
+            "handleDefault": "default"
         }
     }
 }

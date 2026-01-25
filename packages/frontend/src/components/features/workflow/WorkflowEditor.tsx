@@ -11,6 +11,7 @@ import {
   type NodeTypes,
   type Node,
   type Edge,
+  type ColorMode,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -18,6 +19,7 @@ import { StartNode } from "./nodes/StartNode";
 import { ActionNode } from "./nodes/ActionNode";
 import { LlmNode } from "./nodes/LlmNode";
 import { ConditionNode } from "./nodes/ConditionNode";
+import { SwitchNode } from "./nodes/SwitchNode";
 import { NodeConfigPanel } from "./NodeConfigPanel";
 import { NodeToolbar } from "./NodeToolbar";
 import { GlobalToolsPanel } from "./GlobalToolsPanel";
@@ -26,9 +28,9 @@ import type {
   WorkflowEdge,
   GlobalToolConfig,
 } from "@live-chat/shared-types";
-import { useThemeStore } from "../../../stores/themeStore";
+import { useThemeStore, type Theme } from "../../../stores/themeStore";
 
-type NodeType = "start" | "action" | "llm" | "condition";
+type NodeType = "start" | "action" | "llm" | "condition" | "switch";
 
 const NODE_POSITION_OFFSET = 50;
 const DEFAULT_POSITION = { x: 250, y: 150 };
@@ -49,6 +51,7 @@ const nodeTypes: NodeTypes = {
   action: ActionNode,
   llm: LlmNode,
   condition: ConditionNode,
+  switch: SwitchNode,
 };
 
 export const WorkflowEditor = ({
@@ -58,6 +61,23 @@ export const WorkflowEditor = ({
   onChange,
 }: WorkflowEditorProps) => {
   const { theme } = useThemeStore();
+
+  const colorMode = useMemo((): ColorMode => {
+    if (theme === "light" || theme === "dark" || theme === "system") {
+      return theme;
+    }
+
+    const darkThemes: Theme[] = [
+      "oled-void",
+      "nordic-frost",
+      "cyberpunk",
+      "terminal",
+      "dracula",
+      "solarized-dark",
+    ];
+
+    return darkThemes.includes(theme) ? "dark" : "light";
+  }, [theme]);
 
   const defaultNodes = useMemo(() => {
     if (initialNodes.length === 0) {
@@ -173,7 +193,7 @@ export const WorkflowEditor = ({
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
-        colorMode={theme}
+        colorMode={colorMode}
         deleteKeyCode="Delete"
         selectionOnDrag={true}
         selectionMode={SelectionMode.Partial}

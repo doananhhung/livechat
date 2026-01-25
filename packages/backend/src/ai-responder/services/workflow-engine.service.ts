@@ -5,6 +5,7 @@ import { AiToolExecutor } from './ai-tool.executor';
 import {
   WorkflowNodeSchema,
   ValidatedWorkflowNode,
+  SwitchData,
 } from '../schemas/workflow.schemas';
 
 export interface WorkflowContext {
@@ -88,6 +89,12 @@ export class WorkflowEngineService {
           output: null, // LLM response is handled by AiResponderService
         };
 
+      case 'switch':
+        this.logger.debug(
+          `[Workflow] Switch node ${validatedNode.id} requires routing decision`
+        );
+        return this.handleSwitchNode(validatedNode, context);
+
       default:
         return { nextNodeId: null, output: null };
     }
@@ -152,6 +159,43 @@ export class WorkflowEngineService {
     return nextNodeId;
   }
 
+  /**
+   * Process the switch decision from the LLM and return the next node ID.
+   * Called by AiResponderService after LLM calls switch_decision tool.
+   */
+  processSwitchDecision(
+    node: WorkflowNode,
+    workflow: WorkflowDefinition,
+    caseName: string
+  ): string | null {
+    this.logger.debug(
+      `[Workflow] Processing switch decision: ${caseName} for node ${node.id}`
+    );
+
+    // Try to find edge with matching case handle
+    const nextNodeId = this.getNextNodeId(node, workflow, caseName);
+
+    if (nextNodeId) {
+      return nextNodeId;
+    }
+
+    // Fallback to default
+    const defaultNodeId = this.getNextNodeId(node, workflow, 'default');
+    if (defaultNodeId) {
+      this.logger.debug(
+        `[Workflow] Case "${caseName}" not found, using default`
+      );
+      return defaultNodeId;
+    }
+
+    // Last resort: find any edge from this node
+    this.logger.warn(
+      `[Workflow] No edge found for case "${caseName}" or default from node ${node.id}`
+    );
+    const fallbackEdge = workflow.edges.find((e) => e.source === node.id);
+    return fallbackEdge ? fallbackEdge.target : null;
+  }
+
   private handleStartNode(
     node: ValidatedWorkflowNode,
     workflow: WorkflowDefinition
@@ -159,6 +203,33 @@ export class WorkflowEngineService {
     // Start node usually just moves to the next one immediately.
     const nextId = this.getNextNodeId(node, workflow);
     return { nextNodeId: nextId, output: null };
+  }
+
+  private handleSwitchNode(
+    node: ValidatedWorkflowNode,
+    context: WorkflowContext
+  ): WorkflowStepResult {
+    if (node.type !== 'switch') {
+      throw new Error('handleSwitchNode called with non-switch node');
+    }
+
+    const data = node.data as SwitchData;
+    const caseList = data.cases
+      .map((c) => `- "${c.route}": ${c.when}`)
+      .join('\n');
+    const defaultCaseInfo =
+      '\n- "default": If none of the above conditions match';
+
+    const routingPrompt = data.prompt
+      ? `${data.prompt}\n\nAvailable cases:\n${caseList}${defaultCaseInfo}`
+      : `Choose the appropriate case based on the conversation.\n\nAvailable cases:\n${caseList}${defaultCaseInfo}\n\nUse the switch_decision tool with the case name.`;
+
+    return {
+      nextNodeId: null,
+      output: null,
+      requiresRouting: true,
+      routingPrompt,
+    };
   }
 
   private async handleActionNode(
@@ -231,7 +302,11 @@ export class WorkflowEngineService {
     }
 
     // If node allows tools, add them.
-    if (node.type === 'condition' || node.type === 'llm') {
+    if (
+      node.type === 'condition' ||
+      node.type === 'llm' ||
+      node.type === 'switch'
+    ) {
       tools = this.toolExecutor.getTools();
     }
 

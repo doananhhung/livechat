@@ -179,6 +179,8 @@ export class AiResponderService {
       let isConditionRouting = false;
       let conditionNode: { id: string; type: string; data: unknown } | null =
         null;
+      let isSwitchRouting = false;
+      let switchNode: { id: string; type: string; data: unknown } | null = null;
 
       if (project.aiMode === 'orchestrator' && project.aiConfig) {
         // Load Workflow
@@ -246,6 +248,28 @@ export class AiResponderService {
             this.logger.debug(
               `[Workflow] Condition node ${currentNode.id} - using route_decision tool`
             );
+          } else if (currentNode.type === 'switch') {
+            isSwitchRouting = true;
+            switchNode = currentNode;
+
+            const switchData = currentNode.data as {
+              cases: { route: string; when: string }[];
+              prompt?: string;
+            };
+            const caseNames = switchData.cases.map((c) => c.route);
+            const caseList = switchData.cases
+              .map((c) => `- "${c.route}": ${c.when}`)
+              .join('\n');
+
+            const routingPrompt =
+              switchData.prompt ||
+              `Choose the appropriate case based on the conversation.\n\nAvailable cases:\n${caseList}\n- "default": If none of the above conditions match\n\nUse the switch_decision tool with the case name.`;
+            systemPrompt = routingPrompt;
+            tools = [this.aiToolExecutor.getSwitchTool(caseNames)];
+
+            this.logger.debug(
+              `[Workflow] Switch node ${currentNode.id} - using switch_decision tool`
+            );
           } else {
             // LLM node - get normal context
             const context = this.workflowEngine.getNodeContext(
@@ -291,6 +315,7 @@ export class AiResponderService {
       let turns = 0;
       const MAX_TURNS = 3;
       let routeDecisionMade: string | null = null;
+      let switchDecisionMade: string | null = null;
 
       while (turns < MAX_TURNS) {
         turns++;
@@ -334,6 +359,23 @@ export class AiResponderService {
             continue;
           }
 
+          // Special handling for switch_decision tool
+          if (toolCall.function.name === 'switch_decision') {
+            const args = JSON.parse(toolCall.function.arguments) as {
+              case: string;
+            };
+            switchDecisionMade = args.case;
+            this.logger.debug(`[Workflow] Switch decision: ${args.case}`);
+
+            messages.push({
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              name: toolCall.function.name,
+              content: `Routing to case: ${args.case}`,
+            });
+            continue;
+          }
+
           // Normal tool execution
           const result = await this.aiToolExecutor.executeTool(toolCall, {
             projectId: payload.projectId,
@@ -351,7 +393,7 @@ export class AiResponderService {
         }
 
         // If route decision was made, break out of loop
-        if (routeDecisionMade) {
+        if (routeDecisionMade || switchDecisionMade) {
           break;
         }
         // Loop continues to send tool results back to LLM
@@ -404,6 +446,50 @@ export class AiResponderService {
 
         // Re-invoke handler to process the next node immediately
         // This allows chaining through multiple nodes in one turn
+        return this._processMessage(payload);
+      }
+
+      // Handle switch routing decisions
+      if (isSwitchRouting && switchDecisionMade && workflowCtx && switchNode) {
+        const workflow = workflowCtx.workflow;
+        const nextNodeId = this.workflowEngine.processSwitchDecision(
+          switchNode as Parameters<
+            typeof this.workflowEngine.processSwitchDecision
+          >[0],
+          workflow,
+          switchDecisionMade
+        );
+
+        const currentMetadata =
+          (conversation.metadata as VisitorSessionMetadata) || {};
+        conversation.metadata = {
+          ...currentMetadata,
+          workflowState: {
+            currentNodeId: nextNodeId,
+          },
+        };
+
+        // Re-fetch fresh metadata to prevent race conditions
+        const freshConversation = await this.conversationRepository.findOne({
+          where: { id: conversation.id },
+          select: ['metadata'],
+        });
+
+        const mergedMetadata = {
+          ...(freshConversation?.metadata || {}),
+          workflowState: {
+            currentNodeId: nextNodeId,
+          },
+        };
+
+        await this.conversationRepository.update(
+          { id: conversation.id },
+          { metadata: mergedMetadata }
+        );
+
+        this.logger.debug(`[Workflow] Switch routed to: ${nextNodeId}`);
+
+        // Re-invoke handler to process the next node immediately
         return this._processMessage(payload);
       }
 

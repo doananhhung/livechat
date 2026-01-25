@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { Button } from "../../ui/Button";
-import { Play, Zap, Brain, GitFork } from "lucide-react";
+import { Play, Zap, Brain, GitFork, Waypoints } from "lucide-react";
 
-type NodeType = "start" | "action" | "llm" | "condition";
+type NodeType = "start" | "action" | "llm" | "condition" | "switch";
 
 interface NodeToolbarProps {
   onAddNode: (type: NodeType) => void;
@@ -39,6 +39,12 @@ const NODE_BUTTONS: NodeButtonConfig[] = [
     icon: <GitFork size={16} />,
     labelKey: "workflow.toolbar.addCondition",
     colorClass: "text-orange-500 hover:bg-orange-500/10",
+  },
+  {
+    type: "switch",
+    icon: <Waypoints size={16} />,
+    labelKey: "workflow.toolbar.addSwitch",
+    colorClass: "text-cyan-500 hover:bg-cyan-500/10",
   },
 ];
 

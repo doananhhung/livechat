@@ -12,6 +12,18 @@ export const ConditionDataSchema = z.object({
     .optional(),
 });
 
+export const SwitchCaseSchema = z.object({
+  route: z.string().min(1, { message: 'Route name is required' }),
+  when: z.string().min(1, { message: 'Condition is required' }),
+});
+
+export const SwitchDataSchema = z.object({
+  cases: z
+    .array(SwitchCaseSchema)
+    .max(10, { message: 'Maximum 10 cases allowed' }),
+  prompt: z.string().optional(),
+});
+
 const PositionSchema = z
   .object({
     x: z.number().default(0),
@@ -52,8 +64,18 @@ export const WorkflowNodeSchema = z.discriminatedUnion('type', [
       data: z.record(z.unknown()).optional().default({}),
     })
     .passthrough(),
+  z
+    .object({
+      type: z.literal('switch'),
+      id: z.string(),
+      position: PositionSchema,
+      data: SwitchDataSchema,
+    })
+    .passthrough(),
 ]);
 
 export type ToolData = z.infer<typeof ToolDataSchema>;
 export type ConditionData = z.infer<typeof ConditionDataSchema>;
+export type SwitchCase = z.infer<typeof SwitchCaseSchema>;
+export type SwitchData = z.infer<typeof SwitchDataSchema>;
 export type ValidatedWorkflowNode = z.infer<typeof WorkflowNodeSchema>;

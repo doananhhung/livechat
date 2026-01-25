@@ -1,7 +1,7 @@
 # Codebase Overview
 
 **Generated:** 2026-01-24
-**Last Updated:** 2026-01-25 (System User Tool Execution)
+**Last Updated:** 2026-01-25 (Switch Node Implementation)
 
 ## Tech Stack
 
@@ -41,7 +41,7 @@
 
 - **`auth/`**: Comprehensive system supporting JWT access/refresh rotation, TOTP 2FA, and Google OAuth with automatic account linking.
 - **`inbox/`**: Conversation management engine using optimistic updates and cursor-based pagination.
-- **`ai-responder/`**: Extensible LLM integration (Groq, OpenAI) that supports two modes: 'simple' (text-only) and 'orchestrator' (workflow-enabled). Orchestrator mode persists workflow state in `conversation.metadata.workflowState.currentNodeId` and advances through nodes across messages. Action nodes auto-execute in a loop; Condition nodes inject `route_decision` tool for LLM-driven path selection.
+- **`ai-responder/`**: Extensible LLM integration (Groq, OpenAI) that supports two modes: 'simple' (text-only) and 'orchestrator' (workflow-enabled). Orchestrator mode persists workflow state in `conversation.metadata.workflowState.currentNodeId` and advances through nodes across messages. Support for Action nodes (auto-exec), Condition nodes (binary `route_decision`), and Switch nodes (multi-case `switch_decision`).
 - **`gateway/`**: Socket.io layer using project-based rooms (`project:{id}`) for multi-tenancy isolation.
 - **`database/`**: TypeORM entities and migrations tracking 20+ tables.
 - **`audit-logs/`**: Decorator-based system (`@Auditable`) for automatic action logging.
@@ -79,7 +79,7 @@
 - **`pages/public/`**: Landing Page and Documentation pages (`HomePage`, `DocsLayout`). (Added: 2026-01-24)
 - **`components/features/docs/`**: Documentation-specific UI components (Sidebar, etc.). (Added: 2026-01-24)
 - **`components/features/projects/ai-responder/`**: Unified configuration UI for AI modes and inline workflow editing.
-- **`components/features/workflow/`**: Inline Workflow Editor using **React Flow** (@xyflow/react) for configuring AI logic graphs. Includes `GlobalToolsPanel` for per-tool AI instructions and i18n-ready node components. (Updated: 2026-01-24)
+- **`components/features/workflow/`**: Inline Workflow Editor using **React Flow** (@xyflow/react) for configuring AI logic graphs. Includes `GlobalToolsPanel`, i18n-ready node components (Start, Action, Condition, Switch), and configuration panels with case reordering support. (Updated: 2026-01-25)
 
 ## Entry Points
 
@@ -104,6 +104,7 @@
   - **State Persistence:** `conversation.metadata.workflowState.currentNodeId` tracks position across messages
   - **Action Auto-Execution:** Action nodes execute in a loop until an LLM or Condition node is reached
   - **Condition Routing:** Condition nodes inject `route_decision` tool; LLM calls `{path: "yes"|"no"}` for path selection via `processRouteDecision()`
+  - **Switch Routing:** Switch nodes inject dynamic `switch_decision` tool constrained to valid case names; LLM selects case for routing via `processSwitchDecision()` (Updated: 2026-01-25)
   - **Recursive Chaining:** After condition routing, handler re-invokes to immediately process the next node
   - **Terminal Detection:** Nodes with no outgoing edges set `currentNodeId: null` and restart workflow on next message
   - **Validation Integrity:** All node types MUST have a corresponding Zod schema in `workflow.schemas.ts` and be registered in `WorkflowNodeSchema` to prevent runtime crashes.

@@ -1,6 +1,6 @@
 export interface WorkflowNode {
   id: string;
-  type: "start" | "trigger" | "action" | "condition" | "end" | "llm";
+  type: "start" | "trigger" | "action" | "condition" | "end" | "llm" | "switch";
   data: Record<string, unknown>;
   position: { x: number; y: number };
 }
