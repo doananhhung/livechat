@@ -249,8 +249,8 @@ export const ConversationList = ({ overrideProjectId }: ConversationListProps) =
                         {conversation.visitor?.displayName || 'Anonymous'}
                       </p>
                       <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
-                        {conversation.updatedAt && (
-                          <ConversationTime date={conversation.updatedAt} />
+                        {(conversation.lastMessageTimestamp || conversation.updatedAt) && (
+                          <ConversationTime date={conversation.lastMessageTimestamp || conversation.updatedAt} />
                         )}
                       </span>
                     </div>

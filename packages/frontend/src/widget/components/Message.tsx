@@ -1,4 +1,4 @@
-import {
+import { 
   type WidgetMessageDto as MessageType,
   MessageContentType,
 } from "@live-chat/shared-types";
@@ -7,14 +7,13 @@ import type {
   FormSubmissionMetadata,
 } from "@live-chat/shared-types";
 import { useMemo } from "preact/hooks";
-import { isColorLight } from "../utils/color";
 import { FormRequestMessage } from "./FormRequestMessage";
 import { FormSubmissionMessage } from "./FormSubmissionMessage";
 
 interface MessageProps {
   message: MessageType;
-  primaryColor?: string;
-  theme: "light" | "dark";
+  primaryColor?: string; // Kept for prop-drilling compatibility but ignored for style
+  theme: string;
   onFormSubmit?: (
     messageId: string,
     data: Record<string, unknown>,
@@ -71,9 +70,9 @@ const ErrorIcon = () => (
   </svg>
 );
 
-export const Message = ({
+export const Message = ({ 
   message,
-  primaryColor,
+  primaryColor: _primaryColor,
   theme,
   onFormSubmit,
   submittedFormMessageIds,
@@ -99,8 +98,8 @@ export const Message = ({
           metadata={formMetadata}
           messageId={String(message.id)}
           onSubmit={onFormSubmit || (async () => {})}
-          primaryColor={primaryColor}
-          theme={theme}
+          primaryColor={_primaryColor}
+          theme={theme as any}
           isExpired={isExpired}
           isSubmitted={isSubmitted}
         />
@@ -117,9 +116,9 @@ export const Message = ({
       >
         <FormSubmissionMessage
           metadata={submissionMetadata}
-          theme={theme}
+          theme={theme as any}
           isFromVisitor={isVisitor}
-          primaryColor={primaryColor}
+          primaryColor={_primaryColor}
         />
       </div>
     );
@@ -132,19 +131,21 @@ export const Message = ({
     [message.content],
   );
 
+  // Sync with Dashboard (Phase 1):
+  // Right aligned bubbles have Top-Right square corner
+  // Left aligned bubbles have Top-Left square corner
   const bubbleClass = isVisitor
-    ? "rounded-l-xl rounded-t-xl"
-    : "rounded-r-xl rounded-t-xl";
+    ? "rounded-xl rounded-tr-none"
+    : "rounded-xl rounded-tl-none";
 
   const bubbleStyle = useMemo(() => {
     if (isVisitor) {
       return {
-        // Use gradient if defined in CSS, fallback to primaryColor
+        // ENFORCE PARITY: Use theme primary variables, ignore primaryColor prop
         background:
           "var(--widget-primary-gradient, var(--widget-primary-color))",
-        backgroundColor: primaryColor || "#2563eb", // Fallback
-        color: "#ffffff", // Always white on primary gradient
-        boxShadow: "0 2px 4px rgba(0,0,0,0.1)", // Subtle shadow
+        color: "var(--widget-text-on-primary, #ffffff)",
+        boxShadow: "var(--widget-shadow-sm, 0 2px 4px rgba(0,0,0,0.1))",
       };
     } else {
       return {
@@ -153,7 +154,7 @@ export const Message = ({
         border: "1px solid var(--widget-card-border)",
       };
     }
-  }, [isVisitor, primaryColor]);
+  }, [isVisitor]);
 
   return (
     <div

@@ -127,14 +127,14 @@ export const FormRequestMessage = ({
       padding: "10px 16px",
       borderRadius: "8px",
       border: "none",
-      backgroundColor: isDisabled ? "#9ca3af" : primaryColor || "#2563eb",
-      color: "#ffffff",
+      backgroundColor: isDisabled ? "#9ca3af" : "var(--widget-primary-color, #2563eb)",
+      color: "var(--widget-text-on-primary, #ffffff)",
       fontSize: "14px",
       fontWeight: 600,
       cursor: isDisabled ? "not-allowed" : "pointer",
       marginTop: "12px",
     }),
-    [isDisabled, primaryColor],
+    [isDisabled],
   );
 
   const renderField = (field: ActionFieldDefinition) => {

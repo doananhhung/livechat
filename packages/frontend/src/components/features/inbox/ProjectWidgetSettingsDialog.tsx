@@ -16,6 +16,7 @@ import { updateProjectSettings } from "../../../services/projectApi";
 import type { ProjectWithRole } from "@live-chat/shared-types";
 import { WidgetTheme } from "@live-chat/shared-types";
 import type { WidgetSettingsDto } from "@live-chat/shared-dtos";
+import { WidgetThemePreview } from "../projects/WidgetThemePreview";
 
 interface ProjectWidgetSettingsDialogProps {
   project: ProjectWithRole;
@@ -35,7 +36,6 @@ export const ProjectWidgetSettingsDialog = ({
   const [settings, setSettings] = useState<WidgetSettingsDto>({
     theme: WidgetTheme.LIGHT,
     headerText: "",
-    primaryColor: "",
     welcomeMessage: "",
     position: "bottom-right" as any,
     fontFamily: "sans-serif",
@@ -47,7 +47,6 @@ export const ProjectWidgetSettingsDialog = ({
       setSettings({
         theme: project.widgetSettings.theme || WidgetTheme.LIGHT,
         headerText: project.widgetSettings.headerText || "",
-        primaryColor: project.widgetSettings.primaryColor || "",
         welcomeMessage: project.widgetSettings.welcomeMessage || "",
         position: project.widgetSettings.position || ("bottom-right" as any),
         companyLogoUrl: project.widgetSettings.companyLogoUrl,
@@ -86,6 +85,14 @@ export const ProjectWidgetSettingsDialog = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateSettingsMutation.mutate(settings);
+  };
+
+  const getThemeLabelKey = (theme: string) => {
+    const camelCase = theme
+      .split("-")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join("");
+    return `settings.theme${camelCase}`;
   };
 
   return (
@@ -182,13 +189,13 @@ export const ProjectWidgetSettingsDialog = ({
                     })
                   }
                 >
-                  <option value={WidgetTheme.LIGHT}>
-                    {t("settings.themeLight")}
-                  </option>
-                  <option value={WidgetTheme.DARK}>
-                    {t("settings.themeDark")}
-                  </option>
+                  {Object.values(WidgetTheme).map((themeValue) => (
+                    <option key={themeValue} value={themeValue}>
+                      {t(getThemeLabelKey(themeValue))}
+                    </option>
+                  ))}
                 </select>
+                <WidgetThemePreview theme={settings.theme as WidgetTheme} />
               </div>
 
               {/* Header Text */}
@@ -208,48 +215,6 @@ export const ProjectWidgetSettingsDialog = ({
                 <p className="text-xs text-muted-foreground mt-1">
                   {t("widget.maxChars", { count: 50 })}
                 </p>
-              </div>
-
-              {/* Primary Color */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  {t("settings.primaryColor")}
-                </label>
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <Input
-                      type="color"
-                      value={settings.primaryColor || "#6d28d9"} // Default purple for picker preview
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          primaryColor: e.target.value,
-                        })
-                      }
-                      className="w-12 h-10 p-1 cursor-pointer"
-                    />
-                  </div>
-                  <Input
-                    type="text"
-                    value={settings.primaryColor || ""}
-                    onChange={(e) =>
-                      setSettings({ ...settings, primaryColor: e.target.value })
-                    }
-                    placeholder={t("settings.default")}
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setSettings({ ...settings, primaryColor: "" })
-                    }
-                    title={t("settings.useDefaultColor")}
-                  >
-                    {t("settings.default")}
-                  </Button>
-                </div>
               </div>
 
               {/* Font Family */}

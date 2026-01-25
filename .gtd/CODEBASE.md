@@ -1,7 +1,7 @@
 # Codebase Overview
 
 **Generated:** 2026-01-24
-**Last Updated:** 2026-01-25 (Switch Node Implementation)
+**Last Updated:** 2026-01-25 (Sync & Time Fix)
 
 ## Tech Stack
 
@@ -69,7 +69,7 @@
 
 - All display text must be follow the i18n structure.
 - All display Component must support current like, dark theme logic.
-- **Theme Support:** Use semantic color classes (e.g., `bg-background`, `text-foreground`, `bg-card`) which automatically adapt to light/dark mode via CSS variables defined in `packages/frontend/src/index.css`.
+- **Theme Support:** Use semantic color classes (e.g., `bg-background`, `text-foreground`, `bg-card`) which automatically adapt to light/dark mode via CSS variables defined in `packages/frontend/src/index.css`. Explicit `.theme-light` and `.theme-dark` classes mirror `:root` and `.dark` respectively for programmatic theme application. (Updated: 2026-01-25)
 
 - **Dashboard**: React-based administration interface for agents.
 - **Widget**: Preact-based embeddable chat widget using **Shadow DOM** for CSS isolation and a custom script loader.
@@ -92,6 +92,8 @@
 
 ## Key Patterns & Conventions
 
+- **React Query Key Consistency**: Optimistic updates (e.g., via Sockets) MUST use the exact same query key structure as the fetch hook. This includes optional arguments which become `undefined` in the key array (e.g., `['messages', id, undefined]`). Mismatches cause silent sync failures. (Verified: 2026-01-25)
+- **Time Display Semantics**: Use `conversation.lastMessageTimestamp` for displaying "Last Message Time". Do NOT use `conversation.updatedAt`, which tracks internal modifications (read status, assignee, etc.) and causes "Time Ago" drift. (Verified: 2026-01-25)
 - **Transactional Outbox**: Ensures DB writes and Socket/Webhook events are atomic (verified in `event-consumer/`).
 - **Decorator-based Auditing**: Controllers use `@Auditable` to log business-critical mutations without cluttering logic.
 - **Shadow DOM Isolation**: The chat widget encapsulates styles to prevent leakage into the host website.

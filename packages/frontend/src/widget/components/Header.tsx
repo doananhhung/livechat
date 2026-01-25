@@ -47,7 +47,7 @@ const BotIcon = () => (
 
 export const Header = ({ 
   onClose, 
-  primaryColor,
+  primaryColor: _primaryColor,
   companyLogoUrl, 
   agentDisplayName, 
   headerText 

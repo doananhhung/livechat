@@ -151,8 +151,9 @@ export const useGetMessages = (
   conversationId?: number,
   params?: ListMessagesDto,
 ) => {
+  const queryKey = ["messages", projectId, conversationId, params];
   return useQuery({
-    queryKey: ["messages", projectId, conversationId, params],
+    queryKey,
     queryFn: () => getMessages(projectId!, conversationId!, params),
     enabled: !!projectId && !!conversationId,
   });
@@ -176,11 +177,15 @@ export const useSendAgentReply = () => {
       conversationId: number;
       payload: SendReplyDto;
     }) => {
+      // Key must match useGetMessages: ["messages", projectId, conversationId, params]
+      // MessagePane calls useGetMessages with params=undefined
       const queryKey = [
         "messages",
         newMessagePayload.projectId,
         newMessagePayload.conversationId,
+        undefined,
       ];
+
       await queryClient.cancelQueries({ queryKey });
 
       const optimisticMessage: Message = {
@@ -206,7 +211,9 @@ export const useSendAgentReply = () => {
         "messages",
         variables.projectId,
         variables.conversationId,
+        undefined,
       ];
+
       queryClient.setQueryData<Message[]>(queryKey, (oldData = []) => {
         // Check if the final message already exists (e.g., received via socket)
         const exists = oldData.some((msg) => msg.id === finalMessage.id);
@@ -230,6 +237,7 @@ export const useSendAgentReply = () => {
         "messages",
         variables.projectId,
         variables.conversationId,
+        undefined,
       ];
       queryClient.setQueryData<Message[]>(queryKey, (oldData = []) =>
         oldData.map((msg) =>
@@ -239,10 +247,8 @@ export const useSendAgentReply = () => {
         ),
       );
     },
-    onSettled: (_data, _error, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ["messages", variables.projectId, variables.conversationId],
-      });
+    onSettled: () => {
+      // Cache is already updated by onSuccess. No need to invalidate/refetch.
     },
   });
 };

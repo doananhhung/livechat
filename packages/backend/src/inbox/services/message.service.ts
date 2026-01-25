@@ -60,60 +60,75 @@ export class MessageService {
     conversationId: string,
     replyText: string
   ): Promise<Message> {
-    const { savedMessage, project } = await this.entityManager.transaction(
-      async (transactionalEntityManager) => {
-        // Step 1: Find related conversation and visitor
-        const conversation = await transactionalEntityManager.findOne(
-          Conversation,
-          {
-            where: { id: conversationId },
-            relations: ['visitor', 'project'],
-          }
-        );
-
-        if (!conversation) {
-          throw new NotFoundException(
-            `Conversation with ID ${conversationId} not found.`
+    const { savedMessage, project, visitorSocketId } =
+      await this.entityManager.transaction(
+        async (transactionalEntityManager) => {
+          // Step 1: Find related conversation and visitor
+          const conversation = await transactionalEntityManager.findOne(
+            Conversation,
+            {
+              where: { id: conversationId },
+              relations: ['visitor', 'project'],
+            }
           );
+
+          if (!conversation) {
+            throw new NotFoundException(
+              `Conversation with ID ${conversationId} not found.`
+            );
+          }
+
+          await this.projectService.validateProjectMembership(
+            (conversation as any).projectId,
+            user.id
+          );
+
+          const visitorUid = (conversation as any).visitor.visitorUid;
+
+          // Step 2: Look up socket.id from Redis (Moved inside transaction to determine status)
+          const visitorSocketId =
+            await this.realtimeSessionService.getVisitorSession(visitorUid);
+
+          const status = visitorSocketId
+            ? MessageStatus.SENT
+            : MessageStatus.DELIVERED;
+
+          const message = transactionalEntityManager.create(Message, {
+            conversation: { id: conversationId },
+            content: replyText,
+            senderId: user.id.toString(),
+            recipientId: visitorUid,
+            fromCustomer: false,
+            status: status,
+          });
+          const saved = await transactionalEntityManager.save(message);
+
+          // DEBUG: Verify DB state immediately
+          await transactionalEntityManager
+            .findOne(Message, { where: { id: saved.id } })
+            .then((reloaded) => {
+              this.logger.warn(
+                `[DEBUG] Immediate DB read for ${saved.id}: status=${reloaded?.status}`
+              );
+            });
+
+          // Update conversation last message and ID (don't increment unread for agent messages)
+          await this.conversationService.updateLastMessage(
+            conversationId,
+            replyText,
+            (saved as any).createdAt,
+            (saved as any).id,
+            transactionalEntityManager,
+            false // Agent messages should not increment unread count
+          );
+
+          return {
+            savedMessage: saved,
+            project: (conversation as any).project,
+            visitorSocketId,
+          };
         }
-
-        await this.projectService.validateProjectMembership(
-          (conversation as any).projectId,
-          user.id
-        );
-
-        const visitorUid = (conversation as any).visitor.visitorUid;
-
-        // Step 2: Create and save message to DB
-        const message = transactionalEntityManager.create(Message, {
-          conversation: { id: conversationId },
-          content: replyText,
-          senderId: user.id.toString(),
-          recipientId: visitorUid,
-          fromCustomer: false,
-          status: MessageStatus.SENDING,
-        });
-        const saved = await transactionalEntityManager.save(message);
-
-        // Update conversation last message and ID (don't increment unread for agent messages)
-        await this.conversationService.updateLastMessage(
-          conversationId,
-          replyText,
-          (saved as any).createdAt,
-          (saved as any).id,
-          transactionalEntityManager,
-          false // Agent messages should not increment unread count
-        );
-
-        return { savedMessage: saved, project: (conversation as any).project };
-      }
-    );
-
-    // Subsequent steps do not interact with DB, can be outside transaction
-    // Step 3: Look up socket.id from Redis
-    const visitorSocketId = await this.realtimeSessionService.getVisitorSession(
-      (savedMessage as any).recipientId
-    );
+      );
 
     // Step 4: Emit Event for Gateway to handle
     const event = new AgentMessageSentEvent();
@@ -122,19 +137,12 @@ export class MessageService {
     event.projectId = (project as any).id;
     this.eventEmitter.emit('agent.message.sent', event);
 
-    if (visitorSocketId) {
-      (savedMessage as any).status = MessageStatus.SENT;
-    } else {
-      (savedMessage as any).status = MessageStatus.DELIVERED;
-    }
-
     this.logger.debug(`message: ${JSON.stringify(savedMessage)}`);
-
     this.logger.log(
-      `Agent reply message ${(savedMessage as any).id} status updated to ${(savedMessage as any).status}`
+      `Agent reply message ${(savedMessage as any).id} saved with status ${
+        (savedMessage as any).status
+      }`
     );
-
-    const updatedMessage = await this.entityManager.save(savedMessage);
 
     // Step 5: Schedule Auto-Pending Job if enabled
     if (
@@ -146,20 +154,22 @@ export class MessageService {
         {
           conversationId,
           projectId: (project as any).id,
-          triggerMessageId: (updatedMessage as any).id,
+          triggerMessageId: (savedMessage as any).id,
         },
         {
           delay: (project as any).autoResolveMinutes * 60 * 1000,
-          jobId: `auto-pending-${(updatedMessage as any).id}`, // Deduplicate by message ID if needed
+          jobId: `auto-pending-${(savedMessage as any).id}`, // Deduplicate by message ID if needed
           removeOnComplete: true,
         }
       );
       this.logger.log(
-        `Scheduled auto-pending job for conversation ${conversationId} in ${(project as any).autoResolveMinutes} minutes.`
+        `Scheduled auto-pending job for conversation ${conversationId} in ${
+          (project as any).autoResolveMinutes
+        } minutes.`
       );
     }
 
-    return updatedMessage as any;
+    return savedMessage as any;
   }
 
   async listByConversation(

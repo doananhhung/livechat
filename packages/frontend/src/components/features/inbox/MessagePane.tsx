@@ -24,6 +24,7 @@ import {
   Clock,
   AlertOctagon,
   RotateCcw,
+  AlertCircle,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -182,6 +183,18 @@ const MessageList = ({
                     </>
                   )}
 
+                  {/* Agent Status Indicator (Left of bubble) */}
+                  {!msg.fromCustomer && (
+                    <div className="flex flex-col justify-end pb-2">
+                      {msg.status === "sending" && (
+                        <Spinner className="h-3 w-3 text-muted-foreground" />
+                      )}
+                      {msg.status === "failed" && (
+                        <AlertCircle className="h-3 w-3 text-destructive" />
+                      )}
+                    </div>
+                  )}
+
                   {/* Message bubble and timestamp */}
                   <div
                     className={cn(
@@ -191,10 +204,11 @@ const MessageList = ({
                   >
                     <div
                       className={cn(
-                        "p-2 px-3 break-words rounded-lg",
+                        "p-2 px-3 break-words rounded-xl",
                         msg.fromCustomer
                           ? "bg-muted text-muted-foreground rounded-tl-none"
                           : "bg-primary text-primary-foreground rounded-tr-none",
+                        msg.status === "sending" && "opacity-70",
                       )}
                     >
                       {renderMessageContent(msg, conversationId, submissionMsg)}

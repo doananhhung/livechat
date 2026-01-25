@@ -15,6 +15,7 @@ import { ProjectBasicSettingsForm } from "../../components/features/projects/Pro
 import { AiResponderSettingsForm } from "../../components/features/projects/ai-responder/AiResponderSettingsForm";
 import type { WidgetSettingsDto } from "@live-chat/shared-dtos";
 import { getWidgetSnippet } from "../../lib/widget";
+import { WidgetThemePreview } from "../../components/features/projects/WidgetThemePreview";
 
 export const ProjectSettingsPage = () => {
   const { t } = useTranslation();
@@ -38,7 +39,6 @@ export const ProjectSettingsPage = () => {
   // Widget settings form state
   const [theme, setTheme] = useState<WidgetTheme>(WidgetTheme.LIGHT);
   const [headerText, setHeaderText] = useState("");
-  const [primaryColor, setPrimaryColor] = useState("#0066FF");
   const [welcomeMessage, setWelcomeMessage] = useState("");
   const [position, setPosition] = useState<WidgetPosition>(
     WidgetPosition.BOTTOM_RIGHT
@@ -63,7 +63,6 @@ export const ProjectSettingsPage = () => {
       const settings = currentProject.widgetSettings;
       setTheme(settings.theme || WidgetTheme.LIGHT);
       setHeaderText(settings.headerText || "");
-      setPrimaryColor(settings.primaryColor || "");
       setWelcomeMessage(settings.welcomeMessage || "");
       setPosition(settings.position || WidgetPosition.BOTTOM_RIGHT);
       setCompanyLogoUrl(settings.companyLogoUrl || "");
@@ -104,7 +103,6 @@ export const ProjectSettingsPage = () => {
     updateWidgetMutation.mutate({
       theme,
       headerText: headerText.trim() || undefined,
-      primaryColor: primaryColor || undefined,
       welcomeMessage: welcomeMessage.trim() || undefined,
       position,
       companyLogoUrl: companyLogoUrl.trim() || undefined,
@@ -112,6 +110,14 @@ export const ProjectSettingsPage = () => {
       fontFamily: fontFamily.trim() || undefined,
       historyVisibility,
     });
+  };
+
+  const getThemeLabelKey = (theme: string) => {
+    const camelCase = theme
+      .split("-")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join("");
+    return `settings.theme${camelCase}`;
   };
 
   if (isLoading) {
@@ -287,9 +293,13 @@ export const ProjectSettingsPage = () => {
                       disabled={updateWidgetMutation.isPending}
                       className="w-full px-3 py-2 border border-input bg-background rounded-md"
                     >
-                      <option value={WidgetTheme.LIGHT}>{t("settings.themeLight")}</option>
-                      <option value={WidgetTheme.DARK}>{t("settings.themeDark")}</option>
+                      {Object.values(WidgetTheme).map((themeValue) => (
+                        <option key={themeValue} value={themeValue}>
+                          {t(getThemeLabelKey(themeValue))}
+                        </option>
+                      ))}
                     </select>
+                    <WidgetThemePreview theme={theme} />
                   </div>
 
                   <div>
@@ -307,42 +317,6 @@ export const ProjectSettingsPage = () => {
                     <p className="text-xs text-muted-foreground mt-1 text-right">
                       {headerText.length}/50
                     </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      {t("settings.primaryColor")}
-                    </label>
-                    <div className="flex items-center gap-2">
-                    <div className="relative">
-                      <Input
-                        type="color"
-                        value={primaryColor || "#6d28d9"} // Default purple for picker preview
-                        onChange={(e) =>
-                          setPrimaryColor(e.target.value)
-                        }
-                        className="w-12 h-10 p-1 cursor-pointer"
-                      />
-                    </div>
-                    <Input
-                      type="text"
-                      value={primaryColor || ""}
-                      onChange={(e) =>
-                        setPrimaryColor(e.target.value)
-                      }
-                      placeholder={t("settings.default")}
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPrimaryColor("")}
-                      title={t("settings.useDefaultColor")}
-                    >
-                      {t("settings.default")}
-                    </Button>
-                  </div>
                   </div>
 
                   <div>

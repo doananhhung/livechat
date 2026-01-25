@@ -27,7 +27,7 @@ const ChatIcon = () => (
 export const Launcher = ({
   onClick,
   unreadCount,
-  primaryColor,
+  primaryColor: _primaryColor,
   position,
 }: LauncherProps) => {
   const positionClasses = 
@@ -35,9 +35,7 @@ export const Launcher = ({
       ? "bottom-5 left-5" 
       : "bottom-5 right-5";
 
-  const style = primaryColor 
-    ? { backgroundColor: primaryColor } 
-    : { background: 'var(--widget-primary-gradient, var(--widget-primary-color))' };
+  const style = { background: 'var(--widget-primary-gradient, var(--widget-primary-color))' };
 
   return (
     <button

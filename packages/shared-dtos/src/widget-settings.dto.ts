@@ -61,16 +61,6 @@ export class WidgetSettingsDto implements IWidgetSettingsDto {
   headerText?: string;
 
   @ApiProperty({
-    example: "#4CAF50",
-    description: "Primary color of the widget in hex format",
-    required: false,
-  })
-  @IsOptional()
-  @ValidateIf((o: WidgetSettingsDto) => o.primaryColor !== "" && o.primaryColor !== null)
-  @IsHexColor({ message: "Primary color must be a valid hex color code." })
-  primaryColor?: string;
-
-  @ApiProperty({
     example: WidgetPosition.BOTTOM_RIGHT,
     enum: WidgetPosition,
     description: "Position of the widget on the screen",

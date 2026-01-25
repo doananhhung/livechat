@@ -22,9 +22,9 @@ export const FormSubmissionMessage = ({
   const containerStyle = useMemo(
     () => ({
       backgroundColor: isFromVisitor
-        ? primaryColor || "var(--widget-primary-color, #2563eb)"
+        ? "var(--widget-primary-color, #2563eb)"
         : "var(--widget-bubble-agent-bg)",
-      color: isFromVisitor ? "#ffffff" : "var(--widget-bubble-agent-text)",
+      color: isFromVisitor ? "var(--widget-text-on-primary, #ffffff)" : "var(--widget-bubble-agent-text)",
       borderRadius: "12px",
       padding: "16px",
       maxWidth: "320px",
@@ -33,7 +33,7 @@ export const FormSubmissionMessage = ({
       boxShadow: isFromVisitor ? "0 2px 4px rgba(0,0,0,0.1)" : "none",
       border: isFromVisitor ? "none" : "1px solid var(--widget-card-border)",
     }),
-    [isFromVisitor, primaryColor],
+    [isFromVisitor],
   );
 
   const headerStyle = {

@@ -69,10 +69,10 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
         : null;
 
       // Optimistically update the messages list
-      // Use the same cache key structure as inboxApi.ts: ["messages", projectId, conversationId]
+      // Use the same cache key structure as inboxApi.ts: ["messages", projectId, conversationId, undefined]
       if (projectIdFromUrl) {
         queryClient.setQueryData(
-          ["messages", projectIdFromUrl, conversationId],
+          ["messages", projectIdFromUrl, conversationId, undefined],
           (oldData?: Message[]) => {
             if (oldData && !oldData.some((msg) => msg.id === newMessage.id)) {
               return [...oldData, newMessage];
@@ -302,7 +302,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       if (projectIdFromUrl && conversationId && submissionMessage) {
         // Optimistically add the submission message if not already there
         queryClient.setQueryData(
-          ["messages", projectIdFromUrl, conversationId],
+          ["messages", projectIdFromUrl, conversationId, undefined],
           (oldData?: Message[]) => {
             // Check if message already exists (using captured variable so TS knows it's defined)
             if (
@@ -321,7 +321,7 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
         // the event before the separate "metadata update" event if there is one (or we do it manually here)
         // Since we know the backend updated the metadata, let's update it in our cache too
         queryClient.setQueryData(
-          ["messages", projectIdFromUrl, conversationId],
+          ["messages", projectIdFromUrl, conversationId, undefined],
           (oldData?: Message[]) => {
             if (!oldData) return oldData;
 
