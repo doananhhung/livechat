@@ -106,6 +106,7 @@
   - **Condition Routing:** Condition nodes inject `route_decision` tool; LLM calls `{path: "yes"|"no"}` for path selection via `processRouteDecision()`
   - **Recursive Chaining:** After condition routing, handler re-invokes to immediately process the next node
   - **Terminal Detection:** Nodes with no outgoing edges set `currentNodeId: null` and restart workflow on next message
+  - **Validation Integrity:** All node types MUST have a corresponding Zod schema in `workflow.schemas.ts` and be registered in `WorkflowNodeSchema` to prevent runtime crashes.
 - **Inline Logic Editor**: Complex graph structures (Workflow) are integrated directly into standard settings forms, sharing a single submission flow.
 - **Theme-Aware Canvas**: Visual editors (React Flow) must explicitly subscribe to `useThemeStore` and pass `colorMode` to synchronize the canvas with the application theme.
 - **System User for AI Actions**: A dedicated System user (`SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000001'`) exists in the database for auditable AI-driven mutations. When adding new AI tools in `AiToolExecutor` that call permission-protected services:

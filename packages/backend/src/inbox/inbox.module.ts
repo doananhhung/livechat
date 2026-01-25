@@ -1,4 +1,3 @@
-
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Conversation, Message, Visitor } from '../database/entities';
@@ -13,7 +12,7 @@ import { ProjectModule } from '../projects/project.module';
 import { InboxEventHandlerService } from './inbox-event.handler';
 import { EventProducerModule } from '../event-producer/event-producer.module';
 import { InboxPersistenceModule } from './inbox.persistence.module';
-import { WorkflowModule } from '../modules/workflow/workflow.module';
+import { WorkflowModule } from '../modules/status-automation/workflow.module';
 
 @Module({
   imports: [
@@ -32,6 +31,11 @@ import { WorkflowModule } from '../modules/workflow/workflow.module';
     InboxEventHandlerService,
   ],
   controllers: [InboxController, AssignmentsController],
-  exports: [ConversationService, MessageService, VisitorService, InboxPersistenceModule],
+  exports: [
+    ConversationService,
+    MessageService,
+    VisitorService,
+    InboxPersistenceModule,
+  ],
 })
 export class InboxModule {}

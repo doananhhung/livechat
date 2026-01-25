@@ -2,6 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { WorkflowDefinition, WorkflowNode } from '@live-chat/shared-types';
 import { ToolDefinition, ToolCall } from '../interfaces/llm-provider.interface';
 import { AiToolExecutor } from './ai-tool.executor';
+import {
+  WorkflowNodeSchema,
+  ValidatedWorkflowNode,
+} from '../schemas/workflow.schemas';
 
 export interface WorkflowContext {
   projectId: number;
@@ -42,31 +46,45 @@ export class WorkflowEngineService {
       return { nextNodeId: null, output: null };
     }
 
-    this.logger.log(`Executing Workflow Node: ${node.type} (${node.id})`);
+    // Validate Node Schema
+    const validationResult = WorkflowNodeSchema.safeParse(node);
+    if (!validationResult.success) {
+      this.logger.error(
+        `Workflow Validation Failed for Node ${node.id}: ${validationResult.error}`
+      );
+      throw new Error(
+        `Invalid configuration for node ${node.id}: ${validationResult.error.issues.map((i) => i.message).join(', ')}`
+      );
+    }
 
-    switch (node.type) {
+    // Use the validated data
+    const validatedNode = validationResult.data;
+
+    switch (validatedNode.type) {
       case 'start':
-        this.logger.debug(`[Workflow] Start node ${node.id} triggered`);
-        return this.handleStartNode(node, workflow);
+        this.logger.debug(
+          `[Workflow] Start node ${validatedNode.id} triggered`
+        );
+        return this.handleStartNode(validatedNode, workflow);
 
       case 'action':
         this.logger.debug(
-          `[Workflow] Action node ${node.id} executing tool: ${node.data.toolName}`
+          `[Workflow] Action node ${validatedNode.id} executing tool: ${validatedNode.data.toolName}`
         );
-        return this.handleActionNode(node, workflow, context);
+        return this.handleActionNode(validatedNode, workflow, context);
 
       case 'condition': // Router
         this.logger.debug(
-          `[Workflow] Condition node ${node.id} requires routing decision`
+          `[Workflow] Condition node ${validatedNode.id} requires routing decision`
         );
-        return this.handleConditionNode(node, context);
+        return this.handleConditionNode(validatedNode, context);
 
       case 'llm':
         this.logger.debug(
-          `[Workflow] LLM node ${node.id} - context provided, advancing to next node`
+          `[Workflow] LLM node ${validatedNode.id} - context provided, advancing to next node`
         );
         return {
-          nextNodeId: this.getNextNodeId(node, workflow),
+          nextNodeId: this.getNextNodeId(validatedNode, workflow),
           output: null, // LLM response is handled by AiResponderService
         };
 
@@ -92,11 +110,11 @@ export class WorkflowEngineService {
   }
 
   private handleConditionNode(
-    node: WorkflowNode,
+    node: ValidatedWorkflowNode,
     context: WorkflowContext
   ): WorkflowStepResult {
     const routingPrompt =
-      (node.data.prompt as string) ||
+      (node.type === 'condition' && node.data.prompt) ||
       'Based on the conversation, decide which path to take. Use the route_decision tool with path "yes" or "no".';
 
     return {
@@ -135,7 +153,7 @@ export class WorkflowEngineService {
   }
 
   private handleStartNode(
-    node: WorkflowNode,
+    node: ValidatedWorkflowNode,
     workflow: WorkflowDefinition
   ): WorkflowStepResult {
     // Start node usually just moves to the next one immediately.
@@ -144,13 +162,22 @@ export class WorkflowEngineService {
   }
 
   private async handleActionNode(
-    node: WorkflowNode,
+    node: ValidatedWorkflowNode,
     workflow: WorkflowDefinition,
     context: WorkflowContext
   ): Promise<WorkflowStepResult> {
     // Action node executes a tool immediately.
-    const toolName = node.data.toolName as string | undefined;
-    const toolArgs = (node.data.toolArgs as Record<string, unknown>) || {};
+    // validation guarantees type is 'action' here if matched in switch case,
+    // but TypeScript might need narrowing or Discriminated Union flow.
+    // Since we call this from the switch case where type is checked, we can cast or trust.
+
+    let toolName: string | undefined;
+    let toolArgs: Record<string, unknown> = {};
+
+    if (node.type === 'action') {
+      toolName = node.data.toolName;
+      toolArgs = node.data.toolArgs || {};
+    }
 
     if (toolName) {
       // Execute the tool directly via ToolExecutor

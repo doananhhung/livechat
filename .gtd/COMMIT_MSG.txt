@@ -1,50 +1,42 @@
-feat(ai-workflow): fix audit issues and add reliability improvements
+feat(ai-workflow): harden reliability, safety, and configuration
 
-Addresses all critical issues identified in the AI Workflow Audit Report,
-including race conditions, dead code, duplicated definitions, and fragile
-system user logic.
+Implemented a comprehensive remediation plan for the AI subsystem to address
+critical race conditions, runtime safety issues, and configuration fragmentation.
 
 ## Behaviour Changes
 
 **Before:**
-- Multiple concurrent messages from the same visitor could cause race
-  conditions in workflow state persistence
-- AI tools used hardcoded 'system' string that would fail permission checks
-- Tool names were duplicated across 3 files requiring manual sync
-- Dead 'trigger' node type reference existed with no handler
-- No automated tests for the locking mechanism
+- AI updates could overwrite concurrent human agent actions (race condition causing data loss).
+- Malformed workflow nodes caused runtime crashes (undefined property access).
+- AI configuration was split between legacy columns and JSON, creating ambiguity.
 
 **After:**
-- Redis-based per-visitor locking serializes message processing
-- Dedicated System user (SYSTEM_USER_ID) with proper permission bypasses
-- Single Source of Truth for tool definitions in @live-chat/shared-types
-- Dead code removed from WorkflowEngineService
-- 8 integration tests verify locking behaviour
+- AI updates are atomic (`update()` vs `save()`), handling concurrent changes safely.
+- Workflow execution is guarded by Zod schemas; invalid nodes fail gracefully with clear errors.
+- Configuration is unified under `aiConfig`, with transparent fallback to legacy fields for backward compatibility.
 
 ## Implementation Details
 
-Phase 1: Created dedicated System user for AI actions
-- Added GlobalRole.SYSTEM enum value
-- Created SYSTEM_USER_ID constant and database migration
-- Added deletion guard in UserService
+Phase 1: Reliability Hardening
+- Refactored `AiResponderService` to use atomic updates.
+- Verified fix with `ai-concurrency.e2e-spec.ts`.
 
-Phase 2: Implemented Redis-based per-visitor locking
-- Created VisitorLockService with atomic Redis operations
-- Wrapped handleVisitorMessage with lock acquire/release
-- 30-second TTL prevents deadlocks
+Phase 2: Runtime Safety
+- Added Zod schemas for `WorkflowNode`, `ToolData`, and `ConditionData`.
+- Enforced schema validation in `WorkflowEngineService.executeStep`.
 
-Phase 3: Centralized tool definitions
-- Created AiToolName enum in shared-types
-- Updated backend and frontend to use shared definitions
-- Added i18n label key mappings
+Phase 3: Configuration Cleanup
+- Deprecated `aiResponderEnabled` and `aiResponderPrompt` in `Project` entity.
+- Implemented fallback logic in `AiResponderService` to prioritize `aiConfig`.
 
-Phase 4: Removed orphaned trigger node reference
-- Cleaned dead code from getNodeContext()
+Phase 4: Verification
+- Added reproduction E2E test proving concurrency safety.
 
-Phase 5: Added integration tests for locking
-- 8 test cases covering all lock scenarios
-- Verifies race condition fix
+## Files Modified
 
-Additional fix: Connected System user to tool execution
-- AiToolExecutor now uses SYSTEM_USER_ID
-- ConversationService and ActionsService bypass membership checks for System user
+- packages/backend/package.json
+- packages/backend/src/ai-responder/ai-responder.service.ts
+- packages/backend/src/ai-responder/services/workflow-engine.service.ts
+- packages/backend/src/ai-responder/schemas/workflow.schemas.ts (NEW)
+- packages/backend/src/projects/entities/project.entity.ts
+- packages/backend/test/ai-concurrency.e2e-spec.ts (NEW)

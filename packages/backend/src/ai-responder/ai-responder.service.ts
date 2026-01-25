@@ -56,7 +56,13 @@ export class AiResponderService {
   async isAiActive(projectId: number): Promise<boolean> {
     const project = await this.projectService.findByProjectId(projectId);
 
-    if (!project || !project.aiResponderEnabled) {
+    if (!project) return false;
+
+    // Phase 3 Migration: Check aiConfig first, fallback to legacy
+    const aiConfig = project.aiConfig as Record<string, any> | null;
+    const isEnabled = aiConfig?.enabled ?? project.aiResponderEnabled;
+
+    if (!isEnabled) {
       return false;
     }
 
@@ -83,6 +89,20 @@ export class AiResponderService {
       return;
     }
 
+    try {
+      await this._processMessage(payload);
+    } finally {
+      // Always release the lock
+      await this.visitorLockService.releaseLock(payload.visitorUid, lockId);
+    }
+  }
+
+  /**
+   * Internal message processing logic.
+   * Separated to allow recursive calls (e.g., for condition node routing)
+   * while holding the single lock from the entry point.
+   */
+  private async _processMessage(payload: VisitorMessageReceivedEvent) {
     try {
       // 0. Check Visitor Preference (Opt-out)
       // If aiEnabled is strictly false, skip. Undefined implies true/default.
@@ -148,8 +168,12 @@ export class AiResponderService {
       }
 
       // -- WORKFLOW LOGIC START --
+      // Phase 3 Migration: Check aiConfig first, fallback to legacy
+      const aiConfig = project.aiConfig as Record<string, any> | null;
       let systemPrompt =
-        project.aiResponderPrompt || 'You are a helpful assistant.';
+        aiConfig?.prompt ||
+        project.aiResponderPrompt ||
+        'You are a helpful assistant.';
       let tools: ToolDefinition[] | undefined = undefined;
       let workflowCtx: WorkflowContext | null = null;
       let isConditionRouting = false;
@@ -358,13 +382,29 @@ export class AiResponderService {
           },
         };
 
-        await this.conversationRepository.save(conversation);
+        // Re-fetch fresh metadata to prevent race conditions
+        const freshConversation = await this.conversationRepository.findOne({
+          where: { id: conversation.id },
+          select: ['metadata'],
+        });
+
+        const mergedMetadata = {
+          ...(freshConversation?.metadata || {}),
+          workflowState: {
+            currentNodeId: nextNodeId,
+          },
+        };
+
+        await this.conversationRepository.update(
+          { id: conversation.id },
+          { metadata: mergedMetadata }
+        );
 
         this.logger.debug(`[Workflow] Condition routed to: ${nextNodeId}`);
 
         // Re-invoke handler to process the next node immediately
         // This allows chaining through multiple nodes in one turn
-        return this.handleVisitorMessage(payload);
+        return this._processMessage(payload);
       }
 
       if (!aiResponseText) {
@@ -391,15 +431,19 @@ export class AiResponderService {
       conversation.lastMessageSnippet = aiResponseText;
       conversation.lastMessageTimestamp = savedMessage.createdAt;
 
+      let nextNodeId: string | null = null;
+
       // Advance workflow state if in orchestrator mode
       if (workflowCtx) {
         const stepResult = await this.workflowEngine.executeStep(workflowCtx);
+        nextNodeId = stepResult.nextNodeId;
+
         const currentMetadata =
           (conversation.metadata as VisitorSessionMetadata) || {};
         conversation.metadata = {
           ...currentMetadata,
           workflowState: {
-            currentNodeId: stepResult.nextNodeId,
+            currentNodeId: nextNodeId,
           },
         };
 
@@ -414,7 +458,31 @@ export class AiResponderService {
         }
       }
 
-      await this.conversationRepository.save(conversation);
+      // Re-fetch fresh metadata to prevent race conditions
+      const freshConversation = await this.conversationRepository.findOne({
+        where: { id: conversation.id },
+        select: ['metadata'],
+      });
+
+      const mergedMetadata = {
+        ...(freshConversation?.metadata || {}),
+        ...(workflowCtx
+          ? {
+              workflowState: {
+                currentNodeId: nextNodeId,
+              },
+            }
+          : {}),
+      };
+
+      await this.conversationRepository.update(
+        { id: conversation.id },
+        {
+          lastMessageSnippet: aiResponseText,
+          lastMessageTimestamp: savedMessage.createdAt,
+          metadata: mergedMetadata,
+        }
+      );
 
       // 9. Resolve socket ID and Emit Event
       const visitorSocketId =
@@ -432,10 +500,7 @@ export class AiResponderService {
 
       this.logger.log(`AI Response sent: ${savedMessage.id}`);
     } catch (error) {
-      this.logger.error('Error in handleVisitorMessage:', error);
-    } finally {
-      // Always release the lock
-      await this.visitorLockService.releaseLock(payload.visitorUid, lockId);
+      this.logger.error('Error in _processMessage:', error);
     }
   }
 }

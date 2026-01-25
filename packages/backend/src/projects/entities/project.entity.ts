@@ -9,7 +9,10 @@ import {
 } from 'typeorm';
 import { Conversation } from '../../inbox/entities/conversation.entity';
 import { ProjectMember } from './project-member.entity';
-import type { IWidgetSettingsDto, WorkflowDefinition } from '@live-chat/shared-types';
+import type {
+  IWidgetSettingsDto,
+  WorkflowDefinition,
+} from '@live-chat/shared-types';
 
 @Entity('projects')
 export class Project {
@@ -36,9 +39,11 @@ export class Project {
   @Column({ type: 'integer', nullable: true, name: 'auto_resolve_minutes' })
   autoResolveMinutes: number | null;
 
+  /** @deprecated Use aiConfig instead */
   @Column({ type: 'boolean', default: false, name: 'ai_responder_enabled' })
   aiResponderEnabled: boolean;
 
+  /** @deprecated Use aiConfig instead */
   @Column({ type: 'text', nullable: true, name: 'ai_responder_prompt' })
   aiResponderPrompt: string | null;
 
