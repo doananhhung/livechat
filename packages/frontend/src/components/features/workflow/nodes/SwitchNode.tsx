@@ -1,5 +1,10 @@
-import { memo } from "react";
-import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { memo, useEffect } from "react";
+import {
+  Handle,
+  Position,
+  type NodeProps,
+  useUpdateNodeInternals,
+} from "@xyflow/react";
 import { Waypoints } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -8,14 +13,15 @@ interface SwitchNodeData {
   prompt?: string;
 }
 
-const MAX_VISIBLE_CASES = 5;
-
 export const SwitchNode = memo(({ id, data }: NodeProps) => {
   const { t } = useTranslation();
+  const updateNodeInternals = useUpdateNodeInternals();
   const nodeData = data as SwitchNodeData;
   const cases = nodeData.cases || [];
-  const visibleCases = cases.slice(0, MAX_VISIBLE_CASES);
-  const hasMoreCases = cases.length > MAX_VISIBLE_CASES;
+
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [id, cases, updateNodeInternals]);
 
   return (
     <div className="px-4 py-2 shadow-md rounded-md bg-card border-2 border-cyan-500 min-w-[180px] text-card-foreground">
@@ -38,7 +44,7 @@ export const SwitchNode = memo(({ id, data }: NodeProps) => {
 
       {/* Case handles with labels */}
       <div className="flex flex-wrap justify-center gap-3 mt-3 -mb-1 px-1">
-        {visibleCases.map((c) => (
+        {cases.map((c) => (
           <div key={c.route} className="flex flex-col items-center">
             <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-medium mb-1 max-w-[60px] truncate">
               {c.route || "?"}
@@ -46,18 +52,11 @@ export const SwitchNode = memo(({ id, data }: NodeProps) => {
             <Handle
               type="source"
               position={Position.Bottom}
-              id={`${id}-${c.route}`}
+              id={`${id}-${encodeURIComponent(c.route)}`}
               className="!relative !transform-none !left-0 !bottom-0 w-3 h-3 bg-cyan-500 border-none"
             />
           </div>
         ))}
-        {hasMoreCases && (
-          <div className="flex flex-col items-center">
-            <span className="text-[10px] text-muted-foreground font-medium mb-1">
-              ...
-            </span>
-          </div>
-        )}
         {/* Default handle - always present */}
         <div className="flex flex-col items-center">
           <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium mb-1">

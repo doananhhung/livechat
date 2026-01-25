@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import {
   ReactFlow,
   Controls,
@@ -104,7 +104,7 @@ export const WorkflowEditor = ({
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   // Propagate changes to parent
-  useMemo(() => {
+  useEffect(() => {
     if (onChange) {
       onChange(nodes as WorkflowNode[], edges as WorkflowEdge[], globalTools);
     }

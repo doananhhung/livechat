@@ -897,7 +897,13 @@
             "whenPlaceholder": "Khi điều kiện này được đáp ứng...",
             "addCase": "Thêm trường hợp",
             "switchPromptLabel": "Prompt điều hướng (tùy chọn)",
-            "switchPromptPlaceholder": "Hướng dẫn bổ sung cho cách AI nên lựa chọn..."
+            "switchPromptPlaceholder": "Hướng dẫn bổ sung cho cách AI nên lựa chọn, vd: Ưu tiên 'bán hàng' nếu người mua đề cập đến mua sắm, nếu không thì để mặc định.",
+            "routeLabel": "Định danh nhánh",
+            "routeHelp": "Tên duy nhất cho nhánh này.",
+            "whenLabel": "Điều kiện (Hướng dẫn AI)",
+            "whenHelp": "Hướng dẫn để AI chọn nhánh này.",
+            "routeExample": "vd: hoa_don",
+            "whenExample": "vd: Khi người dùng hỏi về hóa đơn, thanh toán hoặc phương thức định giá."
         },
         "globalTools": {
             "title": "Công cụ toàn cục",

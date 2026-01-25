@@ -145,7 +145,11 @@ export class WorkflowEngineService {
       `[Workflow] Processing route decision: ${decision} for node ${node.id}`
     );
 
-    const nextNodeId = this.getNextNodeId(node, workflow, decision);
+    const nextNodeId = this.getNextNodeId(
+      node,
+      workflow,
+      encodeURIComponent(decision)
+    );
 
     if (!nextNodeId) {
       this.logger.warn(
@@ -173,7 +177,11 @@ export class WorkflowEngineService {
     );
 
     // Try to find edge with matching case handle
-    const nextNodeId = this.getNextNodeId(node, workflow, caseName);
+    const nextNodeId = this.getNextNodeId(
+      node,
+      workflow,
+      encodeURIComponent(caseName)
+    );
 
     if (nextNodeId) {
       return nextNodeId;

@@ -16,6 +16,7 @@ interface MessageListProps {
     data: Record<string, unknown>,
   ) => Promise<void>;
   submittedFormMessageIds?: Set<string>;
+  disableAutoScroll?: boolean;
 }
 
 // A simple utility to format time
@@ -33,14 +34,17 @@ export const MessageList = ({
   theme,
   onFormSubmit,
   submittedFormMessageIds,
+  disableAutoScroll = false,
 }: MessageListProps) => {
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const finalWelcomeMessage =
     welcomeMessage || "Welcome! How can we help you today?";
 
   useEffect(() => {
-    endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isAgentTyping]);
+    if (!disableAutoScroll) {
+      endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isAgentTyping, disableAutoScroll]);
 
   const shouldShowTimestamp = (
     current: MessageType,

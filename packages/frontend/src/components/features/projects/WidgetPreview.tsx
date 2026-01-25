@@ -122,6 +122,7 @@ export const WidgetPreview = ({
             theme={theme}
             onFormSubmit={async () => {}}
             submittedFormMessageIds={new Set()}
+            disableAutoScroll={true}
           />
         </div>
 

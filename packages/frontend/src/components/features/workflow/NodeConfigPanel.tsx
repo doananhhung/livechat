@@ -1,7 +1,6 @@
 import { type Node } from "@xyflow/react";
 import { Button } from "../../ui/Button";
 import { Input } from "../../ui/Input";
-import { ArrowUp, ArrowDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   AiToolName,
@@ -204,102 +203,76 @@ export const NodeConfigPanel = ({
                     when: string;
                   }[]) || []
                 ).map((c, idx) => (
-                  <div key={idx} className="flex gap-2 items-start">
-                    <Input
-                      placeholder={t("workflow.configPanel.routePlaceholder")}
-                      value={c.route}
-                      onChange={(e) => {
-                        const cases = [
-                          ...((selectedNode.data.cases as {
-                            route: string;
-                            when: string;
-                          }[]) || []),
-                        ];
-                        cases[idx] = { ...cases[idx], route: e.target.value };
-                        handleChange("cases", cases);
-                      }}
-                      className="w-24"
-                    />
-                    <Input
-                      placeholder={t("workflow.configPanel.whenPlaceholder")}
-                      value={c.when}
-                      onChange={(e) => {
-                        const cases = [
-                          ...((selectedNode.data.cases as {
-                            route: string;
-                            when: string;
-                          }[]) || []),
-                        ];
-                        cases[idx] = { ...cases[idx], when: e.target.value };
-                        handleChange("cases", cases);
-                      }}
-                      className="flex-1"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="px-2"
-                      disabled={idx === 0}
-                      onClick={() => {
-                        const cases = [
-                          ...((selectedNode.data.cases as {
-                            route: string;
-                            when: string;
-                          }[]) || []),
-                        ];
-                        if (idx > 0) {
-                          [cases[idx - 1], cases[idx]] = [
-                            cases[idx],
-                            cases[idx - 1],
-                          ];
+                  <div
+                    key={idx}
+                    className="flex flex-col gap-3 p-3 border rounded-md bg-muted/20 relative group"
+                  >
+                    <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => {
+                          const cases = (
+                            (selectedNode.data.cases as {
+                              route: string;
+                              when: string;
+                            }[]) || []
+                          ).filter((_, i) => i !== idx);
                           handleChange("cases", cases);
-                        }
-                      }}
-                    >
-                      <ArrowUp size={14} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="px-2"
-                      disabled={
-                        idx ===
-                        ((selectedNode.data.cases as any[]) || []).length - 1
-                      }
-                      onClick={() => {
-                        const cases = [
-                          ...((selectedNode.data.cases as {
-                            route: string;
-                            when: string;
-                          }[]) || []),
-                        ];
-                        if (idx < cases.length - 1) {
-                          [cases[idx + 1], cases[idx]] = [
-                            cases[idx],
-                            cases[idx + 1],
+                        }}
+                      >
+                        ✕
+                      </Button>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">
+                        {t("workflow.configPanel.routeLabel")}
+                      </label>
+                      <Input
+                        placeholder={t("workflow.configPanel.routeExample")}
+                        value={c.route}
+                        onChange={(e) => {
+                          const cases = [
+                            ...((selectedNode.data.cases as {
+                              route: string;
+                              when: string;
+                            }[]) || []),
                           ];
+                          cases[idx] = { ...cases[idx], route: e.target.value };
                           handleChange("cases", cases);
-                        }
-                      }}
-                    >
-                      <ArrowDown size={14} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="px-2 text-destructive hover:text-destructive"
-                      onClick={() => {
-                        const cases = (
-                          (selectedNode.data.cases as {
-                            route: string;
-                            when: string;
-                          }[]) || []
-                        ).filter((_, i) => i !== idx);
-                        handleChange("cases", cases);
-                      }}
-                    >
-                      ✕
-                    </Button>
+                        }}
+                        className="bg-background"
+                      />
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {t("workflow.configPanel.routeHelp")}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-medium text-muted-foreground uppercase mb-1">
+                        {t("workflow.configPanel.whenLabel")}
+                      </label>
+                      <textarea
+                        className="w-full border border-input bg-background rounded-md p-2 text-sm h-20 focus:ring-2 focus:ring-ring transition-shadow resize-none"
+                        placeholder={t("workflow.configPanel.whenExample")}
+                        value={c.when}
+                        onChange={(e) => {
+                          const cases = [
+                            ...((selectedNode.data.cases as {
+                              route: string;
+                              when: string;
+                            }[]) || []),
+                          ];
+                          cases[idx] = { ...cases[idx], when: e.target.value };
+                          handleChange("cases", cases);
+                        }}
+                      />
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {t("workflow.configPanel.whenHelp")}
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>

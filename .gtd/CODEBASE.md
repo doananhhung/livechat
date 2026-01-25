@@ -67,7 +67,7 @@
 
 #### Mandatory rules:
 
-- All display text must be follow the i18n structure.
+- All display text must be follow the i18n structure and support both English and Vietnamese, any devitation is unacceptable.
 - All display Component must support current like, dark theme logic.
 - **Theme Support:** Use semantic color classes (e.g., `bg-background`, `text-foreground`, `bg-card`) which automatically adapt to light/dark mode via CSS variables defined in `packages/frontend/src/index.css`. Explicit `.theme-light` and `.theme-dark` classes mirror `:root` and `.dark` respectively for programmatic theme application. (Updated: 2026-01-25)
 
@@ -110,10 +110,12 @@
   - **State Persistence:** `conversation.metadata.workflowState.currentNodeId` tracks position across messages
   - **Action Auto-Execution:** Action nodes execute in a loop until an LLM or Condition node is reached
   - **Condition Routing:** Condition nodes inject `route_decision` tool; LLM calls `{path: "yes"|"no"}` for path selection via `processRouteDecision()`
-  - **Switch Routing:** Switch nodes inject dynamic `switch_decision` tool constrained to valid case names; LLM selects case for routing via `processSwitchDecision()` (Updated: 2026-01-25)
+  - **Switch Routing:** Switch nodes inject dynamic `switch_decision` tool constrained to valid case names; LLM selects case for routing via `processSwitchDecision()`. **CRITICAL:** Handle IDs (e.g., `switch-1-hóa đơn`) must be sanitized (e.g., `encodeURIComponent`) to be valid DOM selectors. Backend lookup MUST align with this encoding when resolving the edge target. (Updated: 2026-01-26)
   - **Recursive Chaining:** After condition routing, handler re-invokes to immediately process the next node
   - **Terminal Detection:** Nodes with no outgoing edges set `currentNodeId: null` and restart workflow on next message
   - **Validation Integrity:** All node types MUST have a corresponding Zod schema in `workflow.schemas.ts` and be registered in `WorkflowNodeSchema` to prevent runtime crashes.
+- **React State Updates (Parent/Child):** Calls to parent update functions (e.g., `onChange`) MUST occur in `useEffect`, not `useMemo` or the render body. Violating this causes "Cannot update a component while rendering a different component" warnings and unstable behavior. (Verified: 2026-01-26 in `WorkflowEditor.tsx`)
+- **React Flow Dynamic Handles:** Custom nodes that dynamically add/remove handles (e.g., `SwitchNode` cases) MUST use the `useUpdateNodeInternals` hook to force handle re-registration. Without this, React Flow fails to detect new handles, resulting in "Couldn't create edge" errors. (Verified: 2026-01-26)
 - **Inline Logic Editor**: Complex graph structures (Workflow) are integrated directly into standard settings forms, sharing a single submission flow.
 - **Theme-Aware Canvas**: Visual editors (React Flow) must explicitly subscribe to `useThemeStore` and pass `colorMode` to synchronize the canvas with the application theme.
 - **Cursor-Based Pagination (Infinite Scroll)**: `useInfiniteQuery` for message lists uses backend-provided `hasNextPage` and `nextCursor`. Frontend MUST NOT derive cursors from array indices. Pages are appended by default; for reverse-chronological display (newest at bottom), reverse the pages array before flattening: `pages.slice().reverse().flatMap(p => p.data)`. (Added: 2026-01-25)

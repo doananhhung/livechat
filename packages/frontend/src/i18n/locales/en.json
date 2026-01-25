@@ -897,7 +897,13 @@
             "whenPlaceholder": "When this condition is met...",
             "addCase": "Add Case",
             "switchPromptLabel": "Routing Prompt (optional)",
-            "switchPromptPlaceholder": "Additional instructions for how the AI should choose..."
+            "switchPromptPlaceholder": "Additional instructions for how the AI should choose, e.g. Prioritize 'sales' if the user mentions buying, otherwise defaults.",
+            "routeLabel": "Route identifier",
+            "routeHelp": "Unique name for this path.",
+            "whenLabel": "Condition (AI Instruction)",
+            "whenHelp": "Instructions for the AI to select this path.",
+            "routeExample": "e.g. billing",
+            "whenExample": "e.g. When the user asks about invoices, payments, or pricing methods."
         },
         "globalTools": {
             "title": "Global Tools",
