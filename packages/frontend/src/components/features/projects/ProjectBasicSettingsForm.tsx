@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X, Plus } from "lucide-react";
 import { Button } from "../../ui/Button";
+import { StickyFooter } from "../../ui/StickyFooter";
 import { Input } from "../../ui/Input";
 import { useToast } from "../../ui/use-toast";
 import { updateProject } from "../../../services/projectApi";
@@ -27,10 +27,10 @@ export const ProjectBasicSettingsForm = ({
   const queryClient = useQueryClient();
   const [projectName, setProjectName] = useState(project.name);
   const [autoResolveMinutes, setAutoResolveMinutes] = useState<number | string>(
-    project.autoResolveMinutes ?? 0
+    project.autoResolveMinutes ?? 0,
   );
   const [whitelistedDomains, setWhitelistedDomains] = useState<string[]>(
-    project.whitelistedDomains || []
+    project.whitelistedDomains || [],
   );
 
   useEffect(() => {
@@ -99,13 +99,15 @@ export const ProjectBasicSettingsForm = ({
 
     // Validate domains format
     const invalidDomains = finalDomains.filter(
-      (domain) => !domainRegex.test(domain)
+      (domain) => !domainRegex.test(domain),
     );
 
     if (invalidDomains.length > 0) {
       toast({
         title: t("settings.domainFormatError"),
-        description: t("settings.invalidDomains", { domains: invalidDomains.join(", ") }),
+        description: t("settings.invalidDomains", {
+          domains: invalidDomains.join(", "),
+        }),
         variant: "destructive",
       });
       return;
@@ -136,7 +138,8 @@ export const ProjectBasicSettingsForm = ({
           htmlFor="projectName"
           className="block text-sm font-medium text-foreground mb-2"
         >
-          {t("settings.projectName")} <span className="text-destructive">*</span>
+          {t("settings.projectName")}{" "}
+          <span className="text-destructive">*</span>
         </label>
         <Input
           id="projectName"
@@ -218,11 +221,11 @@ export const ProjectBasicSettingsForm = ({
       </div>
 
       {/* Submit Button */}
-      <div className="flex justify-end pt-4 border-t">
+      <StickyFooter className="flex justify-end">
         <Button type="submit" disabled={updateMutation.isPending}>
           {updateMutation.isPending ? t("common.saving") : t("common.save")}
         </Button>
-      </div>
+      </StickyFooter>
     </form>
   );
 };

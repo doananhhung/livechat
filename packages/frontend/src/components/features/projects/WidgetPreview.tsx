@@ -17,7 +17,10 @@ interface WidgetPreviewProps {
   viewMode?: "desktop" | "mobile";
 }
 
-export const WidgetPreview = ({ config, viewMode = "desktop" }: WidgetPreviewProps) => {
+export const WidgetPreview = ({
+  config,
+  viewMode = "desktop",
+}: WidgetPreviewProps) => {
   const theme = config.theme || WidgetTheme.LIGHT;
 
   // Mock messages for preview
@@ -83,20 +86,23 @@ export const WidgetPreview = ({ config, viewMode = "desktop" }: WidgetPreviewPro
           `theme-${theme}`,
           "flex flex-col shadow-2xl overflow-hidden bg-background transition-all duration-300 ease-in-out",
           // Mobile vs Desktop dimensions
-          isMobile 
-            ? "w-full h-full rounded-none" 
+          isMobile
+            ? "w-full h-full rounded-none"
             : "w-full max-w-[380px] h-[600px] max-h-full",
           // Conditional rounding based on position (only for desktop)
-          !isMobile && (isBottomLeft
-            ? "rounded-tr-xl rounded-tl-xl rounded-br-xl"
-            : "rounded-tr-xl rounded-tl-xl rounded-bl-xl"),
+          !isMobile &&
+            (isBottomLeft
+              ? "rounded-tr-xl rounded-tl-xl rounded-br-xl"
+              : "rounded-tr-xl rounded-tl-xl rounded-bl-xl"),
         )}
         style={{
-            // Apply background color from variable (which comes from widget-preview-root)
-            backgroundColor: "var(--widget-card-background)",
-            fontFamily: fullConfig.fontFamily || "sans-serif",
-            // Handle background image if present
-            backgroundImage: fullConfig.backgroundImageUrl ? `url(${fullConfig.backgroundImageUrl})` : undefined,
+          // Apply background color from variable (which comes from widget-preview-root)
+          backgroundColor: "var(--widget-card-background)",
+          fontFamily: fullConfig.fontFamily || "sans-serif",
+          // Handle background image if present
+          backgroundImage: fullConfig.backgroundImageUrl
+            ? `url(${fullConfig.backgroundImageUrl})`
+            : undefined,
         }}
       >
         <Header
@@ -106,7 +112,7 @@ export const WidgetPreview = ({ config, viewMode = "desktop" }: WidgetPreviewPro
           companyLogoUrl={fullConfig.companyLogoUrl}
           agentDisplayName={fullConfig.agentDisplayName}
         />
-        
+
         <div className="flex-1 overflow-y-auto overflow-x-hidden relative flex flex-col">
           <MessageList
             messages={messages}
@@ -125,6 +131,7 @@ export const WidgetPreview = ({ config, viewMode = "desktop" }: WidgetPreviewPro
           connectionStatus="connected"
           offlineMessage={fullConfig.offlineMessage}
           theme={theme}
+          isPreview={true}
         />
       </div>
     </div>

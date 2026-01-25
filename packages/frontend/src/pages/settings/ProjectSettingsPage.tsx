@@ -7,15 +7,29 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Spinner } from "../../components/ui/Spinner";
 import { useToast } from "../../components/ui/use-toast";
-import { ChevronRight, ArrowLeft, Info, Palette, Code, ShieldAlert, MessageSquarePlus, Zap } from "lucide-react";
+import {
+  ChevronRight,
+  ArrowLeft,
+  Info,
+  Palette,
+  Code,
+  ShieldAlert,
+  MessageSquarePlus,
+  Zap,
+} from "lucide-react";
 import { PermissionGate } from "../../components/PermissionGate";
-import { ProjectRole, WidgetPosition, WidgetTheme } from "@live-chat/shared-types";
+import {
+  ProjectRole,
+  WidgetPosition,
+  WidgetTheme,
+} from "@live-chat/shared-types";
 import type { HistoryVisibilityMode } from "@live-chat/shared-types";
 import { ProjectBasicSettingsForm } from "../../components/features/projects/ProjectBasicSettingsForm";
 import { AiResponderSettingsForm } from "../../components/features/projects/ai-responder/AiResponderSettingsForm";
 import type { WidgetSettingsDto } from "@live-chat/shared-dtos";
 import { getWidgetSnippet } from "../../lib/widget";
 import { WidgetPreview } from "../../components/features/projects/WidgetPreview";
+import { StickyFooter } from "../../components/ui/StickyFooter";
 
 export const ProjectSettingsPage = () => {
   const { t } = useTranslation();
@@ -41,14 +55,13 @@ export const ProjectSettingsPage = () => {
   const [headerText, setHeaderText] = useState("");
   const [welcomeMessage, setWelcomeMessage] = useState("");
   const [position, setPosition] = useState<WidgetPosition>(
-    WidgetPosition.BOTTOM_RIGHT
+    WidgetPosition.BOTTOM_RIGHT,
   );
   const [companyLogoUrl, setCompanyLogoUrl] = useState("");
   const [agentDisplayName, setAgentDisplayName] = useState("");
   const [fontFamily, setFontFamily] = useState("sans-serif");
-  const [historyVisibility, setHistoryVisibility] = useState<HistoryVisibilityMode>(
-    "limit_to_active"
-  );
+  const [historyVisibility, setHistoryVisibility] =
+    useState<HistoryVisibilityMode>("limit_to_active");
   // Offline message is missing in the state but used in ProjectWidgetSettingsDialog.
   // We should add it here to be consistent, although the original file didn't seem to have it in the state?
   // Checking original file: It had it in useEffect setters but maybe not useState initial?
@@ -144,7 +157,9 @@ export const ProjectSettingsPage = () => {
   if (!currentProject) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
-        <p className="text-muted-foreground mb-4">{t("settings.projectNotFound")}</p>
+        <p className="text-muted-foreground mb-4">
+          {t("settings.projectNotFound")}
+        </p>
         <Button onClick={() => navigate("/settings")}>
           {t("settings.backToProjectList")}
         </Button>
@@ -187,7 +202,11 @@ export const ProjectSettingsPage = () => {
       {/* Settings Sections */}
       <div className="space-y-4">
         {/* Basic Settings */}
-        <div className="bg-card border rounded-lg overflow-hidden">
+        <div
+          className={`bg-card border rounded-lg ${
+            expandedSections.basic ? "" : "overflow-hidden"
+          }`}
+        >
           <button
             onClick={() => toggleSection("basic")}
             className="group w-full px-6 py-4 flex items-center justify-between hover:bg-accent transition-colors"
@@ -229,7 +248,11 @@ export const ProjectSettingsPage = () => {
         </div>
 
         {/* Widget Settings */}
-        <div className="bg-card border rounded-lg overflow-hidden">
+        <div
+          className={`bg-card border rounded-lg ${
+            expandedSections.widget ? "" : "overflow-hidden"
+          }`}
+        >
           <button
             onClick={() => toggleSection("widget")}
             className="group w-full px-6 py-4 flex items-center justify-between hover:bg-accent transition-colors"
@@ -278,13 +301,20 @@ export const ProjectSettingsPage = () => {
                               id="mode-active-page"
                               name="historyVisibility"
                               value="limit_to_active"
-                              checked={historyVisibility === 'limit_to_active'}
-                              onChange={() => setHistoryVisibility('limit_to_active')}
+                              checked={historyVisibility === "limit_to_active"}
+                              onChange={() =>
+                                setHistoryVisibility("limit_to_active")
+                              }
                               disabled={updateWidgetMutation.isPending}
                               className="mt-1"
                             />
-                            <label htmlFor="mode-active-page" className="text-sm cursor-pointer">
-                              <span className="font-semibold block">{t("settings.ticketStyleDefault")}</span>
+                            <label
+                              htmlFor="mode-active-page"
+                              className="text-sm cursor-pointer"
+                            >
+                              <span className="font-semibold block">
+                                {t("settings.ticketStyleDefault")}
+                              </span>
                               <span className="text-muted-foreground">
                                 {t("settings.ticketStyleDesc")}
                               </span>
@@ -296,13 +326,18 @@ export const ProjectSettingsPage = () => {
                               id="mode-forever-page"
                               name="historyVisibility"
                               value="forever"
-                              checked={historyVisibility === 'forever'}
-                              onChange={() => setHistoryVisibility('forever')}
+                              checked={historyVisibility === "forever"}
+                              onChange={() => setHistoryVisibility("forever")}
                               disabled={updateWidgetMutation.isPending}
                               className="mt-1"
                             />
-                            <label htmlFor="mode-forever-page" className="text-sm cursor-pointer">
-                              <span className="font-semibold block">{t("settings.chatStyle")}</span>
+                            <label
+                              htmlFor="mode-forever-page"
+                              className="text-sm cursor-pointer"
+                            >
+                              <span className="font-semibold block">
+                                {t("settings.chatStyle")}
+                              </span>
                               <span className="text-muted-foreground">
                                 {t("settings.chatStyleDesc")}
                               </span>
@@ -441,7 +476,7 @@ export const ProjectSettingsPage = () => {
                     </div>
                   </div>
 
-                  <div className="flex justify-end pt-4 border-t mt-6">
+                  <StickyFooter className="flex justify-end mt-6">
                     <Button
                       type="submit"
                       disabled={updateWidgetMutation.isPending}
@@ -450,7 +485,7 @@ export const ProjectSettingsPage = () => {
                         ? t("common.saving")
                         : t("common.save")}
                     </Button>
-                  </div>
+                  </StickyFooter>
                 </form>
               </PermissionGate>
             </div>
@@ -458,7 +493,11 @@ export const ProjectSettingsPage = () => {
         </div>
 
         {/* AI Responder Settings */}
-        <div className="bg-card border rounded-lg overflow-hidden">
+        <div
+          className={`bg-card border rounded-lg ${
+            expandedSections.ai ? "" : "overflow-hidden"
+          }`}
+        >
           <button
             onClick={() => toggleSection("ai")}
             className="group w-full px-6 py-4 flex items-center justify-between hover:bg-accent transition-colors"
@@ -534,7 +573,7 @@ export const ProjectSettingsPage = () => {
                 className="mt-3"
                 onClick={() => {
                   navigator.clipboard.writeText(
-                    getWidgetSnippet(currentProject.id)
+                    getWidgetSnippet(currentProject.id),
                   );
                   toast({
                     title: t("settings.copied"),
@@ -551,7 +590,9 @@ export const ProjectSettingsPage = () => {
         {/* Canned Responses Link */}
         <div className="bg-card border rounded-lg overflow-hidden">
           <button
-            onClick={() => navigate(`/projects/${projectId}/settings/canned-responses`)}
+            onClick={() =>
+              navigate(`/projects/${projectId}/settings/canned-responses`)
+            }
             className="group w-full px-6 py-4 flex items-center justify-between hover:bg-accent transition-colors"
           >
             <div className="flex items-center gap-3">
@@ -572,7 +613,9 @@ export const ProjectSettingsPage = () => {
         {/* Action Templates Link */}
         <div className="bg-card border rounded-lg overflow-hidden">
           <button
-            onClick={() => navigate(`/projects/${projectId}/settings/action-templates`)}
+            onClick={() =>
+              navigate(`/projects/${projectId}/settings/action-templates`)
+            }
             className="group w-full px-6 py-4 flex items-center justify-between hover:bg-accent transition-colors"
           >
             <div className="flex items-center gap-3">
@@ -593,7 +636,9 @@ export const ProjectSettingsPage = () => {
         {/* Audit Logs Link */}
         <div className="bg-card border rounded-lg overflow-hidden">
           <button
-            onClick={() => navigate(`/projects/${projectId}/settings/audit-logs`)}
+            onClick={() =>
+              navigate(`/projects/${projectId}/settings/audit-logs`)
+            }
             className="group w-full px-6 py-4 flex items-center justify-between hover:bg-accent transition-colors"
           >
             <div className="flex items-center gap-3">

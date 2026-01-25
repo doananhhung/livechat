@@ -9,6 +9,7 @@ interface ComposerProps {
   connectionStatus: ConnectionStatus;
   offlineMessage?: string;
   theme: WidgetTheme;
+  isPreview?: boolean;
 }
 
 // Constants
@@ -94,9 +95,9 @@ const SendIcon = () => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   >
     <line x1="22" y1="2" x2="11" y2="13"></line>
     <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -109,6 +110,7 @@ export const Composer = ({
   connectionStatus,
   offlineMessage,
   theme,
+  isPreview = false,
 }: ComposerProps) => {
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
@@ -229,9 +231,9 @@ export const Composer = ({
     );
   }
 
-  return (
-    <form onSubmit={handleSubmit} style={styles.form}>
-      {/* ... error display ... */}
+  // Use div instead of form when in preview mode to avoid nested form issues
+  const innerContent = (
+    <>
       {error && (
         <div
           style={{
@@ -250,7 +252,7 @@ export const Composer = ({
           value={content}
           onInput={handleTyping}
           onKeyDown={handleKeyDown}
-          disabled={isDisabled}
+          disabled={isDisabled || isPreview}
           placeholder={isDisabled ? "Connecting..." : "Type a message..."}
           style={{
             ...styles.textarea,
@@ -263,8 +265,8 @@ export const Composer = ({
           aria-label="Message input"
         />
         <button
-          type="submit"
-          disabled={!content.trim() || isDisabled}
+          type={isPreview ? "button" : "submit"}
+          disabled={!content.trim() || isDisabled || isPreview}
           style={buttonStyle}
           aria-label="Send message"
         >
@@ -274,6 +276,16 @@ export const Composer = ({
       <div style={styles.charCount}>
         {content.length}/{MAX_MESSAGE_LENGTH}
       </div>
+    </>
+  );
+
+  if (isPreview) {
+    return <div style={styles.form}>{innerContent}</div>;
+  }
+
+  return (
+    <form onSubmit={handleSubmit} style={styles.form}>
+      {innerContent}
     </form>
   );
 };

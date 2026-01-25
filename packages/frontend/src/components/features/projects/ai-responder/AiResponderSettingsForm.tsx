@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../../ui/Button";
+import { StickyFooter } from "../../../ui/StickyFooter";
 import { useToast } from "../../../ui/use-toast";
 import { updateProject } from "../../../../services/projectApi";
 import type { UpdateProjectDto } from "@live-chat/shared-dtos";
@@ -13,6 +14,7 @@ import type {
   GlobalToolConfig,
 } from "@live-chat/shared-types";
 import { WorkflowEditor } from "../../workflow/WorkflowEditor";
+import { Switch } from "../../../ui/Switch";
 
 interface AiResponderSettingsFormProps {
   project: Project;
@@ -137,12 +139,9 @@ export const AiResponderSettingsForm = ({
           </p>
         </div>
         <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="aiResponderEnabled"
+          <Switch
             checked={enabled}
-            onChange={(e) => setEnabled(e.target.checked)}
-            className="h-5 w-5 rounded border-input bg-background text-primary focus:ring-ring"
+            onChange={setEnabled}
             disabled={updateMutation.isPending}
           />
         </div>
@@ -245,11 +244,11 @@ export const AiResponderSettingsForm = ({
         </div>
       )}
 
-      <div className="flex justify-end pt-4 border-t">
+      <StickyFooter className="flex justify-end">
         <Button type="submit" disabled={updateMutation.isPending}>
           {updateMutation.isPending ? t("common.saving") : t("common.save")}
         </Button>
-      </div>
+      </StickyFooter>
     </form>
   );
 };

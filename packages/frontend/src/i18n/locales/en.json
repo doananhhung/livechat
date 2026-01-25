@@ -2,6 +2,7 @@
     "common": {
         "appName": "Live Chat",
         "advanced": "Advanced",
+        "preview": "Preview",
         "save": "Save changes",
         "saving": "Saving...",
         "cancel": "Cancel",

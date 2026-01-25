@@ -1,7 +1,7 @@
 # Codebase Overview
 
 **Generated:** 2026-01-24
-**Last Updated:** 2026-01-25 (Infinite Scroll Pagination)
+**Last Updated:** 2026-01-26 (Sticky Save Button)
 
 ## Tech Stack
 
@@ -81,6 +81,7 @@
 - **`pages/public/`**: Landing Page and Documentation pages (`HomePage`, `DocsLayout`). (Added: 2026-01-24)
 - **`components/features/docs/`**: Documentation-specific UI components (Sidebar, etc.). (Added: 2026-01-24)
 - **`components/features/projects/ai-responder/`**: Unified configuration UI for AI modes and inline workflow editing.
+- **`components/ui/StickyFooter.tsx`**: Reusable component for form actions. Uses `position: sticky` and `IntersectionObserver` to toggle shadow styling when floating vs. docked. Handles layout constraints by requiring visible overflow in parent containers. (Added: 2026-01-26)
 - **`components/features/workflow/`**: Inline Workflow Editor using **React Flow** (@xyflow/react) for configuring AI logic graphs. Includes `GlobalToolsPanel`, i18n-ready node components (Start, Action, Condition, Switch), and configuration panels with case reordering support. (Updated: 2026-01-25)
 
 ## Entry Points
@@ -124,6 +125,7 @@
   3. Update the target service to bypass membership check for this ID (see Backend Mandatory Rules)
      **Evidence:** `ai-tool.executor.ts:9,147-150`, `system-actor.ts:8`.
 - **Global Tool Instructions**: Each global tool can have a custom instruction injected into the LLM system prompt via `GlobalToolConfig.instruction`.
+- **Sticky Footer & Overflow Management**: For `position: sticky` elements (like `StickyFooter`) to work relative to the viewport, all ancestor containers must have `overflow: visible`. In accordion layouts (`ProjectSettingsPage`), `overflow: hidden` is now conditionally applied only when collapsed or during animation, ensuring sticky children can interact with the global viewport when expanded. (Added: 2026-01-26)
 
 ## Critical Dependencies
 
