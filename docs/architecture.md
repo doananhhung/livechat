@@ -5,55 +5,47 @@
 ## System Components
 
 ```mermaid
+---
+config:
+  layout: elk
+---
 flowchart TB
-    subgraph Frontend["Frontend (React)"]
+ subgraph Frontend["Frontend (React)"]
         Dashboard["Agent Dashboard"]
         Widget["Embeddable Widget (Preact)"]
-    end
-
-    subgraph Gateway["WebSocket Layer"]
+  end
+ subgraph Gateway["WebSocket Layer"]
         SIO["Socket.IO Gateway"]
         Rooms["Project Rooms"]
-    end
-
-    subgraph Backend["Backend (NestJS)"]
+  end
+ subgraph Backend["Backend (NestJS)"]
         API["REST Controllers"]
         Services["Domain Services"]
         Guards["Auth Guards + RBAC"]
         Decorators["@Auditable Interceptor"]
-    end
-
-    subgraph Workers["Background Processing"]
+  end
+ subgraph Workers["Background Processing"]
         BullMQ["BullMQ Consumer"]
         Outbox["Outbox Listener"]
         Webhooks["Webhook Processor"]
-    end
-
-    subgraph Infrastructure
-        PG[(PostgreSQL)]
-        Redis[(Redis)]
+  end
+ subgraph Infrastructure["Infrastructure"]
+        PG[("PostgreSQL")]
+        Redis[("Redis")]
         SMTP["SMTP Server"]
-    end
-
+  end
     Dashboard --> API
     Dashboard <--> SIO
     Widget <--> SIO
-
-    API --> Guards --> Services
-    Services --> Decorators
-    Services --> PG
-    Services --> Redis
-
+    API --> Guards
+    Guards --> Services
+    Services --> Decorators & PG & Redis & SMTP
     SIO --> Rooms
-    Services -.->|emit| SIO
-
-    Services -->|enqueue| BullMQ
-    BullMQ --> PG
-    BullMQ --> Outbox
-    Outbox -->|NOTIFY| Redis
-    Redis -->|Pub/Sub| Webhooks
-
-    Services --> SMTP
+    Services -. emit .-> SIO
+    Services -- enqueue --> BullMQ
+    BullMQ --> PG & Outbox
+    Outbox -- NOTIFY --> Redis
+    Redis -- Pub/Sub --> Webhooks
 ```
 
 ## Component Descriptions

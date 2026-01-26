@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Standard Presentation Layouts</title>
+    <style>
+        :root {
+            --bg-color: #f3f4f6;
+            --slide-bg: #ffffff;
+            --primary: #2563eb;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+            --placeholder-bg: #f8fafc;
+            --placeholder-border: #cbd5e1;
+            --sidebar-width: 280px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            color: var(--text-main);
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .layout-list {
+            list-style: none;
+            padding: 1rem;
+        }
+
+        .layout-item {
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border: 1px solid transparent;
+        }
+
+        .layout-item:hover {
+            background-color: var(--bg-color);
+        }
+
+        .layout-item.active {
+            background-color: #eff6ff;
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .layout-icon {
+            width: 32px;
+            height: 24px;
+            border: 1.5px solid currentColor;
+            border-radius: 2px;
+            position: relative;
+            opacity: 0.7;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .slide-container {
+            width: 100%;
+            max-width: 960px;
+            aspect-ratio: 16/9;
+            background: var(--slide-bg);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            padding: 3rem;
+            display: none; /* Hidden by default */
+        }
+
+        .slide-container.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Common Slide Elements */
+        .placeholder {
+            border: 2px dashed var(--placeholder-border);
+            background-color: var(--placeholder-bg);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .placeholder::after {
+            content: attr(data-label);
+        }
+
+        .text-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 1.5rem;
+        }
+
+        .dummy-line {
+            height: 12px;
+            background: #e2e8f0;
+            border-radius: 6px;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+        
+        .dummy-line.short { width: 60%; }
+        .dummy-line.medium { width: 80%; }
+
+        /* Typography */
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+            line-height: 1.2;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        /* Specific Layout Grids */
+        
+        /* 1. Title Slide */
+        #layout-title-slide {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: center;
+            height: 100%;
+        }
+
+        /* 2. Title and Content */
+        #layout-title-content {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            height: 100%;
+            gap: 2rem;
+        }
+
+        /* 3. Section Header */
+        #layout-section-header {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+            padding-left: 2rem;
+        }
+
+        /* 4. Two Content */
+        #layout-two-content {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            grid-template-columns: 1fr 1fr;
+            height: 100%;
+            gap: 2rem;
+            grid-template-areas: 
+                "header header"
+                "left right";
+        }
+        .tc-header { grid-area: header; }
+        .tc-left { grid-area: left; }
+        .tc-right { grid-area: right; }
+
+        /* 5. Comparison */
+        #layout-comparison {
+            display: grid;
+            grid-template-rows: auto auto 1fr;
+            grid-template-columns: 1fr 1fr;
+            height: 100%;
+            column-gap: 2rem;
+            row-gap: 1rem;
+            grid-template-areas: 
+                "header header"
+                "sub-left sub-right"
+                "content-left content-right";
+        }
+        .comp-header { grid-area: header; }
+        .comp-sub-left { grid-area: sub-left; }
+        .comp-sub-right { grid-area: sub-right; }
+        .comp-c-left { grid-area: content-left; }
+        .comp-c-right { grid-area: content-right; }
+
+        /* 6. Title Only */
+        #layout-title-only {
+            display: block;
+        }
+
+        /* 7. Blank */
+        #layout-blank {
+            display: block;
+        }
+
+        /* 8. Content with Caption */
+        #layout-content-caption {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            grid-template-columns: 30% 1fr;
+            height: 100%;
+            gap: 2rem;
+            grid-template-areas: 
+                "title content"
+                "caption content";
+        }
+        .cc-title { grid-area: title; }
+        .cc-caption { grid-area: caption; }
+        .cc-content { grid-area: content; }
+
+        /* 9. Picture with Caption */
+        #layout-picture-caption {
+            display: grid;
+            grid-template-rows: 1fr auto;
+            height: 100%;
+            gap: 1.5rem;
+        }
+
+        /* Utility for generating icons */
+        .icon-title-slide::before { content: ''; position: absolute; top: 6px; left: 4px; right: 4px; height: 4px; background: currentColor; }
+        .icon-title-slide::after { content: ''; position: absolute; top: 14px; left: 8px; right: 8px; height: 2px; background: currentColor; }
+
+        .icon-title-content::before { content: ''; position: absolute; top: 4px; left: 4px; right: 4px; height: 3px; background: currentColor; }
+        .icon-title-content::after { content: ''; position: absolute; top: 10px; left: 4px; right: 4px; bottom: 4px; border: 1px dashed currentColor; }
+
+        .icon-two-content::before { content: ''; position: absolute; top: 4px; left: 4px; right: 4px; height: 3px; background: currentColor; }
+        .icon-two-content::after { content: ''; position: absolute; top: 10px; left: 4px; width: 10px; bottom: 4px; border: 1px dashed currentColor; box-shadow: 14px 0 0 -1px currentColor inset;} 
+        /* simplified icon css for brevity, using classes to trigger JS view mostly */
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar { width: 220px; }
+            .slide-container { padding: 2rem; }
+        }
+        
+        @media (max-width: 768px) {
+            body { flex-direction: column; height: auto; overflow-y: auto; }
+            .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border-color); }
+            .main-content { padding: 1rem; }
+            .slide-container { margin-bottom: 2rem; }
+        }
+
+        .description-box {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            max-width: 960px;
+            width: 100%;
+        }
+        .description-title { font-weight: 600; margin-bottom: 0.5rem; }
+        .description-text { font-size: 0.95rem; line-height: 1.5; color: var(--text-muted); }
+
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2>Layouts</h2>
+        </div>
+        <ul class="layout-list">
+            <li class="layout-item active" onclick="showLayout('title-slide', this)">
+                <div class="layout-icon icon-title-slide"></div>
+                <span>Title Slide</span>
+            </li>
+            <li class="layout-item" onclick="showLayout('title-content', this)">
+                <div class="layout-icon icon-title-content"></div>
+                <span>Title and Content</span>
+            </li>
+            <li class="layout-item" onclick="showLayout('section-header', this)">
+                <div class="layout-icon"></div>
+                <span>Section Header</span>
+            </li>
+            <li class="layout-item" onclick="showLayout('two-content', this)">
+                <div class="layout-icon"></div>
+                <span>Two Content</span>
+            </li>
+            <li class="layout-item" onclick="showLayout('comparison', this)">
+                <div class="layout-icon"></div>
+                <span>Comparison</span>
+            </li>
+            <li class="layout-item" onclick="showLayout('title-only', this)">
+                <div class="layout-icon"></div>
+                <span>Title Only</span>
+            </li>
+            <li class="layout-item" onclick="showLayout('blank', this)">
+                <div class="layout-icon"></div>
+                <span>Blank</span>
+            </li>
+            <li class="layout-item" onclick="showLayout('content-caption', this)">
+                <div class="layout-icon"></div>
+                <span>Content with Caption</span>
+            </li>
+            <li class="layout-item" onclick="showLayout('picture-caption', this)">
+                <div class="layout-icon"></div>
+                <span>Picture with Caption</span>
+            </li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <!-- 1. Title Slide -->
+        <div id="layout-title-slide" class="slide-container active">
+            <div class="placeholder text-placeholder" style="border: 2px dashed #93c5fd; background: transparent;">
+                <h1 style="margin: 0 auto;">Click to add title</h1>
+            </div>
+            <div class="placeholder text-placeholder" style="border: 2px dashed #cbd5e1; background: transparent; margin-top: 2rem;">
+                <p class="subtitle" style="margin: 0 auto;">Click to add subtitle</p>
+            </div>
+        </div>
+
+        <!-- 2. Title and Content -->
+        <div id="layout-title-content" class="slide-container">
+            <h1>Click to add title</h1>
+            <div class="placeholder" data-label="Content Placeholder (Text, Chart, Table, SmartArt, Picture, Video)"></div>
+        </div>
+
+        <!-- 3. Section Header -->
+        <div id="layout-section-header" class="slide-container">
+            <h1>Click to add title</h1>
+            <p class="subtitle">Click to add text</p>
+        </div>
+
+        <!-- 4. Two Content -->
+        <div id="layout-two-content" class="slide-container">
+            <h1 class="tc-header">Click to add title</h1>
+            <div class="placeholder tc-left" data-label="Content Placeholder"></div>
+            <div class="placeholder tc-right" data-label="Content Placeholder"></div>
+        </div>
+
+        <!-- 5. Comparison -->
+        <div id="layout-comparison" class="slide-container">
+            <h1 class="comp-header">Click to add title</h1>
+            <h3 class="comp-sub-left" style="text-align: center; border: 1px dashed #ccc; padding: 0.5rem; font-size: 1.2rem;">Text</h3>
+            <h3 class="comp-sub-right" style="text-align: center; border: 1px dashed #ccc; padding: 0.5rem; font-size: 1.2rem;">Text</h3>
+            <div class="placeholder comp-c-left" data-label="Content Placeholder"></div>
+            <div class="placeholder comp-c-right" data-label="Content Placeholder"></div>
+        </div>
+
+        <!-- 6. Title Only -->
+        <div id="layout-title-only" class="slide-container">
+            <h1>Click to add title</h1>
+        </div>
+
+        <!-- 7. Blank -->
+        <div id="layout-blank" class="slide-container">
+            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #e5e7eb; font-size: 3rem; font-weight: bold; user-select: none;">
+                BLANK
+            </div>
+        </div>
+
+        <!-- 8. Content with Caption -->
+        <div id="layout-content-caption" class="slide-container">
+            <div class="cc-title">
+                <h3 style="font-size: 2rem;">Click to add title</h3>
+            </div>
+            <div class="cc-caption">
+                <p style="color: #666;">Click to add text</p>
+                <div class="dummy-line medium" style="margin-top: 1rem;"></div>
+                <div class="dummy-line"></div>
+                <div class="dummy-line short"></div>
+            </div>
+            <div class="placeholder cc-content" data-label="Content Placeholder (Object/Image)"></div>
+        </div>
+
+        <!-- 9. Picture with Caption -->
+        <div id="layout-picture-caption" class="slide-container">
+            <div class="placeholder" style="height: 100%; background: #e2e8f0;" data-label="Picture Placeholder"></div>
+            <div style="text-align: center;">
+                <h3 style="margin-bottom: 0.5rem;">Click to add title</h3>
+                <p class="subtitle">Click to add text</p>
+            </div>
+        </div>
+
+        <div class="description-box">
+            <div class="description-title" id="desc-title">Title Slide</div>
+            <div class="description-text" id="desc-text">
+                The standard opening slide. It typically contains two placeholders: one for the main title and one for a subtitle or presenter information.
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const descriptions = {
+            'title-slide': "The standard opening slide. It typically contains two placeholders: one for the main title and one for a subtitle or presenter information.",
+            'title-content': "The workhorse of presentations. Features a title header and a large multipurpose area for bulleted lists, charts, or images.",
+            'section-header': "Used to visually separate different chapters or topics. Usually places the title in the middle or bottom-left to distinguish it from content slides.",
+            'two-content': "Divides the content area into two vertical columns. Useful for showing two lists, text vs. image, or side-by-side data.",
+            'comparison': "Similar to 'Two Content', but includes a small heading placeholder above each column. Best for 'Pro vs. Con' or 'Before vs. After' scenarios.",
+            'title-only': "Provides a title placeholder but leaves the rest of the slide blank. Useful for large custom diagrams or full-bleed images inserted manually.",
+            'blank': "A completely empty canvas with no placeholders. Used when you want 100% custom control over element placement.",
+            'content-caption': "A sophisticated layout with a column for a title and text description, and a larger column for a visual object. Great for explaining complex diagrams.",
+            'picture-caption': "Prioritizes a large visual area (often covering 70-80% of the slide) with a small area below or to the side for a title and caption."
+        };
+
+        function showLayout(id, element) {
+            // Update Menu
+            document.querySelectorAll('.layout-item').forEach(item => item.classList.remove('active'));
+            element.classList.add('active');
+
+            // Update Slide View
+            document.querySelectorAll('.slide-container').forEach(slide => {
+                slide.classList.remove('active');
+                slide.style.display = 'none'; // Ensure display none for animation reset
+            });
+            
+            const activeSlide = document.getElementById('layout-' + id);
+            activeSlide.style.display = (id === 'title-slide' || id === 'section-header') ? 'flex' : (id === 'title-only' || id === 'blank') ? 'block' : 'grid';
+            
+            // Trigger reflow
+            void activeSlide.offsetWidth; 
+            
+            activeSlide.classList.add('active');
+
+            // Update Description
+            const title = element.querySelector('span').innerText;
+            document.getElementById('desc-title').innerText = title;
+            document.getElementById('desc-text').innerText = descriptions[id];
+        }
+
+        // Initialize first slide display properly on load
+        document.addEventListener('DOMContentLoaded', () => {
+           const firstSlide = document.getElementById('layout-title-slide');
+           firstSlide.style.display = 'flex';
+        });
+    </script>
+</body>
+</html>
