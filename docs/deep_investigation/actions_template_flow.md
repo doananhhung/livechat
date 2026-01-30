@@ -204,6 +204,10 @@ sequenceDiagram
 ## Data Flow Diagram
 
 ```mermaid
+---
+config:
+   layout: elk
+---
 flowchart TD
     subgraph Frontend
         A1[ActionTemplatesPage] -->|Manager CRUD| A2[actionsApi]

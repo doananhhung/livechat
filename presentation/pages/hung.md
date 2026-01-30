@@ -11,6 +11,9 @@ Kiến trúc tổng thể, triển khai, Event-Driven Core, Webhooks, và Audit 
 </LayoutSection>
 
 ---
+transition: slide-up
+---
+
 
 <LayoutTwoCol title="System Overview">
 
@@ -41,6 +44,9 @@ Kiến trúc tổng thể, triển khai, Event-Driven Core, Webhooks, và Audit 
 </LayoutTwoCol>
 
 ---
+transition: slide-up
+---
+
 
 <LayoutDiagram title="System Components Overview">
 
@@ -86,6 +92,8 @@ flowchart LR
 </LayoutDiagram>
 
 ---
+transition: slide-up
+---
 
 <LayoutTwoCol title="Multi-Tenancy with Projects">
 
@@ -119,6 +127,8 @@ Mọi entity → projectId → Cô lập hoàn toàn
 </LayoutTwoCol>
 
 ---
+transition: slide-up
+---
 
 <LayoutDiagram title="Message Flow - Optimistic UI Pattern">
 
@@ -144,6 +154,8 @@ sequenceDiagram
 </LayoutDiagram>
 
 ---
+transition: slide-up
+---
 
 <LayoutDiagram title="Visitor → Agent Message Flow">
 
@@ -158,6 +170,8 @@ flowchart LR
 
 </LayoutDiagram>
 
+---
+transition: slide-up
 ---
 
 <LayoutTitleContent title="Visitor → Agent: Step by Step">
@@ -174,6 +188,8 @@ flowchart LR
 
 </LayoutTitleContent>
 
+---
+transition: slide-up
 ---
 
 <LayoutDiagram title="Agent → Visitor Message Flow">
@@ -192,6 +208,8 @@ flowchart LR
 </LayoutDiagram>
 
 ---
+transition: slide-up
+---
 
 <LayoutSection title="Deployment & Tech Stack">
 
@@ -199,6 +217,8 @@ Công nghệ và cấu trúc Monorepo
 
 </LayoutSection>
 
+---
+transition: slide-up
 ---
 
 <LayoutTwoCol title="Technology Stack">
@@ -235,6 +255,8 @@ Công nghệ và cấu trúc Monorepo
 </LayoutTwoCol>
 
 ---
+transition: slide-up
+---
 
 <LayoutTitleContent title="Monorepo Structure">
 
@@ -258,6 +280,8 @@ live_chat/
 </LayoutTitleContent>
 
 ---
+transition: slide-up
+---
 
 <LayoutSection title="Event-Driven Core">
 
@@ -265,6 +289,8 @@ Kiến trúc Event và Socket.IO Room Isolation
 
 </LayoutSection>
 
+---
+transition: slide-up
 ---
 
 <LayoutDiagram title="Event Architecture">
@@ -304,6 +330,8 @@ flowchart TB
 </LayoutDiagram>
 
 ---
+transition: slide-up
+---
 
 <LayoutTitleContent title="Socket.IO Room Isolation">
 
@@ -335,6 +363,8 @@ this.server
 </LayoutTitleContent>
 
 ---
+transition: slide-up
+---
 
 <LayoutTwoCol title="Event Catalog">
 
@@ -362,6 +392,8 @@ this.server
 </LayoutTwoCol>
 
 ---
+transition: slide-up
+---
 
 <LayoutSection title="Webhooks">
 
@@ -369,6 +401,8 @@ External Integration với SSRF Protection
 
 </LayoutSection>
 
+---
+transition: slide-up
 ---
 
 <LayoutDiagram title="Webhook Architecture">
@@ -393,6 +427,8 @@ flowchart LR
 
 </LayoutDiagram>
 
+---
+transition: slide-up
 ---
 
 <LayoutTwoCol title="Webhook Components & Security">
@@ -423,6 +459,8 @@ flowchart LR
 </LayoutTwoCol>
 
 ---
+transition: slide-up
+---
 
 <LayoutSection title="Audit Logs">
 
@@ -430,6 +468,8 @@ Security Compliance & Investigation
 
 </LayoutSection>
 
+---
+transition: slide-up
 ---
 
 <LayoutTwoCol title="Audit System">
@@ -481,6 +521,8 @@ const SENSITIVE_KEYS = [
 </LayoutTwoCol>
 
 ---
+transition: slide-up
+---
 
 <LayoutSection title="Summary">
 
@@ -488,6 +530,8 @@ Tổng kết phần System Architecture
 
 </LayoutSection>
 
+---
+transition: slide-up
 ---
 
 <LayoutTitleContent title="Architecture Recap">
@@ -503,6 +547,8 @@ Tổng kết phần System Architecture
 
 </LayoutTitleContent>
 
+---
+transition: slide-left
 ---
 
 <LayoutTwoCol title="Handoff to Next Presenter">
