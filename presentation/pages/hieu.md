@@ -11,6 +11,8 @@ Authentication, Multi-tenancy, User Management, và Core Utilities
 </LayoutSection>
 
 ---
+transition: slide-up
+---
 
 <LayoutTwoCol title="Core Developer Overview">
 
@@ -43,6 +45,8 @@ Authentication, Multi-tenancy, User Management, và Core Utilities
 </LayoutTwoCol>
 
 ---
+transition: slide-up
+---
 
 <LayoutSection title="User Authentication">
 
@@ -50,6 +54,8 @@ JWT, OAuth Integration, và Two-Factor Authentication
 
 </LayoutSection>
 
+---
+transition: slide-up
 ---
 
 <LayoutDiagram title="Authentication Flow Overview">
@@ -104,6 +110,8 @@ flowchart LR
 </LayoutDiagram>
 
 ---
+transition: slide-up
+---
 
 <LayoutTwoCol title="Authentication Methods">
 
@@ -112,21 +120,10 @@ flowchart LR
 ### 🔑 Local Authentication
 **Email + Password + 2FA**
 
-```typescript
-// Login flow
-POST /auth/login
-{
-  "email": "agent@company.com",
-  "password": "***"
-}
-
-// Response
-{
-  "accessToken": "eyJhbGc...",
-  "refreshToken": "...",
-  "requires2FA": true
-}
-```
+| Endpoint | Method | Purpose |
+|----------|--------|----------|
+| `/auth/login` | POST | Authenticate with email/password |
+| Response | - | Returns access token, refresh token, and 2FA requirement |
 
 </template>
 
@@ -149,6 +146,8 @@ POST /auth/login
 
 </LayoutTwoCol>
 
+---
+transition: slide-up
 ---
 
 <LayoutDiagram title="JWT Phase 1: Login & Token Generation">
@@ -179,6 +178,8 @@ sequenceDiagram
 </LayoutDiagram>
 
 ---
+transition: slide-up
+---
 
 <LayoutDiagram title="JWT Phase 2: Authenticated Request">
 
@@ -203,6 +204,8 @@ sequenceDiagram
 
 </LayoutDiagram>
 
+---
+transition: slide-up
 ---
 
 <LayoutDiagram title="JWT Phase 3: Token Refresh">
@@ -230,37 +233,26 @@ sequenceDiagram
 </LayoutDiagram>
 
 ---
+transition: slide-up
+---
 
 <LayoutTitleContent title="JWT Token Structure">
-
-```typescript
-// Access Token Payload
-{
-  "sub": "user-uuid",           // User ID
-  "email": "agent@company.com",
-  "role": "AGENT",
-  "iat": 1706543210,            // Issued at
-  "exp": 1706544110             // Expires in 15 minutes
-}
-
-// Refresh Token
-{
-  "sub": "user-uuid",
-  "tokenId": "refresh-uuid",
-  "iat": 1706543210,
-  "exp": 1707148010             // Expires in 7 days
-}
-```
 
 | Token Type | Lifetime | Storage | Purpose |
 |------------|----------|---------|---------|
 | **Access Token** | 15 phút | Memory/LocalStorage | API authentication |
 | **Refresh Token** | 7 ngày | Redis + HttpOnly Cookie | Token renewal |
 
+**Access Token Payload**: User ID, email, role, issued at, expiry
+
+**Refresh Token Payload**: User ID, token ID, issued at, expiry
+
 > **Security**: Refresh token được lưu trong Redis để có thể **revoke** khi cần
 
 </LayoutTitleContent>
 
+---
+transition: slide-up
 ---
 
 <LayoutTwoCol title="Two-Factor Authentication (2FA)">
@@ -270,20 +262,10 @@ sequenceDiagram
 ### 📱 TOTP-based 2FA
 **Time-based One-Time Password**
 
-```typescript
-// Enable 2FA
-POST /auth/2fa/enable
-Response: {
-  "secret": "JBSWY3DPEHPK3PXP",
-  "qrCode": "data:image/png;base64,..."
-}
-
-// Verify setup
-POST /auth/2fa/verify
-{
-  "token": "123456"
-}
-```
+| Endpoint | Purpose |
+|----------|----------|
+| `POST /auth/2fa/enable` | Generate secret and QR code |
+| `POST /auth/2fa/verify` | Verify TOTP token |
 
 </template>
 
@@ -306,35 +288,26 @@ POST /auth/2fa/verify
 </LayoutTwoCol>
 
 ---
+transition: slide-up
+---
 
 <LayoutTitleContent title="Authentication Guards">
 
-```typescript
-// JwtAuthGuard - Bảo vệ tất cả routes
-@Injectable()
-export class JwtAuthGuard extends AuthGuard('jwt') {
-  canActivate(context: ExecutionContext) {
-    // Kiểm tra JWT token trong header
-    // Authorization: Bearer <token>
-    return super.canActivate(context);
-  }
-}
+**JwtAuthGuard**: Bảo vệ tất cả routes bằng cách kiểm tra JWT token trong header
 
-// Usage trong controller
-@Controller('inbox')
-@UseGuards(JwtAuthGuard)
-export class InboxController {
-  @Get()
-  async getInbox(@CurrentUser() user: User) {
-    // user đã được inject từ JWT payload
-  }
-}
-```
+**Usage**: Áp dụng guard cho controller để yêu cầu authentication
+
+**Features**:
+- Kiểm tra JWT token trong Authorization header
+- Extract user từ JWT payload
+- Inject user vào request context
 
 > **@CurrentUser()** decorator tự động extract user từ JWT payload
 
 </LayoutTitleContent>
 
+---
+transition: slide-up
 ---
 
 <LayoutSection title="Security Architecture">
@@ -343,6 +316,8 @@ Tổng quan kiến trúc bảo mật đa lớp
 
 </LayoutSection>
 
+---
+transition: slide-up
 ---
 
 <LayoutDiagram title="Security Layers - Defense in Depth">
@@ -402,6 +377,8 @@ flowchart LR
 </LayoutDiagram>
 
 ---
+transition: slide-up
+---
 
 <LayoutTwoCol title="Security Principles">
 
@@ -438,6 +415,8 @@ flowchart LR
 </LayoutTwoCol>
 
 ---
+transition: slide-up
+---
 
 <LayoutSection title="Multi-Tenancy: Projects">
 
@@ -445,6 +424,8 @@ Project-based Data Isolation và Role-Based Access Control
 
 </LayoutSection>
 
+---
+transition: slide-up
 ---
 
 <LayoutDiagram title="Multi-Tenancy Architecture">
@@ -495,6 +476,8 @@ flowchart TB
 </LayoutDiagram>
 
 ---
+transition: slide-up
+---
 
 <LayoutTwoCol title="Project Entity Structure">
 
@@ -502,25 +485,12 @@ flowchart TB
 
 ### 📦 Project Model
 
-```typescript
-@Entity()
-export class Project {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column()
-  name: string;
-
-  @Column({ unique: true })
-  slug: string;
-
-  @OneToMany(() => ProjectMember)
-  members: ProjectMember[];
-
-  @OneToMany(() => Conversation)
-  conversations: Conversation[];
-}
-```
+**Key Fields**:
+- `id`: UUID primary key
+- `name`: Project name
+- `slug`: Unique identifier
+- `members`: Project members relationship
+- `conversations`: Project conversations relationship
 
 </template>
 
@@ -528,65 +498,37 @@ export class Project {
 
 ### 👥 ProjectMember Model
 
-```typescript
-@Entity()
-export class ProjectMember {
-  @ManyToOne(() => User)
-  user: User;
-
-  @ManyToOne(() => Project)
-  project: Project;
-
-  @Column({
-    type: 'enum',
-    enum: ProjectRole
-  })
-  role: ProjectRole; // MANAGER | AGENT
-
-  @Column({ default: true })
-  isActive: boolean;
-}
-```
+**Key Fields**:
+- `user`: Reference to User entity
+- `project`: Reference to Project entity
+- `role`: MANAGER or AGENT
+- `isActive`: Membership status
 
 </template>
 
 </LayoutTwoCol>
 
 ---
+transition: slide-up
+---
 
 <LayoutTitleContent title="Project Isolation Enforcement">
 
-```typescript
-// ProjectGuard - Đảm bảo user thuộc project
-@Injectable()
-export class ProjectGuard implements CanActivate {
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-    const user = request.user;
-    const projectId = request.params.projectId || request.body.projectId;
+**ProjectGuard**: Đảm bảo user thuộc project trước khi cho phép truy cập
 
-    // Kiểm tra membership
-    const member = await this.projectService.findMembership(
-      projectId,
-      user.id
-    );
-
-    if (!member || !member.isActive) {
-      throw new ForbiddenException('Not a member of this project');
-    }
-
-    // Inject project vào request
-    request.project = member.project;
-    request.projectRole = member.role;
-    return true;
-  }
-}
-```
+**Process**:
+1. Extract user và projectId từ request
+2. Kiểm tra membership trong database
+3. Verify membership status (isActive)
+4. Inject project và role vào request context
+5. Throw ForbiddenException nếu không hợp lệ
 
 > Mọi request liên quan đến dữ liệu project **phải qua ProjectGuard**
 
 </LayoutTitleContent>
 
+---
+transition: slide-up
 ---
 
 <LayoutTwoCol title="Role-Based Access Control (RBAC)">
@@ -602,14 +544,9 @@ export class ProjectGuard implements CanActivate {
 
 ### 🔐 Role Guard
 
-```typescript
-@Roles(ProjectRole.MANAGER)
-@UseGuards(JwtAuthGuard, ProjectGuard, RolesGuard)
-@Delete('members/:memberId')
-async removeMember() {
-  // Chỉ MANAGER mới được xóa member
-}
-```
+**Usage**: Decorator-based role checking
+
+**Example**: `@Roles(ProjectRole.MANAGER)` - Chỉ MANAGER mới được truy cập endpoint
 
 </template>
 
@@ -631,6 +568,8 @@ async removeMember() {
 
 </LayoutTwoCol>
 
+---
+transition: slide-up
 ---
 
 <LayoutDiagram title="Request Flow with Multi-Tenancy">
@@ -668,6 +607,8 @@ sequenceDiagram
 </LayoutDiagram>
 
 ---
+transition: slide-up
+---
 
 <LayoutSection title="User Profile & Settings">
 
@@ -676,6 +617,8 @@ Self-Service Account Management
 </LayoutSection>
 
 ---
+transition: slide-up
+---
 
 <LayoutTwoCol title="User Profile Management">
 
@@ -683,31 +626,14 @@ Self-Service Account Management
 
 ### 👤 User Entity
 
-```typescript
-@Entity()
-export class User {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column({ unique: true })
-  email: string;
-
-  @Column({ nullable: true })
-  password: string; // Null for OAuth-only
-
-  @Column()
-  displayName: string;
-
-  @Column({ nullable: true })
-  avatarUrl: string;
-
-  @Column({ default: false })
-  is2FAEnabled: boolean;
-
-  @Column({ nullable: true })
-  twoFactorSecret: string;
-}
-```
+**Key Fields**:
+- `id`: UUID primary key
+- `email`: Unique email address
+- `password`: Hashed password (nullable for OAuth-only users)
+- `displayName`: User's display name
+- `avatarUrl`: Profile picture URL
+- `is2FAEnabled`: Two-factor authentication status
+- `twoFactorSecret`: TOTP secret for 2FA
 
 </template>
 
@@ -729,6 +655,8 @@ export class User {
 
 </LayoutTwoCol>
 
+---
+transition: slide-up
 ---
 
 <LayoutDiagram title="Email Change Flow (Security)">
@@ -782,6 +710,8 @@ flowchart LR
 </LayoutDiagram>
 
 ---
+transition: slide-up
+---
 
 <LayoutTwoCol title="Email Change Security Details">
 
@@ -822,45 +752,28 @@ flowchart LR
 </LayoutTwoCol>
 
 ---
+transition: slide-up
+---
 
 <LayoutTitleContent title="Secure Email Change Implementation">
 
-```typescript
-// Step 1: Request email change
-async requestEmailChange(userId: string, newEmail: string) {
-  // Kiểm tra email đã tồn tại
-  const exists = await this.userRepository.findOne({ where: { email: newEmail } });
-  if (exists) throw new ConflictException('Email already in use');
+**Step 1: Request Email Change**
+1. Kiểm tra email đã tồn tại
+2. Generate secure token (32 bytes)
+3. Lưu vào Redis với TTL 1 giờ
+4. Gửi email verification
 
-  // Generate token
-  const token = randomBytes(32).toString('hex');
-  
-  // Lưu vào Redis (expire 1 hour)
-  await this.redis.setex(
-    `email-change:${token}`,
-    3600,
-    JSON.stringify({ userId, newEmail })
-  );
-
-  // Gửi email
-  await this.mailService.sendEmailVerification(newEmail, token);
-}
-
-// Step 2: Verify token
-async verifyEmailChange(token: string) {
-  const data = await this.redis.get(`email-change:${token}`);
-  if (!data) throw new BadRequestException('Invalid or expired token');
-
-  const { userId, newEmail } = JSON.parse(data);
-  await this.userRepository.update(userId, { email: newEmail });
-  await this.redis.del(`email-change:${token}`);
-}
-```
+**Step 2: Verify Token**
+1. Validate token từ Redis
+2. Update user email trong database
+3. Delete token để prevent reuse
 
 > **Security**: Token chỉ dùng 1 lần và tự động expire sau 1 giờ
 
 </LayoutTitleContent>
 
+---
+transition: slide-up
 ---
 
 <LayoutSection title="Mail Service">
@@ -869,6 +782,8 @@ Transactional Email Infrastructure
 
 </LayoutSection>
 
+---
+transition: slide-up
 ---
 
 <LayoutDiagram title="Mail Service Architecture">
@@ -906,6 +821,8 @@ flowchart LR
 </LayoutDiagram>
 
 ---
+transition: slide-up
+---
 
 <LayoutTwoCol title="Mail Service Features">
 
@@ -931,18 +848,10 @@ flowchart LR
 
 ### 🌍 Internationalization (i18n)
 
-```typescript
-// Template với i18n
-await this.mailService.send({
-  to: user.email,
-  template: 'welcome',
-  locale: user.preferredLanguage, // 'en' | 'vi'
-  context: {
-    displayName: user.displayName,
-    loginUrl: 'https://app.example.com'
-  }
-});
-```
+**Features**:
+- Multi-language support (EN/VI)
+- Template-based với dynamic context
+- User preference-based locale selection
 
 > Hỗ trợ **multi-language** dựa trên user preference
 
@@ -951,46 +860,26 @@ await this.mailService.send({
 </LayoutTwoCol>
 
 ---
+transition: slide-up
+---
 
 <LayoutTitleContent title="Mail Service Implementation">
 
-```typescript
-@Injectable()
-export class MailService {
-  constructor(
-    @InjectQueue('mail') private mailQueue: Queue,
-    private configService: ConfigService,
-  ) {}
+**Key Methods**:
+- `sendEmailVerification()`: Gửi email xác thực với verification URL
+- `sendPasswordReset()`: Gửi email reset password
 
-  async sendEmailVerification(email: string, token: string) {
-    const verifyUrl = `${this.configService.get('APP_URL')}/verify-email?token=${token}`;
-    
-    await this.mailQueue.add('send-email', {
-      to: email,
-      template: 'email-verification',
-      context: {
-        verifyUrl,
-        expiresIn: '1 hour'
-      }
-    });
-  }
-
-  async sendPasswordReset(email: string, token: string) {
-    const resetUrl = `${this.configService.get('APP_URL')}/reset-password?token=${token}`;
-    
-    await this.mailQueue.add('send-email', {
-      to: email,
-      template: 'password-reset',
-      context: { resetUrl }
-    });
-  }
-}
-```
+**Architecture**:
+- Sử dụng BullMQ queue cho async processing
+- Template-based email generation
+- Dynamic context injection
 
 > Email được gửi **bất đồng bộ** qua BullMQ để không block request
 
 </LayoutTitleContent>
 
+---
+transition: slide-up
 ---
 
 <LayoutSection title="Screenshot Service">
@@ -999,6 +888,8 @@ Puppeteer Integration & Security
 
 </LayoutSection>
 
+---
+transition: slide-up
 ---
 
 <LayoutDiagram title="Screenshot Service Flow">
@@ -1053,6 +944,8 @@ flowchart LR
 </LayoutDiagram>
 
 ---
+transition: slide-up
+---
 
 <LayoutTwoCol title="Screenshot Service Security">
 
@@ -1060,33 +953,11 @@ flowchart LR
 
 ### 🛡️ SSRF Protection
 
-```typescript
-async validateUrl(url: string) {
-  // 1. HTTPS only
-  if (!url.startsWith('https://')) {
-    throw new BadRequestException(
-      'Only HTTPS URLs allowed'
-    );
-  }
-
-  // 2. Parse URL
-  const parsed = new URL(url);
-  
-  // 3. Resolve DNS
-  const ips = await dns.resolve4(
-    parsed.hostname
-  );
-
-  // 4. Block private IPs
-  for (const ip of ips) {
-    if (this.isPrivateIP(ip)) {
-      throw new ForbiddenException(
-        'Private IPs not allowed'
-      );
-    }
-  }
-}
-```
+**Validation Steps**:
+1. HTTPS only - Reject non-HTTPS URLs
+2. Parse URL - Extract hostname
+3. Resolve DNS - Get IP addresses
+4. Block private IPs - Prevent internal network access
 
 </template>
 
@@ -1109,58 +980,29 @@ async validateUrl(url: string) {
 </LayoutTwoCol>
 
 ---
+transition: slide-up
+---
 
 <LayoutTitleContent title="Puppeteer Implementation">
 
-```typescript
-@Injectable()
-export class ScreenshotService {
-  async captureScreenshot(url: string): Promise<string> {
-    // Validate URL (SSRF protection)
-    await this.validateUrl(url);
+**Process**:
+1. Validate URL (SSRF protection)
+2. Launch headless browser với security flags
+3. Set viewport (1280x720)
+4. Navigate với timeout (30s)
+5. Capture screenshot (PNG format)
+6. Save to storage service
+7. Return public URL
 
-    // Launch headless browser
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage'
-      ]
-    });
-
-    try {
-      const page = await browser.newPage();
-      
-      // Set viewport
-      await page.setViewport({ width: 1280, height: 720 });
-      
-      // Navigate with timeout
-      await page.goto(url, { 
-        waitUntil: 'networkidle2',
-        timeout: 30000 
-      });
-      
-      // Capture screenshot
-      const screenshot = await page.screenshot({ 
-        type: 'png',
-        fullPage: false 
-      });
-      
-      // Save to storage
-      const filename = `screenshot-${Date.now()}.png`;
-      await this.storageService.save(filename, screenshot);
-      
-      return this.storageService.getUrl(filename);
-    } finally {
-      await browser.close();
-    }
-  }
-}
-```
+**Security Features**:
+- Sandbox mode disabled for containerized environments
+- Timeout protection
+- Resource cleanup (browser.close())
 
 </LayoutTitleContent>
 
+---
+transition: slide-up
 ---
 
 <LayoutTwoCol title="Screenshot Use Cases">
@@ -1182,14 +1024,12 @@ export class ScreenshotService {
 
 ### ⚙️ Configuration
 
-```typescript
-// Environment variables
-SCREENSHOT_STORAGE_TYPE=local // or 's3'
-SCREENSHOT_MAX_SIZE=5242880    // 5MB
-SCREENSHOT_TIMEOUT=30000       // 30s
-SCREENSHOT_VIEWPORT_WIDTH=1280
-SCREENSHOT_VIEWPORT_HEIGHT=720
-```
+**Environment Variables**:
+- `SCREENSHOT_STORAGE_TYPE`: local hoặc s3
+- `SCREENSHOT_MAX_SIZE`: 5MB limit
+- `SCREENSHOT_TIMEOUT`: 30 seconds
+- `SCREENSHOT_VIEWPORT_WIDTH`: 1280px
+- `SCREENSHOT_VIEWPORT_HEIGHT`: 720px
 
 > Production nên dùng **S3** hoặc **Cloud Storage**
 
@@ -1198,6 +1038,8 @@ SCREENSHOT_VIEWPORT_HEIGHT=720
 </LayoutTwoCol>
 
 ---
+transition: slide-up
+---
 
 <LayoutSection title="Summary">
 
@@ -1205,6 +1047,8 @@ Tổng kết phần Core Developer
 
 </LayoutSection>
 
+---
+transition: slide-up
 ---
 
 <LayoutTitleContent title="Core Developer Recap">
@@ -1229,6 +1073,8 @@ Tổng kết phần Core Developer
 
 </LayoutTitleContent>
 
+---
+transition: slide-left
 ---
 
 <LayoutTwoCol title="Handoff to Next Presenter">
