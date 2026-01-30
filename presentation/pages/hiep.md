@@ -15,6 +15,8 @@ Presenter: Member 4 (Product Owner)
 </LayoutTitleContent>
 
 ---
+transition: slide-up
+---
 
 <LayoutTitleContent title="Core Utilities & Security">
 
