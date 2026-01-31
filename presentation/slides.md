@@ -2,6 +2,7 @@
 theme: default
 highlighter: shiki
 lineNumbers: false
+css: style.css
 info: |
   ## Live Chat System Presentation
   Internal Technical Deep Dive

@@ -1,0 +1,27 @@
+/* Custom Slidev Styles - Remove Padding */
+
+/* Remove default padding from slide container */
+.slidev-layout {
+  padding: 0 !important;
+}
+
+/* Remove padding from page wrapper */
+.slidev-page {
+  padding: 0 !important;
+}
+
+/* Ensure Layout components also have no padding */
+.layout-two-col,
+.layout-diagram,
+.layout-title-content,
+.layout-section {
+  padding: 0 !important;
+}
+
+/* Optional: Add small padding if needed for readability */
+/* Uncomment and adjust values as needed */
+/*
+.slidev-layout {
+  padding: 1rem !important;
+}
+*/

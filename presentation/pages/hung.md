@@ -510,34 +510,37 @@ transition: slide-up
 ```mermaid
 flowchart TB
     subgraph Inbound["Inbound Events (Visitor → System)"]
-        direction LR
+        direction TB
         GW_IN["EventsGateway"]
         E_IN(["visitor.message.received"])
         IEH["InboxEventHandlerService"]
         BQ["BullMQ Queue"]
     end
+    subgraph OutboundFlow["Outbound Events (System → Visitor)"]
+        direction TB
+        
+        subgraph Backend["Domain Services"]
+            CS["ConversationService"]
+            MS["MessageService"]
+            VS["VisitorsService"]
+        end
 
-    subgraph Backend["Domain Services"]
-        CS["ConversationService"]
-        MS["MessageService"]
-        VS["VisitorsService"]
-    end
+        subgraph Events["EventEmitter2 (System → Gateway)"]
+            direction LR
+            E1(["conversation.updated"])
+            E2(["agent.message.sent"])
+            E3(["visitor.updated"])
+        end
 
-    subgraph Outbound[" EnventEmitter2 (System → Gateway)"]
-        direction LR
-        E1(["conversation.updated"])
-        E2(["agent.message.sent"])
-        E3(["visitor.updated"])
-    end
+        subgraph Listener["GatewayEventListener"]
+            H1["handleConversationUpdated"]
+            H2["handleAgentMessageSent"]
+            H3["handleVisitorUpdated"]
+        end
 
-    subgraph Listener["GatewayEventListener"]
-        H1["handleConversationUpdated"]
-        H2["handleAgentMessageSent"]
-        H3["handleVisitorUpdated"]
-    end
-
-    subgraph Gateway["EventsGateway"]
-        Emit["Broadcast to Rooms"]
+        subgraph Gateway["EventsGateway"]
+            Emit["Broadcast to Rooms"]
+        end
     end
 
     %% Inbound Flow
@@ -842,7 +845,7 @@ Tổng kết phần System Architecture
 </LayoutSection>
 
 ---
-transition: slide-up
+transition: slide-left
 ---
 
 <LayoutTitleContent title="Architecture Recap">
@@ -857,35 +860,3 @@ transition: slide-up
 | **Compliance** | Audit Logs với Fail-Open + Redaction |
 
 </LayoutTitleContent>
-
----
-transition: slide-left
----
-
-<LayoutTwoCol title="Handoff to Next Presenter">
-
-<template #left>
-
-### ✅ Covered Topics
-- System Architecture Overview
-- Multi-tenancy & Project Isolation
-- Message Flow Patterns
-- Event-Driven Core
-- Webhooks & Security
-- Audit Logs
-
-</template>
-
-<template #right>
-
-### ➡️ Next: Member 2
-**Core Developer - Authentication**
-
-- JWT Authentication
-- OAuth Integration
-- Two-Factor Authentication (2FA)
-- Session Management
-
-</template>
-
-</LayoutTwoCol>
