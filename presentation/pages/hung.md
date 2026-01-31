@@ -11,6 +11,9 @@ Kiến trúc tổng thể, triển khai, Event-Driven Core, Webhooks, và Audit 
 </LayoutSection>
 
 ---
+transition: slide-up
+---
+
 
 <LayoutTwoCol title="System Overview">
 
@@ -329,6 +332,8 @@ EventsGateway nhận từ Redis và emit tin nhắn đến Widget của visitor.
 -->
 
 ---
+transition: slide-up
+---
 
 <LayoutDiagram title="Agent → Visitor: Complete Flow">
 
@@ -425,6 +430,8 @@ Công nghệ và cấu trúc Monorepo
 </LayoutSection>
 
 ---
+transition: slide-up
+---
 
 <LayoutTwoCol title="Technology Stack">
 
@@ -460,6 +467,8 @@ Công nghệ và cấu trúc Monorepo
 </LayoutTwoCol>
 
 ---
+transition: slide-up
+---
 
 <LayoutTitleContent title="Monorepo Structure">
 
@@ -483,6 +492,8 @@ live_chat/
 </LayoutTitleContent>
 
 ---
+transition: slide-up
+---
 
 <LayoutSection title="Event-Driven Core">
 
@@ -490,6 +501,8 @@ Kiến trúc Event và Socket.IO Room Isolation
 
 </LayoutSection>
 
+---
+transition: slide-up
 ---
 
 <LayoutDiagram title="Event Architecture">
@@ -547,6 +560,8 @@ flowchart TB
 </LayoutDiagram>
 
 ---
+transition: slide-up
+---
 
 <LayoutTitleContent title="Socket.IO Room Isolation">
 
@@ -578,6 +593,8 @@ this.server
 </LayoutTitleContent>
 
 ---
+transition: slide-up
+---
 
 <LayoutTwoCol title="Event Catalog">
 
@@ -605,6 +622,8 @@ this.server
 </LayoutTwoCol>
 
 ---
+transition: slide-up
+---
 
 <LayoutSection title="Webhooks">
 
@@ -612,6 +631,8 @@ External Integration với SSRF Protection
 
 </LayoutSection>
 
+---
+transition: slide-up
 ---
 
 <LayoutDiagram title="Webhook Architecture">
@@ -749,6 +770,8 @@ Cơ chế này đảm bảo: Reliability (retry), Scalability (distributed worke
 </LayoutTwoCol>
 
 ---
+transition: slide-up
+---
 
 <LayoutSection title="Audit Logs">
 
@@ -756,6 +779,8 @@ Security Compliance & Investigation
 
 </LayoutSection>
 
+---
+transition: slide-up
 ---
 
 <LayoutTwoCol title="Audit System">
@@ -807,6 +832,8 @@ const SENSITIVE_KEYS = [
 </LayoutTwoCol>
 
 ---
+transition: slide-up
+---
 
 <LayoutSection title="Summary">
 
@@ -814,6 +841,8 @@ Tổng kết phần System Architecture
 
 </LayoutSection>
 
+---
+transition: slide-up
 ---
 
 <LayoutTitleContent title="Architecture Recap">
@@ -829,6 +858,8 @@ Tổng kết phần System Architecture
 
 </LayoutTitleContent>
 
+---
+transition: slide-left
 ---
 
 <LayoutTwoCol title="Handoff to Next Presenter">
