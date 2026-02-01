@@ -16,15 +16,6 @@ export const AuditLogsPage = () => {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(-1)}
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {t("common.back")}
-        </Button>
         <h1 className="text-2xl font-bold text-foreground">{t("auditLogs.title")}</h1>
         <p className="text-muted-foreground">
           {t("auditLogs.description")}

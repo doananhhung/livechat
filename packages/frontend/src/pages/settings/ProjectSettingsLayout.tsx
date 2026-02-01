@@ -1,4 +1,4 @@
-import { NavLink, Outlet, Link, useParams } from "react-router-dom";
+import { NavLink, Outlet, Link, useParams, useNavigate } from "react-router-dom";
 import { 
   Info, 
   Palette, 
@@ -19,6 +19,7 @@ import * as projectApi from "../../services/projectApi";
 
 export function ProjectSettingsLayout() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { projectId } = useParams<{ projectId: string }>();
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -30,15 +31,13 @@ export function ProjectSettingsLayout() {
   const project = projects?.find((p) => p.id === Number(projectId));
 
   const navItems = [
-    { name: t("settings.basicInfo"), href: `/projects/${projectId}/settings/general`, icon: Info },
-    { name: t("settings.widgetSettings"), href: `/projects/${projectId}/settings/widget`, icon: Palette },
-    { name: t("settings.aiResponder"), href: `/projects/${projectId}/settings/ai`, icon: Bot },
-    { name: t("settings.cannedResponses"), href: `/projects/${projectId}/settings/canned-responses`, icon: MessageSquarePlus },
-    { name: t("settings.actionTemplates"), href: `/projects/${projectId}/settings/action-templates`, icon: Workflow },
-    { name: t("settings.auditLogs"), href: `/projects/${projectId}/settings/audit-logs`, icon: ShieldAlert },
+    { name: t("settings.basicInfo"), href: `/settings/projects/${projectId}/general`, icon: Info },
+    { name: t("settings.widgetSettings"), href: `/settings/projects/${projectId}/widget`, icon: Palette },
+    { name: t("settings.aiResponder"), href: `/settings/projects/${projectId}/ai`, icon: Bot },
+    { name: t("settings.cannedResponses"), href: `/settings/projects/${projectId}/canned-responses`, icon: MessageSquarePlus },
+    { name: t("settings.actionTemplates"), href: `/settings/projects/${projectId}/action-templates`, icon: Workflow },
+    { name: t("settings.auditLogs"), href: `/settings/projects/${projectId}/audit-logs`, icon: ShieldAlert },
   ];
-
-  const backHref = `/inbox/projects/${projectId}`;
 
   return (
     <div className="flex min-h-screen">
@@ -65,13 +64,13 @@ export function ProjectSettingsLayout() {
 
         {/* Navigation */}
         <nav className="flex-1 p-3 space-y-1">
-          <Link
-            to={backHref}
-            className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+          <button
+            onClick={() => navigate(-1)}
+            className="flex w-full items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors text-left"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span>{t("settings.backToInbox")}</span>
-          </Link>
+            <span>{t("common.back")}</span>
+          </button>
 
           <div className="pt-4 pb-2">
             <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -137,14 +136,16 @@ export function ProjectSettingsLayout() {
             </div>
 
             <nav className="p-3 space-y-1">
-              <Link
-                to={backHref}
-                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent"
-                onClick={() => setMobileMenuOpen(false)}
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  navigate(-1);
+                }}
+                className="flex w-full items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent text-left"
               >
                 <ArrowLeft className="h-4 w-4" />
-                <span>{t("settings.backToInbox")}</span>
-              </Link>
+                <span>{t("common.back")}</span>
+              </button>
 
               {navItems.map((item) => (
                 <NavLink

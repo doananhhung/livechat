@@ -147,6 +147,21 @@ export const AiResponderSettingsForm = ({
       onSubmit={handleSubmit}
       className="space-y-6 transition-all duration-300 ease-in-out"
     >
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 bg-card border-b -mx-6 -mt-6 px-6 py-4 mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">
+            {t("settings.aiResponder")}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t("settings.aiResponderDesc")}
+          </p>
+        </div>
+        <Button type="submit" disabled={updateMutation.isPending}>
+          {updateMutation.isPending ? t("common.saving") : t("common.save")}
+        </Button>
+      </div>
+
       <div className="flex items-center justify-between border p-4 rounded-lg bg-muted/20">
         <div>
           <h3 className="font-medium text-foreground">
@@ -298,12 +313,6 @@ export const AiResponderSettingsForm = ({
           />
         </div>
       )}
-
-      <StickyFooter className="flex justify-end">
-        <Button type="submit" disabled={updateMutation.isPending}>
-          {updateMutation.isPending ? t("common.saving") : t("common.save")}
-        </Button>
-      </StickyFooter>
     </form>
   );
 };

@@ -106,11 +106,6 @@ const ActionTemplatesPage = lazy(() =>
     default: m.ActionTemplatesPage,
   }))
 );
-const ProjectsListPage = lazy(() =>
-  import("./pages/settings/ProjectsListPage").then((m) => ({
-    default: m.ProjectsListPage,
-  }))
-);
 
 /**
  * PublicRoute HOC for better auth flow.
@@ -253,23 +248,22 @@ function App() {
               <Route index element={<Navigate to="profile" replace />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="security" element={<SecurityPage />} />
-              <Route path="projects" element={<ProjectsListPage />} />
             </Route>
 
             {/* Project-specific settings page (Nested Layout) */}
             <Route
-              path="/projects/:projectId/settings"
+              path="/settings/projects/:projectId"
               element={<ProjectSettingsLayout />}
             >
               <Route index element={<Navigate to="general" replace />} />
-              <Route path="general" element={<ProjectGeneralSettingsPage />} />
+              <Route
+                path="general"
+                element={<ProjectGeneralSettingsPage />}
+              />
               <Route path="widget" element={<ProjectWidgetSettingsPage />} />
               <Route path="ai" element={<ProjectAiSettingsPage />} />
-              
-              <Route
-                path="audit-logs"
-                element={<AuditLogsPage />}
-              />
+
+              <Route path="audit-logs" element={<AuditLogsPage />} />
               <Route
                 path="canned-responses"
                 element={<CannedResponsesPage />}

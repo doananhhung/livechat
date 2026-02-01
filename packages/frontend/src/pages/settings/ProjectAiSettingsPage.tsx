@@ -44,25 +44,6 @@ export const ProjectAiSettingsPage = () => {
 
   return (
     <div className="max-w-6xl mx-auto pb-20">
-      {/* Header */}
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(-1)}
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {t("common.back")}
-        </Button>
-        <h1 className="text-2xl font-bold text-foreground">
-          {t("settings.aiResponder")}
-        </h1>
-        <p className="text-muted-foreground">
-          {t("settings.aiResponderDesc")}
-        </p>
-      </div>
-
       <div className="bg-card border rounded-lg p-6">
         <PermissionGate
           projectId={currentProject.id}

@@ -7,17 +7,33 @@ import { Button } from "../../components/ui/Button";
 import { useAuthStore } from "../../stores/authStore";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import * as projectApi from "../../services/projectApi";
 
 export function SettingsLayout() {
   const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const { data: projects } = useQuery({
+    queryKey: ["projects"],
+    queryFn: projectApi.getProjects,
+  });
+
+  const firstProjectId = projects?.[0]?.id;
   
   const navItems = [
     { name: t("settings.menu.profile"), href: "/settings/profile", icon: User },
     { name: t("settings.menu.security"), href: "/settings/security", icon: Shield },
-    { name: t("settings.menu.projects"), href: "/settings/projects", icon: FolderKanban },
   ];
+
+  if (firstProjectId) {
+    navItems.push({ 
+      name: t("settings.menu.projects"), 
+      href: `/settings/projects/${firstProjectId}`, 
+      icon: FolderKanban 
+    });
+  }
 
   return (
     <div className="flex min-h-screen">

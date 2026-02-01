@@ -18,7 +18,7 @@ import {
   LLMResponse,
 } from '../src/ai-responder/interfaces/llm-provider.interface';
 import { AiResponderModule } from '../src/ai-responder/ai-responder.module';
-import { VisitorMessageReceivedEvent } from '../src/inbox/events';
+import { AiProcessMessageEvent } from '../src/inbox/events';
 import { ConversationStatus } from '@live-chat/shared-types';
 
 // Barrier Implementation for Coordination
@@ -187,17 +187,11 @@ describe('AiResponder Concurrency (E2E)', () => {
     mockLLM.barrier.activate();
 
     // 3. Trigger AI
-    const event: VisitorMessageReceivedEvent = {
+    // 3. Trigger AI
+    const event: AiProcessMessageEvent = {
       projectId: project.id,
       visitorUid: visitor.visitorUid,
-      content: 'Hello AI',
-      tempId: 'temp-123',
-      socketId: 'socket-123',
-      sessionMetadata: {
-        referrer: 'http://test.com',
-        landingPage: '/',
-        urlHistory: [],
-      },
+      conversationId: conversation.id,
     };
 
     // Start processing in background (it will await barrier)

@@ -9,6 +9,7 @@ import {
   SelectionMode,
   type Connection,
   type NodeTypes,
+  type EdgeTypes,
   type Node,
   type Edge,
   type ColorMode,
@@ -20,6 +21,7 @@ import { ActionNode } from "./nodes/ActionNode";
 import { LlmNode } from "./nodes/LlmNode";
 import { ConditionNode } from "./nodes/ConditionNode";
 import { SwitchNode } from "./nodes/SwitchNode";
+import { DeletableEdge } from "./edges/DeletableEdge";
 import { NodeConfigPanel } from "./NodeConfigPanel";
 import { NodeToolbar } from "./NodeToolbar";
 import { GlobalToolsPanel } from "./GlobalToolsPanel";
@@ -52,6 +54,10 @@ const nodeTypes: NodeTypes = {
   llm: LlmNode,
   condition: ConditionNode,
   switch: SwitchNode,
+};
+
+const edgeTypes: EdgeTypes = {
+  default: DeletableEdge,
 };
 
 export const WorkflowEditor = ({
@@ -193,6 +199,7 @@ export const WorkflowEditor = ({
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         colorMode={colorMode}
         deleteKeyCode="Delete"
         selectionOnDrag={true}

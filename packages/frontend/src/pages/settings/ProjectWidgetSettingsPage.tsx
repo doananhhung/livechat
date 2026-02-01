@@ -142,25 +142,6 @@ export const ProjectWidgetSettingsPage = () => {
 
   return (
     <div className="max-w-6xl mx-auto pb-20">
-      {/* Header */}
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(-1)}
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {t("common.back")}
-        </Button>
-        <h1 className="text-2xl font-bold text-foreground">
-          {t("settings.widgetSettings")}
-        </h1>
-        <p className="text-muted-foreground">
-          {t("settings.widgetSettingsDesc")}
-        </p>
-      </div>
-
       <div className="bg-card border rounded-lg p-6">
         <PermissionGate
           projectId={currentProject.id}
@@ -172,6 +153,23 @@ export const ProjectWidgetSettingsPage = () => {
           }
         >
           <form onSubmit={handleWidgetSubmit}>
+            {/* Sticky Header */}
+            <div className="sticky top-0 z-10 bg-card border-b -mx-6 -mt-6 px-6 py-4 mb-6 flex items-center justify-between">
+              <div>
+                <h1 className="text-lg font-semibold text-foreground">
+                  {t("settings.widgetSettings")}
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  {t("settings.widgetSettingsDesc")}
+                </p>
+              </div>
+              <Button type="submit" disabled={updateWidgetMutation.isPending}>
+                {updateWidgetMutation.isPending
+                  ? t("common.saving")
+                  : t("common.save")}
+              </Button>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Left Column: Form Fields */}
               <div className="space-y-6">
@@ -361,17 +359,6 @@ export const ProjectWidgetSettingsPage = () => {
                 </div>
               </div>
             </div>
-
-            <StickyFooter className="flex justify-end mt-6">
-              <Button
-                type="submit"
-                disabled={updateWidgetMutation.isPending}
-              >
-                {updateWidgetMutation.isPending
-                  ? t("common.saving")
-                  : t("common.save")}
-              </Button>
-            </StickyFooter>
           </form>
         </PermissionGate>
       </div>

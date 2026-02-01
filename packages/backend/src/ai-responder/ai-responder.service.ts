@@ -9,6 +9,7 @@ import { Conversation, Message, Project } from '../database/entities';
 import { MessageStatus } from '@live-chat/shared-types';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { RealtimeSessionService } from '../realtime-session/realtime-session.service';
+import { AiProcessMessageEvent } from '../inbox/events';
 import { LLMProviderManager } from './services/llm-provider.manager';
 import {
   ChatMessage,
@@ -72,10 +73,10 @@ export class AiResponderService {
     return agentCount === 0;
   }
 
-  @OnEvent('visitor.message.received')
-  async handleVisitorMessage(payload: VisitorMessageReceivedEvent) {
+  @OnEvent('ai.process.message')
+  async handleVisitorMessage(payload: AiProcessMessageEvent) {
     this.logger.log(
-      `Checking AI response for visitor ${payload.visitorUid} in project ${payload.projectId}`
+      `Checking AI response for conversation ${payload.conversationId} in project ${payload.projectId}`
     );
 
     // Acquire lock to prevent concurrent processing for the same visitor
@@ -102,491 +103,420 @@ export class AiResponderService {
    * Separated to allow recursive calls (e.g., for condition node routing)
    * while holding the single lock from the entry point.
    */
-  private async _processMessage(payload: VisitorMessageReceivedEvent) {
+  private async _processMessage(payload: AiProcessMessageEvent) {
     try {
-      // 0. Check Visitor Preference (Opt-out)
-      // If aiEnabled is strictly false, skip. Undefined implies true/default.
-      if (payload.sessionMetadata?.aiEnabled === false) {
-        this.logger.debug(
-          `AI skipped for visitor ${payload.visitorUid} (opted out).`
-        );
-        return;
-      }
+      // 1. Validation & Data Loading
+      const ctx = await this._loadExecutionContext(payload);
+      if (!ctx) return;
+      const { project, conversation, messages } = ctx;
 
-      // 1. Check if AI should be active
-      const isActive = await this.isAiActive(payload.projectId);
-      if (!isActive) {
-        this.logger.debug(
-          `AI not active for project ${payload.projectId}. Skipping.`
-        );
-        return;
-      }
+      // 2. Workflow Setup (State Machine & Action Nodes)
+      const wfState = await this._prepareWorkflow(
+        project,
+        conversation,
+        messages
+      );
+      if (!wfState) return; // Should not happen typically, but safe guard
 
-      // 2. Fetch project for prompt
-      const project = await this.projectRepository.findOneBy({
-        id: payload.projectId,
-      });
-      if (!project) return;
-
-      // 3. Wait a bit to simulate processing/prevent race conditions with the message being saved
-      // Ideally we would listen to 'message.created' but 'visitor.message.received' is upstream.
-      // We need to fetch the conversation context.
-
-      // Let's look up the conversation by visitorUid
-      const conversation = await this.conversationRepository.findOne({
-        where: {
-          visitor: { visitorUid: payload.visitorUid },
-          project: { id: payload.projectId },
-        },
-        relations: ['visitor'],
-      });
-
-      if (!conversation) {
-        this.logger.warn(
-          `No conversation found for visitor ${payload.visitorUid} when trying to reply with AI.`
-        );
-        return;
-      }
-
-      // 4. Fetch recent history
-      const history = await this.messageRepository.find({
-        where: { conversationId: Number(conversation.id) },
-        order: { createdAt: 'DESC' },
-        take: 10,
-      });
-
-      // 5. Format messages for LLM
-      const messages: ChatMessage[] = history.reverse().map((msg) => ({
-        role: msg.fromCustomer ? 'user' : 'assistant',
-        content: msg.content || '',
-      }));
-
-      // Append the new message if it wasn't in DB yet
-      const lastMsg = messages[messages.length - 1];
-      if (!lastMsg || lastMsg.content !== payload.content) {
-        messages.push({ role: 'user', content: payload.content });
-      }
-
-      // -- WORKFLOW LOGIC START --
-      // Phase 3 Migration: Check aiConfig first, fallback to legacy
-      const aiConfig = project.aiConfig as Record<string, any> | null;
-      let systemPrompt =
-        aiConfig?.prompt ||
-        project.aiResponderPrompt ||
-        'You are a helpful assistant.';
-      let tools: ToolDefinition[] | undefined = undefined;
-      let workflowCtx: WorkflowContext | null = null;
-      let isConditionRouting = false;
-      let conditionNode: { id: string; type: string; data: unknown } | null =
-        null;
-      let isSwitchRouting = false;
-      let switchNode: { id: string; type: string; data: unknown } | null = null;
-
-      if (project.aiMode === 'orchestrator' && project.aiConfig) {
-        // Load Workflow
-        const workflow = project.aiConfig as WorkflowDefinition;
-        const metadata =
-          (conversation.metadata as VisitorSessionMetadata) || {};
-
-        // Determine Current Node
-        let currentNodeId = metadata.workflowState?.currentNodeId ?? null;
-
-        if (!currentNodeId) {
-          // Find start node and execute to get first real node
-          const startNode = workflow.nodes.find((n) => n.type === 'start');
-          if (startNode) {
-            const startCtx: WorkflowContext = {
-              projectId: project.id,
-              visitorId: conversation.visitor.id,
-              conversationId: String(conversation.id),
-              currentNodeId: startNode.id,
-              workflow: workflow,
-              history: messages,
-            };
-            const startResult = await this.workflowEngine.executeStep(startCtx);
-            currentNodeId = startResult.nextNodeId;
-          }
-        }
-
-        // Auto-execute Action nodes until we hit LLM or Condition
-        let currentNode = currentNodeId
-          ? workflow.nodes.find((n) => n.id === currentNodeId)
-          : null;
-
-        while (currentNode && currentNode.type === 'action') {
-          this.logger.debug(
-            `[Workflow] Auto-executing action node: ${currentNode.id}`
-          );
-          const actionCtx: WorkflowContext = {
-            projectId: project.id,
-            visitorId: conversation.visitor.id,
-            conversationId: String(conversation.id),
-            currentNodeId: currentNode.id,
-            workflow: workflow,
-            history: messages,
-          };
-          const actionResult = await this.workflowEngine.executeStep(actionCtx);
-          currentNodeId = actionResult.nextNodeId;
-          currentNode = currentNodeId
-            ? workflow.nodes.find((n) => n.id === currentNodeId)
-            : null;
-        }
-
-        if (currentNodeId && currentNode) {
-          // Check if this is a Condition (Router) node
-          if (currentNode.type === 'condition') {
-            isConditionRouting = true;
-            conditionNode = currentNode;
-
-            // Get routing prompt from node data or use default
-            const routingPrompt =
-              (currentNode.data?.prompt as string) ||
-              'Based on the conversation, decide which path to take. Use the route_decision tool with path "yes" or "no".';
-            systemPrompt = routingPrompt;
-            tools = [this.aiToolExecutor.getRoutingTool()];
-
-            this.logger.debug(
-              `[Workflow] Condition node ${currentNode.id} - using route_decision tool`
-            );
-          } else if (currentNode.type === 'switch') {
-            isSwitchRouting = true;
-            switchNode = currentNode;
-
-            const switchData = currentNode.data as {
-              cases: { route: string; when: string }[];
-              prompt?: string;
-            };
-            const caseNames = switchData.cases.map((c) => c.route);
-            const caseList = switchData.cases
-              .map((c) => `- "${c.route}": ${c.when}`)
-              .join('\n');
-
-            const routingPrompt =
-              switchData.prompt ||
-              `Choose the appropriate case based on the conversation.\n\nAvailable cases:\n${caseList}\n- "default": If none of the above conditions match\n\nUse the switch_decision tool with the case name.`;
-            systemPrompt = routingPrompt;
-            tools = [this.aiToolExecutor.getSwitchTool(caseNames)];
-
-            this.logger.debug(
-              `[Workflow] Switch node ${currentNode.id} - using switch_decision tool`
-            );
-          } else {
-            // LLM node - get normal context
-            const context = this.workflowEngine.getNodeContext(
-              currentNode,
-              workflow,
-              {
-                visitor: conversation.visitor,
-                conversation: conversation,
-                project: project,
-              }
-            );
-            systemPrompt = context.systemPrompt;
-            tools = context.tools;
-          }
-
-          // Store context for later state persistence
-          workflowCtx = {
-            projectId: project.id,
-            visitorId: conversation.visitor.id,
-            conversationId: String(conversation.id),
-            currentNodeId: currentNodeId,
-            workflow: workflow,
-            history: messages,
-          };
-        } else {
-          // Fallback if workflow invalid
-          tools = this.aiToolExecutor.getTools();
-        }
-      } else {
-        // Fallback to simple Orchestrator mode (all tools) if config is missing but mode is set
-        if (project.aiMode === 'orchestrator') {
-          tools = this.aiToolExecutor.getTools();
-        }
-      }
-      // -- WORKFLOW LOGIC END --
-
-      // 6. Generate Response Loop
-      this.logger.log(
-        `Generating AI response for project ${payload.projectId}`
+      // 3. LLM Generation Loop
+      const genResult = await this._generateLlmResponse(
+        payload.projectId,
+        conversation,
+        wfState.workflowCtx?.history || messages,
+        wfState.systemPrompt,
+        wfState.tools
       );
 
-      let aiResponseText: string | null = null;
-      let turns = 0;
-      const MAX_TURNS = 3;
-      let routeDecisionMade: string | null = null;
-      let switchDecisionMade: string | null = null;
-
-      while (turns < MAX_TURNS) {
-        turns++;
-        const aiResponse = await this.llmProviderManager.generateResponse(
-          messages,
-          systemPrompt,
-          tools
+      // 4. Handle Routing (Recursion)
+      if (genResult.routingDecision && wfState.routingNode) {
+        await this._handleRoutingDecision(
+          payload,
+          conversation,
+          wfState.workflowCtx!,
+          wfState.routingNode,
+          genResult.routingDecision
         );
-
-        this.logger.debug(`AI response payload: ${JSON.stringify(aiResponse)}`);
-
-        // If simple text response, we are done
-        if (!aiResponse.toolCalls || aiResponse.toolCalls.length === 0) {
-          aiResponseText = aiResponse.content;
-          break;
-        }
-
-        // Handle Tool Calls
-        messages.push({
-          role: 'assistant',
-          content: aiResponse.content || null,
-          tool_calls: aiResponse.toolCalls,
-        });
-
-        for (const toolCall of aiResponse.toolCalls) {
-          // Special handling for route_decision tool
-          if (toolCall.function.name === 'route_decision') {
-            const args = JSON.parse(toolCall.function.arguments) as {
-              path: 'yes' | 'no';
-            };
-            routeDecisionMade = args.path;
-            this.logger.debug(`[Workflow] Route decision: ${args.path}`);
-
-            // Push a tool response to satisfy the API
-            messages.push({
-              role: 'tool',
-              tool_call_id: toolCall.id,
-              name: toolCall.function.name,
-              content: `Routing to path: ${args.path}`,
-            });
-            continue;
-          }
-
-          // Special handling for switch_decision tool
-          if (toolCall.function.name === 'switch_decision') {
-            const args = JSON.parse(toolCall.function.arguments) as {
-              case: string;
-            };
-            switchDecisionMade = args.case;
-            this.logger.debug(`[Workflow] Switch decision: ${args.case}`);
-
-            messages.push({
-              role: 'tool',
-              tool_call_id: toolCall.id,
-              name: toolCall.function.name,
-              content: `Routing to case: ${args.case}`,
-            });
-            continue;
-          }
-
-          // Normal tool execution
-          const result = await this.aiToolExecutor.executeTool(toolCall, {
-            projectId: payload.projectId,
-            visitorId: conversation.visitor.id,
-            conversationId: String(conversation.id),
-            userId: 'AI_SYSTEM',
-          });
-
-          messages.push({
-            role: 'tool',
-            tool_call_id: toolCall.id,
-            name: toolCall.function.name,
-            content: result,
-          });
-        }
-
-        // If route decision was made, break out of loop
-        if (routeDecisionMade || switchDecisionMade) {
-          break;
-        }
-        // Loop continues to send tool results back to LLM
+        return;
       }
 
-      // Handle routing decisions (no message to send, just advance workflow)
-      if (
-        isConditionRouting &&
-        routeDecisionMade &&
-        workflowCtx &&
-        conditionNode
-      ) {
-        const workflow = workflowCtx.workflow;
-        const nextNodeId = this.workflowEngine.processRouteDecision(
-          conditionNode as Parameters<
-            typeof this.workflowEngine.processRouteDecision
-          >[0],
-          workflow,
-          routeDecisionMade as 'yes' | 'no'
-        );
-
-        const currentMetadata =
-          (conversation.metadata as VisitorSessionMetadata) || {};
-        conversation.metadata = {
-          ...currentMetadata,
-          workflowState: {
-            currentNodeId: nextNodeId,
-          },
-        };
-
-        // Re-fetch fresh metadata to prevent race conditions
-        const freshConversation = await this.conversationRepository.findOne({
-          where: { id: conversation.id },
-          select: ['metadata'],
-        });
-
-        const mergedMetadata = {
-          ...(freshConversation?.metadata || {}),
-          workflowState: {
-            currentNodeId: nextNodeId,
-          },
-        };
-
-        await this.conversationRepository.update(
-          { id: conversation.id },
-          { metadata: mergedMetadata }
-        );
-
-        this.logger.debug(`[Workflow] Condition routed to: ${nextNodeId}`);
-
-        // Re-invoke handler to process the next node immediately
-        // This allows chaining through multiple nodes in one turn
-        return this._processMessage(payload);
-      }
-
-      // Handle switch routing decisions
-      if (isSwitchRouting && switchDecisionMade && workflowCtx && switchNode) {
-        const workflow = workflowCtx.workflow;
-        const nextNodeId = this.workflowEngine.processSwitchDecision(
-          switchNode as Parameters<
-            typeof this.workflowEngine.processSwitchDecision
-          >[0],
-          workflow,
-          switchDecisionMade
-        );
-
-        const currentMetadata =
-          (conversation.metadata as VisitorSessionMetadata) || {};
-        conversation.metadata = {
-          ...currentMetadata,
-          workflowState: {
-            currentNodeId: nextNodeId,
-          },
-        };
-
-        // Re-fetch fresh metadata to prevent race conditions
-        const freshConversation = await this.conversationRepository.findOne({
-          where: { id: conversation.id },
-          select: ['metadata'],
-        });
-
-        const mergedMetadata = {
-          ...(freshConversation?.metadata || {}),
-          workflowState: {
-            currentNodeId: nextNodeId,
-          },
-        };
-
-        await this.conversationRepository.update(
-          { id: conversation.id },
-          { metadata: mergedMetadata }
-        );
-
-        this.logger.debug(`[Workflow] Switch routed to: ${nextNodeId}`);
-
-        // Re-invoke handler to process the next node immediately
-        return this._processMessage(payload);
-      }
-
-      if (!aiResponseText) {
+      const responseText = genResult.responseText;
+      if (!responseText) {
         this.logger.warn(
           'AI generated empty response after max turns. Skipping message creation.'
         );
         return;
       }
 
-      // 7. Save AI Message
-      const aiMessage = this.messageRepository.create({
-        conversationId: Number(conversation.id),
-        content: aiResponseText,
-        senderId: 'AI_BOT',
-        recipientId: conversation.visitor.visitorUid,
-        fromCustomer: false,
-        status: MessageStatus.SENT,
-        createdAt: new Date(),
-      });
-
-      const savedMessage = await this.messageRepository.save(aiMessage);
-
-      // 8. Update Conversation Last Message & Workflow State
-      conversation.lastMessageSnippet = aiResponseText;
-      conversation.lastMessageTimestamp = savedMessage.createdAt;
-
-      let nextNodeId: string | null = null;
-
-      // Advance workflow state if in orchestrator mode
-      if (workflowCtx) {
-        const stepResult = await this.workflowEngine.executeStep(workflowCtx);
-        nextNodeId = stepResult.nextNodeId;
-
-        const currentMetadata =
-          (conversation.metadata as VisitorSessionMetadata) || {};
-        conversation.metadata = {
-          ...currentMetadata,
-          workflowState: {
-            currentNodeId: nextNodeId,
-          },
-        };
-
-        if (stepResult.nextNodeId === null) {
-          this.logger.log(
-            `[Workflow] Workflow completed for conversation ${conversation.id}. Will restart on next message.`
-          );
-        } else {
-          this.logger.debug(
-            `[Workflow] Advanced to node: ${stepResult.nextNodeId}`
-          );
-        }
-      }
-
-      // Re-fetch fresh metadata to prevent race conditions
-      const freshConversation = await this.conversationRepository.findOne({
-        where: { id: conversation.id },
-        select: ['metadata'],
-      });
-
-      const mergedMetadata = {
-        ...(freshConversation?.metadata || {}),
-        ...(workflowCtx
-          ? {
-              workflowState: {
-                currentNodeId: nextNodeId,
-              },
-            }
-          : {}),
-      };
-
-      await this.conversationRepository.update(
-        { id: conversation.id },
-        {
-          lastMessageSnippet: aiResponseText,
-          lastMessageTimestamp: savedMessage.createdAt,
-          metadata: mergedMetadata,
-        }
+      // 5. Finalize (Save, Advance Workflow, Emit)
+      await this._finalizeResponse(
+        payload,
+        conversation,
+        responseText,
+        wfState.workflowCtx
       );
-
-      // 9. Resolve socket ID and Emit Event
-      const visitorSocketId =
-        await this.realtimeSessionService.getVisitorSession(
-          conversation.visitor.visitorUid
-        );
-
-      const eventPayload = {
-        visitorSocketId,
-        message: savedMessage,
-        projectId: payload.projectId,
-      };
-
-      this.eventEmitter.emit('agent.message.sent', eventPayload);
-
-      this.logger.log(`AI Response sent: ${savedMessage.id}`);
     } catch (error) {
       this.logger.error('Error in _processMessage:', error);
     }
+  }
+
+  // --- Helper Methods ---
+
+  private async _loadExecutionContext(payload: AiProcessMessageEvent) {
+    this.logger.debug(
+      `Loading execution context for project: ${payload.projectId}`
+    );
+
+    // 1. Check if AI active
+    const isActive = await this.isAiActive(payload.projectId);
+    if (!isActive) {
+      this.logger.debug(
+        `AI not active for project ${payload.projectId}. Skipping.`
+      );
+      return null;
+    }
+
+    // 2. Fetch Project
+    const project = await this.projectRepository.findOneBy({
+      id: payload.projectId,
+    });
+    if (!project) return null;
+
+    // 3. Fetch Conversation (Direct via ID)
+    const conversation = await this.conversationRepository.findOne({
+      where: {
+        id: payload.conversationId,
+      },
+      relations: ['visitor', 'messages'],
+    });
+
+    if (!conversation) {
+      this.logger.warn(
+        `No conversation found for id ${payload.conversationId} during AI processing.`
+      );
+      return null;
+    }
+
+    // 0. Check Visitor Preference (using loaded conversation metadata)
+    const metadata = conversation.metadata as VisitorSessionMetadata;
+    if (metadata?.aiEnabled === false) {
+      this.logger.debug(
+        `AI skipped for visitor ${payload.visitorUid} (opted out).`
+      );
+      return null;
+    }
+
+    // 4. Fetch History (using loaded messages relation or separate query)
+    // Using simple query for consistency with previous logic
+    const history = await this.messageRepository.find({
+      where: { conversationId: Number(conversation.id) },
+      order: { createdAt: 'DESC' },
+      take: 10,
+    });
+
+    // 5. Format Messages
+    const messages: ChatMessage[] = history.reverse().map((msg) => ({
+      role: msg.fromCustomer ? 'user' : 'assistant',
+      content: msg.content || '',
+    }));
+
+    return { project, conversation, messages };
+  }
+
+  private async _prepareWorkflow(
+    project: Project,
+    conversation: Conversation,
+    messages: ChatMessage[]
+  ) {
+    const aiConfig = project.aiConfig as Record<string, any> | null;
+    // TODO: We need a global system prompt always enabled
+    let systemPrompt =
+      aiConfig?.prompt ||
+      project.aiResponderPrompt ||
+      'You are a helpful assistant.';
+    let tools: ToolDefinition[] | undefined = undefined;
+    let workflowCtx: WorkflowContext | null = null;
+    let routingNode: {
+      type: 'condition' | 'switch' | 'action';
+      node: any;
+    } | null = null;
+
+    if (project.aiMode === 'orchestrator' && project.aiConfig) {
+      const workflow = project.aiConfig as WorkflowDefinition;
+      const metadata = (conversation.metadata as VisitorSessionMetadata) || {};
+
+      let currentNodeId = metadata.workflowState?.currentNodeId ?? null;
+
+      // Initialize Start Node if needed
+      if (!currentNodeId) {
+        const startNode = workflow.nodes.find((n) => n.type === 'start');
+        if (startNode) {
+          // Start node: check if we should auto-advance
+          const startCtx: WorkflowContext = {
+            projectId: project.id,
+            visitorId: conversation.visitor.id,
+            conversationId: String(conversation.id),
+            currentNodeId: startNode.id,
+            workflow: workflow,
+            history: messages,
+          };
+          // Execute start node to see where it goes
+          const startResult = await this.workflowEngine.executeStep(startCtx);
+          if (startResult.nextNodeId) {
+            currentNodeId = startResult.nextNodeId;
+          } else {
+            currentNodeId = startNode.id;
+          }
+        }
+      }
+
+      if (currentNodeId) {
+        workflowCtx = {
+          projectId: project.id,
+          visitorId: conversation.visitor.id,
+          conversationId: String(conversation.id),
+          currentNodeId: currentNodeId,
+          workflow: workflow,
+          history: messages,
+        };
+
+        // Delegate execution logic to the engine
+        this.logger.debug('Calling executeStep');
+        const stepResult = await this.workflowEngine.executeStep(workflowCtx);
+        const currentNode = workflow.nodes.find((n) => n.id === currentNodeId);
+
+        // Special Handling for Condition Nodes: Only see last message to avoid sticky history
+        if (currentNode?.type === 'condition') {
+          const lastMessage = messages[messages.length - 1];
+          if (lastMessage) {
+             workflowCtx.history = [lastMessage];
+          }
+        }
+
+        if (stepResult.requiresRouting && currentNode) {
+          // Engine indicates LLM Routing is needed (Condition, Switch, Action)
+          systemPrompt = stepResult.routingPrompt!;
+          tools = stepResult.tools;
+
+          // Type narrowing for legacy downstream compatibility
+          if (
+            currentNode.type === 'condition' ||
+            currentNode.type === 'switch' ||
+            currentNode.type === 'action'
+          ) {
+            routingNode = { type: currentNode.type, node: currentNode };
+          }
+        } else if (currentNode?.type === 'llm') {
+          // Standard LLM Generation Node
+          const context = this.workflowEngine.getNodeContext(
+            currentNode,
+            workflow,
+            {
+              visitor: conversation.visitor,
+              conversation: conversation,
+              project: project,
+            }
+          );
+          systemPrompt = context.systemPrompt;
+          tools = context.tools;
+        } else {
+           // Fallback or End of Workflow (no routing, not LLM)
+           // e.g. Start node that didn't move?, or unknown type
+           tools = this.aiToolExecutor.getTools();
+        }
+      }
+    } else {
+      // Simple Mode
+      if (project.aiMode === 'orchestrator') {
+        tools = this.aiToolExecutor.getTools();
+      }
+    }
+
+    return { systemPrompt, tools, workflowCtx, routingNode };
+  }
+
+  private async _generateLlmResponse(
+    projectId: number,
+    conversation: Conversation,
+    messages: ChatMessage[],
+    systemPrompt: string,
+    tools?: ToolDefinition[]
+  ) {
+    this.logger.log(`Generating AI response for project ${projectId}`);
+
+    let routeDecisionMade: string | null = null;
+    let switchDecisionMade: string | null = null;
+    let responseText: string | null = null;
+    let actionExecuted = false;
+
+    const aiResponse = await this.llmProviderManager.generateResponse(
+      messages,
+      systemPrompt,
+      tools
+    );
+
+    this.logger.debug(`AI response payload: ${JSON.stringify(aiResponse)}`);
+
+    if (!aiResponse.toolCalls || aiResponse.toolCalls.length === 0) {
+      responseText = aiResponse.content;
+    } else {
+      // Handle Tool Calls (single pass)
+      for (const toolCall of aiResponse.toolCalls) {
+        // Condition Routing
+        if (toolCall.function.name === 'route_decision') {
+          const args = JSON.parse(toolCall.function.arguments);
+          routeDecisionMade = args.path;
+          this.logger.debug(`[Workflow] Route decision: ${args.path}`);
+          continue;
+        }
+
+        // Switch Routing
+        if (toolCall.function.name === 'switch_decision') {
+          const args = JSON.parse(toolCall.function.arguments);
+          switchDecisionMade = args.case;
+          this.logger.debug(`[Workflow] Switch decision: ${args.case}`);
+          continue;
+        }
+
+        // Execute Standard Tool (Action node)
+        await this.aiToolExecutor.executeTool(toolCall, {
+          projectId: projectId,
+          visitorId: conversation.visitor.id,
+          conversationId: String(conversation.id),
+          userId: 'AI_SYSTEM',
+        });
+        actionExecuted = true;
+      }
+    }
+
+    return {
+      responseText,
+      routingDecision: routeDecisionMade
+        ? { type: 'condition' as const, decision: routeDecisionMade }
+        : switchDecisionMade
+          ? { type: 'switch' as const, decision: switchDecisionMade }
+          : actionExecuted
+            ? { type: 'action' as const, decision: 'done' }
+            : null,
+    };
+  }
+
+  private async _handleRoutingDecision(
+    payload: AiProcessMessageEvent,
+    conversation: Conversation,
+    workflowCtx: WorkflowContext,
+    routingNode: { type: 'condition' | 'switch' | 'action'; node: any },
+    decision: { type: 'condition' | 'switch' | 'action'; decision: string }
+  ) {
+    let nextNodeId: string | null = null;
+    const workflow = workflowCtx.workflow;
+
+    if (routingNode.type === 'condition' && decision.type === 'condition') {
+      nextNodeId = this.workflowEngine.processRouteDecision(
+        routingNode.node,
+        workflow,
+        decision.decision as 'yes' | 'no'
+      );
+      this.logger.debug(`[Workflow] Condition routed to: ${nextNodeId}`);
+    } else if (routingNode.type === 'switch' && decision.type === 'switch') {
+      nextNodeId = this.workflowEngine.processSwitchDecision(
+        routingNode.node,
+        workflow,
+        decision.decision
+      );
+      this.logger.debug(`[Workflow] Switch routed to: ${nextNodeId}`);
+    } else if (routingNode.type === 'action') {
+        // Action is complete, just find default edge
+        const edge = workflow.edges.find(e => e.source === routingNode.node.id);
+        nextNodeId = edge ? edge.target : null;
+        this.logger.debug(`[Workflow] Action '${routingNode.node.id}' completed, moving to: ${nextNodeId}`);
+    } else {
+        this.logger.error('[Workflow] Mismatch in routing node/decision types');
+        return;
+    }
+
+    // Update Metadata
+    const mergedMetadata = {
+      ...(conversation.metadata as any || {}),
+      workflowState: { currentNodeId: nextNodeId },
+    };
+    await this.conversationRepository.update(
+      { id: conversation.id },
+      { metadata: mergedMetadata }
+    );
+
+    // Recursively process next node
+    return this._processMessage(payload);
+  }
+
+  private async _finalizeResponse(
+    payload: AiProcessMessageEvent,
+    conversation: Conversation,
+    responseText: string,
+    workflowCtx: WorkflowContext | null
+  ) {
+    // 1. Save Message
+    const aiMessage = this.messageRepository.create({
+      conversationId: Number(conversation.id),
+      content: responseText,
+      senderId: 'AI_BOT',
+      recipientId: conversation.visitor.visitorUid,
+      fromCustomer: false,
+      status: MessageStatus.SENT,
+      createdAt: new Date(),
+    });
+
+    const savedMessage = await this.messageRepository.save(aiMessage);
+
+    // 2. Advance Workflow State
+    let nextNodeId: string | null = null;
+    if (workflowCtx) {
+        this.logger.debug('Calling executeStep');
+      const stepResult = await this.workflowEngine.executeStep(workflowCtx);
+      nextNodeId = stepResult.nextNodeId;
+
+      if (nextNodeId === null) {
+        this.logger.log(
+          `[Workflow] Completed for conversation ${conversation.id}. Will restart on next message.`
+        );
+      } else {
+        this.logger.debug(`[Workflow] Advanced to node: ${nextNodeId}`);
+      }
+    }
+
+    // 3. Update Conversation Checks
+    // Fetch fresh just in case, though usually update is safe if we merge
+    const freshConversation = await this.conversationRepository.findOne({
+      where: { id: conversation.id },
+      select: ['metadata'],
+    });
+
+    const mergedMetadata = {
+      ...(freshConversation?.metadata || {}),
+      ...(workflowCtx
+        ? { workflowState: { currentNodeId: nextNodeId } }
+        : {}),
+    };
+
+    await this.conversationRepository.update(
+      { id: conversation.id },
+      {
+        lastMessageSnippet: responseText,
+        lastMessageTimestamp: savedMessage.createdAt,
+        metadata: mergedMetadata,
+      }
+    );
+
+    // 4. Emit Event
+    const visitorSocketId = await this.realtimeSessionService.getVisitorSession(
+      conversation.visitor.visitorUid
+    );
+
+    this.eventEmitter.emit('agent.message.sent', {
+      visitorSocketId,
+      message: savedMessage,
+      projectId: payload.projectId,
+    });
+
+    this.logger.log(`AI Response sent: ${savedMessage.id}`);
   }
 }

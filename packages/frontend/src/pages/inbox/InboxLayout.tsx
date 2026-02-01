@@ -191,8 +191,8 @@ export const InboxLayout = () => {
         <p className="mt-2 text-muted-foreground">
           {t("inbox.noProjectsDescription")}
         </p>
-        <Button className="mt-4" onClick={() => navigate("/settings/projects")}>
-          {t("inbox.goToProjectSettings")}
+        <Button className="mt-4" onClick={() => navigate("/settings/profile")}>
+          {t("settings.myProfile")}
         </Button>
       </div>
     );

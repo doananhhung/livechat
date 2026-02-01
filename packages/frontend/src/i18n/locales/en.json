@@ -576,7 +576,8 @@
             "security": "Security",
             "projects": "Projects"
         },
-        "backToInbox": "Back to Inbox"
+        "backToInbox": "Back to Inbox",
+        "aiLanguage": "Language"
     },
     "actionTemplates": {
         "title": "Action Templates",

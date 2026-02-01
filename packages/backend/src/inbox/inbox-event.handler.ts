@@ -7,6 +7,7 @@ import {
   VisitorMessageProcessedEvent,
   AgentMessageSentEvent,
   UpdateContextRequestEvent,
+  AiProcessMessageEvent,
 } from './events';
 import { VisitorDisconnectedEvent } from '../visitors/events';
 import { ConversationService } from './services/conversation.service';
@@ -208,7 +209,7 @@ export class InboxEventHandlerService {
 
       const { message, tempId, visitorUid } = data;
       this.logger.log(
-        `Received new message from Redis channel: ${JSON.stringify(message)}`
+        `Received new message from Redis channel: ${message.content}`
       );
 
       const visitorSocketId =
@@ -234,28 +235,6 @@ export class InboxEventHandlerService {
         this.eventEmitter.emit('visitor.message.processed', event);
       }
 
-      // We still need to broadcast to the project room, but we can do it via event or keep it here?
-      // The blueprint says "Emit VisitorMessageProcessedEvent instead of calling Gateway methods directly".
-      // But the Gateway method called was `server.to(roomName).emit(...)`.
-      // We can emit an event for this too, or let the GatewayEventListener handle it.
-      // Let's use a generic event or reuse AgentMessageSentEvent? No, this is a visitor message.
-      // Let's add a new event or just use the existing pattern.
-      // Actually, `InboxEventHandlerService` was calling `eventsGateway.server.to(roomName).emit(WebSocketEvent.NEW_MESSAGE, message);`
-      // I should probably move this to `GatewayEventListener` as well.
-      // I'll reuse `AgentMessageSentEvent` but that implies agent.
-      // I'll create a generic `MessageBroadcastEvent`? Or just use `AgentMessageSentEvent` logic which does exactly this.
-      // But `AgentMessageSentEvent` takes a `Message` entity. `message` here is a plain object from Redis.
-      // I'll just emit `AgentMessageSentEvent` with the message object casted, as the listener just emits it.
-      // Wait, `AgentMessageSentEvent` expects `Message` entity.
-      // Let's just add a `BroadcastMessageEvent`.
-      // Or better, `VisitorMessageProcessedEvent` can handle the broadcast too if I add `projectId` and `message` to it.
-
-      // Let's modify `VisitorMessageProcessedEvent` in `src/inbox/events.ts` (I can't modify it again in this turn easily without re-outputting).
-      // I'll just use `AgentMessageSentEvent` logic but I need to be careful about types.
-      // Actually, I can just emit `agent.message.sent` with `visitorSocketId: null` and `message: message as any`.
-      // The listener does: `if (visitorSocketId) ...; server.to(project).emit(...)`.
-      // This fits perfectly.
-
       const conversation = await this.conversationService.findById(
         String(message.conversationId)
       );
@@ -267,6 +246,16 @@ export class InboxEventHandlerService {
         event.message = message as any;
         event.projectId = conversation.projectId;
         this.eventEmitter.emit('agent.message.sent', event);
+
+        // Emit event for AI processing (after persistence guaranteed)
+        if (message.fromCustomer) {
+          const aiEvent = new AiProcessMessageEvent();
+          aiEvent.conversationId = conversation.id;
+          aiEvent.projectId = conversation.projectId;
+          aiEvent.visitorUid = visitorUid;
+
+          this.eventEmitter.emit('ai.process.message', aiEvent);
+        }
       }
     } catch (error) {
       this.logger.error('Error processing message from Redis:', error);
