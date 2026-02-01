@@ -50,8 +50,6 @@ Decoupled: Các thành phần giao tiếp thông qua EventEmitter2 Bus, giúp h�
 -->
 
 ---
-transition: slide-up
----
 
 <LayoutDiagram title="Use Case Diagram">
 
@@ -108,6 +106,8 @@ flowchart LR
     %% Inheritance: Manager can do Agent tasks
     M -.->|"inherits"| UC4
     M -.->|"inherits"| UC5
+    M -.->|"inherits"| UC6
+    M -.->|"inherits"| UC7
 ```
 
 </LayoutDiagram>
@@ -145,62 +145,43 @@ Hệ thống có 3 loại người dùng chính:
 
 ```mermaid
 flowchart LR
-    subgraph Frontend
-        Dashboard["Agent Dashboard <br/> (React)"]
-        Widget["Chat Widget <br/> (Preact)"]
+    subgraph Frontend [Clients]
+        Dashboard("Agent Dashboard")
+        Widget("Chat Widget")
     end
 
-    subgraph WSLayer["WebSocket Layer"]
-        SIO["Socket.IO Gateway"]
-        Rooms["Project Rooms"]
+    subgraph App [Application Server]
+        API("API & Gateway")
     end
 
-    subgraph Backend["Backend (NestJS)"]
-        Guards["Auth Guards + <br/> Role-Based Access Control"]
-        API["REST Controllers"]
-        EventBus["EventEmitter2 Bus"]
-        Services["Domain Services"]
+    subgraph Background [Workers]
+        VisitorWorker("Visitor Msg Worker")
+        WebhookWorker("Webhook Worker")
     end
 
-    subgraph Workers["Background Processing"]
-        EventQueue["BullMQ <br/> (events-queue)"]
-        EventProcessor["Event Processor"]
-        WebhooksQueue["BullMQ <br/> (webhooks-queue)"]
-        WebhookProcessor["Webhook Processor"]
-    end
-
-    subgraph Infra["Infrastructure"]
-        PG[("PostgreSQL")]
-        Outbox[("Outbox Table")]
+    subgraph Data [Data Layer]
+        DB[("PostgreSQL")]
         Redis[("Redis")]
     end
 
-    %% Frontend connections
-    Dashboard -->|"REST API"| Guards
-    Dashboard <-->|"WebSocket"| SIO
-    Widget <-->|"WebSocket only"| SIO
+    External["External App"]
 
-    %% Auth flow
-    Guards -->|"Authenticated"| API
-    API --> Services
+    %% 1. Agent Flow (Sync) - DIRECT
+    Dashboard --> API
+    API -->|"Direct Write"| DB
 
-    %% WebSocket to Backend
-    SIO --> Rooms
-    SIO -->|"Events"| EventBus
-    EventBus --> Services
+    %% 2. Visitor Flow (Async) - QUEUED
+    Widget --> API
+    API -.->|"Enqueue"| VisitorWorker
+    VisitorWorker -->|"Write"| DB
 
-    %% NEW: Correct message flow
-    Services -.->|"1. Enqueue"| EventQueue
-    EventQueue --> EventProcessor
-    EventProcessor -->|"2. Write"| PG
-    EventProcessor -->|"3. Insert"| Outbox
-    Outbox -.->|"4. pg_notify"| Redis
-    Redis -.->|"5. Pub/Sub"| SIO
+    %% 3. Realtime Broadcast (Outbox Pattern)
+    DB -.->|"pg_notify"| Redis
+    Redis -.->|"Broadcast"| API
     
-    %% Webhook flow
-    Redis -.->|"6. Subscribe"| WebhooksQueue
-    WebhooksQueue --> WebhookProcessor
-    WebhookProcessor -->|"HTTP POST"| External["External Server"]
+    %% 4. Webhooks
+    Redis -.->|"Trigger"| WebhookWorker
+    WebhookWorker -->|"HTTP POST"| External
 ```
 
 </LayoutDiagram>
@@ -231,55 +212,6 @@ Về Webhook Flow:
 
 Lưu ý: Hệ thống sử dụng 2 BullMQ Queues riêng biệt để tách biệt concerns và đảm bảo reliability."
 -->
-
----
-
-<LayoutTwoCol title="Multi-Tenancy with Projects">
-
-<template #left>
-
-### 🔐 Data Isolation
-
-```
-Mọi entity → projectId → Cô lập hoàn toàn
-```
-
-- **Project**: Đơn vị cô lập dữ liệu gốc
-- **ProjectMember**: Liên kết User với Project
-- Mọi request phải validate **project membership**
-
-</template>
-
-<template #right>
-
-### 👥 Role Hierarchy
-
-| Role | Quyền hạn |
-|------|-----------|
-| **MANAGER** | Toàn quyền: cấu hình, báo cáo, quản lý team |
-| **AGENT** | Chat với khách, quản lý conversation |
-
-> Dữ liệu công ty A **không bao giờ lẫn** với công ty B
-
-</template>
-
-</LayoutTwoCol>
-
-<!--
-"Một trong những đặc điểm quan trọng nhất của hệ thống là khả năng Multi-Tenancy.
-
-Về Data Isolation: Mọi entity trong hệ thống đều có projectId. Đây là đơn vị cô lập dữ liệu gốc. Điều này có nghĩa là:
-
-Project là container chứa tất cả dữ liệu của một công ty
-ProjectMember liên kết User với Project
-Mọi request đều phải validate project membership trước khi cho phép truy cập
-Về Role Hierarchy: Hệ thống có 2 role chính:
-
-MANAGER: Có toàn quyền quản lý - bao gồm cấu hình hệ thống, xem báo cáo, và quản lý team members
-AGENT: Quyền chat với khách hàng và quản lý conversation
-Điểm quan trọng nhất là: Dữ liệu của công ty A không bao giờ có thể lẫn với công ty B. Mỗi project là một môi trường độc lập hoàn toàn."
--->
-
 ---
 
 <LayoutSection title="Deployment & Tech Stack">
@@ -418,6 +350,7 @@ flowchart TB
 
         subgraph Gateway["EventsGateway"]
             Emit["Broadcast to Rooms"]
+            EmitVisitor["Emit to Visitor Socket"]
         end
     end
 
@@ -435,41 +368,11 @@ flowchart TB
     E3 --> H3
     H1 --> Emit
     H2 --> Emit
+    H2 --> EmitVisitor
     H3 --> Emit
 ```
 
 </LayoutDiagram>
-
----
-
-<LayoutTitleContent title="Socket.IO Room Isolation">
-
-```typescript
-// Khi agent join project
-async handleJoinProjectRoom(client, payload) {
-  // 1. Phải đăng nhập
-  if (!client.data.user) 
-    throw new WsException('Unauthorized');
-  
-  // 2. Phải là member của project
-  await this.projectService.validateProjectMembership(
-    payload.projectId, 
-    client.data.user.id
-  );
-  
-  // 3. Join room
-  client.join(`project:${payload.projectId}`);
-}
-
-// Broadcast chỉ đến project room
-this.server
-  .to(`project:${projectId}`)
-  .emit('conversationUpdated', payload);
-```
-
-> Agent của công ty A **không nhận được event** của công ty B
-
-</LayoutTitleContent>
 
 ---
 

@@ -40,7 +40,7 @@ flowchart LR
 <LayoutDiagram title="Lazy Creation Strategy">
 
 ```mermaid
-flowchart TD
+flowchart LR
     Visitor[Visitor]
     
     subgraph "Lightweight (Cheap)"
@@ -51,7 +51,7 @@ flowchart TD
         Visitor -.->|First Message| DB[("Postgres DB<br/>(Conversation)")]
     end
     
-    Redis -->|Route| DB
+    Redis -->|Persist| DB
     style Redis fill:#efffef,stroke:#4caf50
     style DB fill:#fff0f0,stroke:#f44336
 ```
@@ -67,7 +67,7 @@ Designing for Asymmetric Traffic: <br/> 10,000 Visitors vs 50 Agents
 </LayoutSection>
 ---
 
-<LayoutDiagram title="Inbound Pipeline: The Fire Hose (Async)">
+<LayoutDiagram title="Inbound Pipeline: High traffic (Async)">
 
 <!--
 - **Async Flow**: `InboxEventHandler` -> `BullMQ` -> `EventConsumerService`.
@@ -76,8 +76,8 @@ Designing for Asymmetric Traffic: <br/> 10,000 Visitors vs 50 Agents
 
 ```mermaid
 flowchart LR
-    Widget -->|Socket| Gateway
-    Gateway -->|Event| Handler["InboxEventHandler"]
+    Widget -->|Socket| GatewayIn
+    GatewayIn -->|Event| Handler["InboxEventHandler"]
     Handler -->|Producer| Queue{BullMQ}
     
     subgraph Worker["EventConsumerService"]
@@ -88,7 +88,8 @@ flowchart LR
     DB -.->|PG Notify| Listener["OutboxListener"]
     Listener -->|Pub| Redis{Redis Pub/Sub}
     Redis -->|Sub| Handler
-    Handler -->|Emit| Dashboard
+    Handler -->|Event| GatewayOut
+    GatewayOut -->|Emit| Dashboard
 ```
 
 <div class="absolute bottom-10 left-10 p-4 bg-red-100 dark:bg-red-900 rounded-lg shadow-lg">
@@ -117,7 +118,7 @@ flowchart LR
     Service -->|emit: agent.message.sent| Bus((EventBus))
     
     subgraph Routing["GatewayEventListener"]
-        Bus --> Listener[Helper]
+        Bus --> Listener[EventHandler]
         Listener -->|Lookup via UID| Sess[(Redis Session)]
     end
 
@@ -134,56 +135,13 @@ flowchart LR
 
 ---
 
+<LayoutSection title="The AI Orchestrator">
 
-<LayoutDiagram title="The Bridge: Gateway Event Listener">
+AI Workflow Engine & Decision Trees
 
-<!--
-- **Decoupling**: Service layer (`MessageService`) is unaware of WebSockets.
-- **Bridge**: `GatewayEventListener` connects internal `EventEmitter2` to external `Socket.IO`.
--->
-
-```mermaid
-flowchart LR
-    subgraph Domain["Domain Services"]
-        A[MessageService]
-        B[InboxEventHandler]
-    end
-
-    subgraph Bridge["GatewayEventListener"]
-        C((EventEmitter2))
-    end
-
-    subgraph Socket["Socket.IO"]
-        D[Visitor Socket]
-        E[Project Room]
-    end
-
-    A -->|emit: agent.message.sent| C
-    B -->|emit: visitor.session.ready| C
-    C -->|Route| D
-    C -->|Broadcast| E
-```
-
-</LayoutDiagram>
+</LayoutSection>
 
 ---
-
-
-<LayoutTitleContent title="Agent Synchronization" label="Socket.IO Rooms">
-
-<!--
-- All agents viewing a project join a `project:${projectId}` socket room.
--->
-
-**Room**: `project:${projectId}`
-
-Every agent joins. Every action broadcasts.
-State stays consistent across all screens.
-
-</LayoutTitleContent>
-
----
-
 
 <LayoutTitleContent title="The AI Orchestrator">
 
@@ -192,9 +150,9 @@ State stays consistent across all screens.
 We built an engine that allows Agents to design **Decision Trees** that the AI executes statefully.
 
 **Key Capabilities:**
-- **Graph Execution**: Visual flows (Start → Condition → Action → LLM).
+- **LLM-Driven**: All routing nodes (Condition, Switch, Action) are handled by the LLM.
 - **Recursive Chaining**: Handling multiple logic steps in a single turn.
-- **State Persistence**: "Remembering" position in the graph across messages.
+- **Scope Isolation**: Condition nodes only see the **last message** to avoid sticky history.
 
 </LayoutTitleContent>
 
@@ -206,22 +164,22 @@ We built an engine that allows Agents to design **Decision Trees** that the AI e
 <!--
 1. **Lock**: VisitorLockService ensures sequential processing.
 2. **State**: Loaded from `conversation.metadata`.
-3. **Think**: LLM decides (Text, Tool, or Routing).
-4. **Act**: ToolExecutor performs action (Note, Status, etc.).
+3. **Think**: LLM receives context. If "Text", it replies. if "Tool/Decision", it executes & recurses.
+4. **Recurse**: The loop starts over for the NEXT node immediately.
 -->
 
 ```mermaid
 flowchart TD
     Msg[Visitor Message] --> Lock{Visitor Lock}
-    Lock --> Load[Load State]
-    Load --> Exec{Execute Node}
+    Lock --> Load[Load Workflow State]
+    Load --> Engine["Engine.executeStep()"]
     
-    Exec -- Action --> Tool[Auto-Execute Tool]
-    Tool --> Exec
+    Engine -- "requiresLlmDecision: true" --> Brain[LLM Provider]
     
-    Exec -- LLM --> Brain[LLM Provider]
-    Brain -- Decision --> Recurse[Recursive Call]
-    Brain -- Text --> Reply[Send Message]
+    Brain -- "Tool / Routing" --> Action[Execute & Update State]
+    Action --> Recurse[Recursive Call]
+    
+    Brain -- "Text Response" --> Reply[Send Message & End]
     
     Recurse --> Load
 ```
@@ -237,28 +195,35 @@ flowchart TD
 **The Power of Recursion**:
 If the AI decides to "Route" (e.g., "Yes, refund"), the engine:
 1. Updates the State to the new Node.
-2. **IMMEDIATELY** re-executes `processMessage()` (Recursion).
+2. **IMMEDIATELY** re-executes `_processMessage()` (Recursion).
 3. The next node (e.g., "Ask for Order ID") runs instantly.
+
+**Condition Node Scope:** Only the LAST user message is sent.
 -->
 
 ```mermaid
 sequenceDiagram
-    participant Event as Visitor
+    participant Viewer as Visitor
     participant Engine as Workflow Engine
     participant LLM as LLM
-    participant DB as State (DB)
 
-    Event->>Engine: "I want a refund"
-    Engine->>DB: Load Node: [Condition]
-    Engine->>LLM: "Refund? Yes/No"
+    Viewer->>Engine: "My email is test@gmail.com"
+    Engine->>Engine: Load Node: [Condition: Has Email?]
+    
+    Engine->>LLM: "Does user provide email? Yes/No"
     LLM-->>Engine: ToolCall: route("yes")
     
-    Engine->>DB: Save State: [Refund Node]
-    Note right of Engine: RECURSIVE CALL
+    Note right of Engine: RECURSIVE CALL 1
+    Engine->>Engine: Move to: [Action: Add Note]
+    Engine->>LLM: "Use add_visitor_note tool to save user email address"
+    LLM-->>Engine: ToolCall: tool("add_visitor_note, params: "user email is....")
+    Engine->>Engine: Execute Tool (Side Effect)
     
-    Engine->>Engine: Process [Refund Node]
-    Engine->>LLM: "Ask for Order ID"
-    LLM-->>Event: "What is your Order ID?"
+    Note right of Engine: RECURSIVE CALL 2
+    Engine->>Engine: Move to: [LLM: Thanks]
+    Engine->>LLM: "Thank user"
+    LLM-->>Engine: "Thank you, I saved your email!"
+    Engine-->>Viewer: Send Message
 ```
 
 </LayoutDiagram>
@@ -274,16 +239,16 @@ transition: slide-up
 ### The Hook
 We reuse the existing event pipeline.
 
-1. **Inbound**: Listens to `visitor.message.received` (Just like the Inbox).
+1. **Inbound**: Listens to `ai.process.message` (Triggered **after** message persistence).
 2. **Outbound**: Emits `agent.message.sent` (Just like a Human Agent).
 
-The System doesn't know it's an AI.
+No race conditions. The AI always sees the full context.
 </template>
 
 <template #right>
 
 ### System Actor
-AI needs to perform actions (Close Ticket, Send Form) without being a "Member".
+AI needs to perform actions (Add visistor note, Send Form,...) without being a "Member".
 
 **The Trick**: `SYSTEM_USER_ID`
 

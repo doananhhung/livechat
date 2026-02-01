@@ -156,7 +156,7 @@ describe('AiResponderService', () => {
       const mockTools = [{ type: 'function', function: { name: "MOCKED_TOOL" } }];
       
       workflowEngine.executeStep.mockResolvedValue({
-          requiresRouting: true,
+          requiresLlmDecision: true,
           routingPrompt: mockRoutingPrompt,
           tools: mockTools as any,
           nextNodeId: null,
@@ -219,7 +219,7 @@ describe('AiResponderService', () => {
 
       // Mock engine for LLM node (no routing)
       workflowEngine.executeStep.mockResolvedValue({
-        requiresRouting: false,
+        requiresLlmDecision: false,
         nextNodeId: null,
         output: null,
       });
@@ -295,7 +295,7 @@ describe('AiResponderService', () => {
       
       // Mock Engine for Condition Node
       workflowEngine.executeStep.mockResolvedValue({
-        requiresRouting: true,
+        requiresLlmDecision: true,
         routingPrompt: 'Routing?',
         tools: [{ type: 'function', function: { name: 'route_decision' } }] as any,
         nextNodeId: null,

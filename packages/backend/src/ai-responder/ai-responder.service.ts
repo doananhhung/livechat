@@ -292,7 +292,7 @@ export class AiResponderService {
           }
         }
 
-        if (stepResult.requiresRouting && currentNode) {
+        if (stepResult.requiresLlmDecision && currentNode) {
           // Engine indicates LLM Routing is needed (Condition, Switch, Action)
           systemPrompt = stepResult.routingPrompt!;
           tools = stepResult.tools;

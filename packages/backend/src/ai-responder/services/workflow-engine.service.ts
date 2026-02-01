@@ -25,7 +25,7 @@ export interface WorkflowStepResult {
   nextNodeId: string | null;
   output: string | null; // Text response to user
   toolCalls?: ToolCall[]; // Tools to be executed by the main loop
-  requiresRouting?: boolean; // If true, caller must ask LLM for route decision
+  requiresLlmDecision?: boolean; // If true, caller must ask LLM for route decision
   routingPrompt?: string; // Prompt for the routing decision
   tools?: ToolDefinition[]; // Tool definitions allowed for this step
 }
@@ -136,7 +136,7 @@ export class WorkflowEngineService {
     return {
       nextNodeId: null, // Will be determined after LLM makes decision
       output: null,
-      requiresRouting: true,
+      requiresLlmDecision: true,
       routingPrompt,
       tools: [this.toolExecutor.getRoutingTool()],
     };
@@ -254,7 +254,7 @@ export class WorkflowEngineService {
     return {
       nextNodeId: null,
       output: null,
-      requiresRouting: true,
+      requiresLlmDecision: true,
       routingPrompt,
       tools: [this.toolExecutor.getSwitchTool(caseNames)],
     };
@@ -303,7 +303,7 @@ export class WorkflowEngineService {
     return {
       nextNodeId: null, // Will be determined after tool execution
       output: null,
-      requiresRouting: true,
+      requiresLlmDecision: true,
       routingPrompt,
       tools: [toolDef],
     };

@@ -84,8 +84,8 @@ describe('WorkflowEngineService', () => {
 
       const result: WorkflowStepResult = await service.executeStep(context);
 
-      // Assert: requiresRouting should be true (LLM-driven)
-      expect(result.requiresRouting).toBe(true);
+      // Assert: requiresLlmDecision should be true (LLM-driven)
+      expect(result.requiresLlmDecision).toBe(true);
 
       // Assert: routingPrompt should contain instructions to use the tool
       expect(result.routingPrompt).toBeDefined();
