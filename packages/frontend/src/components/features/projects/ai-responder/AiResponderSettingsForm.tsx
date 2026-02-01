@@ -275,6 +275,31 @@ export const AiResponderSettingsForm = ({
         </div>
       </div>
 
+      <div className="space-y-4 border p-4 rounded-lg bg-card animate-in fade-in slide-in-from-top-2 duration-200">
+        <label
+          htmlFor="aiResponderPrompt"
+          className="block text-sm font-medium text-foreground"
+        >
+          {mode === "orchestrator"
+            ? t("settings.globalSystemPrompt")
+            : t("settings.aiResponderPrompt")}
+        </label>
+        <p className="text-xs text-muted-foreground">
+          {mode === "orchestrator"
+            ? t("settings.globalSystemPromptDesc")
+            : t("settings.aiResponderPromptDesc")}
+        </p>
+        <textarea
+          id="aiResponderPrompt"
+          rows={6}
+          className="w-full min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          placeholder={t("settings.aiResponderPromptPlaceholder")}
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          disabled={!enabled || updateMutation.isPending}
+        />
+      </div>
+
       {mode === "orchestrator" && (
         <div className="space-y-2 animate-in fade-in zoom-in-95 duration-300">
           <label className="block text-sm font-medium text-foreground">
@@ -291,28 +316,7 @@ export const AiResponderSettingsForm = ({
         </div>
       )}
 
-      {mode === "simple" && (
-        <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
-          <label
-            htmlFor="aiResponderPrompt"
-            className="block text-sm font-medium text-foreground"
-          >
-            {t("settings.aiResponderPrompt")}
-          </label>
-          <p className="text-xs text-muted-foreground">
-            {t("settings.aiResponderPromptDesc")}
-          </p>
-          <textarea
-            id="aiResponderPrompt"
-            rows={6}
-            className="w-full min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            placeholder={t("settings.aiResponderPromptPlaceholder")}
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            disabled={!enabled || updateMutation.isPending}
-          />
-        </div>
-      )}
+
     </form>
   );
 };

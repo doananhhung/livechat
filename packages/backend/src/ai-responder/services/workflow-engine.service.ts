@@ -19,6 +19,7 @@ export interface WorkflowContext {
   currentNodeId: string;
   workflow: WorkflowDefinition;
   history: any[]; // Chat history for LLM context
+  globalSystemPrompt?: string; // Global instructions to prepend to all routing prompts
 }
 
 export interface WorkflowStepResult {
@@ -76,7 +77,7 @@ export class WorkflowEngineService {
         this.logger.debug(
           `[Workflow] Action node ${validatedNode.id} executing tool: ${validatedNode.data.toolName}`
         );
-        return this.handleActionNode(validatedNode, workflow, context);
+        return await this.handleActionNode(validatedNode, workflow, context);
 
       case 'condition': // Router
         this.logger.debug(
@@ -130,8 +131,12 @@ export class WorkflowEngineService {
       ? 'Dựa vào cuộc trò chuyện, hãy quyết định hướng đi tiếp theo. Sử dụng công cụ route_decision với path là "yes" hoặc "no".'
       : 'Based on the conversation, decide which path to take. Use the route_decision tool with path "yes" or "no".';
 
-    const routingPrompt =
+    const basePrompt =
       (node.type === 'condition' && node.data.prompt) || defaultPrompt;
+
+    const routingPrompt = context.globalSystemPrompt
+      ? `${context.globalSystemPrompt}\n\n${basePrompt}`
+      : basePrompt;
 
     return {
       nextNodeId: null, // Will be determined after LLM makes decision
@@ -246,9 +251,13 @@ export class WorkflowEngineService {
       ? `Chọn trường hợp phù hợp dựa trên cuộc trò chuyện.\n\nCác trường hợp có sẵn:\n${caseList}${defaultCaseInfo}\n\nSử dụng công cụ switch_decision với tên trường hợp.`
       : `Choose the appropriate case based on the conversation.\n\nAvailable cases:\n${caseList}${defaultCaseInfo}\n\nUse the switch_decision tool with the case name.`;
 
-    const routingPrompt = data.prompt
+    const basePrompt = data.prompt
       ? `${data.prompt}\n\n${isVi ? 'Các trường hợp có sẵn:' : 'Available cases:'}\n${caseList}${defaultCaseInfo}`
       : defaultPrompt;
+
+    const routingPrompt = context.globalSystemPrompt
+      ? `${context.globalSystemPrompt}\n\n${basePrompt}`
+      : basePrompt;
 
     const caseNames = data.cases.map((c) => c.route);
     return {
@@ -260,13 +269,14 @@ export class WorkflowEngineService {
     };
   }
 
-  private handleActionNode(
+  private async handleActionNode(
     node: ValidatedWorkflowNode,
     workflow: WorkflowDefinition,
     context: WorkflowContext
-  ): WorkflowStepResult {
-    // Action nodes are now LLM-driven. Instead of auto-executing,
-    // we return routing context so the LLM can determine appropriate arguments.
+  ): Promise<WorkflowStepResult> {
+    // Action nodes are now LLM-driven OR Static.
+    // If toolArgs.content is present => Static Execution.
+    // Else => LLM Decision required (with prompt injection).
 
     if (node.type !== 'action') {
       return { nextNodeId: null, output: null };
@@ -281,11 +291,58 @@ export class WorkflowEngineService {
       };
     }
 
+    // --- STATIC MODE CHECK ---
+    const toolArgs = node.data.toolArgs || {};
+    // Check if 'content' argument is provided (scoping to add_visitor_note pattern for now)
+    const staticContent = toolArgs.content;
+    const hasStaticContent =
+      typeof staticContent === 'string' && staticContent.trim().length > 0;
+
+    if (hasStaticContent) {
+      this.logger.log(
+        `[Workflow] Action node ${node.id} executing STATICALLY for tool: ${toolName}`
+      );
+      try {
+        await this.toolExecutor.executeTool(
+          {
+            id: `static-${node.id}`,
+            type: 'function',
+            function: {
+              name: toolName,
+              arguments: JSON.stringify(toolArgs),
+            },
+          },
+          {
+            projectId: context.projectId,
+            visitorId: context.visitorId,
+            conversationId: context.conversationId,
+            userId: 'SYSTEM',
+          }
+        );
+      } catch (err) {
+        this.logger.error(
+          `[Workflow] Static tool execution failed for node ${node.id}: ${err}`
+        );
+        // Continue flow even if tool fails? Or halt?
+        // Standard behavior: execution failure might not stop flow unless critical.
+        // We log and proceed.
+      }
+
+      return {
+        nextNodeId: this.getNextNodeId(node, workflow),
+        output: null,
+        requiresLlmDecision: false,
+      };
+    }
+
+    // --- LLM MODE ---
     // Get the tool definition
     const allTools = this.toolExecutor.getTools();
     const toolDef = allTools.find((t) => t.function.name === toolName);
     if (!toolDef) {
-      this.logger.warn(`Tool '${toolName}' not found for action node ${node.id}.`);
+      this.logger.warn(
+        `Tool '${toolName}' not found for action node ${node.id}.`
+      );
       return {
         nextNodeId: this.getNextNodeId(node, workflow),
         output: null,
@@ -295,17 +352,36 @@ export class WorkflowEngineService {
     // Build routing prompt
     const aiConfig = context.workflow as AiConfig;
     const isVi = aiConfig.language === 'vi';
+    const userPrompt = node.data.prompt;
 
-    const routingPrompt = isVi
+    // Inject User Instruction into Tool Description
+    let finalToolDef = toolDef;
+    if (userPrompt) {
+      // Clone to avoid mutating singleton
+      finalToolDef = JSON.parse(JSON.stringify(toolDef));
+      if (finalToolDef?.function) {
+        finalToolDef.function.description = `${toolDef.function.description}\n\nIMPORTANT CONTEXT/INSTRUCTION: ${userPrompt}`;
+      }
+    }
+
+    const basePrompt = isVi
       ? `Bạn PHẢI sử dụng công cụ "${toolName}" để thực hiện hành động này. Hãy xác định các tham số phù hợp dựa trên ngữ cảnh cuộc trò chuyện.`
       : `You MUST use the tool "${toolName}" to perform this action. Determine the appropriate arguments based on the conversation context.`;
+
+    const baseRoutingPrompt = userPrompt
+      ? `${basePrompt}\n\nUSER INSTRUCTION: ${userPrompt}`
+      : basePrompt;
+
+    const routingPrompt = context.globalSystemPrompt
+      ? `${context.globalSystemPrompt}\n\n${baseRoutingPrompt}`
+      : baseRoutingPrompt;
 
     return {
       nextNodeId: null, // Will be determined after tool execution
       output: null,
       requiresLlmDecision: true,
       routingPrompt,
-      tools: [toolDef],
+      tools: [finalToolDef],
     };
   }
 

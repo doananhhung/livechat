@@ -560,6 +560,8 @@
         "aiResponderPrompt": "System Prompt",
         "aiResponderPromptDesc": "Định nghĩa tính cách và hành vi của trợ lý AI.",
         "aiResponderPromptPlaceholder": "Bạn là một nhân viên hỗ trợ nhiệt tình...",
+        "globalSystemPrompt": "Prompt Hệ thống Toàn cục",
+        "globalSystemPromptDesc": "Hướng dẫn chung được thêm vào đầu mỗi node trong workflow.",
         "projectNamePlaceholder": "Nhập tên dự án...",
         "whitelistedDomainsHelp": "Chỉ các trang web từ các tên miền này mới có thể sử dụng widget (VD: example.com)",
         "domainPlaceholder": "example.com (không cần https://)",
@@ -881,6 +883,10 @@
             "startDescription": "Đây là điểm bắt đầu của quy trình. Nó được kích hoạt khi khách truy cập bắt đầu cuộc trò chuyện.",
             "actionToolLabel": "Công cụ",
             "actionToolPlaceholder": "Chọn một công cụ...",
+            "executionModeLabel": "Chế độ thực thi",
+            "modeLlm": "AI Tự Quyết Định",
+            "modeStatic": "Giá Trị Cố Định",
+            "llmPromptPlaceholder2": "Mô tả cách AI nên tạo giá trị...",
             "toolSendForm": "Gửi biểu mẫu",
             "toolChangeStatus": "Thay đổi trạng thái",
             "toolAddNote": "Thêm ghi chú",
@@ -928,7 +934,9 @@
             "handleNo": "Không",
             "switch": "Chuyển mạch",
             "switchDescription": "Định tuyến đa trường hợp",
-            "handleDefault": "mặc định"
+            "handleDefault": "mặc định",
+            "badgeStatic": "Tĩnh",
+            "badgeAi": "AI"
         }
     }
 }

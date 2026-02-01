@@ -142,7 +142,7 @@ export const ProjectWidgetSettingsPage = () => {
 
   return (
     <div className="max-w-6xl mx-auto pb-20">
-      <div className="bg-card border rounded-lg p-6">
+      <div className="bg-card border rounded-lg p-6 overflow-visible">
         <PermissionGate
           projectId={currentProject.id}
           requiredRole={ProjectRole.MANAGER}

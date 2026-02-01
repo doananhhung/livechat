@@ -258,6 +258,7 @@ export class AiResponderService {
             currentNodeId: startNode.id,
             workflow: workflow,
             history: messages,
+            globalSystemPrompt: systemPrompt,
           };
           // Execute start node to see where it goes
           const startResult = await this.workflowEngine.executeStep(startCtx);
@@ -277,6 +278,7 @@ export class AiResponderService {
           currentNodeId: currentNodeId,
           workflow: workflow,
           history: messages,
+          globalSystemPrompt: systemPrompt,
         };
 
         // Delegate execution logic to the engine
@@ -316,7 +318,9 @@ export class AiResponderService {
               project: project,
             }
           );
-          systemPrompt = context.systemPrompt;
+          systemPrompt = workflowCtx?.globalSystemPrompt
+            ? `${workflowCtx.globalSystemPrompt}\n\n${context.systemPrompt}`
+            : context.systemPrompt;
           tools = context.tools;
         } else {
            // Fallback or End of Workflow (no routing, not LLM)

@@ -63,7 +63,7 @@ export default defineMermaidSetup(() => {
       curve: "basis",
     },
     elk: {
-      nodePlacementStrategy: "LINEAR_SEGMENTS",
+      nodePlacementStrategy: "NETWORK_SIMPLEX",
     },
   };
 });

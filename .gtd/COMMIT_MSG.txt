@@ -1,0 +1,27 @@
+feat(project-settings): implement sticky "Save Changes" header
+
+Ensured the "Save Changes" header remains persistently visible at the top of the General, Widget, and AI Project Settings pages during scrolling. This was achieved by correcting layout overflow constraints and verifying component styling consistency.
+
+## Behaviour Changes
+
+**Before:** The "Save Changes" header scrolled out of view along with the form content. This occurred because the main layout container had `overflow-auto`, which created a nested scroll context that clipped sticky children, preventing them from attaching to the viewport.
+
+**After:** The "Save Changes" header now sticks to the top of the viewport when scrolling down. The main layout and settings cards now use `overflow-visible`, allowing the browser window to handle scrolling and enabling the `sticky top-0` positioning to function as intended.
+
+## Implementation Details
+
+The fix followed a "Fix Parent, Verify Children" approach to resolve CSS sticky positioning constraints.
+
+Phase 1: Core Layout Correction
+- Removed `overflow-auto` and applied `overflow-visible` to `ProjectSettingsLayout`.
+- Enforced `overflow-visible` on card containers in General, Widget, and AI settings pages.
+
+Phase 2: Page Verification & Refinement
+- Verified that all three settings forms correctly implement the `sticky top-0 z-10 bg-card border-b` pattern with appropriate negative margins (`-mx-6 -mt-6`) for a seamless visual effect.
+
+## Files Modified
+
+- `packages/frontend/src/pages/settings/ProjectSettingsLayout.tsx`
+- `packages/frontend/src/pages/settings/ProjectGeneralSettingsPage.tsx`
+- `packages/frontend/src/pages/settings/ProjectWidgetSettingsPage.tsx`
+- `packages/frontend/src/pages/settings/ProjectAiSettingsPage.tsx`

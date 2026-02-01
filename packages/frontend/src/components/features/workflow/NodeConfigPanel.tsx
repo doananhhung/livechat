@@ -1,4 +1,5 @@
 import { type Node } from "@xyflow/react";
+import { useState, useEffect } from "react";
 import { Button } from "../../ui/Button";
 import { Input } from "../../ui/Input";
 import { useTranslation } from "react-i18next";
@@ -22,6 +23,21 @@ export const NodeConfigPanel = ({
   onClose,
 }: NodeConfigPanelProps) => {
   const { t } = useTranslation();
+  const [executionMode, setExecutionMode] = useState<"llm" | "static">("llm");
+
+  useEffect(() => {
+    if (
+      selectedNode?.type === "action" &&
+      selectedNode.data.toolName === AiToolName.ADD_VISITOR_NOTE
+    ) {
+      const args = selectedNode.data.toolArgs as any;
+      if (args?.content && String(args.content).length > 0) {
+        setExecutionMode("static");
+      } else {
+        setExecutionMode("llm");
+      }
+    }
+  }, [selectedNode?.id, (selectedNode?.data as any)?.toolName]);
 
   if (!selectedNode) return null;
 
@@ -129,21 +145,67 @@ export const NodeConfigPanel = ({
             )}
 
             {selectedNode.data.toolName === AiToolName.ADD_VISITOR_NOTE && (
-              <div>
-                <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
-                  {t("workflow.configPanel.noteContentLabel")}
-                </label>
-                <Input
-                  type="text"
-                  placeholder="Note text..."
-                  value={(selectedNode.data.toolArgs as any)?.content || ""}
-                  onChange={(e) =>
-                    handleChange("toolArgs", {
-                      ...(selectedNode.data.toolArgs as any),
-                      content: e.target.value,
-                    })
-                  }
-                />
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
+                    {t("workflow.configPanel.executionModeLabel")}
+                  </label>
+                  <select
+                    className="w-full border border-input bg-background rounded-md p-2 text-sm focus:ring-2 focus:ring-ring transition-shadow"
+                    value={executionMode}
+                    onChange={(e) => {
+                      const newMode = e.target.value as "llm" | "static";
+                      setExecutionMode(newMode);
+                      if (newMode === "llm") {
+                        // Clear content to fallback to LLM logic
+                        handleChange("toolArgs", {
+                          ...(selectedNode.data.toolArgs as any),
+                          content: "",
+                        });
+                      }
+                    }}
+                  >
+                    <option value="llm">
+                      {t("workflow.configPanel.modeLlm")}
+                    </option>
+                    <option value="static">
+                      {t("workflow.configPanel.modeStatic")}
+                    </option>
+                  </select>
+                </div>
+
+                {executionMode === "static" ? (
+                  <div className="animate-in fade-in duration-200">
+                    <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
+                      {t("workflow.configPanel.noteContentLabel")}
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="Note text..."
+                      value={
+                        (selectedNode.data.toolArgs as any)?.content || ""
+                      }
+                      onChange={(e) =>
+                        handleChange("toolArgs", {
+                          ...(selectedNode.data.toolArgs as any),
+                          content: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                ) : (
+                  <div className="animate-in fade-in duration-200">
+                    <label className="block text-xs font-semibold mb-1.5 uppercase text-muted-foreground">
+                      {t("workflow.configPanel.llmPromptLabel")}
+                    </label>
+                    <textarea
+                      className="w-full border border-input bg-background rounded-md p-2 text-sm h-32 focus:ring-2 focus:ring-ring transition-shadow resize-none"
+                      placeholder={t("workflow.configPanel.llmPromptPlaceholder2")}
+                      value={(selectedNode.data.prompt as string) || ""}
+                      onChange={(e) => handleChange("prompt", e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const ToolDataSchema = z.object({
   toolName: z.string().min(1, { message: 'Tool name is required' }),
   toolArgs: z.record(z.string(), z.unknown()).optional().default({}),
+  prompt: z.string().optional(),
 });
 
 export const ConditionDataSchema = z.object({

@@ -560,6 +560,8 @@
         "aiResponderPrompt": "System Prompt",
         "aiResponderPromptDesc": "Define the persona and behavior of your AI assistant.",
         "aiResponderPromptPlaceholder": "You are a helpful support agent...",
+        "globalSystemPrompt": "Global System Prompt",
+        "globalSystemPromptDesc": "Global instructions prepended to every workflow node.",
         "projectNamePlaceholder": "Enter project name...",
         "whitelistedDomainsHelp": "Only websites from these domains can use the widget (e.g., example.com)",
         "domainPlaceholder": "example.com (no https://)",
@@ -881,6 +883,10 @@
             "startDescription": "This is the entry point of your workflow. It triggers when a visitor starts a conversation.",
             "actionToolLabel": "Tool",
             "actionToolPlaceholder": "Select a tool...",
+            "executionModeLabel": "Execution Mode",
+            "modeLlm": "AI Decides",
+            "modeStatic": "Static Value",
+            "llmPromptPlaceholder2": "Describe how the AI should generate the value...",
             "toolSendForm": "Send Form",
             "toolChangeStatus": "Change Status",
             "toolAddNote": "Add Note",
@@ -928,7 +934,9 @@
             "handleNo": "No",
             "switch": "Switch",
             "switchDescription": "Multi-Case Router",
-            "handleDefault": "default"
+            "handleDefault": "default",
+            "badgeStatic": "Static",
+            "badgeAi": "AI"
         }
     }
 }
