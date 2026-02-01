@@ -249,7 +249,7 @@ sequenceDiagram
 
 <template #right>
 
-### � 2FA Endpoints
+### 🔐 2FA Endpoints
 
 | Endpoint | Purpose |
 |----------|---------|
@@ -1027,29 +1027,6 @@ flowchart LR
 
 ---
 
-<<<<<<< HEAD
-=======
-<LayoutTitleContent title="Puppeteer Implementation">
-
-**Process**:
-1. Validate URL (SSRF protection)
-2. Launch headless browser với security flags
-3. Set viewport (1280x720)
-4. Navigate với timeout (30s)
-5. Capture screenshot (PNG format)
-6. Save to storage service
-7. Return public URL
-
-**Security Features**:
-- Sandbox mode disabled for containerized environments
-- Timeout protection
-- Resource cleanup (browser.close())
-
-</LayoutTitleContent>
-
----
-
->>>>>>> 7f0638c3f3761d57b50349dd9255fa1f985891fb
 <LayoutTwoCol title="Screenshot Use Cases">
 
 <template #left>
@@ -1113,12 +1090,5 @@ Tổng kết phần Core Developer
 - **SSRF Protection**: DNS resolution + IP validation + hostname blocklist
 
 </LayoutTitleContent>
-
-<<<<<<< HEAD
-=======
----
-transition: slide-up
----
->>>>>>> 7f0638c3f3761d57b50349dd9255fa1f985891fb
 
 <!-- End of presentation -->
