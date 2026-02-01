@@ -79,12 +79,15 @@ flowchart LR
     end
 
     subgraph Workers["Background Processing"]
-        BullMQ["BullMQ Consumer"]
-        Webhooks["Webhook Processor"]
+        EventQueue["BullMQ <br/> (events-queue)"]
+        EventProcessor["Event Processor"]
+        WebhooksQueue["BullMQ <br/> (webhooks-queue)"]
+        WebhookProcessor["Webhook Processor"]
     end
 
     subgraph Infra["Infrastructure"]
         PG[("PostgreSQL")]
+        Outbox[("Outbox Table")]
         Redis[("Redis")]
     end
 
@@ -102,16 +105,18 @@ flowchart LR
     SIO -->|"Events"| EventBus
     EventBus --> Services
 
-    %% Backend to Infrastructure
-    Services --> PG
-    Services --> Redis
-
-    %% Background processing
-    Services -.->|"Enqueue jobs"| BullMQ
-    BullMQ --> Webhooks
+    %% NEW: Correct message flow
+    Services -.->|"1. Enqueue"| EventQueue
+    EventQueue --> EventProcessor
+    EventProcessor -->|"2. Write"| PG
+    EventProcessor -->|"3. Insert"| Outbox
+    Outbox -.->|"4. pg_notify"| Redis
+    Redis -.->|"5. Pub/Sub"| SIO
     
-    %% Redis Pub/Sub (for cross-server)
-    Redis -.->|"Pub/Sub"| SIO
+    %% Webhook flow
+    Redis -.->|"6. Subscribe"| WebhooksQueue
+    WebhooksQueue --> WebhookProcessor
+    WebhookProcessor -->|"HTTP POST"| External["External Server"]
 ```
 
 </LayoutDiagram>
@@ -122,21 +127,25 @@ flowchart LR
 Hệ thống được chia thành 5 tầng chính:
 
 Tầng Frontend gồm hai phần:
-Agent Dashboard: Được viết bằng React, đây là giao diện làm việc của nhân viên hỗ trợ
-Chat Widget: Được viết bằng Preact - một phiên bản nhẹ hơn của React - để đảm bảo tải nhanh khi nhúng vào website khách hàng
+- Agent Dashboard: Được viết bằng React, đây là giao diện làm việc của nhân viên hỗ trợ
+- Chat Widget: Được viết bằng Preact - một phiên bản nhẹ hơn của React - để đảm bảo tải nhanh khi nhúng vào website khách hàng
 
 Tầng WebSocket Layer: Sử dụng Socket.IO Gateway để xử lý tất cả các kết nối real-time. Đặc biệt, chúng tôi sử dụng cơ chế Project Rooms để cô lập các sự kiện theo từng project.
 
-Tầng Backend: Xây dựng trên NestJS framework, bao gồm:
+Tầng Backend: Xây dựng trên NestJS framework, bao gồm REST Controllers, Domain Services, và Auth Guards với RBAC.
 
-REST Controllers để xử lý các API request
-Domain Services chứa business logic
-Auth Guards và RBAC để kiểm soát quyền truy cập
-Background Workers: Xử lý các tác vụ nặng như gửi webhook mà không làm block main thread. Chúng tôi dùng BullMQ để quản lý queue.
+ĐIỂM QUAN TRỌNG - Luồng xử lý Message:
+1. Domain Services KHÔNG ghi trực tiếp vào database, mà đẩy job vào BullMQ (events-queue)
+2. Event Processor (Worker) lấy job và thực hiện ghi vào PostgreSQL
+3. Đồng thời, Worker insert event vào Outbox Table
+4. PostgreSQL trigger pg_notify thông báo cho Redis
+5. Redis broadcast qua Pub/Sub đến Socket.IO Gateway để gửi real-time cho client
 
-Cuối cùng là Infrastructure layer: Gồm PostgreSQL để lưu trữ dữ liệu, và Redis phục vụ cho cache, queue, và pub/sub.
+Về Webhook Flow:
+6. WebhookDispatcher subscribe Redis channel, khi nhận event thì đẩy job vào BullMQ (webhooks-queue) - đây là queue RIÊNG BIỆT
+7. Webhook Processor lấy job và gửi HTTP POST đến External Server
 
-Các thành phần này làm việc phối hợp với nhau để tạo nên một hệ thống real-time hiệu quả và scalable."
+Lưu ý: Hệ thống sử dụng 2 BullMQ Queues riêng biệt để tách biệt concerns và đảm bảo reliability."
 -->
 
 ---
