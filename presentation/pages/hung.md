@@ -56,6 +56,96 @@ Decoupled: Các thành phần giao tiếp thông qua EventEmitter2 Bus, giúp h�
 -->
 
 ---
+transition: slide-up
+---
+
+<LayoutDiagram title="Use Case Diagram">
+
+```mermaid
+flowchart LR
+    subgraph Actors["Actors"]
+        A["💼 Agent"]
+        V["👤 Visitor"]
+        M["👑 Manager"]
+    end
+
+    subgraph VisitorUC["Visitor Functions"]
+        UC1["Send/Receive Messages"]
+        UC2["View Chat History"]
+        UC3["Fill Smart Forms"]
+    end
+
+    subgraph AgentUC["Agent Functions"]
+        UC4["Chat with Visitors"]
+        UC5["Manage Conversations"]
+        UC6["Use Canned Responses"]
+        UC7["Add Visitor Notes"]
+    end
+
+    subgraph ManagerUC["Manager Functions"]
+        UC8["Manage Team Members"]
+        UC9["Configure Project"]
+        UC10["Create Canned Responses"]
+        UC11["Create Action Templates"]
+        UC12["Configure Webhooks"]
+        UC13["View Audit Logs"]
+    end
+    
+
+    %% Visitor connections
+    V --> UC1
+    V --> UC2
+    V --> UC3
+
+    %% Agent connections (includes visitor-facing)
+    A --> UC4
+    A --> UC5
+    A --> UC6
+    A --> UC7
+
+    %% Manager connections (includes all agent functions)
+    M --> UC8
+    M --> UC9
+    M --> UC10
+    M --> UC11
+    M --> UC12
+    M --> UC13
+    
+    %% Inheritance: Manager can do Agent tasks
+    M -.->|"inherits"| UC4
+    M -.->|"inherits"| UC5
+```
+
+</LayoutDiagram>
+
+<!--
+"Đây là Use Case Diagram của hệ thống Live Chat.
+
+Hệ thống có 3 loại người dùng chính:
+
+1. Visitor - Người truy cập website:
+   - Có thể gửi và nhận tin nhắn real-time
+   - Xem lịch sử chat của mình
+   - Điền các Smart Forms mà Agent gửi
+
+2. Agent - Nhân viên hỗ trợ:
+   - Chat trực tiếp với Visitor
+   - Quản lý conversations: assign, đổi status (Open, Resolved, Pending)
+   - Sử dụng Canned Responses để trả lời nhanh
+   - Thêm ghi chú riêng về Visitor
+
+3. Manager - Quản lý:
+   - Có toàn bộ quyền của Agent (inherits)
+   - Quản lý team: thêm/xóa Agent
+   - Cấu hình Project: domain whitelist, settings
+   - Tạo Canned Responses và Action Templates
+   - Cấu hình Webhooks cho external integration
+   - Xem Audit Logs để theo dõi hoạt động
+
+Điểm quan trọng: Manager thừa kế (inherits) tất cả use cases của Agent, thể hiện bằng đường nét đứt."
+-->
+
+---
 
 <LayoutDiagram title="System Components Overview">
 
