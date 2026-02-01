@@ -64,28 +64,28 @@ export const ProjectManagementMenu = ({
         </DropdownMenuItem>
 
           <DropdownMenuItem
-            onClick={() => navigate(`/projects/${project.id}/settings`)}
+            onClick={() => navigate(`/settings/projects/${project.id}`)}
           >
             <Sliders className="h-4 w-4 mr-2" />
           {t("settings.detailedSettings")}
         </DropdownMenuItem>
 
           <DropdownMenuItem
-            onClick={() => navigate(`/projects/${project.id}/settings/canned-responses`)}
+            onClick={() => navigate(`/settings/projects/${project.id}/canned-responses`)}
           >
             <MessageSquarePlus className="h-4 w-4 mr-2" />
           {t("settings.cannedResponses")}
         </DropdownMenuItem>
 
           <DropdownMenuItem
-            onClick={() => navigate(`/projects/${project.id}/settings/action-templates`)}
+            onClick={() => navigate(`/settings/projects/${project.id}/action-templates`)}
           >
             <Zap className="h-4 w-4 mr-2" />
           {t("settings.actionTemplates")}
         </DropdownMenuItem>
 
           <DropdownMenuItem
-            onClick={() => navigate(`/projects/${project.id}/settings/audit-logs`)}
+            onClick={() => navigate(`/settings/projects/${project.id}/audit-logs`)}
           >
             <ShieldAlert className="h-4 w-4 mr-2" />
           {t("settings.auditLogs")}

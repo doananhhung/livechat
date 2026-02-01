@@ -64,6 +64,12 @@ export class AgentMessageSentEvent {
   projectId: number;
 }
 
+export class AiProcessMessageEvent {
+  conversationId: string;
+  projectId: number;
+  visitorUid: string;
+}
+
 export class VisitorSessionReadyEvent {
   socketId: string;
   visitor: Visitor;

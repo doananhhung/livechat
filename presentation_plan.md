@@ -21,6 +21,7 @@ Deliver a comprehensive technical deep-dive into the Live Chat system. Each memb
 - Detail how the system connects with the outside world (Webhooks).
 - Explain the event-driven backbone that powers all other features.
 - Cover security auditing and compliance.
+- **Academic Requirement:** Explain the SDLC methodology (Agile/Scrum), Tools (Git, Jira), and CI/CD pipeline.
 
 **Assigned Documentation (5):**
 
@@ -41,6 +42,7 @@ Deliver a comprehensive technical deep-dive into the Live Chat system. Each memb
 - Deep dive into how we handle users, security, and access control.
 - Explain the multi-tenancy model (Projects).
 - Detail critical utility services (Mail, Screenshots).
+- **Academic Requirement:** Show the Database Schema (ERD) and explain complex entity relationships.
 
 **Assigned Documentation (5):**
 
@@ -81,6 +83,7 @@ Deliver a comprehensive technical deep-dive into the Live Chat system. Each memb
 - Showcase the agent workspace and daily operations.
 - Explain productivity tools (Canned Responses, Macros).
 - Detail team collaboration features.
+- **Academic Requirement:** Present the Testing Strategy (Unit, Integration, E2E) and Traceability (Lab 6).
 
 **Assigned Documentation (6):**
 
@@ -95,8 +98,8 @@ Deliver a comprehensive technical deep-dive into the Live Chat system. Each memb
 
 ## Recommended Presentation Flow
 
-1.  **Intro (Architect):** "What are we building?" (Architecture & Tech Stack)
-2.  **Foundation (Core Dev):** "How do we secure it?" (Auth & Projects)
+1.  **Intro (Architect):** "What are we building?" (Architecture, Tech Stack, & **SDLC Process**)
+2.  **Foundation (Core Dev):** "How do we secure & store it?" (Auth, Projects, & **DB Schema**)
 3.  **The Engine (Streaming):** "How does it talk?" (Real-time Message Pipelines)
-4.  **The Experience (Product):** "How do agents use it?" (Features & Workflow)
+4.  **The Experience (Product):** "How do agents use & test it?" (Features, Workflow, & **Testing Strategy**)
 5.  **Closing (Architect):** "How do we monitor & extend it?" (Auditing & Webhooks)

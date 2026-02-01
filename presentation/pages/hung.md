@@ -1,7 +1,3 @@
----
-transition: slide-up
----
-
 <LayoutSection title="System Architecture">
 
 **Member 1: System Architect**
@@ -10,8 +6,6 @@ Kiến trúc tổng thể, triển khai, Event-Driven Core, Webhooks, và Audit 
 
 </LayoutSection>
 
----
-transition: slide-up
 ---
 
 
@@ -43,172 +37,181 @@ transition: slide-up
 
 </LayoutTwoCol>
 
----
-transition: slide-up
+<!--
+"Trước tiên, để các bạn có cái nhìn tổng quan về hệ thống chúng tôi đang xây dựng.
+
+Về Application Type: Đây là một nền tảng Customer Support Chat Platform, cho phép real-time messaging giữa Visitor - người truy cập website - và Agent - nhân viên hỗ trợ. Hệ thống bao gồm một chat widget có thể nhúng vào bất kỳ website nào của khách hàng, và một dashboard quản lý dành cho các nhân viên hỗ trợ.
+
+Về Architecture Style: Chúng tôi chọn kiến trúc Event-Driven Microservices. Các điểm đặc biệt là:
+
+Real-time: Sử dụng WebSocket thông qua Socket.IO để đảm bảo tin nhắn được truyền trong thời gian thực
+Multi-tenant: Hỗ trợ nhiều công ty khác nhau sử dụng cùng hệ thống, với dữ liệu được cô lập hoàn toàn theo từng Project
+Decoupled: Các thành phần giao tiếp thông qua EventEmitter2 Bus, giúp hệ thống linh hoạt và dễ mở rộng"
+-->
+
 ---
 
+<LayoutDiagram title="Use Case Diagram">
+
+```mermaid
+flowchart LR
+    subgraph Actors["Actors"]
+        A["💼 Agent"]
+        V["👤 Visitor"]
+        M["👑 Manager"]
+    end
+
+    subgraph VisitorUC["Visitor Functions"]
+        UC1["Send/Receive Messages"]
+        UC2["View Chat History"]
+        UC3["Fill Smart Forms"]
+    end
+
+    subgraph AgentUC["Agent Functions"]
+        UC4["Chat with Visitors"]
+        UC5["Manage Conversations"]
+        UC6["Use Canned Responses"]
+        UC7["Add Visitor Notes"]
+    end
+
+    subgraph ManagerUC["Manager Functions"]
+        UC8["Manage Team Members"]
+        UC9["Configure Project"]
+        UC10["Create Canned Responses"]
+        UC11["Create Action Templates"]
+        UC12["Configure Webhooks"]
+        UC13["View Audit Logs"]
+    end
+    
+
+    %% Visitor connections
+    V --> UC1
+    V --> UC2
+    V --> UC3
+
+    %% Agent connections (includes visitor-facing)
+    A --> UC4
+    A --> UC5
+    A --> UC6
+    A --> UC7
+
+    %% Manager connections (includes all agent functions)
+    M --> UC8
+    M --> UC9
+    M --> UC10
+    M --> UC11
+    M --> UC12
+    M --> UC13
+    
+    %% Inheritance: Manager can do Agent tasks
+    M -.->|"inherits"| UC4
+    M -.->|"inherits"| UC5
+    M -.->|"inherits"| UC6
+    M -.->|"inherits"| UC7
+```
+
+</LayoutDiagram>
+
+<!--
+"Đây là Use Case Diagram của hệ thống Live Chat.
+
+Hệ thống có 3 loại người dùng chính:
+
+1. Visitor - Người truy cập website:
+   - Có thể gửi và nhận tin nhắn real-time
+   - Xem lịch sử chat của mình
+   - Điền các Smart Forms mà Agent gửi
+
+2. Agent - Nhân viên hỗ trợ:
+   - Chat trực tiếp với Visitor
+   - Quản lý conversations: assign, đổi status (Open, Resolved, Pending)
+   - Sử dụng Canned Responses để trả lời nhanh
+   - Thêm ghi chú riêng về Visitor
+
+3. Manager - Quản lý:
+   - Có toàn bộ quyền của Agent (inherits)
+   - Quản lý team: thêm/xóa Agent
+   - Cấu hình Project: domain whitelist, settings
+   - Tạo Canned Responses và Action Templates
+   - Cấu hình Webhooks cho external integration
+   - Xem Audit Logs để theo dõi hoạt động
+
+Điểm quan trọng: Manager thừa kế (inherits) tất cả use cases của Agent, thể hiện bằng đường nét đứt."
+-->
+
+---
 
 <LayoutDiagram title="System Components Overview">
 
 ```mermaid
 flowchart LR
-    subgraph Frontend["Frontend"]
-        Dashboard["Agent Dashboard<br/>(React)"]
-        Widget["Chat Widget<br/>(Preact)"]
+    subgraph Frontend [Clients]
+        Dashboard("Agent Dashboard")
+        Widget("Chat Widget")
     end
 
-    subgraph Gateway["WebSocket Layer"]
-        SIO["Socket.IO Gateway"]
-        Rooms["Project Rooms"]
+    subgraph App [Application Server]
+        API("API & Gateway")
     end
 
-    subgraph Backend["Backend (NestJS)"]
-        API["REST Controllers"]
-        Services["Domain Services"]
-        Guards["Auth Guards + RBAC"]
+    subgraph Background [Workers]
+        VisitorWorker("Visitor Msg Worker")
+        WebhookWorker("Webhook Worker")
     end
 
-    subgraph Workers["Background Processing"]
-        BullMQ["BullMQ Consumer"]
-        Webhooks["Webhook Processor"]
-    end
-
-    subgraph Infra["Infrastructure"]
-        PG[("PostgreSQL")]
+    subgraph Data [Data Layer]
+        DB[("PostgreSQL")]
         Redis[("Redis")]
     end
 
+    External["External App"]
+
+    %% 1. Agent Flow (Sync) - DIRECT
     Dashboard --> API
-    Dashboard <--> SIO
-    Widget <--> SIO
-    API --> Guards --> Services
-    Services --> PG
-    Services --> Redis
-    SIO --> Rooms
-    Services -.-> BullMQ
-    BullMQ --> Webhooks
-```
+    API -->|"Direct Write"| DB
 
-</LayoutDiagram>
+    %% 2. Visitor Flow (Async) - QUEUED
+    Widget --> API
+    API -.->|"Enqueue"| VisitorWorker
+    VisitorWorker -->|"Write"| DB
 
----
-transition: slide-up
----
-
-<LayoutTwoCol title="Multi-Tenancy with Projects">
-
-<template #left>
-
-### 🔐 Data Isolation
-
-```
-Mọi entity → projectId → Cô lập hoàn toàn
-```
-
-- **Project**: Đơn vị cô lập dữ liệu gốc
-- **ProjectMember**: Liên kết User với Project
-- Mọi request phải validate **project membership**
-
-</template>
-
-<template #right>
-
-### 👥 Role Hierarchy
-
-| Role | Quyền hạn |
-|------|-----------|
-| **MANAGER** | Toàn quyền: cấu hình, báo cáo, quản lý team |
-| **AGENT** | Chat với khách, quản lý conversation |
-
-> Dữ liệu công ty A **không bao giờ lẫn** với công ty B
-
-</template>
-
-</LayoutTwoCol>
-
----
-transition: slide-up
----
-
-<LayoutDiagram title="Message Flow - Optimistic UI Pattern">
-
-```mermaid
-sequenceDiagram
-    participant User as Người dùng
-    participant UI as Giao diện
-    participant API as Backend API
-    participant DB as Database
-
-    Note over User,UI: 🚀 LUỒNG NHANH (~50ms)
-    User->>UI: Nhấn "Gửi"
-    UI->>UI: Hiển thị tin nhắn ngay (status: SENDING)
+    %% 3. Realtime Broadcast (Outbox Pattern)
+    DB -.->|"pg_notify"| Redis
+    Redis -.->|"Broadcast"| API
     
-    Note over UI,DB: ⏳ LUỒNG ĐẦY ĐỦ (~300ms)
-    UI->>API: Gửi request
-    API->>DB: Lưu tin nhắn
-    DB-->>API: OK
-    API-->>UI: Response
-    UI->>UI: Cập nhật status: SENT
+    %% 4. Webhooks
+    Redis -.->|"Trigger"| WebhookWorker
+    WebhookWorker -->|"HTTP POST"| External
 ```
 
 </LayoutDiagram>
 
----
-transition: slide-up
----
+<!--
+"Bây giờ chúng ta sẽ đi sâu vào các thành phần chính của hệ thống qua sơ đồ này.
 
-<LayoutDiagram title="Visitor → Agent Message Flow">
+Hệ thống được chia thành 5 tầng chính:
 
-```mermaid
-flowchart LR
-    VA1["Widget"] -->|"Socket.IO"| VA2["Gateway"]
-    VA2 -->|"EventEmitter"| VA3["BullMQ"]
-    VA3 -->|"Process"| VA4[("PostgreSQL")]
-    VA4 -->|"Outbox + NOTIFY"| VA5["Redis Pub/Sub"]
-    VA5 -->|"Broadcast"| VA6["Dashboard"]
-```
+Tầng Frontend gồm hai phần:
+- Agent Dashboard: Được viết bằng React, đây là giao diện làm việc của nhân viên hỗ trợ
+- Chat Widget: Được viết bằng Preact - một phiên bản nhẹ hơn của React - để đảm bảo tải nhanh khi nhúng vào website khách hàng
 
-</LayoutDiagram>
+Tầng WebSocket Layer: Sử dụng Socket.IO Gateway để xử lý tất cả các kết nối real-time. Đặc biệt, chúng tôi sử dụng cơ chế Project Rooms để cô lập các sự kiện theo từng project.
 
----
-transition: slide-up
----
+Tầng Backend: Xây dựng trên NestJS framework, bao gồm REST Controllers, Domain Services, và Auth Guards với RBAC.
 
-<LayoutTitleContent title="Visitor → Agent: Step by Step">
+ĐIỂM QUAN TRỌNG - Luồng xử lý Message:
+1. Domain Services KHÔNG ghi trực tiếp vào database, mà đẩy job vào BullMQ (events-queue)
+2. Event Processor (Worker) lấy job và thực hiện ghi vào PostgreSQL
+3. Đồng thời, Worker insert event vào Outbox Table
+4. PostgreSQL trigger pg_notify thông báo cho Redis
+5. Redis broadcast qua Pub/Sub đến Socket.IO Gateway để gửi real-time cho client
 
-| Bước | Công nghệ | Mục đích |
-|------|-----------|----------|
-| 1 | Socket.IO | Gửi tin nhắn real-time |
-| 2 | EventEmitter2 | Decouple components |
-| 3 | BullMQ | Xử lý bất đồng bộ |
-| 4 | Outbox Pattern | Đảm bảo exactly-once delivery |
-| 5 | Redis Pub/Sub | Broadcast đa server |
+Về Webhook Flow:
+6. WebhookDispatcher subscribe Redis channel, khi nhận event thì đẩy job vào BullMQ (webhooks-queue) - đây là queue RIÊNG BIỆT
+7. Webhook Processor lấy job và gửi HTTP POST đến External Server
 
-> **Outbox Pattern** đảm bảo tin nhắn không bao giờ bị mất dù server crash giữa chừng
-
-</LayoutTitleContent>
-
----
-transition: slide-up
----
-
-<LayoutDiagram title="Agent → Visitor Message Flow">
-
-```mermaid
-flowchart LR
-    AV1["Dashboard"] -->|"REST API"| AV2["MessageService"]
-    AV2 -->|"Transaction"| AV3[("PostgreSQL")]
-    AV2 -->|"Lookup"| AV4[("Redis Session")]
-    AV4 -->|"socketId"| AV2
-    AV2 -->|"Event"| AV5["Gateway"]
-    AV5 -->|"AGENT_REPLIED"| AV6["Widget"]
-    AV5 -->|"NEW_MESSAGE"| AV7["Other Agents"]
-```
-
-</LayoutDiagram>
-
----
-transition: slide-up
+Lưu ý: Hệ thống sử dụng 2 BullMQ Queues riêng biệt để tách biệt concerns và đảm bảo reliability."
+-->
 ---
 
 <LayoutSection title="Deployment & Tech Stack">
@@ -217,8 +220,6 @@ Công nghệ và cấu trúc Monorepo
 
 </LayoutSection>
 
----
-transition: slide-up
 ---
 
 <LayoutTwoCol title="Technology Stack">
@@ -249,13 +250,38 @@ transition: slide-up
 ### 📦 DevOps
 - **Container**: Docker Compose ≥2.x
 - **Monorepo**: npm workspaces
+- **CI/CD**: GitHub Actions (Auto Testing & Linting)
 
 </template>
 
 </LayoutTwoCol>
 
 ---
-transition: slide-up
+
+<LayoutTwoCol title="Development Process">
+<template #left>
+
+### 🔄 Agile & Iterative
+**Philosophy: "Build Small, Scale Fast"**
+
+1.  **Phase 1 (Core)**: Chat text-only (Agent ↔ Visitor)
+2.  **Phase 2 (Real-time)**: WebSocket + Optimistic UI
+3.  **Phase 3 (Enterprise)**: Multi-tenancy + Security
+4.  **Final**: AI Orchestration
+
+</template>
+<template #right>
+
+### 🛠️ Why NestJS?
+**Structure & Scalability**
+
+- **Modular**: Dễ chia tách features (Auth, Inbox, Gateway)
+- **Opinionated**: Chuẩn hóa cách viết code cho Team 4 người
+- **Ecosystem**: Support Native cho WebSocket & Microservices
+
+</template>
+</LayoutTwoCol>
+
 ---
 
 <LayoutTitleContent title="Monorepo Structure">
@@ -280,8 +306,6 @@ live_chat/
 </LayoutTitleContent>
 
 ---
-transition: slide-up
----
 
 <LayoutSection title="Event-Driven Core">
 
@@ -290,80 +314,66 @@ Kiến trúc Event và Socket.IO Room Isolation
 </LayoutSection>
 
 ---
-transition: slide-up
----
 
 <LayoutDiagram title="Event Architecture">
 
 ```mermaid
 flowchart TB
-    subgraph Backend["Domain Services"]
-        CS["ConversationService"]
-        MS["MessageService"]
-        VS["VisitorService"]
+    subgraph Inbound["Inbound Events (Visitor → System)"]
+        direction TB
+        GW_IN["EventsGateway"]
+        E_IN(["visitor.message.received"])
+        IEH["InboxEventHandlerService"]
+        BQ["BullMQ Queue"]
+    end
+    subgraph OutboundFlow["Outbound Events (System → Visitor)"]
+        direction TB
+        
+        subgraph Backend["Domain Services"]
+            CS["ConversationService"]
+            MS["MessageService"]
+            VS["VisitorsService"]
+        end
+
+        subgraph Events["EventEmitter2 (System → Gateway)"]
+            direction LR
+            E1(["conversation.updated"])
+            E2(["agent.message.sent"])
+            E3(["visitor.updated"])
+        end
+
+        subgraph Listener["GatewayEventListener"]
+            H1["handleConversationUpdated"]
+            H2["handleAgentMessageSent"]
+            H3["handleVisitorUpdated"]
+        end
+
+        subgraph Gateway["EventsGateway"]
+            Emit["Broadcast to Rooms"]
+            EmitVisitor["Emit to Visitor Socket"]
+        end
     end
 
-    subgraph Bus["EventEmitter2"]
-        E1(["conversation.updated"])
-        E2(["agent.message.sent"])
-        E3(["visitor.updated"])
-    end
+    %% Inbound Flow
+    GW_IN -->|"emit"| E_IN
+    E_IN --> IEH
+    IEH -->|"enqueue"| BQ
 
-    subgraph Listener["GatewayEventListener"]
-        H1["handleConversationUpdated"]
-        H2["handleAgentMessageSent"]
-    end
-
-    subgraph Gateway["EventsGateway"]
-        Emit["Broadcast to Rooms"]
-    end
-
+    %% Outbound Flow
     CS --> E1
     MS --> E2
     VS --> E3
     E1 --> H1
     E2 --> H2
+    E3 --> H3
     H1 --> Emit
     H2 --> Emit
+    H2 --> EmitVisitor
+    H3 --> Emit
 ```
 
 </LayoutDiagram>
 
----
-transition: slide-up
----
-
-<LayoutTitleContent title="Socket.IO Room Isolation">
-
-```typescript
-// Khi agent join project
-async handleJoinProjectRoom(client, payload) {
-  // 1. Phải đăng nhập
-  if (!client.data.user) 
-    throw new WsException('Unauthorized');
-  
-  // 2. Phải là member của project
-  await this.projectService.validateProjectMembership(
-    payload.projectId, 
-    client.data.user.id
-  );
-  
-  // 3. Join room
-  client.join(`project:${payload.projectId}`);
-}
-
-// Broadcast chỉ đến project room
-this.server
-  .to(`project:${projectId}`)
-  .emit('conversationUpdated', payload);
-```
-
-> Agent của công ty A **không nhận được event** của công ty B
-
-</LayoutTitleContent>
-
----
-transition: slide-up
 ---
 
 <LayoutTwoCol title="Event Catalog">
@@ -392,8 +402,6 @@ transition: slide-up
 </LayoutTwoCol>
 
 ---
-transition: slide-up
----
 
 <LayoutSection title="Webhooks">
 
@@ -401,8 +409,6 @@ External Integration với SSRF Protection
 
 </LayoutSection>
 
----
-transition: slide-up
 ---
 
 <LayoutDiagram title="Webhook Architecture">
@@ -427,8 +433,88 @@ flowchart LR
 
 </LayoutDiagram>
 
+<!--
+"Đây là sơ đồ tổng quan về Webhook Architecture.
+
+Khi một Message được tạo (Trigger), sự kiện được broadcast qua Redis Pub/Sub đến Dispatcher. 
+
+Dispatcher lắng nghe channel này, tìm các webhook subscriptions cần gửi, rồi đẩy jobs vào BullMQ Queue.
+
+BullMQ Queue thực chất là data structures được lưu trong Redis - đảm bảo persistence và retry mechanism.
+
+Processor (BullMQ Worker) lấy jobs từ queue và gửi HTTP POST đến Customer Server của khách hàng.
+
+Slide tiếp theo sẽ giải thích chi tiết hơn về infrastructure và luồng xử lý."
+-->
 ---
-transition: slide-up
+
+<LayoutDiagram title="Webhook Architecture: Detailed Flow">
+
+```mermaid
+sequenceDiagram
+    participant Msg as Message Created
+    participant OL as OutboxListener<br/>(Worker Server)
+    participant Redis as Redis Server
+    participant Disp as WebhookDispatcher<br/>(API Server)
+    participant DB as PostgreSQL
+    participant Proc as WebhookProcessor<br/>(Worker Server)
+    participant Ext as Customer Server
+
+    Note over Msg,Redis: 1️⃣ TRIGGER & BROADCAST
+    Msg->>OL: PostgreSQL NOTIFY
+    OL->>OL: Fetch events from Outbox
+    OL->>Redis: PUBLISH to 'new_message_channel'<br/>(Pub/Sub - broadcast to ALL)
+
+    Note over Redis,DB: 2️⃣ DISPATCHER RECEIVES & ENQUEUES
+    Redis-->>Disp: Pub/Sub message received
+    Disp->>DB: Find active webhook subscriptions<br/>for this projectId
+    DB-->>Disp: Return subscriptions list
+    Disp->>Redis: addBulk(jobs) to Queue<br/>(BullMQ - stored as Lists)
+
+    Note over Redis,Ext: 3️⃣ PROCESSOR EXECUTES
+    Redis-->>Proc: Worker claims job from Queue
+    Proc->>Proc: Sign payload with HMAC-SHA256
+    Proc->>Ext: HTTP POST with signature header
+    
+    alt Success (2xx)
+        Ext-->>Proc: 200 OK
+        Proc->>DB: Log delivery: SUCCESS
+    else Failure
+        Ext-->>Proc: Error / Timeout
+        Proc->>Redis: Retry with exponential backoff
+    end
+```
+
+</LayoutDiagram>
+
+<!--
+"Đây là luồng chi tiết của Webhook Architecture.
+
+ĐIỂM QUAN TRỌNG: Redis Pub/Sub và BullMQ Queue đều sử dụng CÙNG MỘT Redis Server, nhưng với cơ chế khác nhau:
+- Pub/Sub: Broadcast message đến TẤT CẢ subscribers (fire-and-forget)
+- BullMQ: Lưu jobs trong Redis dưới dạng Lists, chỉ 1 worker claim mỗi job
+
+BƯỚC 1 - TRIGGER & BROADCAST:
+- Khi message được tạo, OutboxListener (chạy trong Worker Server) phát hiện thông qua PostgreSQL NOTIFY
+- OutboxListener publish event lên Redis Pub/Sub channel 'new_message_channel'
+- Đây là broadcast - mọi Dispatcher trên tất cả servers đều nhận được
+
+BƯỚC 2 - DISPATCHER RECEIVES & ENQUEUES:
+- WebhookDispatcher (chạy trong API Server) đã subscribe vào channel từ trước
+- Khi nhận message, Dispatcher query database để tìm active subscriptions cho project
+- Với mỗi subscription, Dispatcher tạo job và đẩy vào BullMQ Queue
+- Queue này được lưu trong Redis, shared cho tất cả servers
+
+BƯỚC 3 - PROCESSOR EXECUTES:
+- WebhookProcessor (BullMQ Worker, chạy trong Worker Server) liên tục polling queue
+- Khi có job, Worker claim bằng distributed lock - đảm bảo chỉ 1 worker xử lý
+- Processor ký payload bằng HMAC-SHA256 và gửi HTTP POST đến Customer Server
+- Nếu thành công: log SUCCESS
+- Nếu thất bại: retry với exponential backoff (1s, 2s, 4s, 8s, 16s)
+
+Cơ chế này đảm bảo: Reliability (retry), Scalability (distributed workers), Security (HMAC signature)."
+-->
+
 ---
 
 <LayoutTwoCol title="Webhook Components & Security">
@@ -459,8 +545,6 @@ transition: slide-up
 </LayoutTwoCol>
 
 ---
-transition: slide-up
----
 
 <LayoutSection title="Audit Logs">
 
@@ -468,8 +552,6 @@ Security Compliance & Investigation
 
 </LayoutSection>
 
----
-transition: slide-up
 ---
 
 <LayoutTwoCol title="Audit System">
@@ -521,8 +603,6 @@ const SENSITIVE_KEYS = [
 </LayoutTwoCol>
 
 ---
-transition: slide-up
----
 
 <LayoutSection title="Summary">
 
@@ -546,35 +626,3 @@ transition: slide-up
 | **Compliance** | Audit Logs với Fail-Open + Redaction |
 
 </LayoutTitleContent>
-
----
-transition: slide-left
----
-
-<LayoutTwoCol title="Handoff to Next Presenter">
-
-<template #left>
-
-### ✅ Covered Topics
-- System Architecture Overview
-- Multi-tenancy & Project Isolation
-- Message Flow Patterns
-- Event-Driven Core
-- Webhooks & Security
-- Audit Logs
-
-</template>
-
-<template #right>
-
-### ➡️ Next: Member 2
-**Core Developer - Authentication**
-
-- JWT Authentication
-- OAuth Integration
-- Two-Factor Authentication (2FA)
-- Session Management
-
-</template>
-
-</LayoutTwoCol>

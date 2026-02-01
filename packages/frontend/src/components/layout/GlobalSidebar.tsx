@@ -9,6 +9,8 @@ import {
   TooltipTrigger,
 } from '../../components/ui/tooltip';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
+import * as projectApi from '../../services/projectApi';
 
 interface GlobalSidebarProps {
   className?: string;
@@ -42,6 +44,13 @@ const NavItem = ({ to, icon, label }: NavItemProps) => {
 export function GlobalSidebarContent() {
   const { t } = useTranslation();
 
+  const { data: projects } = useQuery({
+    queryKey: ["projects"],
+    queryFn: projectApi.getProjects,
+  });
+
+  const firstProjectId = projects?.[0]?.id;
+
   return (
     <div className="flex flex-col h-full">
       {/* Header/Logo */}
@@ -65,11 +74,13 @@ export function GlobalSidebarContent() {
           icon={<MessageSquare className="h-5 w-5" />}
           label={t("inbox.title")}
         />
-        <NavItem
-          to="/settings/projects"
-          icon={<Folder className="h-5 w-5" />}
-          label={t("settings.menu.projects")}
-        />
+        {firstProjectId && (
+          <NavItem
+            to={`/settings/projects/${firstProjectId}`}
+            icon={<Folder className="h-5 w-5" />}
+            label={t("settings.menu.projects")}
+          />
+        )}
       </nav>
 
       {/* Footer / User Controls */}

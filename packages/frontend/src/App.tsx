@@ -68,11 +68,29 @@ const SecurityPage = lazy(() =>
     default: m.SecurityPage,
   }))
 );
-const ProjectSettingsPage = lazy(() =>
-  import("./pages/settings/ProjectSettingsPage").then((m) => ({
-    default: m.ProjectSettingsPage,
+
+// New Project Settings Pages
+const ProjectSettingsLayout = lazy(() =>
+  import("./pages/settings/ProjectSettingsLayout").then((m) => ({
+    default: m.ProjectSettingsLayout,
   }))
 );
+const ProjectGeneralSettingsPage = lazy(() =>
+  import("./pages/settings/ProjectGeneralSettingsPage").then((m) => ({
+    default: m.ProjectGeneralSettingsPage,
+  }))
+);
+const ProjectWidgetSettingsPage = lazy(() =>
+  import("./pages/settings/ProjectWidgetSettingsPage").then((m) => ({
+    default: m.ProjectWidgetSettingsPage,
+  }))
+);
+const ProjectAiSettingsPage = lazy(() =>
+  import("./pages/settings/ProjectAiSettingsPage").then((m) => ({
+    default: m.ProjectAiSettingsPage,
+  }))
+);
+
 const AuditLogsPage = lazy(() =>
   import("./pages/settings/AuditLogsPage").then((m) => ({
     default: m.AuditLogsPage,
@@ -86,11 +104,6 @@ const CannedResponsesPage = lazy(() =>
 const ActionTemplatesPage = lazy(() =>
   import("./pages/settings/ActionTemplatesPage").then((m) => ({
     default: m.ActionTemplatesPage,
-  }))
-);
-const ProjectsListPage = lazy(() =>
-  import("./pages/settings/ProjectsListPage").then((m) => ({
-    default: m.ProjectsListPage,
   }))
 );
 
@@ -235,26 +248,31 @@ function App() {
               <Route index element={<Navigate to="profile" replace />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="security" element={<SecurityPage />} />
-              <Route path="projects" element={<ProjectsListPage />} />
             </Route>
 
-            {/* Project-specific settings page */}
+            {/* Project-specific settings page (Nested Layout) */}
             <Route
-              path="/projects/:projectId/settings"
-              element={<ProjectSettingsPage />}
-            />
-            <Route
-              path="/projects/:projectId/settings/audit-logs"
-              element={<AuditLogsPage />}
-            />
-            <Route
-              path="/projects/:projectId/settings/canned-responses"
-              element={<CannedResponsesPage />}
-            />
-            <Route
-              path="/projects/:projectId/settings/action-templates"
-              element={<ActionTemplatesPage />}
-            />
+              path="/settings/projects/:projectId"
+              element={<ProjectSettingsLayout />}
+            >
+              <Route index element={<Navigate to="general" replace />} />
+              <Route
+                path="general"
+                element={<ProjectGeneralSettingsPage />}
+              />
+              <Route path="widget" element={<ProjectWidgetSettingsPage />} />
+              <Route path="ai" element={<ProjectAiSettingsPage />} />
+
+              <Route path="audit-logs" element={<AuditLogsPage />} />
+              <Route
+                path="canned-responses"
+                element={<CannedResponsesPage />}
+              />
+              <Route
+                path="action-templates"
+                element={<ActionTemplatesPage />}
+              />
+            </Route>
 
             {/* Invitation management (protected) */}
             <Route

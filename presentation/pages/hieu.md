@@ -1,7 +1,3 @@
----
-transition: slide-up
----
-
 <LayoutSection title="Core Developer">
 
 **Member 2: Core Developer**
@@ -10,8 +6,6 @@ Authentication, Multi-tenancy, User Management, và Core Utilities
 
 </LayoutSection>
 
----
-transition: slide-up
 ---
 
 <LayoutTwoCol title="Core Developer Overview">
@@ -45,8 +39,6 @@ transition: slide-up
 </LayoutTwoCol>
 
 ---
-transition: slide-up
----
 
 <LayoutSection title="User Authentication">
 
@@ -54,8 +46,6 @@ JWT, OAuth Integration, và Two-Factor Authentication
 
 </LayoutSection>
 
----
-transition: slide-up
 ---
 
 <LayoutDiagram title="Authentication Flow Overview">
@@ -110,8 +100,6 @@ flowchart LR
 </LayoutDiagram>
 
 ---
-transition: slide-up
----
 
 <LayoutTwoCol title="Authentication Methods">
 
@@ -147,8 +135,6 @@ transition: slide-up
 </LayoutTwoCol>
 
 ---
-transition: slide-up
----
 
 <LayoutDiagram title="JWT Phase 1: Login & Token Generation">
 
@@ -178,8 +164,6 @@ sequenceDiagram
 </LayoutDiagram>
 
 ---
-transition: slide-up
----
 
 <LayoutDiagram title="JWT Phase 2: Authenticated Request">
 
@@ -204,8 +188,6 @@ sequenceDiagram
 
 </LayoutDiagram>
 
----
-transition: slide-up
 ---
 
 <LayoutDiagram title="JWT Phase 3: Token Refresh">
@@ -233,8 +215,6 @@ sequenceDiagram
 </LayoutDiagram>
 
 ---
-transition: slide-up
----
 
 <LayoutTitleContent title="JWT Token Structure">
 
@@ -251,8 +231,6 @@ transition: slide-up
 
 </LayoutTitleContent>
 
----
-transition: slide-up
 ---
 
 <LayoutTwoCol title="Two-Factor Authentication (2FA)">
@@ -284,8 +262,6 @@ transition: slide-up
 
 </LayoutTwoCol>
 
----
-transition: slide-up
 ---
 
 <LayoutDiagram title="2FA Login Flow - Complete Sequence">
@@ -374,8 +350,6 @@ transition: slide-up
 </LayoutTitleContent>
 
 ---
-transition: slide-up
----
 
 <LayoutSection title="Security Architecture">
 
@@ -383,8 +357,6 @@ Tổng quan kiến trúc bảo mật đa lớp
 
 </LayoutSection>
 
----
-transition: slide-up
 ---
 
 <LayoutDiagram title="Security Layers - Defense in Depth">
@@ -444,8 +416,6 @@ flowchart LR
 </LayoutDiagram>
 
 ---
-transition: slide-up
----
 
 <LayoutTwoCol title="Security Principles">
 
@@ -482,8 +452,6 @@ transition: slide-up
 </LayoutTwoCol>
 
 ---
-transition: slide-up
----
 
 <LayoutSection title="Multi-Tenancy: Projects">
 
@@ -491,8 +459,6 @@ Project-based Data Isolation và Role-Based Access Control
 
 </LayoutSection>
 
----
-transition: slide-up
 ---
 
 <LayoutDiagram title="Multi-Tenancy Architecture">
@@ -543,8 +509,6 @@ flowchart TB
 </LayoutDiagram>
 
 ---
-transition: slide-up
----
 
 <LayoutTwoCol title="Project Entity Structure">
 
@@ -576,8 +540,6 @@ transition: slide-up
 </LayoutTwoCol>
 
 ---
-transition: slide-up
----
 
 <LayoutTitleContent title="Project Isolation Enforcement">
 
@@ -594,8 +556,6 @@ transition: slide-up
 
 </LayoutTitleContent>
 
----
-transition: slide-up
 ---
 
 <LayoutTwoCol title="Role-Based Access Control (RBAC)">
@@ -636,8 +596,6 @@ transition: slide-up
 </LayoutTwoCol>
 
 ---
-transition: slide-up
----
 
 <LayoutDiagram title="Request Flow with Multi-Tenancy">
 
@@ -674,8 +632,6 @@ sequenceDiagram
 </LayoutDiagram>
 
 ---
-transition: slide-up
----
 
 <LayoutSection title="User Profile & Settings">
 
@@ -683,8 +639,6 @@ Self-Service Account Management
 
 </LayoutSection>
 
----
-transition: slide-up
 ---
 
 <LayoutTwoCol title="User Profile Management">
@@ -722,8 +676,6 @@ transition: slide-up
 
 </LayoutTwoCol>
 
----
-transition: slide-up
 ---
 
 <LayoutDiagram title="Email Change Flow (Security)">
@@ -791,8 +743,6 @@ flowchart LR
 </LayoutDiagram>
 
 ---
-transition: slide-up
----
 
 <LayoutTwoCol title="Email Change Security Details">
 
@@ -833,8 +783,6 @@ transition: slide-up
 </LayoutTwoCol>
 
 ---
-transition: slide-up
----
 
 <LayoutDiagram title="Email Change Flow - Detailed Steps">
 
@@ -874,8 +822,6 @@ flowchart LR
 </LayoutDiagram>
 
 ---
-transition: slide-up
----
 
 <LayoutSection title="Mail Service">
 
@@ -883,8 +829,6 @@ Transactional Email Infrastructure
 
 </LayoutSection>
 
----
-transition: slide-up
 ---
 
 <LayoutDiagram title="Mail Service Architecture">
@@ -921,8 +865,6 @@ flowchart LR
 
 </LayoutDiagram>
 
----
-transition: slide-up
 ---
 
 <LayoutTwoCol title="Mail Service Features">
@@ -961,8 +903,6 @@ transition: slide-up
 </LayoutTwoCol>
 
 ---
-transition: slide-up
----
 
 <LayoutTitleContent title="Mail Service Implementation">
 
@@ -980,8 +920,6 @@ transition: slide-up
 </LayoutTitleContent>
 
 ---
-transition: slide-up
----
 
 <LayoutSection title="Screenshot Service">
 
@@ -989,8 +927,6 @@ Puppeteer Integration & Security
 
 </LayoutSection>
 
----
-transition: slide-up
 ---
 
 <LayoutDiagram title="Screenshot Service Flow">
@@ -1045,8 +981,6 @@ flowchart LR
 </LayoutDiagram>
 
 ---
-transition: slide-up
----
 
 <LayoutTwoCol title="Screenshot Service Security">
 
@@ -1092,9 +1026,30 @@ transition: slide-up
 </LayoutTwoCol>
 
 ---
-transition: slide-up
+
+<<<<<<< HEAD
+=======
+<LayoutTitleContent title="Puppeteer Implementation">
+
+**Process**:
+1. Validate URL (SSRF protection)
+2. Launch headless browser với security flags
+3. Set viewport (1280x720)
+4. Navigate với timeout (30s)
+5. Capture screenshot (PNG format)
+6. Save to storage service
+7. Return public URL
+
+**Security Features**:
+- Sandbox mode disabled for containerized environments
+- Timeout protection
+- Resource cleanup (browser.close())
+
+</LayoutTitleContent>
+
 ---
 
+>>>>>>> 7f0638c3f3761d57b50349dd9255fa1f985891fb
 <LayoutTwoCol title="Screenshot Use Cases">
 
 <template #left>
@@ -1128,8 +1083,6 @@ transition: slide-up
 </LayoutTwoCol>
 
 ---
-transition: slide-up
----
 
 <LayoutSection title="Summary">
 
@@ -1137,8 +1090,6 @@ Tổng kết phần Core Developer
 
 </LayoutSection>
 
----
-transition: slide-up
 ---
 
 <LayoutTitleContent title="Core Developer Recap">
@@ -1163,5 +1114,11 @@ transition: slide-up
 
 </LayoutTitleContent>
 
+<<<<<<< HEAD
+=======
+---
+transition: slide-up
+---
+>>>>>>> 7f0638c3f3761d57b50349dd9255fa1f985891fb
 
 <!-- End of presentation -->

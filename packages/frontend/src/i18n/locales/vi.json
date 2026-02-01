@@ -576,7 +576,8 @@
             "security": "Bảo mật",
             "projects": "Dự án"
         },
-        "backToInbox": "Quay lại Inbox"
+        "backToInbox": "Quay lại Inbox",
+        "aiLanguage": "Ngôn ngữ"
     },
     "actionTemplates": {
         "title": "Mẫu hành động",

@@ -41,7 +41,7 @@
 
 - **`auth/`**: Comprehensive system supporting JWT access/refresh rotation, TOTP 2FA, and Google OAuth with automatic account linking.
 - **`inbox/`**: Conversation management engine using optimistic updates and cursor-based pagination.
-- **`ai-responder/`**: Extensible LLM integration (Groq, OpenAI) that supports two modes: 'simple' (text-only) and 'orchestrator' (workflow-enabled). Orchestrator mode persists workflow state in `conversation.metadata.workflowState.currentNodeId` and advances through nodes across messages. Support for Action nodes (auto-exec), Condition nodes (binary `route_decision`), and Switch nodes (multi-case `switch_decision`).
+- **`ai-responder/`**: Extensible LLM integration (Groq, OpenAI) that supports two modes: 'simple' (text-only) and 'orchestrator' (workflow-enabled). In orchestrator mode, `AiResponderService` delegates node logic to `WorkflowEngineService.executeStep`. The AI lifecycle is explicitly asynchronous and event-driven; processing is triggered via the `ai.process.message` event emitted after database persistence is guaranteed. (Updated: 2026-02-01)
 - **`gateway/`**: Socket.io layer using project-based rooms (`project:{id}`) for multi-tenancy isolation.
 - **`database/`**: TypeORM entities and migrations tracking 20+ tables.
 - **`audit-logs/`**: Decorator-based system (`@Auditable`) for automatic action logging.
@@ -108,10 +108,9 @@
 - **AI Tool Orchestration**: Uses a multi-turn loop (max 3 turns) to execute tools (like `add_visitor_note`) and feed results back to the LLM for a final text response.
 - **AI Workflow Engine**: Graph-based state machine (`WorkflowEngineService`) driving AI logic via a persisted `WorkflowDefinition` (Start, Action, LLM, Condition nodes). Key behaviors: (Updated: 2026-01-24)
   - **State Persistence:** `conversation.metadata.workflowState.currentNodeId` tracks position across messages
-  - **Action Auto-Execution:** Action nodes execute in a loop until an LLM or Condition node is reached
-  - **Condition Routing:** Condition nodes inject `route_decision` tool; LLM calls `{path: "yes"|"no"}` for path selection via `processRouteDecision()`
-  - **Switch Routing:** Switch nodes inject dynamic `switch_decision` tool constrained to valid case names; LLM selects case for routing via `processSwitchDecision()`. **CRITICAL:** Handle IDs (e.g., `switch-1-hóa đơn`) must be sanitized (e.g., `encodeURIComponent`) to be valid DOM selectors. Backend lookup MUST align with this encoding when resolving the edge target. (Updated: 2026-01-26)
-  - **Recursive Chaining:** After condition routing, handler re-invokes to immediately process the next node
+  - **Action Logic:** Action nodes are LLM-driven. The engine returns `{ requiresRouting: true, routingPrompt, tools }`, requiring the LLM to determine tool arguments based on conversation history. (Updated: 2026-01-31)
+  - **Condition Routing:** Condition nodes inject `route_decision` tool. **History Restriction:** When evaluating a condition, the engine/service filters the conversation history to include ONLY the last user message to prevent "sticky" true states from previous history. (Updated: 2026-02-01)
+  - **Recursive Flow:** `AiResponderService._processMessage` recursively calls itself when a routing decision (Condition, Switch, Action) moves the workflow to a new node that requires immediate LLM evaluation. (Updated: 2026-01-31)
   - **Terminal Detection:** Nodes with no outgoing edges set `currentNodeId: null` and restart workflow on next message
   - **Validation Integrity:** All node types MUST have a corresponding Zod schema in `workflow.schemas.ts` and be registered in `WorkflowNodeSchema` to prevent runtime crashes.
   - **Language Enforcement:** The `aiConfig.language` setting (enum: 'en' | 'vi') drives the AI's reasoning and output language. `WorkflowEngineService.getNodeContext` injects a strict "You must reply in {Lang}" instruction into the system prompt. Default routing prompts for Switch and Condition nodes are dynamically localized manually in the backend if no custom prompt is defined. (Added: 2026-01-26)
@@ -127,6 +126,8 @@
   2. Pass `SYSTEM_USER_ID` as the `userId` parameter
   3. Update the target service to bypass membership check for this ID (see Backend Mandatory Rules)
      **Evidence:** `ai-tool.executor.ts:9,147-150`, `system-actor.ts:8`.
+- **Single DB Update Pattern:** To prevent race conditions and unnecessary load, AI processing results (message creation + metadata updates) are consolidated into a single atomic database operation in `AiResponderService._finalizeResponse`. (Added: 2026-02-01)
+- **Unit Test Mocking for Recursion:** When testing recursive service methods (like `_processMessage`), LLM mocks MUST use dynamic resolutions (e.g., `mockResolvedValueOnce(...)` followed by `mockResolvedValue(...)`) to ensure the flow terminates. Using static mocks that consistently return tool calls will result in infinite loops during test execution. (Added: 2026-02-01)
 - **Global Tool Instructions**: Each global tool can have a custom instruction injected into the LLM system prompt via `GlobalToolConfig.instruction`.
 - **Sticky Footer & Overflow Management**: For `position: sticky` elements (like `StickyFooter`) to work relative to the viewport, all ancestor containers must have `overflow: visible`. In accordion layouts (`ProjectSettingsPage`), `overflow: hidden` is now conditionally applied only when collapsed or during animation, ensuring sticky children can interact with the global viewport when expanded. (Added: 2026-01-26)
 

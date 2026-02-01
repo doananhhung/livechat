@@ -132,6 +132,21 @@ export const ProjectBasicSettingsForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 bg-card border-b -mx-6 -mt-6 px-6 py-4 mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">
+            {t("settings.basicInfo")}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t("settings.basicInfoDesc")}
+          </p>
+        </div>
+        <Button type="submit" disabled={updateMutation.isPending}>
+          {updateMutation.isPending ? t("common.saving") : t("common.save")}
+        </Button>
+      </div>
+
       {/* Project Name */}
       <div>
         <label
@@ -219,13 +234,6 @@ export const ProjectBasicSettingsForm = ({
           {t("settings.addDomain")}
         </Button>
       </div>
-
-      {/* Submit Button */}
-      <StickyFooter className="flex justify-end">
-        <Button type="submit" disabled={updateMutation.isPending}>
-          {updateMutation.isPending ? t("common.saving") : t("common.save")}
-        </Button>
-      </StickyFooter>
     </form>
   );
 };

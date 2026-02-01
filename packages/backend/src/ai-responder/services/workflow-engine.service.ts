@@ -25,8 +25,9 @@ export interface WorkflowStepResult {
   nextNodeId: string | null;
   output: string | null; // Text response to user
   toolCalls?: ToolCall[]; // Tools to be executed by the main loop
-  requiresRouting?: boolean; // If true, caller must ask LLM for route decision
+  requiresLlmDecision?: boolean; // If true, caller must ask LLM for route decision
   routingPrompt?: string; // Prompt for the routing decision
+  tools?: ToolDefinition[]; // Tool definitions allowed for this step
 }
 
 @Injectable()
@@ -41,7 +42,6 @@ export class WorkflowEngineService {
    */
   async executeStep(
     context: WorkflowContext,
-    userInput?: string
   ): Promise<WorkflowStepResult> {
     const { workflow, currentNodeId } = context;
     const node = workflow.nodes.find((n) => n.id === currentNodeId);
@@ -136,8 +136,9 @@ export class WorkflowEngineService {
     return {
       nextNodeId: null, // Will be determined after LLM makes decision
       output: null,
-      requiresRouting: true,
+      requiresLlmDecision: true,
       routingPrompt,
+      tools: [this.toolExecutor.getRoutingTool()],
     };
   }
 
@@ -249,58 +250,63 @@ export class WorkflowEngineService {
       ? `${data.prompt}\n\n${isVi ? 'Các trường hợp có sẵn:' : 'Available cases:'}\n${caseList}${defaultCaseInfo}`
       : defaultPrompt;
 
+    const caseNames = data.cases.map((c) => c.route);
     return {
       nextNodeId: null,
       output: null,
-      requiresRouting: true,
+      requiresLlmDecision: true,
       routingPrompt,
+      tools: [this.toolExecutor.getSwitchTool(caseNames)],
     };
   }
 
-  private async handleActionNode(
+  private handleActionNode(
     node: ValidatedWorkflowNode,
     workflow: WorkflowDefinition,
     context: WorkflowContext
-  ): Promise<WorkflowStepResult> {
-    // Action node executes a tool immediately.
-    // validation guarantees type is 'action' here if matched in switch case,
-    // but TypeScript might need narrowing or Discriminated Union flow.
-    // Since we call this from the switch case where type is checked, we can cast or trust.
+  ): WorkflowStepResult {
+    // Action nodes are now LLM-driven. Instead of auto-executing,
+    // we return routing context so the LLM can determine appropriate arguments.
 
-    let toolName: string | undefined;
-    let toolArgs: Record<string, unknown> = {};
-
-    if (node.type === 'action') {
-      toolName = node.data.toolName;
-      toolArgs = node.data.toolArgs || {};
+    if (node.type !== 'action') {
+      return { nextNodeId: null, output: null };
     }
 
-    if (toolName) {
-      // Execute the tool directly via ToolExecutor
-      // We construct a fake ToolCall for the executor
-      const toolCall: ToolCall = {
-        id: `auto-${Date.now()}`,
-        type: 'function',
-        function: {
-          name: toolName,
-          arguments: JSON.stringify(toolArgs),
-        },
+    const toolName = node.data.toolName;
+    if (!toolName) {
+      this.logger.warn(`Action node ${node.id} has no toolName defined.`);
+      return {
+        nextNodeId: this.getNextNodeId(node, workflow),
+        output: null,
       };
-
-      try {
-        await this.toolExecutor.executeTool(toolCall, {
-          projectId: context.projectId,
-          visitorId: context.visitorId,
-          conversationId: context.conversationId,
-          userId: 'AI_WORKFLOW',
-        });
-      } catch (e) {
-        this.logger.error(`Workflow Action Failed: ${e}`);
-      }
     }
 
-    const nextId = this.getNextNodeId(node, workflow);
-    return { nextNodeId: nextId, output: null };
+    // Get the tool definition
+    const allTools = this.toolExecutor.getTools();
+    const toolDef = allTools.find((t) => t.function.name === toolName);
+    if (!toolDef) {
+      this.logger.warn(`Tool '${toolName}' not found for action node ${node.id}.`);
+      return {
+        nextNodeId: this.getNextNodeId(node, workflow),
+        output: null,
+      };
+    }
+
+    // Build routing prompt
+    const aiConfig = context.workflow as AiConfig;
+    const isVi = aiConfig.language === 'vi';
+
+    const routingPrompt = isVi
+      ? `Bạn PHẢI sử dụng công cụ "${toolName}" để thực hiện hành động này. Hãy xác định các tham số phù hợp dựa trên ngữ cảnh cuộc trò chuyện.`
+      : `You MUST use the tool "${toolName}" to perform this action. Determine the appropriate arguments based on the conversation context.`;
+
+    return {
+      nextNodeId: null, // Will be determined after tool execution
+      output: null,
+      requiresLlmDecision: true,
+      routingPrompt,
+      tools: [toolDef],
+    };
   }
 
   /**
@@ -324,15 +330,6 @@ export class WorkflowEngineService {
 
     if (node.data?.prompt) {
       systemPrompt = this.replaceVariables(node.data.prompt as string, context);
-    }
-
-    // If node allows tools, add them.
-    if (
-      node.type === 'condition' ||
-      node.type === 'llm' ||
-      node.type === 'switch'
-    ) {
-      tools = this.toolExecutor.getTools();
     }
 
     // Append Global Tools with instructions
