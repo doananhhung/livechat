@@ -1,7 +1,3 @@
----
-transition: slide-up
----
-
 <LayoutTitleContent title="The Streaming Engine">
 
 ### ⚡ The Challenge: Speed vs. Reliability
@@ -15,8 +11,6 @@ Building a bi-directional pipeline that delivers messages **instantly** (<50ms) 
 
 </LayoutTitleContent>
 
----
-transition: slide-up
 ---
 
 <LayoutDiagram title="The Handshake: Connection & Auth">
@@ -40,8 +34,6 @@ flowchart LR
 
 </LayoutDiagram>
 
----
-transition: slide-up
 ---
 
 
@@ -67,11 +59,15 @@ flowchart TD
 </LayoutDiagram>
 
 ---
-transition: slide-up
+
+<LayoutSection title="Message Pipelines">
+
+Designing for Asymmetric Traffic: <br/> 10,000 Visitors vs 50 Agents
+
+</LayoutSection>
 ---
 
-
-<LayoutDiagram title="Inbound Pipeline (Visitor → System)">
+<LayoutDiagram title="Inbound Pipeline: The Fire Hose (Async)">
 
 <!--
 - **Async Flow**: `InboxEventHandler` -> `BullMQ` -> `EventConsumerService`.
@@ -95,13 +91,16 @@ flowchart LR
     Handler -->|Emit| Dashboard
 ```
 
+<div class="absolute bottom-10 left-10 p-4 bg-red-100 dark:bg-red-900 rounded-lg shadow-lg">
+  <strong>Challenge:</strong> 10k Concurrent Visitors<br/>
+  <strong>Solution:</strong> Queue Buffering (BullMQ)
+</div>
+
 </LayoutDiagram>
 
 ---
-transition: slide-up
----
 
-<LayoutDiagram title="Outbound Pipeline (Agent → Visitor)">
+<LayoutDiagram title="Outbound Pipeline: Instant Feedback (Sync)">
 
 <!--
 - **Sync Flow**: REST API -> `MessageService`.
@@ -126,10 +125,13 @@ flowchart LR
     Listener -->|Broadcast| Room[Project Room]
 ```
 
+<div class="absolute bottom-10 left-10 p-4 bg-green-100 dark:bg-green-900 rounded-lg shadow-lg">
+  <strong>Challenge:</strong> Agent UX Latency<br/>
+  <strong>Solution:</strong> Direct Sync Write
+</div>
+
 </LayoutDiagram>
 
----
-transition: slide-up
 ---
 
 
@@ -165,8 +167,6 @@ flowchart LR
 </LayoutDiagram>
 
 ---
-transition: slide-up
----
 
 
 <LayoutTitleContent title="Agent Synchronization" label="Socket.IO Rooms">
@@ -183,8 +183,6 @@ State stays consistent across all screens.
 </LayoutTitleContent>
 
 ---
-transition: slide-up
----
 
 
 <LayoutTitleContent title="The AI Orchestrator">
@@ -200,8 +198,6 @@ We built an engine that allows Agents to design **Decision Trees** that the AI e
 
 </LayoutTitleContent>
 
----
-transition: slide-up
 ---
 
 
@@ -232,8 +228,6 @@ flowchart TD
 
 </LayoutDiagram>
 
----
-transition: slide-up
 ---
 
 
@@ -270,7 +264,7 @@ sequenceDiagram
 </LayoutDiagram>
 
 ---
-transition: slide-left
+transition: slide-up
 ---
 
 

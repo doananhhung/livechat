@@ -1,7 +1,3 @@
----
-transition: slide-up
----
-
 <LayoutSection title="Agent Experience & Productivity">
 
 **Member 4: The Product Owner**
@@ -10,8 +6,6 @@ Inbox Operations, Conversation Assignments, Actions Engine, Canned Responses, v√
 
 </LayoutSection>
 
----
-transition: slide-up
 ---
 
 <LayoutTwoCol title="Feature Catalog">

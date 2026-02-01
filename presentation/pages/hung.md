@@ -1,7 +1,3 @@
----
-transition: slide-up
----
-
 <LayoutSection title="System Architecture">
 
 **Member 1: System Architect**
@@ -10,8 +6,6 @@ Kiến trúc tổng thể, triển khai, Event-Driven Core, Webhooks, và Audit 
 
 </LayoutSection>
 
----
-transition: slide-up
 ---
 
 
@@ -188,8 +182,6 @@ AGENT: Quyền chat với khách hàng và quản lý conversation
 -->
 
 ---
-transition: slide-up 
----
 
 <LayoutSection title="Deployment & Tech Stack">
 
@@ -197,8 +189,6 @@ Công nghệ và cấu trúc Monorepo
 
 </LayoutSection>
 
----
-transition: slide-up
 ---
 
 <LayoutTwoCol title="Technology Stack">
@@ -229,13 +219,38 @@ transition: slide-up
 ### 📦 DevOps
 - **Container**: Docker Compose ≥2.x
 - **Monorepo**: npm workspaces
+- **CI/CD**: GitHub Actions (Auto Testing & Linting)
 
 </template>
 
 </LayoutTwoCol>
 
 ---
-transition: slide-up
+
+<LayoutTwoCol title="Development Process">
+<template #left>
+
+### 🔄 Agile & Iterative
+**Philosophy: "Build Small, Scale Fast"**
+
+1.  **Phase 1 (Core)**: Chat text-only (Agent ↔ Visitor)
+2.  **Phase 2 (Real-time)**: WebSocket + Optimistic UI
+3.  **Phase 3 (Enterprise)**: Multi-tenancy + Security
+4.  **Final**: AI Orchestration
+
+</template>
+<template #right>
+
+### 🛠️ Why NestJS?
+**Structure & Scalability**
+
+- **Modular**: Dễ chia tách features (Auth, Inbox, Gateway)
+- **Opinionated**: Chuẩn hóa cách viết code cho Team 4 người
+- **Ecosystem**: Support Native cho WebSocket & Microservices
+
+</template>
+</LayoutTwoCol>
+
 ---
 
 <LayoutTitleContent title="Monorepo Structure">
@@ -260,8 +275,6 @@ live_chat/
 </LayoutTitleContent>
 
 ---
-transition: slide-up
----
 
 <LayoutSection title="Event-Driven Core">
 
@@ -269,8 +282,6 @@ Kiến trúc Event và Socket.IO Room Isolation
 
 </LayoutSection>
 
----
-transition: slide-up
 ---
 
 <LayoutDiagram title="Event Architecture">
@@ -331,8 +342,6 @@ flowchart TB
 </LayoutDiagram>
 
 ---
-transition: slide-up
----
 
 <LayoutTitleContent title="Socket.IO Room Isolation">
 
@@ -364,8 +373,6 @@ this.server
 </LayoutTitleContent>
 
 ---
-transition: slide-up
----
 
 <LayoutTwoCol title="Event Catalog">
 
@@ -393,8 +400,6 @@ transition: slide-up
 </LayoutTwoCol>
 
 ---
-transition: slide-up
----
 
 <LayoutSection title="Webhooks">
 
@@ -402,8 +407,6 @@ External Integration với SSRF Protection
 
 </LayoutSection>
 
----
-transition: slide-up
 ---
 
 <LayoutDiagram title="Webhook Architecture">
@@ -441,8 +444,6 @@ Processor (BullMQ Worker) lấy jobs từ queue và gửi HTTP POST đến Custo
 
 Slide tiếp theo sẽ giải thích chi tiết hơn về infrastructure và luồng xử lý."
 -->
----
-transition: slide-up
 ---
 
 <LayoutDiagram title="Webhook Architecture: Detailed Flow">
@@ -513,8 +514,6 @@ Cơ chế này đảm bảo: Reliability (retry), Scalability (distributed worke
 -->
 
 ---
-transition: slide-up
----
 
 <LayoutTwoCol title="Webhook Components & Security">
 
@@ -544,8 +543,6 @@ transition: slide-up
 </LayoutTwoCol>
 
 ---
-transition: slide-up
----
 
 <LayoutSection title="Audit Logs">
 
@@ -553,8 +550,6 @@ Security Compliance & Investigation
 
 </LayoutSection>
 
----
-transition: slide-up
 ---
 
 <LayoutTwoCol title="Audit System">
@@ -606,8 +601,6 @@ const SENSITIVE_KEYS = [
 </LayoutTwoCol>
 
 ---
-transition: slide-up
----
 
 <LayoutSection title="Summary">
 
@@ -616,7 +609,7 @@ Tổng kết phần System Architecture
 </LayoutSection>
 
 ---
-transition: slide-left
+transition: slide-up
 ---
 
 <LayoutTitleContent title="Architecture Recap">

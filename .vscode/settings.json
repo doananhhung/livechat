@@ -11,8 +11,6 @@
   "editor.quickSuggestions": {
     "strings": true
   },
-  "tailwindCSS.experimental.classRegex": [
-    ["cn\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
-  ],
-  "editor.formatOnSave": false   // Disable this if you want to run presentation, because it will destroy the mermaid code, make it unable to render diagrams.
+  "editor.formatOnSave": false,   // Disable this if you want to run presentation, because it will destroy the mermaid code, make it unable to render diagrams.
+  "terminal.integrated.environmentChangesIndicator": "off"
 }
