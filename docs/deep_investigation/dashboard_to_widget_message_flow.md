@@ -4,6 +4,20 @@
 
 This document investigates the complete message flow when an agent sends a message from the frontend dashboard to a visitor's widget. The flow spans three layers: Frontend Dashboard → Backend API → Widget (via WebSocket).
 
+## Requirement Traceability
+
+### User Story
+**As an** agent, **I want** to send messages to a visitor, **so that** I can provide support and answer their inquiries in real-time.
+
+### Acceptance Criteria
+1. Agent messages must be delivered to the visitor widget via WebSocket.
+2. The agent dashboard should show an optimistic update for immediate feedback.
+3. Message status should be updated to reflection delivery success (SENT/DELIVERED).
+
+## Verification
+- **Unit Tests**: `packages/backend/src/inbox/services/message.service.spec.ts`
+- **E2E Tests**: `packages/backend/test/chat.e2e-spec.ts`
+
 ---
 
 ## Slice 1: Frontend Dashboard → Backend

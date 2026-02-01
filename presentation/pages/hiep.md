@@ -352,6 +352,105 @@ flowchart LR
 
 ---
 
+<LayoutSection title="Quality Assurance">
+
+Chiến lược Kiểm thử và Tính Truy vết (Traceability)
+
+</LayoutSection>
+
+---
+
+<LayoutTwoCol title="Testing Strategy">
+
+<template #left>
+
+### 🧪 Testing Pyramid
+Hệ thống áp dụng mô hình kim tự tháp với trọng tâm là **E2E Testing** để đảm bảo luồng nghiệp vụ.
+
+**Tools & Frameworks**:
+- **Backend**: Jest (`jest`, `ts-jest`)
+- **Frontend**: Vitest (`vitest`, `RTL`)
+- **Integration**: Supertest
+- **Coverage**: Tooling tích hợp sẵn
+
+</template>
+
+<template #right>
+
+### 📊 Test Suites
+- **Unit Tests**: Kiểm tra logic nghiệp vụ (Services, Utils).
+- **Integration**: Kiểm tra kết nối DB, Redis, BullMQ.
+- **E2E (23+ specs)**: Mô phỏng hành vi người dùng từ API level (Auth, Chat, Actions).
+
+```bash
+# Run backend tests
+npm run test
+npm run test:e2e
+```
+
+</template>
+
+</LayoutTwoCol>
+
+---
+
+<LayoutDiagram title="Traceability Flow">
+
+```mermaid
+flowchart LR
+    Req["🎯 Yêu cầu<br/>(User Story)"] --> Doc["📝 Tài liệu<br/>(Deep Investigation)"]
+    Doc --> Code["💻 Thực thi<br/>(Controller/Service)"]
+    Code --> Test["✅ Kiểm thử<br/>(E2E Spec)"]
+
+    subgraph "Traceability Mapping"
+    Req
+    Doc
+    Code
+    Test
+    end
+
+    style Req fill:#e3f2fd,stroke:#1565c0
+    style Doc fill:#e8f5e9,stroke:#2e7d32
+    style Code fill:#fff3e0,stroke:#ef6c00
+    style Test fill:#f3e5f5,stroke:#7b1fa2
+```
+
+</LayoutDiagram>
+
+---
+
+<LayoutTwoCol title="Traceability in Practice">
+
+<template #left>
+
+### 🔍 Mapping Example
+Mỗi tài liệu trong `docs/deep_investigation/` đều bao gồm:
+
+1.  **User Story**: User story
+2.  **Acceptance Criteria**: Điều kiện để một tính năng coi như đã hoàn thành
+3.  **Verification**: Unit/Intergration/e2e test
+4.  **Code execution flow**: Luồng hoạt động hoàn chỉnh của tính năng, từ user -> backend -> user
+
+</template>
+
+<template #right>
+
+### 📑 Ví dụ Cụ thể (Đơn giản hóa)
+Tài liệu `widget_to_dashboard_message_flow.md`:
+
+| Mục | Nội dung |
+|-----|----------|
+| **User Story** | Visitor gửi tin nhắn đến Agent |
+| **Acceptance** | Tin nhắn persist vào DB, broadcast real-time |
+| **Verification** | `chat.e2e-spec.ts` |
+| **Flow** | Widget → Gateway → BullMQ → DB → Redis → Dashboard |
+
+</template>
+
+</LayoutTwoCol>
+
+---
+
 <LayoutTitleContent title="Summary">
 
 | Feature | Key Points |

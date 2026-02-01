@@ -6,6 +6,21 @@ This investigation documents the user profile and settings management flow, whic
 
 The feature provides self-service account management capabilities, including secure email change with token-based verification that invalidates OAuth links and existing sessions upon completion.
 
+## Requirement Traceability
+
+### User Story
+**As a** user, **I want** to manage my profile and email preferences, **so that** my account information stays current and my communication channel is secure.
+
+### Acceptance Criteria
+1. Users can update their display name, avatar, and localization settings.
+2. Secure email change process involving verification on the new address.
+3. OAuth unlinking and session invalidation upon sensitive profile changes.
+4. Capability to permanently deactivate the account.
+
+## Verification
+- **Unit Tests**: `packages/backend/src/users/user.service.spec.ts`, `packages/backend/src/users/user.controller.spec.ts`
+- **E2E Tests**: `packages/backend/test/auth.e2e-spec.ts`
+
 ## Entry Points
 
 | Function/Method           | File                                                                      | Lines    | Purpose                                    |

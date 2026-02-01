@@ -10,6 +10,20 @@ The event flow follows a consistent pattern:
 Service Action → Domain Event → GatewayEventListener → EventsGateway → Socket.IO Broadcast → Frontend Handler
 ```
 
+## Requirement Traceability
+
+### User Story
+**As an** agent, **I want** to receive real-time updates for conversations and visitor activities, **so that** I can respond promptly to new interactions and provide immediate support.
+
+### Acceptance Criteria
+1. Real-time events must be isolated per project using Socket.IO rooms.
+2. Broadcast updates for conversation assignments, status changes, and new messages.
+3. Track and broadcast visitor online/offline status and typing indicators.
+
+## Verification
+- **Unit Tests**: `packages/backend/src/gateway/events.gateway.spec.ts`
+- **E2E Tests**: `packages/backend/test/chat.e2e-spec.ts`, `packages/backend/test/visitors.e2e-spec.ts`
+
 ## Event Architecture
 
 ```mermaid

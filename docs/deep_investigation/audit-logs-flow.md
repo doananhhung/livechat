@@ -6,6 +6,20 @@ The audit logging system provides compliance and security tracking by recording 
 
 The system is designed to "fail open" - audit logging failures do not block the original operation, ensuring business continuity while logging errors for monitoring.
 
+## Requirement Traceability
+
+### User Story
+**As a** manager, **I want** to track all sensitive actions in the system, **so that** I can audit user behavior and maintain security compliance.
+
+### Acceptance Criteria
+1. Capture CREATE, UPDATE, and DELETE actions on core entities automatically.
+2. Sanitize sensitive information (passwords, tokens) from logged metadata.
+3. Allow managers to filter logs by action type, actor, and date range.
+
+## Verification
+- **Unit Tests**: `packages/backend/src/audit-logs/audit.service.spec.ts`, `packages/backend/src/audit-logs/audit.interceptor.spec.ts`
+- **E2E Tests**: `packages/backend/test/audit.e2e-spec.ts`
+
 ## Entry Points
 
 | Function/Method | File                                                                                   | Lines   | Purpose                                     |

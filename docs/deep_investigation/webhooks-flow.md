@@ -4,6 +4,21 @@
 
 Webhooks allow projects to subscribe to events (e.g., `message.created`) and receive HTTP POST notifications when those events occur. The system includes SSRF protection, HMAC signature verification, delivery tracking, and automatic retries via BullMQ.
 
+## Requirement Traceability
+
+### User Story
+**As a** developer, **I want** to receive real-time HTTP notifications for chat events, **so that** I can integrate live chat data into my organization's CRM or automated workflows.
+
+### Acceptance Criteria
+1. Managers can configure multiple webhook subscriptions per project.
+2. Mandatory SSRF protection on user-provided webhook URLs.
+3. Every notification must include an HMAC-SHA256 signature for security.
+4. Automatic retry logic for failed deliveries with exponential backoff.
+
+## Verification
+- **E2E Tests**: `packages/backend/test/webhooks.e2e-spec.ts`
+- **Verification Logic**: SSRF validation in `webhooks.service.ts:L72`, Signature generation in `webhook.processor.ts:L74`.
+
 The architecture consists of:
 
 1. **CRUD API** - Managers create/manage subscriptions

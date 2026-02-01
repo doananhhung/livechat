@@ -6,6 +6,21 @@ This investigation documents the inbox management operations beyond the "Send Re
 
 All inbox endpoints are scoped to a project via the route pattern `/projects/:projectId/inbox/*` and require `AGENT` role or higher.
 
+## Requirement Traceability
+
+### User Story
+**As an** agent, **I want** to manage my conversations by listing, updating status, and marking them as read, **so that** I can maintain an organized workspace and provide timely support.
+
+### Acceptance Criteria
+1. Paginated listing of conversations filtered by project and status.
+2. Ability to update conversation status (OPEN, RESOLVED, PENDING).
+3. Marking conversations as read to clear unread counts.
+4. Secure deletion of conversations (restricted to Managers).
+
+## Verification
+- **Unit Tests**: `packages/backend/src/inbox/inbox.controller.spec.ts`, `packages/backend/src/inbox/services/conversation.service.spec.ts`
+- **E2E Tests**: `packages/backend/test/chat.e2e-spec.ts`
+
 ## Entry Points
 
 | Function/Method        | File                                                                        | Lines    | Purpose                                     |

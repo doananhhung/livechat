@@ -6,6 +6,20 @@ Visitor notes allow agents to add private notes about visitors. These notes are 
 
 The feature includes real-time updates via WebSocket, so all connected agents see note changes immediately.
 
+## Requirement Traceability
+
+### User Story
+**As an** agent, **I want** to add private notes to visitors, **so that** I can share internal context and background information with my team.
+
+### Acceptance Criteria
+1. Agents can CRUD notes on any visitor profile.
+2. Notes are private to the project and visible to all its agents.
+3. Every note change is broadcast in real-time to other project members.
+
+## Verification
+- **Manual Verification**: Add/update/delete a note in the dashboard and verify real-time sync across different agent sessions.
+- **Verification Logic**: WebSocket emission verified in `visitor-notes.service.ts:L29, L70, L82`.
+
 ## Entry Points
 
 | Function/Method | File                                                                                                | Lines  | Purpose                    |

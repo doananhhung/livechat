@@ -12,6 +12,22 @@ Key security features:
 - Concurrency limits to prevent resource exhaustion
 - Redis caching to reduce duplicate requests
 
+## Requirement Traceability
+
+### User Story
+**As a** user, **I want** to see a preview of links shared in the chat, **so that** I can understand the context without leaving the conversation window.
+
+### Acceptance Criteria
+1. Capture high-quality JPEG screenshots of external URLs.
+2. Robust SSRF protection blocking internal hostnames and private IP ranges.
+3. Redis caching of results for at least 60 seconds to optimize performance.
+4. Concurrency management to prevent system overload during peak usage.
+
+## Verification
+- **Manual Verification**: Test link previews with various external URLs.
+- **Security Verification**: Attempt to capture internal endpoints (e.g., `localhost`) to verify SSRF block.
+- **Verification Logic**: DNS resolution check implemented in `screenshot.controller.ts:L114`.
+
 ## Entry Points
 
 | Function/Method   | File                                                                                       | Lines   | Purpose                      |

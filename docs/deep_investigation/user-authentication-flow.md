@@ -13,6 +13,21 @@ This document investigates the complete authentication flow for users (agents an
 
 Users in this system are stored in the `users` table and can have either a `GlobalRole` (ADMIN, USER) for system-level access, and a `ProjectRole` (MANAGER, AGENT) for project-specific permissions via the `project_members` join table.
 
+## Requirement Traceability
+
+### User Story
+**As a** user, **I want** to securely register and log in to the application, **so that** I can access my projects and manage customer conversations.
+
+### Acceptance Criteria
+1. Secure account registration with mandatory email verification.
+2. support for Google OAuth with automatic account linking.
+3. Multi-factor authentication (2FA) via TOTP.
+4. Robust session management with rotating refresh tokens and access token refresh.
+
+## Verification
+- **Unit Tests**: `packages/backend/src/auth/auth.controller.spec.ts`, `packages/backend/src/auth/strategies/local.strategy.spec.ts`, `packages/backend/src/auth/strategies/jwt.strategy.spec.ts`
+- **E2E Tests**: `packages/backend/test/auth.e2e-spec.ts`, `packages/backend/test/recovery-code.e2e-spec.ts`
+
 ---
 
 ## Entry Points

@@ -6,6 +6,19 @@ Conversation assignments allow agents to take ownership of specific conversation
 
 Assignments are tracked via `assigneeId` and `assignedAt` fields on the `Conversation` entity, with real-time updates broadcast to the project.
 
+## Requirement Traceability
+
+### User Story
+**As an** agent, **I want** to assign conversations to myself or other team members, **so that** we can distribute the workload effectively and track ownership.
+
+### Acceptance Criteria
+1. Agents can assign a conversation to any member of the same project.
+2. Agents can unassign a conversation, clearing the ownership.
+3. Every assignment change must be broadcast in real-time to other project members.
+
+## Verification
+- **E2E Tests**: `packages/backend/test/assignments.e2e-spec.ts`
+
 ## Entry Points
 
 | Function/Method | File                                                                                    | Lines  | Purpose                      |

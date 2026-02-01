@@ -8,6 +8,21 @@ The feature follows a typical CRUD pattern with strict role-based access control
 - **Managers** can create, read, update, delete, and toggle templates.
 - **Agents** (and Managers) can create submissions and view submission history for a conversation.
 
+## Requirement Traceability
+
+### User Story
+- **Manager**: As a project manager, I want to create reusable form templates so that I can standardize agent data collection.
+- **Agent**: As an agent, I want to fill out action forms during a conversation so that I can record structured information (like orders or refunds).
+
+### Acceptance Criteria
+1. Managers can define fields with types (text, number, date, boolean, select).
+2. Agents can select a template and submit data for a specific visitor.
+3. Submissions are persisted against the conversation and visible in history.
+
+## Verification
+- **Unit Tests**: `packages/backend/src/actions/actions.service.spec.ts`, `packages/backend/src/actions/utils/action-validator.spec.ts`
+- **E2E Tests**: `packages/backend/test/actions.e2e-spec.ts`
+
 ---
 
 ## Entry Points

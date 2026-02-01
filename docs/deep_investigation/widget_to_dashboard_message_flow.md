@@ -4,6 +4,21 @@
 
 This document investigates the complete message flow when a visitor sends a message from the widget to the agent dashboard. The flow spans: Widget → WebSocket Gateway → BullMQ Worker → PostgreSQL + Outbox → Redis Pub/Sub → Dashboard.
 
+## Requirement Traceability
+
+### User Story
+**As a** visitor, **I want** my messages to be delivered reliably to the agent dashboard, **so that** I can get a timely response to my inquiries.
+
+### Acceptance Criteria
+1. Reliable message queuing using BullMQ to handle high traffic and ensure delivery.
+2. Transactional persistence in PostgreSQL with an outbox for guaranteed Redis broadcast.
+3. Real-time delivery of visitor messages to all connected agent dashboards.
+4. Optimistic UI updates in the widget with server-side confirmation.
+
+## Verification
+- **Unit Tests**: `packages/backend/src/inbox/services/message.service.spec.ts`, `packages/backend/src/event-consumer/event-consumer.service.spec.ts`
+- **E2E Tests**: `packages/backend/test/chat.e2e-spec.ts`
+
 ---
 
 ## Slice 1: Widget → Backend

@@ -6,6 +6,20 @@ This document traces **how a message sent from an agent to a visitor appears in 
 
 The key insight is that all agents viewing the same project join a shared Socket.IO room (`project:${projectId}`). When Agent A sends a message, the backend broadcasts to this room, causing Agent B's dashboard to update in real-time.
 
+## Requirement Traceability
+
+### User Story
+**As an** agent, **I want** my replies to be visible to my colleagues in real-time, **so that** we can collaborate effectively on conversation history and avoid duplicate work.
+
+### Acceptance Criteria
+1. When an agent sends a message, it must be persisted in the database.
+2. The message must be broadcast via WebSocket to all other agents in the same project.
+3. Other agents' dashboards must update instantly without a page refresh.
+
+## Verification
+- **Unit Tests**: `packages/backend/src/inbox/services/message.service.spec.ts`
+- **E2E Tests**: `packages/backend/test/chat.e2e-spec.ts`
+
 ## Entry Points
 
 | Function/Method    | File                                                                                          | Purpose                                      |

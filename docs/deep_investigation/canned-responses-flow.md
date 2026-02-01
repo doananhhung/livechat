@@ -6,6 +6,19 @@ Canned responses (also known as "quick replies" or "macros") are predefined text
 
 Canned responses are scoped to projects, with managers having full CRUD access while agents can only read.
 
+## Requirement Traceability
+
+### User Story
+**As an** agent, **I want** to use predefined message templates, **so that** I can respond to common visitor questions faster.
+
+### Acceptance Criteria
+1. Managers can create, update, and delete canned responses with unique shortcuts.
+2. Shortcuts must be unique within a project and follow a specific format.
+3. Agents can retrieve a list of canned responses to use in conversations.
+
+## Verification
+- **E2E Tests**: `packages/backend/test/canned-responses.e2e-spec.ts`
+
 ## Entry Points
 
 | Function/Method | File                                                                                                         | Lines  | Purpose                    |

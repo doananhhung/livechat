@@ -4,6 +4,21 @@
 
 The mail service provides transactional email delivery for the application using Nodemailer with SMTP transport. It supports multiple email types including user confirmation, password reset, email change flows, and project invitations. All email content is generated using the `EmailTemplateService` which provides internationalization (English and Vietnamese).
 
+## Requirement Traceability
+
+### User Story
+**As a** user, **I want** to receive transactional emails for account verification, password resets, and project invitations, **so that** I can securely manage my account and collaborate with others.
+
+### Acceptance Criteria
+1. Reliable delivery of user confirmation and password reset emails.
+2. Capability to send project invitations to both new and existing users.
+3. Support for internationalized templates (English and Vietnamese).
+4. Secure handling of verification tokens and links.
+
+## Verification
+- **Unit Tests**: `packages/backend/src/mail/mail.service.spec.ts`, `packages/backend/src/mail/mail.controller.spec.ts`
+- **E2E Tests**: `packages/backend/test/invitation-lifecycle.e2e-spec.ts`
+
 ## Entry Points
 
 | Function/Method                 | File                                                                     | Lines    | Purpose                                   |

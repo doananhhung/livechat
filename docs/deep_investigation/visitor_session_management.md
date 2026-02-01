@@ -4,6 +4,21 @@
 
 This investigation traces the visitor identification and session management flow after a WebSocket connection is established. The flow handles visitor creation/lookup, conversation retrieval, Redis session storage, and message processing through a BullMQ worker. The design uses **lazy conversation creation** (conversation created on first message, not on identify) and supports configurable **history visibility modes**.
 
+## Requirement Traceability
+
+### User Story
+**As a** visitor, **I want** my chat session and history to persist across page refreshes and navigations, **so that** I can continue my support conversation without repeating information.
+
+### Acceptance Criteria
+1. Persistence of visitor identity via UID in browser localStorage.
+2. Retrieval of previous messages based on project `historyVisibility` settings.
+3. Redis-backed real-time session tracking with a 3-day TTL.
+4. Guaranteed message delivery confirmation using a worker-driven processing flow.
+
+## Verification
+- **Unit Tests**: `packages/backend/src/realtime-session/realtime-session.service.spec.ts`
+- **E2E Tests**: `packages/backend/test/visitors.e2e-spec.ts`, `packages/backend/test/chat.e2e-spec.ts`
+
 ## Entry Points
 
 | Function/Method               | File                                                                                                    | Purpose                  |

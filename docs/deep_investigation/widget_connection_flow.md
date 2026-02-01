@@ -4,6 +4,21 @@
 
 This investigation traces the embeddable chat widget's connection establishment, authentication, and message sending from a customer website to the backend. The widget uses **domain whitelisting** for connection authorization and **visitor UID** (persisted in localStorage) for session continuity. Agents authenticate via JWT tokens through a separate path.
 
+## Requirement Traceability
+
+### User Story
+**As a** business owner, **I want** my chat widget to only work on my authorized domains, **so that** I can protect my account resources and prevent unauthorized usage of my chat service.
+
+### Acceptance Criteria
+1. Widget connection must be validated against a project-specific domain whitelist.
+2. Visitor session continuity via persistent UID in local storage.
+3. Secure initialization using a public settings endpoint with origin validation.
+
+## Verification
+- **Unit Tests**: `packages/backend/src/gateway/events.gateway.spec.ts`
+- **E2E Tests**: `packages/backend/test/chat.e2e-spec.ts`
+- **Verification Logic**: Whitelist validation in `ws-auth.service.ts:L37`.
+
 ## Entry Points
 
 | Function/Method        | File                                                                                        | Purpose                      |
