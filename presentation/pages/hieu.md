@@ -48,23 +48,13 @@ Entity Relationship Diagram - Toàn bộ hệ thống
 
 ---
 
-<LayoutDiagram title="Complete Database Schema">
+<LayoutDiagram title="Database Schema: Core & Tenancy">
 
 ```mermaid
 erDiagram
-    %% === IDENTITY & AUTH ===
-    User ||--o{ UserIdentity : "oauth"
-    User ||--o{ RefreshToken : "sessions"
-    User ||--o{ TwoFactorRecoveryCode : "2fa_codes"
-    User ||--o{ EmailChangeRequest : "email_changes"
-
-    %% === MULTI-TENANCY ===
+    %% === CHAT CORE & TENANCY ===
     User ||--o{ ProjectMember : "memberships"
     Project ||--o{ ProjectMember : "team"
-    Project ||--o{ Invitation : "pending_invites"
-    User ||--o{ Invitation : "sent_invites"
-
-    %% === CHAT CORE ===
     Project ||--o{ Visitor : "website_users"
     Project ||--o{ Conversation : "chats"
     Visitor ||--o{ Conversation : "sessions"
@@ -72,16 +62,6 @@ erDiagram
     User ||--o{ VisitorNote : "authored_notes"
     Conversation ||--o{ Message : "history"
     User }o--o| Conversation : "assignee"
-
-    %% === FORMS & AUTOMATION ===
-    Project ||--o{ ActionTemplate : "forms"
-    ActionTemplate ||--o{ ActionSubmission : "responses"
-    Conversation ||--o{ ActionSubmission : "form_data"
-    Project ||--o{ CannedResponse : "quick_replies"
-
-    %% === WEBHOOKS ===
-    Project ||--o{ WebhookSubscription : "integrations"
-    WebhookSubscription ||--o{ WebhookDelivery : "delivery_log"
 
     User { uuid id PK }
     Project { int id PK }
@@ -92,6 +72,36 @@ erDiagram
 ```
 
 </LayoutDiagram>
+
+---
+
+<LayoutDiagram title="Database Schema: Identity & Extensions">
+
+```mermaid
+erDiagram
+    %% === IDENTITY & AUTH ===
+    User ||--o{ UserIdentity : "oauth"
+    User ||--o{ RefreshToken : "sessions"
+    User ||--o{ TwoFactorRecoveryCode : "2fa_codes"
+    User ||--o{ EmailChangeRequest : "email_changes"
+
+    %% === EXTENSIONS ===
+    Project ||--o{ Invitation : "pending_invites"
+    User ||--o{ Invitation : "sent_invites"
+    Project ||--o{ ActionTemplate : "forms"
+    ActionTemplate ||--o{ ActionSubmission : "responses"
+    Conversation ||--o{ ActionSubmission : "form_data"
+    Project ||--o{ CannedResponse : "quick_replies"
+    Project ||--o{ WebhookSubscription : "integrations"
+    WebhookSubscription ||--o{ WebhookDelivery : "delivery_log"
+
+    User { uuid id PK }
+    Project { int id PK }
+    ActionTemplate { int id PK }
+```
+
+</LayoutDiagram>
+
 
 ---
 

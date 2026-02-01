@@ -1,3 +1,13 @@
+<LayoutSection title="Streaming Engineer">
+
+**Member 3: Streaming Engineer**
+
+Message flow & AI Integration
+
+</LayoutSection>
+
+---
+
 <LayoutTitleContent title="The Streaming Engine">
 
 ### ⚡ The Challenge: Speed vs. Reliability
