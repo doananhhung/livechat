@@ -271,21 +271,88 @@ transition: slide-up
 
 <template #right>
 
-### 🔒 2FA Login Flow
+### � 2FA Endpoints
 
-| Bước | Mô tả |
-|------|-------|
-| 1 | User nhập email/password |
-| 2 | Server kiểm tra `user.is2FAEnabled` |
-| 3 | Nếu true → Yêu cầu TOTP code |
-| 4 | Verify code với `speakeasy` |
-| 5 | Cấp JWT token |
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /auth/2fa/enable` | Generate secret and QR code |
+| `POST /auth/2fa/verify` | Verify TOTP token |
 
 > Sử dụng thư viện **speakeasy** cho TOTP generation/validation
 
 </template>
 
 </LayoutTwoCol>
+
+---
+transition: slide-up
+---
+
+<LayoutDiagram title="2FA Login Flow - Complete Sequence">
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'fontSize':'18px'}}}%%
+flowchart LR
+    Start([<b>👤 USER LOGIN</b>]) --> Input["<b>📧 INPUT</b><br/>Email + Password"]
+    Input --> Validate{"<b>🔍 VALIDATE</b><br/>Credentials?"}
+    
+    %% Invalid credentials path (top)
+    Validate -->|"❌ INVALID"| ErrorAuth["<b>❌ ERROR</b><br/>401 Unauthorized"]
+    ErrorAuth --> EndError([<b>🚫 FAILED</b>])
+    
+    %% Valid credentials path (bottom)
+    Validate -->|"✅ VALID"| Check2FA{"<b>🔐 CHECK</b><br/>2FA Enabled?"}
+    
+    %% 2FA disabled path (top of valid branch)
+    Check2FA -->|"❌ NO"| GenToken1["<b>🎫 GENERATE</b><br/>JWT + Refresh Token"]
+    GenToken1 --> SaveRedis1["<b>⚡ REDIS</b><br/>Save Token<br/>TTL: 7 days"]
+    SaveRedis1 --> Success1["<b>✅ SUCCESS</b><br/>Return Tokens"]
+    Success1 --> End([<b>🎉 SUCCESS</b>])
+    
+    %% 2FA enabled path (bottom of valid branch)
+    Check2FA -->|"✅ YES"| Require2FA["<b>⚠️ REQUIRE</b><br/>2FA Code"]
+    Require2FA --> UserApp["<b>📱 USER ACTION</b><br/>Open Authenticator"]
+    UserApp --> InputCode["<b>🔢 INPUT</b><br/>TOTP Code"]
+    InputCode --> VerifyTOTP{"<b>✓ VERIFY</b><br/>TOTP Valid?"}
+    
+    %% Invalid TOTP path (top)
+    VerifyTOTP -->|"❌ INVALID"| Error2FA["<b>❌ ERROR</b><br/>401 Invalid Code"]
+    Error2FA --> EndError
+    
+    %% Valid TOTP path (bottom)
+    VerifyTOTP -->|"✅ VALID"| GenToken2["<b>🎫 GENERATE</b><br/>JWT + Refresh Token"]
+    GenToken2 --> SaveRedis2["<b>⚡ REDIS</b><br/>Save Token<br/>TTL: 7 days"]
+    SaveRedis2 --> Success2["<b>✅ SUCCESS</b><br/>Return Tokens"]
+    Success2 --> End
+    
+    %% Styling
+    style Start fill:#e3f2fd,stroke:#1976d2,stroke-width:4px,color:#000
+    style End fill:#c8e6c9,stroke:#2e7d32,stroke-width:4px,color:#000
+    style EndError fill:#ffebee,stroke:#c62828,stroke-width:4px,color:#000
+    
+    style Check2FA fill:#fff3e0,stroke:#f57c00,stroke-width:3px,color:#000
+    style VerifyTOTP fill:#fff3e0,stroke:#f57c00,stroke-width:3px,color:#000
+    style Validate fill:#fff3e0,stroke:#f57c00,stroke-width:3px,color:#000
+    
+    style GenToken1 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#000
+    style GenToken2 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#000
+    
+    style SaveRedis1 fill:#e1f5fe,stroke:#0277bd,stroke-width:3px,color:#000
+    style SaveRedis2 fill:#e1f5fe,stroke:#0277bd,stroke-width:3px,color:#000
+    
+    style ErrorAuth fill:#ffcdd2,stroke:#d32f2f,stroke-width:3px,color:#000
+    style Error2FA fill:#ffcdd2,stroke:#d32f2f,stroke-width:3px,color:#000
+    
+    style Success1 fill:#c8e6c9,stroke:#388e3c,stroke-width:3px,color:#000
+    style Success2 fill:#c8e6c9,stroke:#388e3c,stroke-width:3px,color:#000
+    
+    style Input fill:#f5f5f5,stroke:#616161,stroke-width:2px,color:#000
+    style Require2FA fill:#fff9c4,stroke:#f9a825,stroke-width:3px,color:#000
+    style UserApp fill:#e0f2f1,stroke:#00897b,stroke-width:2px,color:#000
+    style InputCode fill:#f5f5f5,stroke:#616161,stroke-width:2px,color:#000
+```
+
+</LayoutDiagram>
 
 ---
 transition: slide-up
@@ -662,49 +729,63 @@ transition: slide-up
 <LayoutDiagram title="Email Change Flow (Security)">
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'fontSize':'18px'}}}%%
 flowchart LR
-    Start([👤 User Request]) --> Phase1
+    Start([<b>👤 USER REQUEST</b>]) --> Phase1
     
-    subgraph Phase1["� PHASE 1: Initiate"]
+    subgraph Phase1["<b>📧 PHASE 1: INITIATE</b>"]
         direction TB
-        A1[POST /users/me/change-email]
-        A2{Email<br/>exists?}
-        A3[Generate Token<br/>32 bytes random]
-        A4[Store in Redis<br/>TTL: 1h]
-        A5[Send Email<br/>Verification]
+        A1["<b>🔌 API CALL</b><br/>POST /users/me/change-email"]
+        A2{"<b>🔍 CHECK</b><br/>Email Exists?"}
+        A3["<b>🔐 GENERATE</b><br/>Secure Token<br/>32 bytes random"]
+        A4["<b>⚡ REDIS</b><br/>Store Token<br/>TTL: 1 hour"]
+        A5["<b>📨 QUEUE</b><br/>Send Verification<br/>via BullMQ"]
         
         A1 --> A2
-        A2 -->|No| A3
-        A2 -->|Yes| Err1[❌ 409 Conflict]
+        A2 -->|"❌ NO"| A3
+        A2 -->|"✅ YES"| Err1["<b>❌ ERROR</b><br/>409 Conflict"]
         A3 --> A4
         A4 --> A5
     end
     
-    A5 --> Wait[📧 User checks email]
+    A5 --> Wait["<b>⏳ WAITING</b><br/>User Checks Email"]
     Wait --> Phase2
     
-    subgraph Phase2["✅ PHASE 2: Verify"]
+    subgraph Phase2["<b>✅ PHASE 2: VERIFY</b>"]
         direction TB
-        B1[GET /verify-email?token=xxx]
-        B2{Token<br/>valid?}
-        B3[UPDATE email]
-        B4[DELETE token]
+        B1["<b>🔌 API CALL</b><br/>GET /verify-email?token=xxx"]
+        B2{"<b>✓ VERIFY</b><br/>Token Valid?"}
+        B3["<b>💾 UPDATE</b><br/>Change Email in DB"]
+        B4["<b>🗑️ CLEANUP</b><br/>Delete Token"]
         
         B1 --> B2
-        B2 -->|Yes| B3
-        B2 -->|No| Err2[❌ 400 Invalid Token]
+        B2 -->|"✅ VALID"| B3
+        B2 -->|"❌ INVALID"| Err2["<b>❌ ERROR</b><br/>400 Invalid Token"]
         B3 --> B4
     end
     
-    B4 --> Success([✅ Email Changed])
+    B4 --> Success([<b>🎉 SUCCESS</b><br/>Email Changed])
     
-    style Phase1 fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    style Phase2 fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
-    style A2 fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    style B2 fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    style Err1 fill:#ffebee,stroke:#c62828,stroke-width:2px
-    style Err2 fill:#ffebee,stroke:#c62828,stroke-width:2px
-    style Success fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style Phase1 fill:#fff3e0,stroke:#f57c00,stroke-width:4px,color:#000
+    style Phase2 fill:#e8f5e9,stroke:#388e3c,stroke-width:4px,color:#000
+    style Start fill:#e3f2fd,stroke:#1976d2,stroke-width:4px,color:#000
+    style Success fill:#c8e6c9,stroke:#2e7d32,stroke-width:4px,color:#000
+    
+    style A2 fill:#fff3e0,stroke:#f57c00,stroke-width:3px,color:#000
+    style B2 fill:#fff3e0,stroke:#f57c00,stroke-width:3px,color:#000
+    
+    style A3 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#000
+    style A4 fill:#e1f5fe,stroke:#0277bd,stroke-width:3px,color:#000
+    style A5 fill:#fff9c4,stroke:#f9a825,stroke-width:3px,color:#000
+    style B3 fill:#e8f5e9,stroke:#388e3c,stroke-width:3px,color:#000
+    style B4 fill:#fce4ec,stroke:#c2185b,stroke-width:3px,color:#000
+    
+    style Err1 fill:#ffcdd2,stroke:#d32f2f,stroke-width:3px,color:#000
+    style Err2 fill:#ffcdd2,stroke:#d32f2f,stroke-width:3px,color:#000
+    style Wait fill:#e0f2f1,stroke:#00897b,stroke-width:3px,color:#000
+    
+    style A1 fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px,color:#000
+    style B1 fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px,color:#000
 ```
 
 </LayoutDiagram>
@@ -733,19 +814,19 @@ transition: slide-up
 
 <template #right>
 
-### 📧 Email Flow
+### 📧 Email Verification
 
-**Initiate Phase**
-1. Check email availability
-2. Generate secure token
-3. Store in Redis with TTL
-4. Queue email via BullMQ
+**Security Features**
+- One-time use token
+- Time-limited validity (1 hour)
+- Secure random generation
+- Redis-based storage
 
-**Verify Phase**
-1. Validate token from Redis
-2. Update user email in DB
-3. Delete token (prevent reuse)
-4. Return success response
+**Process**
+- Token sent via email
+- User clicks verification link
+- Token validated and consumed
+- Email updated in database
 
 </template>
 
@@ -755,22 +836,42 @@ transition: slide-up
 transition: slide-up
 ---
 
-<LayoutTitleContent title="Secure Email Change Implementation">
+<LayoutDiagram title="Email Change Flow - Detailed Steps">
 
-**Step 1: Request Email Change**
-1. Kiểm tra email đã tồn tại
-2. Generate secure token (32 bytes)
-3. Lưu vào Redis với TTL 1 giờ
-4. Gửi email verification
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'fontSize':'18px'}}}%%
+flowchart LR
+    subgraph Phase1["<b>📧 INITIATE PHASE</b>"]
+        direction LR
+        S1["<b>1.</b> Check Email<br/>Availability"] --> S2["<b>2.</b> Generate<br/>Secure Token"]
+        S2 --> S3["<b>3.</b> Store in Redis<br/>with TTL"]
+        S3 --> S4["<b>4.</b> Queue Email<br/>via BullMQ"]
+    end
+    
+    Phase1 -.->|"User clicks link"| Phase2
+    
+    subgraph Phase2["<b>✅ VERIFY PHASE</b>"]
+        direction LR
+        V1["<b>1.</b> Validate Token<br/>from Redis"] --> V2["<b>2.</b> Update Email<br/>in Database"]
+        V2 --> V3["<b>3.</b> Delete Token<br/>(prevent reuse)"]
+        V3 --> V4["<b>4.</b> Return Success<br/>Response"]
+    end
+    
+    style Phase1 fill:#fff3e0,stroke:#f57c00,stroke-width:4px,color:#000
+    style Phase2 fill:#e8f5e9,stroke:#388e3c,stroke-width:4px,color:#000
+    
+    style S1 fill:#e3f2fd,stroke:#1976d2,stroke-width:3px,color:#000
+    style S2 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#000
+    style S3 fill:#e1f5fe,stroke:#0277bd,stroke-width:3px,color:#000
+    style S4 fill:#fff9c4,stroke:#f9a825,stroke-width:3px,color:#000
+    
+    style V1 fill:#e1f5fe,stroke:#0277bd,stroke-width:3px,color:#000
+    style V2 fill:#e8f5e9,stroke:#388e3c,stroke-width:3px,color:#000
+    style V3 fill:#ffcdd2,stroke:#d32f2f,stroke-width:3px,color:#000
+    style V4 fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px,color:#000
+```
 
-**Step 2: Verify Token**
-1. Validate token từ Redis
-2. Update user email trong database
-3. Delete token để prevent reuse
-
-> **Security**: Token chỉ dùng 1 lần và tự động expire sau 1 giờ
-
-</LayoutTitleContent>
+</LayoutDiagram>
 
 ---
 transition: slide-up
@@ -959,47 +1060,36 @@ transition: slide-up
 3. Resolve DNS - Get IP addresses
 4. Block private IPs - Prevent internal network access
 
+**Blocked IP Ranges**:
+- `127.0.0.0/8` - Localhost
+- `10.0.0.0/8` - Private network
+- `172.16.0.0/12` - Private network
+- `192.168.0.0/16` - Private network
+- `169.254.0.0/16` - Link-local
+
 </template>
 
 <template #right>
 
-### 🚫 Blocked IP Ranges
+### 🤖 Puppeteer Implementation
 
-| Range | Description |
-|-------|-------------|
-| `127.0.0.0/8` | Localhost |
-| `10.0.0.0/8` | Private network |
-| `172.16.0.0/12` | Private network |
-| `192.168.0.0/16` | Private network |
-| `169.254.0.0/16` | Link-local |
+**Process**:
+1. Validate URL (SSRF protection)
+2. Launch headless browser
+3. Set viewport (1280x720)
+4. Navigate with timeout (30s)
+5. Capture screenshot (PNG)
+6. Save to storage
+7. Return public URL
 
-> Ngăn chặn **SSRF attacks** vào internal services
+**Security**:
+- Sandbox mode (containerized)
+- Timeout protection (30s)
+- Resource cleanup (browser.close())
 
 </template>
 
 </LayoutTwoCol>
-
----
-transition: slide-up
----
-
-<LayoutTitleContent title="Puppeteer Implementation">
-
-**Process**:
-1. Validate URL (SSRF protection)
-2. Launch headless browser với security flags
-3. Set viewport (1280x720)
-4. Navigate với timeout (30s)
-5. Capture screenshot (PNG format)
-6. Save to storage service
-7. Return public URL
-
-**Security Features**:
-- Sandbox mode disabled for containerized environments
-- Timeout protection
-- Resource cleanup (browser.close())
-
-</LayoutTitleContent>
 
 ---
 transition: slide-up
@@ -1073,34 +1163,5 @@ transition: slide-up
 
 </LayoutTitleContent>
 
----
-transition: slide-left
----
 
-<LayoutTwoCol title="Handoff to Next Presenter">
-
-<template #left>
-
-### ✅ Covered Topics
-- User Authentication (JWT, OAuth, 2FA)
-- Multi-tenancy & Project Isolation
-- Role-Based Access Control
-- User Profile & Settings
-- Mail Service Infrastructure
-- Screenshot Service Security
-
-</template>
-
-<template #right>
-
-### ➡️ Next: Member 3
-**Streaming Engineer - Real-time Engine**
-
-- WebSocket Connection Lifecycle
-- Visitor Session Management
-- Message Flow (Inbound/Outbound)
-- Agent Broadcast Synchronization
-
-</template>
-
-</LayoutTwoCol>
+<!-- End of presentation -->
