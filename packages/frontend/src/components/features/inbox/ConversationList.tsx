@@ -121,22 +121,6 @@ export const ConversationList = ({ overrideProjectId }: ConversationListProps) =
 
   const conversations = data?.pages.flatMap((page) => page.data) || [];
 
-  const handleDeleteClick = (e: React.MouseEvent, conversation: Conversation) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setConversationToDelete(conversation);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleRenameClick = (e: React.MouseEvent, conversation: Conversation) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (conversation.visitor) {
-      setSelectedVisitorForRename(conversation.visitor);
-      setIsRenameDialogOpen(true);
-    }
-  };
-
   const handleConfirmDelete = () => {
     if (!conversationToDelete || !numericProjectId) return;
 
@@ -301,14 +285,22 @@ export const ConversationList = ({ overrideProjectId }: ConversationListProps) =
                       <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
                         <DropdownMenuItem
                           className="cursor-pointer"
-                          onClick={(e) => handleRenameClick(e, conversation)}
+                          onSelect={() => {
+                            if (conversation.visitor) {
+                              setSelectedVisitorForRename(conversation.visitor);
+                              setIsRenameDialogOpen(true);
+                            }
+                          }}
                         >
                           <Edit className="mr-2 h-4 w-4" />
                           {t("inbox.renameVisitor")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive focus:text-destructive cursor-pointer"
-                          onClick={(e) => handleDeleteClick(e, conversation)}
+                          onSelect={() => {
+                            setConversationToDelete(conversation);
+                            setDeleteDialogOpen(true);
+                          }}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
                           {t("inbox.deleteConversation")}
