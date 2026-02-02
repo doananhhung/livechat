@@ -1,843 +1,655 @@
-# Member 1 Presentation Script - System Architecture
+  # Member 1 Presentation Script - System Architecture
 
-> **Thời lượng dự kiến**: 18-22 phút  
-> **Số slides**: 23 slides  
-> **Vai trò**: System Architect
+  > **Thời lượng dự kiến**: 15-18 phút  
+  > **Số slides**: 17 slides  
+  > **Vai trò**: System Architect
 
----
+  ---
 
-## Slide 1: Title Slide - System Architecture
+  ## Slide 1: Title Slide - System Architecture
 
-**Layout**: LayoutSection
+  **Layout**: LayoutSection
 
-**Nội dung slide**:
-- Title: "System Architecture"
-- Subtitle: "Member 1: System Architect"
-- Mô tả: "Kiến trúc tổng thể, triển khai, Event-Driven Core, Webhooks, và Audit Logs"
+  **Nội dung slide**:
+  - Title: "System Architecture"
+  - Subtitle: "Member 1: System Architect"
+  - Mô tả: "Kiến trúc tổng thể, triển khai, Event-Driven Core, Webhooks, và Audit Logs"
 
-**Script:**
+  **Script:**
 
-"Xin chào các thầy cô và các bạn. Tôi là Member 1 - System Architect của dự án Live Chat.
+  "Xin chào thầy/cô và các bạn. Em là [Tên] - System Architect của dự án Live Chat.
 
-Trong phần trình bày của mình, tôi sẽ giới thiệu về **Kiến trúc tổng thể** của hệ thống, bao gồm:
-- Event-Driven Core - trái tim của hệ thống real-time
-- Triển khai và Tech Stack
-- Webhooks - tích hợp với hệ thống bên ngoài
-- Audit Logs - đảm bảo compliance"
+  Trong phần trình bày của em, em sẽ giới thiệu về **Kiến trúc tổng thể** của hệ thống, bao gồm:
+  - Tổng quan hệ thống và các thành phần
+  - Deployment và Technology Stack
+  - Event-Driven Core - trái tim của hệ thống real-time
+  - Webhooks - tích hợp với hệ thống bên ngoài
+  - Audit Logs - đảm bảo security compliance"
 
-⏱️ **Thời gian**: ~30 giây
+  ⏱️ **Thời gian**: ~30 giây
 
----
+  ---
 
-## Slide 2: System Overview
+  ## Slide 2: System Overview
 
-**Layout**: LayoutTwoCol
+  **Layout**: LayoutTwoCol
 
-**Nội dung slide**:
-- **Cột trái - Application Type**: Customer Support Chat Platform
-  - Real-time messaging giữa Visitor và Agent
-  - Widget nhúng vào website khách hàng
-  - Dashboard quản lý cho nhân viên hỗ trợ
-- **Cột phải - Architecture Style**: Event-Driven Microservices
-  - Real-time: WebSocket (Socket.IO)
-  - Multi-tenant: Cô lập dữ liệu theo Project
-  - Decoupled: EventEmitter2 Bus
+  **Nội dung slide**:
+  - **Cột trái - Application Type**: Customer Support Chat Platform
+    - Real-time messaging giữa Visitor và Agent
+    - Widget nhúng vào website khách hàng
+    - Dashboard quản lý cho nhân viên hỗ trợ
+  - **Cột phải - Architecture Style**: Event-Driven Microservices
+    - Real-time: WebSocket (Socket.IO)
+    - Multi-tenant: Cô lập dữ liệu theo Project
+    - Decoupled: EventEmitter2 Bus
 
-**Script:**
+  **Script:**
 
-"Trước tiên, để các bạn có cái nhìn tổng quan về hệ thống chúng tôi đang xây dựng.
+  "Trước tiên, để thầy/cô có cái nhìn tổng quan về hệ thống chúng em đang xây dựng.
 
-**Về Application Type**: Đây là một nền tảng **Customer Support Chat Platform**, cho phép real-time messaging giữa **Visitor** - người truy cập website - và **Agent** - nhân viên hỗ trợ. 
+  **Về Application Type**: Đây là một nền tảng **Customer Support Chat Platform**, cho phép real-time messaging giữa **Visitor** - người truy cập website - và **Agent** - nhân viên hỗ trợ. 
 
-Hệ thống bao gồm:
-- Một **chat widget** có thể nhúng vào bất kỳ website nào của khách hàng
-- Một **dashboard quản lý** dành cho các nhân viên hỗ trợ
+  Hệ thống bao gồm:
+  - Một **chat widget** có thể nhúng vào bất kỳ website nào của khách hàng
+  - Một **dashboard quản lý** dành cho các nhân viên hỗ trợ
 
-**Về Architecture Style**: Chúng tôi chọn kiến trúc **Event-Driven Microservices**. Các điểm đặc biệt là:
+  **Về Architecture Style**: Chúng em chọn kiến trúc **Event-Driven Microservices**. Các điểm đặc biệt là:
 
-1. **Real-time**: Sử dụng WebSocket thông qua Socket.IO để đảm bảo tin nhắn được truyền trong thời gian thực
-2. **Multi-tenant**: Hỗ trợ nhiều công ty khác nhau sử dụng cùng hệ thống, với dữ liệu được cô lập hoàn toàn theo từng Project
-3. **Decoupled**: Các thành phần giao tiếp thông qua EventEmitter2 Bus, giúp hệ thống linh hoạt và dễ mở rộng"
+  1. **Real-time**: Sử dụng WebSocket thông qua Socket.IO để đảm bảo tin nhắn được truyền trong thời gian thực
+  2. **Multi-tenant**: Hỗ trợ nhiều công ty khác nhau sử dụng cùng hệ thống, với dữ liệu được cô lập hoàn toàn theo từng Project
+  3. **Decoupled**: Các thành phần giao tiếp thông qua EventEmitter2 Bus, giúp hệ thống linh hoạt và dễ mở rộng"
 
-⏱️ **Thời gian**: ~60 giây
+  ⏱️ **Thời gian**: ~60 giây
 
----
+  ---
 
-## Slide 3: System Components Overview
+  ## Slide 3: Use Case Diagram
 
-**Layout**: LayoutDiagram
+  **Layout**: LayoutDiagram
 
-**Nội dung slide**: Mermaid flowchart hiển thị 5 tầng chính của hệ thống:
-- Frontend (Dashboard React, Widget Preact)
-- WebSocket Layer (Socket.IO Gateway, Project Rooms)
-- Backend (Guards, REST Controllers, EventBus, Services)
-- Workers (BullMQ Consumer, Webhook Processor)
-- Infrastructure (PostgreSQL, Redis)
+  **Nội dung slide**: Mermaid flowchart hiển thị 3 actors và các use cases:
+  - Visitor: Send/Receive Messages, View Chat History, Fill Smart Forms
+  - Agent: Chat with Visitors, Manage Conversations, Use Canned Responses, Add Visitor Notes
+  - Manager: Manage Team Members, Configure Project, Create Canned Responses, Create Action Templates, Configure Webhooks, View Audit Logs + inherits từ Agent
 
-**Script:**
+  **Script:**
 
-"Bây giờ chúng ta sẽ đi sâu vào các thành phần chính của hệ thống qua sơ đồ này.
+  "Đây là Use Case Diagram của hệ thống Live Chat.
 
-Hệ thống được chia thành **5 tầng chính**:
+  Hệ thống có **3 loại người dùng chính**:
 
-**Tầng Frontend** gồm hai phần:
-- **Agent Dashboard**: Được viết bằng React, đây là giao diện làm việc của nhân viên hỗ trợ
-- **Chat Widget**: Được viết bằng Preact - một phiên bản nhẹ hơn của React, chỉ khoảng 3KB - để đảm bảo tải nhanh khi nhúng vào website khách hàng
+  **1. Visitor** - Người truy cập website:
+  - Có thể gửi và nhận tin nhắn real-time
+  - Xem lịch sử chat của mình
+  - Điền các Smart Forms mà Agent gửi
 
-**Tầng WebSocket Layer**: Sử dụng Socket.IO Gateway để xử lý tất cả các kết nối real-time. Đặc biệt, chúng tôi sử dụng cơ chế **Project Rooms** để cô lập các sự kiện theo từng project.
+  **2. Agent** - Nhân viên hỗ trợ:
+  - Chat trực tiếp với Visitor
+  - Quản lý conversations: assign, đổi status (Open, Resolved, Pending)
+  - Sử dụng Canned Responses để trả lời nhanh
+  - Thêm ghi chú riêng về Visitor
 
-**Tầng Backend**: Xây dựng trên NestJS framework, bao gồm:
-- **REST Controllers** để xử lý các API request
-- **Domain Services** chứa business logic
-- **Auth Guards** và **RBAC** để kiểm soát quyền truy cập
+  **3. Manager** - Quản lý:
+  - Có toàn bộ quyền của Agent (inherits - thể hiện bằng đường nét đứt)
+  - Quản lý team: thêm/xóa Agent
+  - Cấu hình Project: domain whitelist, settings
+  - Tạo Canned Responses và Action Templates
+  - Cấu hình Webhooks cho external integration
+  - Xem Audit Logs để theo dõi hoạt động"
 
-**Background Workers**: Xử lý các tác vụ nặng như gửi webhook mà không làm block main thread. Chúng tôi dùng **BullMQ** để quản lý queue.
+  ⏱️ **Thời gian**: ~75 giây
 
-Cuối cùng là **Infrastructure layer**: Gồm PostgreSQL để lưu trữ dữ liệu, và Redis phục vụ cho cache, queue, và pub/sub.
+  ---
 
-Các thành phần này làm việc phối hợp với nhau để tạo nên một hệ thống real-time hiệu quả và scalable."
+  ## Slide 4: System Components Overview
 
-⏱️ **Thời gian**: ~90 giây
+  **Layout**: LayoutDiagram
 
----
+  **Nội dung slide**: Mermaid flowchart hiển thị các tầng chính của hệ thống:
+  - Clients (Agent Dashboard, Chat Widget)
+  - Application Server (API & Gateway)
+  - Workers (Visitor Msg Worker, Webhook Worker)
+  - Data Layer (PostgreSQL, Redis)
+  - External App
 
-## Slide 4: Multi-Tenancy with Projects
+  Và các luồng: Agent Flow (Direct), Visitor Flow (Queued), Realtime Broadcast (Outbox Pattern), Webhooks
 
-**Layout**: LayoutTwoCol
+  **Script:**
 
-**Nội dung slide**:
-- **Cột trái - Data Isolation**: 
-  - Mọi entity → projectId → Cô lập hoàn toàn
-  - Project: Đơn vị cô lập dữ liệu gốc
-  - ProjectMember: Liên kết User với Project
-  - Mọi request phải validate project membership
-- **Cột phải - Role Hierarchy**:
-  - MANAGER: Toàn quyền
-  - AGENT: Chat và quản lý conversation
+  "Bây giờ chúng ta sẽ đi sâu vào các thành phần chính của hệ thống.
 
-**Script:**
+  Hệ thống được chia thành **4 tầng chính**:
 
-"Một trong những đặc điểm quan trọng nhất của hệ thống là khả năng **Multi-Tenancy**.
+  **Tầng Clients** gồm hai phần:
+  - **Agent Dashboard**: Giao diện làm việc của nhân viên hỗ trợ
+  - **Chat Widget**: Widget nhẹ nhúng vào website khách hàng
 
-**Về Data Isolation**: Mọi entity trong hệ thống đều có **projectId**. Đây là đơn vị cô lập dữ liệu gốc. Điều này có nghĩa là:
-- **Project** là container chứa tất cả dữ liệu của một công ty
-- **ProjectMember** liên kết User với Project
-- Mọi request đều phải **validate project membership** trước khi cho phép truy cập
+  **Application Server**: API & Gateway xử lý tất cả requests
 
-**Về Role Hierarchy**: Hệ thống có 2 role chính:
-- **MANAGER**: Có toàn quyền quản lý - bao gồm cấu hình hệ thống, xem báo cáo, và quản lý team members
-- **AGENT**: Quyền chat với khách hàng và quản lý conversation
+  **Workers**: Xử lý background tasks:
+  - **Visitor Msg Worker**: Xử lý tin nhắn từ visitor
+  - **Webhook Worker**: Gửi webhooks đến external systems
 
-**Điểm quan trọng nhất** là: Dữ liệu của công ty A **không bao giờ** có thể lẫn với công ty B. Mỗi project là một môi trường độc lập hoàn toàn."
+  **Data Layer**: PostgreSQL và Redis
 
-⏱️ **Thời gian**: ~60 giây
+  **Điểm quan trọng về Message Flow**:
 
----
+  1. **Agent Flow (Sync)**: Dashboard gọi API, API ghi **trực tiếp** vào Database
+  2. **Visitor Flow (Async)**: Widget gọi API, API **enqueue** job, Worker xử lý và ghi Database
+  3. **Realtime Broadcast**: Sau khi ghi DB, PostgreSQL **pg_notify** trigger Redis, Redis broadcast đến API để gửi real-time cho clients
+  4. **Webhooks**: Redis trigger Webhook Worker, Worker gửi HTTP POST đến External App
 
-## Slide 5: Visitor → Agent Flow (Overview)
+  Cơ chế này sử dụng **Outbox Pattern** để đảm bảo tin nhắn không bao giờ bị mất."
 
-**Layout**: LayoutDiagram
+  ⏱️ **Thời gian**: ~90 giây
 
-**Nội dung slide**: Mermaid flowchart đơn giản hóa luồng:
-Widget → EventsGateway → EventConsumerService → PostgreSQL → Redis Pub/Sub → Project Room → Dashboard
-(+ Background path: BullMQ → Webhooks)
+  ---
 
-**Script:**
+  ## Slide 5: Deployment & Tech Stack (Section)
 
-"Đây là **tổng quan luồng** Visitor gửi tin nhắn đến Agent.
+  **Layout**: LayoutSection
 
-**Critical Path (~60ms)**:
-- Widget gửi tin nhắn qua Socket.IO đến **EventsGateway**
-- Gateway phát event qua EventEmitter đến **EventConsumerService**
-- EventConsumerService lưu **Message** và **Outbox entry** vào PostgreSQL trong cùng một transaction
+  **Nội dung slide**:
+  - Title: "Deployment & Tech Stack"
+  - Subtitle: "Công nghệ và cấu trúc Monorepo"
 
-Sau khi commit, PostgreSQL **NOTIFY trigger** kết hợp **Outbox Pattern** đảm bảo message được broadcast qua **Redis Pub/Sub**.
+  **Script:**
 
-EventsGateway nhận event từ Redis và emit đến **Project Room** cụ thể (ví dụ `project:X`). **Chỉ** các Agents đã join room này mới nhận được message - đây là cơ chế **multi-tenancy isolation**.
+  "Tiếp theo, chúng ta sẽ tìm hiểu về **công nghệ** và **cấu trúc Monorepo** của dự án."
 
-**Background path**: EventConsumerService enqueue webhook job vào BullMQ để xử lý sau, **không block** real-time flow.
+  ⏱️ **Thời gian**: ~10 giây
 
-Kết quả: Critical path từ Widget đến Dashboard chỉ mất khoảng **~60ms**."
+  ---
 
-⏱️ **Thời gian**: ~60 giây
+  ## Slide 6: Technology Stack
 
----
+  **Layout**: LayoutTwoCol
 
-## Slide 6: Visitor → Agent: Complete Flow (Sequence Diagram)
+  **Nội dung slide**:
+  - **Cột trái - Backend**:
+    - Runtime: Node.js ≥18.x
+    - Framework: NestJS
+    - Database: PostgreSQL
+    - Cache/Queue: Redis + BullMQ
+    - Real-time: Socket.IO
+  - **Cột phải - Frontend & DevOps**:
+    - Dashboard: React
+    - Widget: Preact (nhẹ hơn)
+    - State: Zustand
+    - Styling: TailwindCSS
+    - Container: Docker Compose ≥2.x
+    - Monorepo: npm workspaces
+    - CI/CD: GitHub Actions (Auto Testing & Linting)
 
-**Layout**: LayoutDiagram
+  **Script:**
 
-**Nội dung slide**: Mermaid sequenceDiagram chi tiết với 4 phases:
-1. Optimistic UI (~5ms)
-2. Event Routing
-3. Background Processing
-4. Real-time Broadcast
+  "**Backend Stack**:
+  - **Runtime**: Node.js phiên bản 18 trở lên
+  - **Framework**: NestJS - TypeScript first, dependency injection, modular architecture
+  - **Database**: PostgreSQL cho ACID transactions
+  - **Cache/Queue**: Redis kết hợp BullMQ cho background jobs
+  - **Real-time**: Socket.IO cho WebSocket connections
 
-**Script:**
+  **Frontend Stack**:
+  - **Dashboard**: React cho complex UI và rich interactions
+  - **Widget**: Preact - chỉ khoảng 3KB, phù hợp cho embedded scenarios
+  - **State Management**: Zustand - nhẹ hơn Redux rất nhiều
+  - **Styling**: TailwindCSS cho rapid development
 
-"Đây là luồng **HOÀN CHỈNH** khi Visitor gửi tin nhắn đến Agent.
+  **DevOps**:
+  - **Container**: Docker Compose phiên bản 2.x
+  - **Monorepo**: npm workspaces để quản lý multiple packages
+  - **CI/CD**: GitHub Actions tự động chạy Testing và Linting
 
-**PHASE 1 - OPTIMISTIC UI (~5ms)**: Ngay khi visitor nhấn gửi, Widget hiển thị tin nhắn **NGAY LẬP TỨC** với status `SENDING`. Người dùng không phải chờ.
+  Công nghệ được chọn với tiêu chí balance giữa **performance**, **developer experience**, và **maintainability**."
 
-**PHASE 2 - EVENT ROUTING**:
-- Widget emit event qua Socket.IO đến EventsGateway
-- Gateway forward event qua EventEmitter đến InboxEventHandlerService
-- InboxEventHandlerService enqueue job vào BullMQ
+  ⏱️ **Thời gian**: ~60 giây
 
-**PHASE 3 - BACKGROUND PROCESSING**:
-- BullMQ dequeue job và gọi EventProcessor
-- EventProcessor gọi EventConsumerService
-- EventConsumerService bắt đầu database **TRANSACTION**:
-  - Save Message vào messages table
-  - Save Outbox Entry vào outbox table (cùng transaction!)
-  - **COMMIT** transaction - đảm bảo **ATOMIC** operation
-  
-**PHASE 4 - REAL-TIME BROADCAST (~10ms)**:
-- PostgreSQL trigger tự động phát **NOTIFY** event sau khi commit
-- Redis Pub/Sub nhận NOTIFY và broadcast đến **TẤT CẢ** servers
-- EventsGateway ở mọi servers nhận event từ Redis
-- Gateway emit `NEW_MESSAGE` đến Dashboard của Agent đang online
-- Gateway cũng emit `MESSAGE_SENT` confirmation đến Widget
-- Widget cập nhật status từ `SENDING` thành `SENT`
+  ---
 
-**Điểm quan trọng**: **Outbox Pattern** đảm bảo nếu server crash **SAU** khi commit transaction, message đã được lưu và outbox processor sẽ retry broadcast. Đây là **exactly-once delivery** guarantee."
+  ## Slide 7: Development Process
 
-⏱️ **Thời gian**: ~90 giây
+  **Layout**: LayoutTwoCol
 
----
+  **Nội dung slide**:
+  - **Cột trái - Agile & Iterative**:
+    - Philosophy: "Build Small, Scale Fast"
+    - Phase 1 (Core): Chat text-only (Agent ↔ Visitor)
+    - Phase 2 (Real-time): WebSocket + Optimistic UI
+    - Phase 3 (Enterprise): Multi-tenancy + Security
+    - Final: AI Orchestration
+  - **Cột phải - Why NestJS?**:
+    - Modular: Dễ chia tách features (Auth, Inbox, Gateway)
+    - Opinionated: Chuẩn hóa cách viết code cho Team 4 người
+    - Ecosystem: Support Native cho WebSocket & Microservices
 
-## Slide 7: Agent → Visitor Flow (Overview)
+  **Script:**
 
-**Layout**: LayoutDiagram
+  "**Về quy trình phát triển**:
 
-**Nội dung slide**: Mermaid flowchart đơn giản hóa luồng:
-Dashboard → Auth Guards → MessageService → PostgreSQL + Redis Session → GatewayEventListener → Redis Pub/Sub → EventsGateway → Widget + Project Room
+  Chúng em áp dụng **Agile & Iterative** với philosophy **'Build Small, Scale Fast'**:
 
-**Script:**
+  - **Phase 1 (Core)**: Xây dựng chat text-only cơ bản giữa Agent và Visitor
+  - **Phase 2 (Real-time)**: Thêm WebSocket và Optimistic UI để cải thiện trải nghiệm
+  - **Phase 3 (Enterprise)**: Implement Multi-tenancy và Security features
+  - **Final**: Tích hợp AI Orchestration
 
-"Đây là **tổng quan luồng** Agent gửi tin nhắn đến Visitor.
+  **Tại sao chọn NestJS?**:
 
-**Authentication Flow**:
-- Dashboard gửi REST API request với JWT token
-- Request đi qua **Auth Guards & RBAC** để verify authentication và authorization
+  - **Modular**: Dễ chia tách features thành các modules độc lập như Auth, Inbox, Gateway
+  - **Opinionated**: Chuẩn hóa cách viết code cho Team 4 người - ai cũng viết theo cùng một pattern
+  - **Ecosystem**: Support native cho WebSocket và Microservices - không cần thêm nhiều thư viện bên ngoài"
 
-**Processing**:
-- MessageService nhận authenticated user
-- Lưu message vào PostgreSQL transaction
-- Đồng thời lookup visitor's **socketId** từ Redis Session
+  ⏱️ **Thời gian**: ~60 giây
 
-**Broadcast**:
-- Sau transaction, MessageService emit event qua EventEmitter đến **GatewayEventListener**
-- Listener **PUBLISH** lên **Redis Pub/Sub** để broadcast cross-server
-- EventsGateway nhận từ Redis và emit tin nhắn đến **Widget** của visitor
-- Đồng thời, Gateway emit đến **Project Room** để broadcast `NEW_MESSAGE` cho tất cả Agents khác đang join room này - đảm bảo multi-tenancy isolation
+  ---
 
-**Điểm quan trọng**: Redis Pub/Sub đảm bảo tin nhắn được deliver ngay cả khi visitor socket ở **server khác**."
+  ## Slide 8: Monorepo Structure
 
-⏱️ **Thời gian**: ~60 giây
+  **Layout**: LayoutTitleContent
 
----
+  **Nội dung slide**: File tree structure của project
 
-## Slide 8: Agent → Visitor: Complete Flow (Sequence Diagram)
+  **Script:**
 
-**Layout**: LayoutDiagram
+  "Cấu trúc **Monorepo** của dự án:
 
-**Nội dung slide**: Mermaid sequenceDiagram chi tiết với các phases:
-1. Authentication (~10ms)
-2. Critical Path (~50ms)
-3. Real-time Broadcast via Redis
-4. HTTP Response
+  **Folder `packages`** chứa toàn bộ source code:
+  - **backend**: NestJS API với các modules:
+    - `auth` - Authentication
+    - `inbox` - Messages và Conversations
+    - `gateway` - WebSocket handling
+    - `webhooks` - External integration
+  - **frontend**: React Dashboard và Preact Widget
+  - **shared-***: Shared DTOs và Types dùng chung
 
-**Script:**
+  **Folder `docs`**: Documentation
 
-"Đây là luồng **HOÀN CHỈNH** khi Agent gửi tin reply đến Visitor.
+  **Lợi ích**:
+  - **Code sharing dễ dàng** giữa frontend và backend
+  - **Build/deploy thống nhất** với single command"
 
-**AUTHENTICATION (~10ms)**:
-- Dashboard gửi REST API request với JWT token
-- **JwtAuthGuard** verify token signature và extract user
-- **RolesGuard** kiểm tra user có role AGENT/MANAGER trong project
-- Chỉ khi pass **cả 2 guards** mới được tiếp tục
+  ⏱️ **Thời gian**: ~45 giây
 
-**CRITICAL PATH (~50ms - Synchronous)**:
-- InboxController gọi `MessageService.sendAgentReply()`
-- MessageService bắt đầu database **TRANSACTION**:
-  - Find Conversation và validate permissions
-  - Lookup visitor's **socketId** từ Redis Session
-  - Save Message với status `SENT` (nếu visitor online) hoặc `DELIVERED` (nếu offline)
-  - `validateProjectMembership` để đảm bảo conversation thuộc đúng project
-  - **COMMIT** transaction
+  ---
 
-**REAL-TIME BROADCAST via Redis Pub/Sub (~10ms)**:
-- Sau transaction, MessageService emit event local `agent.message.sent`
-- **GatewayEventListener** nhận event
-- Listener **PUBLISH** message lên Redis channel `agent_reply_channel`
-- Redis broadcast đến **TẤT CẢ servers** (critical cho multi-server!)
-- EventsGateway ở mọi servers nhận event:
-  - Server có visitor socket → emit `AGENT_REPLIED` đến Widget
-  - Broadcast `NEW_MESSAGE` đến Other Agents trong project room
+  ## Slide 9: Event-Driven Core (Section)
 
-**HTTP RESPONSE**:
-- MessageService return saved message object
-- InboxController return HTTP **200 OK** với message data
-- Dashboard nhận response và biết chắc message đã gửi thành công
+  **Layout**: LayoutSection
 
-**Điểm QUAN TRỌNG**: Redis Pub/Sub là **BẮT BUỘC** cho multi-server deployment! Vì visitor socket có thể ở server khác với server xử lý agent request. Nếu chỉ emit local Socket.IO, visitor sẽ **KHÔNG BAO GIỜ** nhận được message."
+  **Nội dung slide**:
+  - Title: "Event-Driven Core"
+  - Subtitle: "Kiến trúc Event và Socket.IO Room Isolation"
 
-⏱️ **Thời gian**: ~90 giây
+  **Script:**
 
----
+  "Bây giờ chúng ta đi vào phần **quan trọng nhất**: **Event-Driven Core** và cơ chế room isolation."
 
-## Slide 9: Deployment & Tech Stack (Section)
+  ⏱️ **Thời gian**: ~10 giây
 
-**Layout**: LayoutSection
+  ---
 
-**Nội dung slide**:
-- Title: "Deployment & Tech Stack"
-- Subtitle: "Công nghệ và cấu trúc Monorepo"
+  ## Slide 10: Event Architecture
 
-**Script:**
+  **Layout**: LayoutDiagram
 
-"Tiếp theo, chúng ta sẽ tìm hiểu về **công nghệ** và **cấu trúc Monorepo** của dự án."
+  **Nội dung slide**: Mermaid flowchart với 2 sections:
+  - Inbound Events (Visitor → System): EventsGateway → visitor.message.received → InboxEventHandlerService → BullMQ Queue
+  - Outbound Events (System → Visitor): Domain Services (ConversationService, MessageService, VisitorsService) → EventEmitter2 Events → GatewayEventListener handlers → EventsGateway Broadcast
 
-⏱️ **Thời gian**: ~10 giây
+  **Script:**
 
----
+  "Đây là sơ đồ **kiến trúc Event** của hệ thống.
 
-## Slide 10: Technology Stack
+  **Inbound Events** (Visitor → System):
+  - EventsGateway nhận events từ Widget
+  - Emit event `visitor.message.received` đến InboxEventHandlerService
+  - Handler enqueue job vào BullMQ Queue để xử lý background
 
-**Layout**: LayoutTwoCol
+  **Outbound Events** (System → Visitor):
+  - **Domain Services** (ConversationService, MessageService, VisitorsService) không gọi trực tiếp Gateway
+  - Thay vào đó, phát events qua **EventEmitter2 Bus**:
+    - `conversation.updated`: Conversation assign hoặc đổi status
+    - `agent.message.sent`: Agent gửi tin nhắn
+    - `visitor.updated`: Visitor info thay đổi
 
-**Nội dung slide**:
-- **Cột trái - Backend**:
-  - Runtime: Node.js ≥18.x
-  - Framework: NestJS
-  - Database: PostgreSQL
-  - Cache/Queue: Redis + BullMQ
-  - Real-time: Socket.IO
-- **Cột phải - Frontend & DevOps**:
-  - Dashboard: React
-  - Widget: Preact (nhẹ hơn)
-  - State: Zustand
-  - Styling: TailwindCSS
-  - Container: Docker Compose ≥2.x
-  - Monorepo: npm workspaces
+  **GatewayEventListener** lắng nghe các events này:
+  - `handleConversationUpdated` → Broadcast to Rooms
+  - `handleAgentMessageSent` → Broadcast to Rooms + Emit to Visitor Socket
+  - `handleVisitorUpdated` → Broadcast to Rooms
 
-**Script:**
+  **Ưu điểm** của kiến trúc decoupled: Services chỉ quan tâm **business logic**, không cần biết ai sẽ xử lý events."
 
-"**Backend Stack**:
-- **Runtime**: Node.js phiên bản 18 trở lên
-- **Framework**: NestJS - TypeScript first, dependency injection, modular architecture
-- **Database**: PostgreSQL cho ACID transactions và JSONB support
-- **Cache/Queue**: Redis kết hợp BullMQ cho background jobs
-- **Real-time**: Socket.IO cho WebSocket connections
+  ⏱️ **Thời gian**: ~75 giây
 
-**Frontend Stack**:
-- **Dashboard**: React cho complex UI và rich interactions
-- **Widget**: Preact - chỉ khoảng 3KB, phù hợp cho embedded scenarios
-- **State Management**: Zustand - nhẹ hơn Redux rất nhiều
-- **Styling**: TailwindCSS cho rapid development
+  ---
 
-**DevOps**:
-- **Container**: Docker Compose phiên bản 2.x trở lên
-- **Monorepo**: npm workspaces để quản lý multiple packages
+  ## Slide 11: Event Catalog
 
-Công nghệ được chọn với tiêu chí balance giữa **performance**, **developer experience**, và **maintainability**."
+  **Layout**: LayoutTwoCol
 
-⏱️ **Thời gian**: ~60 giây
+  **Nội dung slide**:
+  - **Cột trái - Inbox Events**:
+    - conversationUpdated: Assign, status change
+    - newMessage: Tin nhắn mới
+  - **Cột phải - Visitor Events**:
+    - visitorStatusChanged: Connect/Disconnect
+    - visitorIsTyping: Visitor gõ phím
+    - visitorContextUpdated: URL thay đổi
 
----
+  **Script:**
 
-## Slide 11: Monorepo Structure
+  "Catalog các events trong hệ thống:
 
-**Layout**: LayoutTitleContent
+  **Inbox Events**:
+  - `conversationUpdated`: Trigger khi assign agent hoặc status thay đổi (OPEN → RESOLVED)
+  - `newMessage`: Trigger khi có tin nhắn mới từ visitor hoặc agent
 
-**Nội dung slide**: File tree structure của project
+  **Visitor Events**:
+  - `visitorStatusChanged`: Trigger khi visitor connect hoặc disconnect
+  - `visitorIsTyping`: Trigger khi visitor đang gõ phím - hiển thị typing indicator
+  - `visitorContextUpdated`: Trigger khi visitor di chuyển trang - agent biết visitor đang xem trang nào
 
-**Script:**
+  Tất cả events đều **type-safe** với TypeScript."
 
-"Cấu trúc **Monorepo** của dự án rất rõ ràng:
+  ⏱️ **Thời gian**: ~45 giây
 
-**Folder `packages`** chứa toàn bộ source code:
-- **backend**: NestJS API và Worker, chia thành các modules:
-  - `auth` - Authentication
-  - `inbox` - Messages và Conversations
-  - `gateway` - WebSocket handling
-  - `webhooks` - External integration
-- **frontend**: React Dashboard và Preact Widget
-- **shared-***: Shared DTOs và Types dùng chung giữa frontend và backend
+  ---
 
-**Folder `docs`**: Documentation
+  ## Slide 12: Webhooks (Section)
 
-**Lợi ích của cấu trúc này**:
-- **Code sharing dễ dàng** giữa frontend và backend
-- **Build/deploy thống nhất** với single command
-- **Refactoring an toàn** - khi thay đổi interface, tất cả consumers đều được cập nhật ngay"
+  **Layout**: LayoutSection
 
-⏱️ **Thời gian**: ~60 giây
+  **Nội dung slide**:
+  - Title: "Webhooks"
+  - Subtitle: "External Integration với SSRF Protection"
 
----
+  **Script:**
 
-## Slide 12: Event-Driven Core (Section)
+  "Phần tiếp theo: **Webhooks** - External Integration với **SSRF Protection**."
 
-**Layout**: LayoutSection
+  ⏱️ **Thời gian**: ~8 giây
 
-**Nội dung slide**:
-- Title: "Event-Driven Core"
-- Subtitle: "Kiến trúc Event và Socket.IO Room Isolation"
+  ---
 
-**Script:**
+  ## Slide 13: Webhook Architecture (Overview)
 
-"Bây giờ chúng ta đi vào phần **quan trọng nhất**: **Event-Driven Core** và **Socket.IO Room Isolation**."
+  **Layout**: LayoutDiagram
 
-⏱️ **Thời gian**: ~10 giây
+  **Nội dung slide**: Mermaid flowchart:
+  Message Created → Redis Pub/Sub → Dispatcher → BullMQ Queue → Processor → Customer Server
 
----
+  **Script:**
 
-## Slide 13: Event Architecture
+  "Đây là sơ đồ tổng quan về **Webhook Architecture**.
 
-**Layout**: LayoutDiagram
+  Khi một **Message được tạo** (Trigger), sự kiện được broadcast qua **Redis Pub/Sub** đến **Dispatcher**.
 
-**Nội dung slide**: Mermaid flowchart với 3 sections:
-- Inbound Events (Visitor → System)
-- Domain Services
-- Outbound Events (System → Gateway via EventEmitter2)
+  **Dispatcher** lắng nghe channel này, tìm các webhook subscriptions cần gửi, rồi đẩy jobs vào **BullMQ Queue**.
 
-**Script:**
+  **BullMQ Queue** lưu trong Redis - đảm bảo **persistence** và **retry mechanism**.
 
-"Đây là sơ đồ **kiến trúc Event** của hệ thống.
+  **Processor** (BullMQ Worker) lấy jobs từ queue và gửi **HTTP POST** đến **Customer Server**."
 
-**Inbound Events** (Visitor → System):
-- EventsGateway nhận events từ Widget
-- Emit event `visitor.message.received` đến InboxEventHandlerService
-- Handler enqueue job vào BullMQ Queue
+  ⏱️ **Thời gian**: ~40 giây
 
-**Domain Services** ở backend:
-- ConversationService
-- MessageService
-- VisitorService
+  ---
 
-Khi thực hiện action quan trọng, services **không gọi trực tiếp** consumer. Thay vào đó, phát events qua **EventEmitter2 Bus**:
-- `conversation.updated`: Conversation assign hoặc đổi status
-- `agent.message.sent`: Agent gửi tin nhắn
-- `visitor.updated`: Visitor info thay đổi
+  ## Slide 14: Webhook Architecture: Detailed Flow
 
-**GatewayEventListener** lắng nghe các events này:
-- `handleConversationUpdated` lắng nghe `conversation.updated`
-- `handleAgentMessageSent` lắng nghe `agent.message.sent`
-- `handleVisitorUpdated` lắng nghe `visitor.updated`
+  **Layout**: LayoutDiagram
 
-Mỗi handler gọi **EventsGateway** để broadcast đến clients qua WebSocket.
+  **Nội dung slide**: Mermaid sequenceDiagram chi tiết với 3 bước:
+  1. Trigger & Broadcast
+  2. Dispatcher Receives & Enqueues
+  3. Processor Executes
 
-**Ưu điểm** của kiến trúc decoupled này: Services chỉ quan tâm **business logic**, không cần biết ai sẽ xử lý events."
+  **Script:**
 
-⏱️ **Thời gian**: ~75 giây
+  "Đây là luồng **chi tiết** của Webhook Architecture.
 
----
+  **ĐIỂM QUAN TRỌNG**: Redis Pub/Sub và BullMQ Queue đều dùng **cùng một Redis Server**, nhưng với cơ chế khác nhau:
+  - **Pub/Sub**: Broadcast đến TẤT CẢ subscribers (fire-and-forget)
+  - **BullMQ**: Lưu jobs trong Redis dưới dạng Lists, chỉ 1 worker claim mỗi job
 
-## Slide 14: Socket.IO Room Isolation
+  **BƯỚC 1 - TRIGGER & BROADCAST**:
+  - Khi message được tạo, **OutboxListener** phát hiện qua PostgreSQL NOTIFY
+  - OutboxListener publish event lên Redis Pub/Sub channel
+  - Đây là broadcast - mọi Dispatcher đều nhận được
 
-**Layout**: LayoutTitleContent
+  **BƯỚC 2 - DISPATCHER RECEIVES & ENQUEUES**:
+  - **WebhookDispatcher** đã subscribe channel từ trước
+  - Khi nhận message, Dispatcher query database tìm **active subscriptions**
+  - Với mỗi subscription, Dispatcher tạo job vào BullMQ Queue
 
-**Nội dung slide**: Code example cho `handleJoinProjectRoom` và broadcast to room
+  **BƯỚC 3 - PROCESSOR EXECUTES**:
+  - **WebhookProcessor** liên tục polling queue
+  - Worker claim job bằng **distributed lock** - chỉ 1 worker xử lý
+  - Processor ký payload bằng **HMAC-SHA256** và gửi HTTP POST
+  - Nếu thành công: log SUCCESS
+  - Nếu thất bại: retry với **exponential backoff** (1s, 2s, 4s, 8s, 16s)
 
-**Script:**
+  Cơ chế này đảm bảo: **Reliability** (retry), **Scalability** (distributed workers), **Security** (HMAC signature)."
 
-"**Thách thức**: Làm sao cô lập events giữa các projects trong môi trường multi-tenant realtime?
+  ⏱️ **Thời gian**: ~90 giây
 
-**Giải pháp**: **Socket.IO Rooms**.
+  ---
 
-Function `handleJoinProjectRoom` khi agent join:
+  ## Slide 15: Webhook Components & Security
 
-**Bước 1 - Authentication**: Kiểm tra đăng nhập. Nếu không có user data → throw `WsException('Unauthorized')`.
+  **Layout**: LayoutTwoCol
 
-**Bước 2 - Authorization**: Validate user là member của project qua `projectService.validateProjectMembership`. Không phải member → throw exception.
+  **Nội dung slide**:
+  - **Cột trái - Components**:
+    - Dispatcher: Lắng nghe Redis → Enqueue jobs
+    - Processor: HTTP POST + retry + HMAC
+    - Delivery Log: Theo dõi trạng thái gửi
+  - **Cột phải - SSRF Protection**:
+    - HTTPS only
+    - DNS Validation
+    - Block Private IPs
+    - HMAC Signature
 
-**Bước 3 - Join Room**: Chỉ khi pass CẢ 2 kiểm tra, client mới được join room `project:{projectId}`.
+  **Script:**
 
-**Khi broadcast**:
-```typescript
-this.server.to(`project:${projectId}`).emit('conversationUpdated', payload);
-```
+  "**Components**:
+  - **Dispatcher**: Lắng nghe Redis → Enqueue jobs
+  - **Processor**: HTTP POST + retry + HMAC signature
+  - **Delivery Log**: Theo dõi trạng thái gửi của từng webhook
 
-Event **chỉ gửi đến** clients trong room cụ thể đó.
+  **SSRF Protection** - 4 layers bảo vệ:
 
-**Kết quả**: Agent của công ty A **hoàn toàn không thể** nhận event của công ty B - đây là **security measure** quan trọng nhất trong multi-tenant system."
+  1. **HTTPS only**: Chỉ chấp nhận URL với `https://` protocol
 
-⏱️ **Thời gian**: ~60 giây
+  2. **DNS Validation**: Resolve hostname **trước** khi gửi request
 
----
+  3. **Block Private IPs**: Reject các dải IP private:
+    - `127.0.0.0/8` (localhost)
+    - `10.0.0.0/8`, `192.168.0.0/16` (private network)
+    
+    Điều này ngăn attacker dùng webhook để scan internal network
 
-## Slide 15: Event Catalog
+  4. **HMAC Signature**: Header `X-Hub-Signature-256` - Customer có thể verify request thực sự đến từ hệ thống của chúng em"
 
-**Layout**: LayoutTwoCol
+  ⏱️ **Thời gian**: ~60 giây
 
-**Nội dung slide**:
-- **Cột trái - Inbox Events**:
-  - conversationUpdated: Assign, status change
-  - newMessage: Tin nhắn mới
-- **Cột phải - Visitor Events**:
-  - visitorStatusChanged: Connect/Disconnect
-  - visitorIsTyping: Visitor gõ phím
-  - visitorContextUpdated: URL thay đổi
+  ---
 
-**Script:**
+  ## Slide 16: Audit Logs (Section)
 
-"Catalog các events trong hệ thống:
+  **Layout**: LayoutSection
 
-**Inbox Events**:
-- `conversationUpdated`: Trigger khi assign agent hoặc status thay đổi (OPEN → RESOLVED)
-- `newMessage`: Trigger khi có tin nhắn mới từ visitor hoặc agent
+  **Nội dung slide**:
+  - Title: "Audit Logs"
+  - Subtitle: "Security Compliance & Investigation"
 
-**Visitor Events**:
-- `visitorStatusChanged`: Trigger khi visitor connect hoặc disconnect
-- `visitorIsTyping`: Trigger khi visitor đang gõ phím - dùng cho typing indicator
-- `visitorContextUpdated`: Trigger khi visitor di chuyển trang - agent biết visitor đang xem trang nào
+  **Script:**
 
-Tất cả events follow **naming convention** nhất quán và **type-safe** với TypeScript."
+  "Phần cuối cùng: **Audit Logs** - đảm bảo security compliance và hỗ trợ investigation."
 
-⏱️ **Thời gian**: ~45 giây
+  ⏱️ **Thời gian**: ~8 giây
 
----
+  ---
 
-## Slide 16: Webhooks (Section)
+  ## Slide 17: Audit System
 
-**Layout**: LayoutSection
+  **Layout**: LayoutTwoCol
 
-**Nội dung slide**:
-- Title: "Webhooks"
-- Subtitle: "External Integration với SSRF Protection"
+  **Nội dung slide**:
+  - **Cột trái - Overview**:
+    - Mục đích: Security compliance
+    - Cơ chế: Decorator-based Interceptor
+    - Pattern: Fail-Open
+    - Storage: PostgreSQL + JSONB
+    - Code example với @Auditable decorator
+  - **Cột phải - Sensitive Data Redaction**:
+    - SENSITIVE_KEYS list
+    - Example output với [REDACTED]
+    - Case-insensitive và Recursive matching
 
-**Script:**
+  **Script:**
 
-"Phần tiếp theo: **Webhooks** - External Integration với **SSRF Protection**."
+  "Hệ thống **Audit**:
 
-⏱️ **Thời gian**: ~10 giây
+  **Mục đích**: Security compliance - tạo audit trail cho mọi hành động quan trọng
 
----
+  **Cơ chế**: **Decorator-based Interceptor**. Developers chỉ cần thêm decorator:
 
-## Slide 17: Webhook Architecture (Overview)
+  ```typescript
+  @Auditable({ 
+    action: AuditAction.UPDATE, 
+    entity: 'Conversation' 
+  })
+  @Patch(':id/assign')
+  async assign(@Body() dto) { ... }
+  ```
 
-**Layout**: LayoutDiagram
+  Mỗi khi endpoint `assign` được gọi, hệ thống tự động tạo audit log.
 
-**Nội dung slide**: Mermaid flowchart đơn giản:
-Message Created → Redis Pub/Sub → Dispatcher → BullMQ Queue → Processor → Customer Server
+  **Pattern**: **Fail-Open** - nếu audit fails, operation vẫn tiếp tục. Chúng em không để audit crash business logic.
 
-**Script:**
+  **Storage**: PostgreSQL với **JSONB** columns - query hiệu quả.
 
-"Đây là sơ đồ tổng quan về **Webhook Architecture**.
+  **Sensitive Data Redaction**:
 
-Khi một **Message được tạo** (Trigger), sự kiện được broadcast qua **Redis Pub/Sub** đến **Dispatcher**.
+  SENSITIVE_KEYS: `password`, `token`, `secret`, `authorization`, `apikey`, `creditcard`, `cvv`, `ssn`
 
-**Dispatcher** lắng nghe channel này, tìm các webhook subscriptions cần gửi, rồi đẩy jobs vào **BullMQ Queue**.
+  Hệ thống tự động scan và redact:
 
-**BullMQ Queue** thực chất là data structures được lưu trong Redis - đảm bảo **persistence** và **retry mechanism**.
+  ```json
+  {
+    "email": "user@example.com",
+    "password": "[REDACTED]",
+    "token": "[REDACTED]"
+  }
+  ```
 
-**Processor** (BullMQ Worker) lấy jobs từ queue và gửi **HTTP POST** đến **Customer Server** của khách hàng.
+  Hai điểm quan trọng:
+  1. **Case-insensitive**: `Password`, `PASSWORD`, `password` đều được redact
+  2. **Recursive**: Scan deep vào nested objects và arrays
 
-Slide tiếp theo sẽ giải thích chi tiết hơn về infrastructure và luồng xử lý."
+  Thiết kế này giúp comply với **GDPR** và **PCI-DSS**."
 
-⏱️ **Thời gian**: ~45 giây
+  ⏱️ **Thời gian**: ~75 giây
 
----
+  ---
 
-## Slide 18: Webhook Architecture: Detailed Flow
+  ## Slide 18: Summary (Section)
 
-**Layout**: LayoutDiagram
+  **Layout**: LayoutSection
 
-**Nội dung slide**: Mermaid sequenceDiagram chi tiết với 3 bước:
-1. Trigger & Broadcast
-2. Dispatcher Receives & Enqueues
-3. Processor Executes
+  **Nội dung slide**:
+  - Title: "Summary"
+  - Subtitle: "Tổng kết phần System Architecture"
 
-**Script:**
+  **Script:**
 
-"Đây là luồng **chi tiết** của Webhook Architecture.
+  "Bây giờ chúng ta sẽ **tổng kết** phần System Architecture."
 
-**ĐIỂM QUAN TRỌNG**: Redis Pub/Sub và BullMQ Queue đều sử dụng **CÙNG MỘT Redis Server**, nhưng với cơ chế khác nhau:
-- **Pub/Sub**: Broadcast message đến TẤT CẢ subscribers (fire-and-forget)
-- **BullMQ**: Lưu jobs trong Redis dưới dạng Lists, chỉ 1 worker claim mỗi job
+  ⏱️ **Thời gian**: ~8 giây
 
-**BƯỚC 1 - TRIGGER & BROADCAST**:
-- Khi message được tạo, **OutboxListener** (chạy trong Worker Server) phát hiện thông qua PostgreSQL NOTIFY
-- OutboxListener publish event lên Redis Pub/Sub channel `new_message_channel`
-- Đây là **broadcast** - mọi Dispatcher trên tất cả servers đều nhận được
+  ---
 
-**BƯỚC 2 - DISPATCHER RECEIVES & ENQUEUES**:
-- **WebhookDispatcher** (chạy trong API Server) đã subscribe vào channel từ trước
-- Khi nhận message, Dispatcher query database để tìm **active subscriptions** cho project
-- Với mỗi subscription, Dispatcher tạo job và đẩy vào BullMQ Queue
-- Queue này được lưu trong Redis, **shared** cho tất cả servers
+  ## Slide 19: Architecture Recap
 
-**BƯỚC 3 - PROCESSOR EXECUTES**:
-- **WebhookProcessor** (BullMQ Worker) liên tục polling queue
-- Khi có job, Worker claim bằng **distributed lock** - đảm bảo chỉ 1 worker xử lý
-- Processor ký payload bằng **HMAC-SHA256** và gửi HTTP POST đến Customer Server
-- Nếu thành công: log SUCCESS
-- Nếu thất bại: retry với **exponential backoff** (1s, 2s, 4s, 8s, 16s)
+  **Layout**: LayoutTitleContent
 
-Cơ chế này đảm bảo: **Reliability** (retry), **Scalability** (distributed workers), **Security** (HMAC signature)."
+  **Nội dung slide**: Table với 6 chủ đề chính
 
-⏱️ **Thời gian**: ~90 giây
+  **Script:**
 
----
+  " **6 điểm chính** đã được trình bày:
 
-## Slide 19: Webhook Components & Security
+  1. **Kiến trúc**: Event-Driven Microservices với NestJS framework
 
-**Layout**: LayoutTwoCol
+  2. **Multi-tenancy**: Project-based isolation với RBAC
 
-**Nội dung slide**:
-- **Cột trái - Components**:
-  - Dispatcher: Lắng nghe Redis → Enqueue jobs
-  - Processor: HTTP POST + retry + HMAC
-  - Delivery Log: Theo dõi trạng thái gửi
-- **Cột phải - SSRF Protection**:
-  - HTTPS only
-  - DNS Validation
-  - Block Private IPs
-  - HMAC Signature
+  3. **Real-time**: Socket.IO Rooms + EventEmitter2 cho low-latency messaging
 
-**Script:**
+  4. **Message Flow**: Optimistic UI + Outbox Pattern để đảm bảo reliability
 
-"**Components**:
-- **Dispatcher**: Lắng nghe Redis → Enqueue jobs
-- **Processor**: HTTP POST + retry + HMAC signature
-- **Delivery Log**: Theo dõi trạng thái gửi của từng webhook
+  5. **External Integration**: Webhooks với 4-layer SSRF Protection
 
-**SSRF Protection** - 4 layers bảo vệ:
+  6. **Compliance**: Audit Logs với Fail-Open pattern và Sensitive Data Redaction
 
-1. **HTTPS only**: Chỉ chấp nhận URL với `https://` protocol, không cho phép `http` hay `file`
+  Tất cả quyết định kiến trúc đều hướng đến: hệ thống **scalable**, **secure**, và **maintainable**.
 
-2. **DNS Validation**: Resolve hostname **trước** khi gửi request
+  Cảm ơn thầy/cô đã lắng nghe. Em xin nhường lại cho thành viên tiếp theo."
 
-3. **Block Private IPs**: Reject các dải IP private:
-   - `127.0.0.0/8` (localhost)
-   - `10.0.0.0/8`, `192.168.0.0/16` (private network)
-   
-   Điều này ngăn attacker dùng webhook để scan internal network
+  ⏱️ **Thời gian**: ~45 giây
 
-4. **HMAC Signature**: Header `X-Hub-Signature-256`. Customer có thể verify request thực sự đến từ hệ thống của chúng tôi
+  ---
 
-Webhook system vừa **flexible** cho integration vừa **secure** chống lại attacks."
+  # Tổng thời gian ước tính
 
-⏱️ **Thời gian**: ~60 giây
+  | Section | Slides | Thời gian |
+  |---------|--------|-----------|
+  | Intro & Overview | 1-4 | ~4 phút |
+  | Tech Stack & Monorepo | 5-8 | ~3 phút |
+  | Event-Driven Core | 9-11 | ~2.5 phút |
+  | Webhooks | 12-15 | ~3.5 phút |
+  | Audit Logs | 16-17 | ~1.5 phút |
+  | Summary | 18-19 | ~1 phút |
+  | **Tổng** | **19 slides** | **~15-18 phút** |
 
----
+  ---
 
-## Slide 20: Audit Logs (Section)
+  # Presentation Tips
 
-**Layout**: LayoutSection
+  ## Kỹ năng trình bày
 
-**Nội dung slide**:
-- Title: "Audit Logs"
-- Subtitle: "Security Compliance & Investigation"
+  ### Tốc độ nói
+  - **120-150 từ/phút** là tốc độ lý tưởng
+  - **Dừng ngắn** (1-2 giây) sau mỗi ý quan trọng
+  - **Nhấn mạnh** các keywords quan trọng (in đậm trong script)
 
-**Script:**
+  ### Ngôn ngữ cơ thể
+  - **Eye contact** với giảng viên và các bạn
+  - **Chỉ vào slide** khi giải thích diagram
+  - **Di chuyển tự nhiên**, không đứng yên một chỗ
 
-"Phần cuối cùng: **Audit Logs** - đảm bảo security compliance và hỗ trợ investigation."
+  ### Xử lý câu hỏi
+  - Nếu không biết: "Em sẽ tìm hiểu thêm và trả lời sau ạ"
+  - Nếu câu hỏi liên quan phần khác: "Phần này sẽ do [teammate] trình bày chi tiết hơn ạ"
 
-⏱️ **Thời gian**: ~10 giây
+  ---
 
----
+  # Q&A Preparation
 
-## Slide 21: Audit System
+  ## Câu hỏi có thể gặp
 
-**Layout**: LayoutTwoCol
+  ### 1. Tại sao chọn Event-Driven?
+  **Trả lời**: "Vì yêu cầu real-time và decoupling. Khi message được tạo, nhiều services cần biết (notification, webhook, logging) nhưng không muốn chúng coupled với nhau."
 
-**Nội dung slide**:
-- **Cột trái - Overview**:
-  - Mục đích: Security compliance
-  - Cơ chế: Decorator-based Interceptor
-  - Pattern: Fail-Open
-  - Storage: PostgreSQL + JSONB
-  - Code example với @Auditable decorator
-- **Cột phải - Sensitive Data Redaction**:
-  - SENSITIVE_KEYS list
-  - Example output với [REDACTED]
-  - Case-insensitive và Recursive matching
+  ### 2. Outbox Pattern là gì? Tại sao cần?
+  **Trả lời**: "Outbox Pattern giải quyết vấn đề dual-write - khi cần vừa ghi database vừa publish event. Chúng em ghi cả hai vào cùng transaction PostgreSQL, sau đó dùng pg_notify để broadcast. Nếu server crash sau commit, data đã được lưu và outbox processor sẽ retry."
 
-**Script:**
+  ### 3. SSRF là gì? Tại sao quan trọng?
+  **Trả lời**: "SSRF - Server-Side Request Forgery - là attack mà attacker lợi dụng server để gửi request đến internal network. Trong webhook, nếu không validate URL, attacker có thể nhập `http://127.0.0.1:8080/admin` để access internal services. Chúng em block tất cả private IPs và chỉ cho phép HTTPS."
 
-"Hệ thống **Audit**:
+  ### 4. Tại sao dùng 2 BullMQ Queues riêng?
+  **Trả lời**: "Để tách biệt concerns. Queue xử lý message cần priority cao và fast, queue webhook có thể chậm hơn vì phụ thuộc external server. Nếu webhook queue bị backlog, không ảnh hưởng message processing."
 
-**Mục đích**: Security compliance - tạo audit trail cho mọi hành động quan trọng
-
-**Cơ chế**: **Decorator-based Interceptor**. Developers chỉ cần thêm decorator, hệ thống tự động log:
-
-```typescript
-@Auditable({ 
-  action: AuditAction.UPDATE, 
-  entity: 'Conversation' 
-})
-@Patch(':id/assign')
-async assign(@Body() dto) { ... }
-```
-
-Mỗi khi endpoint `assign` được gọi, hệ thống tự động tạo audit log.
-
-**Pattern**: **Fail-Open** - nếu audit fails, operation vẫn tiếp tục. Chúng tôi không để audit crash business logic.
-
-**Storage**: PostgreSQL với **JSONB** columns - query hiệu quả và có thể lưu custom fields.
-
-**Sensitive Data Redaction**:
-
-SENSITIVE_KEYS: `password`, `token`, `secret`, `authorization`, `apikey`, `creditcard`, `cvv`, `ssn`
-
-Hệ thống tự động scan và redact khi log:
-
-```json
-{
-  \"email\": \"user@example.com\",
-  \"password\": \"[REDACTED]\",
-  \"token\": \"[REDACTED]\"
-}
-```
-
-Hai điểm quan trọng:
-1. **Case-insensitive**: `Password`, `PASSWORD`, `password` đều được redact
-2. **Recursive**: Scan deep vào nested objects và arrays
-
-Thiết kế này giúp comply với **GDPR** và **PCI-DSS**."
-
-⏱️ **Thời gian**: ~75 giây
-
----
-
-## Slide 22: Summary (Section)
-
-**Layout**: LayoutSection
-
-**Nội dung slide**:
-- Title: "Summary"
-- Subtitle: "Tổng kết phần System Architecture"
-
-**Script:**
-
-"Bây giờ chúng ta sẽ **tổng kết** phần System Architecture."
-
-⏱️ **Thời gian**: ~10 giây
-
----
-
-## Slide 23: Architecture Recap
-
-**Layout**: LayoutTitleContent
-
-**Nội dung slide**: Table với 6 chủ đề chính và điểm chính của mỗi chủ đề
-
-**Script:**
-
-"**6 chủ đề chính** đã được trình bày:
-
-1. **Kiến trúc**: Event-Driven Microservices với NestJS framework
-
-2. **Multi-tenancy**: Project-based isolation với RBAC để đảm bảo data separation
-
-3. **Real-time**: Socket.IO Rooms kết hợp EventEmitter2 cho low-latency messaging
-
-4. **Message Flow**: Optimistic UI cho UX tốt, Outbox Pattern cho reliability
-
-5. **External Integration**: Webhooks với 4-layer SSRF Protection
-
-6. **Compliance**: Audit Logs với Fail-Open pattern và Sensitive Data Redaction
-
-Tất cả quyết định kiến trúc đều hướng đến mục tiêu: hệ thống **scalable**, **secure**, và **maintainable**."
-
-⏱️ **Thời gian**: ~45 giây
-
----
-
-## Slide 24: Handoff to Next Presenter
-
-**Layout**: LayoutTwoCol
-
-**Nội dung slide**:
-- **Cột trái - Covered Topics**:
-  - System Architecture Overview
-  - Multi-tenancy & Project Isolation
-  - Message Flow Patterns
-  - Event-Driven Core
-  - Webhooks & Security
-  - Audit Logs
-- **Cột phải - Next: Member 2**:
-  - JWT Authentication
-  - OAuth Integration
-  - Two-Factor Authentication (2FA)
-  - Session Management
-
-**Script:**
-
-"Vậy là tôi đã hoàn thành phần **System Architecture**.
-
-**Đã covered**:
-- System Architecture Overview
-- Multi-tenancy & Project Isolation
-- Message Flow Patterns
-- Event-Driven Core
-- Webhooks & Security
-- Audit Logs
-
-**Phần tiếp theo**: Member 2 - Core Developer Authentication sẽ trình bày về:
-- JWT Authentication mechanism
-- OAuth Integration
-- Two-Factor Authentication (2FA)
-- Session Management
-
-Cảm ơn các thầy cô và các bạn đã lắng nghe. Tôi xin chuyển microphone cho Member 2."
-
-⏱️ **Thời gian**: ~30 giây
-
----
-
-# Presentation Tips
-
-## Kỹ năng trình bày
-
-### Tốc độ nói
-- **120-150 từ/phút** là tốc độ lý tưởng
-- **Dừng ngắn** (1-2 giây) sau mỗi ý quan trọng
-- **Nhấn mạnh** các keywords quan trọng
-
-### Ngôn ngữ cơ thể
-- **Eye contact**: Nhìn audience, không chỉ đọc slides
-- **Gestures**: Dùng tay chỉ vào diagrams và code examples
-- **Posture**: Đứng thẳng, tự tin
-
-### Thuật ngữ kỹ thuật
-- Đọc **rõ ràng** các thuật ngữ tiếng Anh
-- **Giải thích** concepts phức tạp bằng ví dụ thực tế
-- **Không đọc nguyên văn** code - summarize ý nghĩa
-
-## Thời gian
-
-| Section | Số slides | Thời gian dự kiến |
-|---------|-----------|-------------------|
-| Overview & Architecture | 4 slides | ~4 phút |
-| Message Flows | 4 slides | ~5 phút |
-| Tech Stack | 3 slides | ~2.5 phút |
-| Event-Driven Core | 3 slides | ~2.5 phút |
-| Webhooks | 3 slides | ~3.5 phút |
-| Audit Logs | 2 slides | ~1.5 phút |
-| Summary & Handoff | 3 slides | ~1.5 phút |
-| **TỔNG** | **22 slides** | **~20 phút** |
-
-> Dành 2-3 phút cho Q&A
-
-## Xử lý câu hỏi
-
-- **Không biết**: "Câu hỏi rất hay, tôi sẽ research thêm và trả lời sau"
-- **Technical details**: Redirect sang members khác nếu cần
-- **Concise answers**: Trả lời ngắn gọn, đúng trọng tâm
-
-## Checklist trước trình bày
-
-- [ ] Đọc script ít nhất **2 lần**
-- [ ] Practice với timer
-- [ ] Test slides transitions trên máy trình chiếu
-- [ ] Backup slides (USB, cloud)
-- [ ] Uống nước trước khi nói
-- [ ] Kiểm tra mic and audio
-- [ ] Laptop đầy pin hoặc cắm sạc
-
----
-
-**Good luck! 🎤**
+  ### 5. Fail-Open vs Fail-Close trong Audit?
+  **Trả lời**: "Fail-Open nghĩa là nếu audit logging bị lỗi, business operation vẫn tiếp tục. Chúng em chọn approach này vì không muốn user không assign được conversation chỉ vì audit service down. Audit failures được log riêng để monitor."

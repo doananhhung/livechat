@@ -51,6 +51,61 @@ Decoupled: Các thành phần giao tiếp thông qua EventEmitter2 Bus, giúp h�
 
 ---
 
+<LayoutTwoCol title="Requirements">
+
+<template #left>
+
+### ⚙️ Yêu cầu chức năng
+| STT | Yêu cầu |
+|-----|---------|
+| FR1 | Chat real-time giữa Visitor và Agent |
+| FR2 | Quản lý conversation (assign, status) |
+| FR3 | Multi-tenant với Project isolation |
+| FR4 | Canned Responses & Action Templates |
+| FR5 | Webhook integration với External Apps |
+| FR6 | Audit Logs cho compliance |
+
+</template>
+
+<template #right>
+
+### 🛡️ Yêu cầu phi chức năng
+| STT | Yêu cầu |
+|-----|---------|
+| NFR1 | **Performance**: Latency < 100ms cho messages |
+| NFR2 | **Scalability**: Hỗ trợ horizontal scaling |
+| NFR3 | **Security**: RBAC, 2FA, SSRF Protection |
+| NFR4 | **Reliability**: Retry mechanism với backoff |
+| NFR5 | **Maintainability**: Clean Architecture |
+| NFR6 | **Availability**: Fail-open pattern |
+
+</template>
+
+</LayoutTwoCol>
+
+<!--
+"Slide này trình bày các yêu cầu của hệ thống.
+
+Về Yêu cầu chức năng:
+- FR1: Hệ thống hỗ trợ đăng nhập và đăng ký cho Agent và Manager, bao gồm cả Google OAuth và 2FA
+- FR2: Chat real-time giữa Visitor và Agent thông qua WebSocket
+- FR3: Agent có thể quản lý conversation: assign cho người khác, thay đổi status
+- FR4: Multi-tenant - nhiều công ty có thể sử dụng chung hệ thống với dữ liệu cô lập
+- FR5: Canned Responses để trả lời nhanh, Action Templates để gửi forms
+- FR6: Webhook cho phép tích hợp với External Apps
+- FR7: Audit Logs để theo dõi và đáp ứng compliance
+
+Về Yêu cầu phi chức năng:
+- NFR1: Performance - tin nhắn phải được gửi trong vòng 100ms
+- NFR2: Scalability - hệ thống có thể mở rộng theo chiều ngang
+- NFR3: Security - Role-Based Access Control, Two-Factor Authentication, SSRF Protection
+- NFR4: Reliability - có cơ chế retry với exponential backoff khi gửi webhook thất bại
+- NFR5: Maintainability - áp dụng Clean Architecture để dễ bảo trì
+- NFR6: Availability - Audit logs sử dụng Fail-open pattern để không block business logic"
+-->
+
+---
+
 <LayoutDiagram title="Use Case Diagram">
 
 ```mermaid
