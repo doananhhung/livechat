@@ -233,21 +233,22 @@ export const useSendAgentReply = () => {
       };
 
       // Optimistic update for Infinite Query
-      queryClient.setQueryData<InfiniteData<Message[]>>(queryKey, (oldData) => {
+      // Pages are PaginatedMessages objects with { data, hasNextPage, nextCursor }
+      queryClient.setQueryData<InfiniteData<PaginatedMessages>>(queryKey, (oldData) => {
         if (!oldData) {
           return {
-            pages: [[optimisticMessage]],
+            pages: [{ data: [optimisticMessage], hasNextPage: false, nextCursor: null }],
             pageParams: [undefined],
           };
         }
 
         // Append to the first page (newest messages)
-        const newPages = [...oldData.pages];
-        if (newPages.length > 0) {
-          newPages[0] = [...newPages[0], optimisticMessage];
-        } else {
-          newPages[0] = [optimisticMessage];
-        }
+        const newPages = oldData.pages.map((page, index) => {
+          if (index === 0) {
+            return { ...page, data: [...page.data, optimisticMessage] };
+          }
+          return page;
+        });
 
         return {
           ...oldData,
@@ -265,22 +266,26 @@ export const useSendAgentReply = () => {
         undefined,
       ];
 
-      queryClient.setQueryData<InfiniteData<Message[]>>(queryKey, (oldData) => {
+      queryClient.setQueryData<InfiniteData<PaginatedMessages>>(queryKey, (oldData) => {
         if (!oldData) return oldData;
 
         const newPages = oldData.pages.map((page) => {
           // Check if message exists in this page
-          const exists = page.some((msg) => msg.id === finalMessage.id);
+          const exists = page.data.some((msg) => msg.id === finalMessage.id);
           if (exists) {
             // Remove optimistic message if real one exists
-            return page.filter(
-              (msg) => msg.id !== context?.optimisticMessageId,
-            );
+            return {
+              ...page,
+              data: page.data.filter((msg) => msg.id !== context?.optimisticMessageId),
+            };
           }
           // Replace optimistic with real
-          return page.map((msg) =>
-            msg.id === context?.optimisticMessageId ? finalMessage : msg,
-          );
+          return {
+            ...page,
+            data: page.data.map((msg) =>
+              msg.id === context?.optimisticMessageId ? finalMessage : msg,
+            ),
+          };
         });
 
         return {
@@ -297,17 +302,18 @@ export const useSendAgentReply = () => {
         variables.conversationId,
         undefined,
       ];
-      queryClient.setQueryData<InfiniteData<Message[]>>(queryKey, (oldData) => {
+      queryClient.setQueryData<InfiniteData<PaginatedMessages>>(queryKey, (oldData) => {
         if (!oldData) return oldData;
         return {
           ...oldData,
-          pages: oldData.pages.map((page) =>
-            page.map((msg) =>
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            data: page.data.map((msg) =>
               msg.id === context?.optimisticMessageId
                 ? { ...msg, status: MessageStatus.FAILED }
                 : msg,
             ),
-          ),
+          })),
         };
       });
     },

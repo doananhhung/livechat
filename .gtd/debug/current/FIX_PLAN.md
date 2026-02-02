@@ -1,76 +1,74 @@
 ---
-created: 2026-02-01
-root_cause: Dialog buttons remount during dropdown close, breaking click events
+created: 2026-02-02
+root_cause: onMutate uses wrong type InfiniteData<Message[]> instead of InfiniteData<PaginatedMessages>
 ---
 
 # Fix Plan
 
 ## Objective
 
-Fix the double-click bug on AlertDialog buttons by deferring the dialog open state update until after the Radix DropdownMenu close sequence completes.
+Fix agent message send by correcting the type annotations and data access in `useSendAgentReply` hook's optimistic update logic.
 
 ## Context
 
 - ./.gtd/debug/current/ROOT_CAUSE.md
-- packages/frontend/src/components/features/inbox/ConversationList.tsx
+- packages/frontend/src/services/inboxApi.ts
 
 ## Architecture Constraints
 
-- **Single Source:** Dialog state (`deleteDialogOpen`, `isRenameDialogOpen`) is managed in `ConversationList`.
-- **Invariants:** Click events must fire reliably on AlertDialog buttons.
-- **Resilience:** N/A (UI only).
-- **Testability:** Manual verification required (visual interaction).
+- **Single Source:** Query cache is the authoritative UI state
+- **Invariants:** Page structure must be `{ data: Message[], hasNextPage, nextCursor }`
+- **Resilience:** Optimistic update must not break if cache is empty
+- **Testability:** N/A - logic fix only
 
 ## Tasks
 
 <task id="1" type="auto">
-  <name>Defer dialog open state update</name>
-  <files>packages/frontend/src/components/features/inbox/ConversationList.tsx</files>
+  <name>Fix optimistic update type and data access in useSendAgentReply</name>
+  <files>packages/frontend/src/services/inboxApi.ts</files>
   <action>
-    Modify `handleDeleteClick` and `handleRenameClick` to defer the `setDeleteDialogOpen(true)` and `setIsRenameDialogOpen(true)` calls using `setTimeout(..., 0)`.
+    In `useSendAgentReply` hook, update all three `setQueryData` calls (onMutate, onSuccess, onError):
     
-    This allows the Radix dropdown to fully close and React to stabilize before the dialog opens, preventing the button remount race condition.
+    1. Change type from `InfiniteData<Message[]>` to `InfiniteData<PaginatedMessages>`
+    2. Access `page.data` instead of `page` directly when manipulating messages
+    3. Preserve the page structure `{ data, hasNextPage, nextCursor }` when updating
     
-    Change from:
-    ```tsx
-    setConversationToDelete(conversation);
-    setDeleteDialogOpen(true);
-    ```
-    
-    To:
-    ```tsx
-    setConversationToDelete(conversation);
-    setTimeout(() => setDeleteDialogOpen(true), 0);
-    ```
-    
-    Apply the same pattern to `handleRenameClick`.
+    Specifically in onMutate:
+    - OLD: `newPages[0] = [...newPages[0], optimisticMessage]`
+    - NEW: `newPages[0] = { ...newPages[0], data: [...newPages[0].data, optimisticMessage] }`
   </action>
-  <done>Both handler functions use `setTimeout` to defer dialog open.</done>
+  <done>No TypeError when sending message; optimistic message appears in UI</done>
 </task>
 
-<task id="2" type="checkpoint:human-verify">
-  <name>Verify single-click works</name>
+<task id="2" type="auto">
+  <name>Remove debug logs</name>
+  <files>packages/frontend/src/services/inboxApi.ts, packages/frontend/src/components/features/inbox/MessageComposer.tsx</files>
+  <action>
+    Remove all temporary `[DEBUG]` console.log statements added during verification.
+  </action>
+  <done>No debug logs in code</done>
+</task>
+
+<task id="3" type="checkpoint:human-verify">
+  <name>Verify message send works</name>
   <files>N/A</files>
   <action>
-    User manually tests:
-    1. Open inbox with conversations
-    2. Click "..." dropdown on a conversation
-    3. Click "Delete Conversation"
-    4. Dialog opens
-    5. Click "Delete" button ONCE
-    6. Conversation should be deleted on single click
-    
-    Also test the "Cancel" button and "Rename Visitor" flow.
+    1. Open any conversation as agent
+    2. Type message and send (Enter or click)
+    3. Verify message appears optimistically
+    4. Verify network request is made
+    5. Verify message persists after refresh
   </action>
-  <done>All dialog buttons respond to single click.</done>
+  <done>Agent can send messages successfully</done>
 </task>
 
 ## Success Criteria
 
-- [ ] Original symptom no longer occurs (single click deletes)
-- [ ] Rename dialog also works with single click
-- [ ] No regressions (existing flows still work)
+- [ ] Original symptom no longer occurs (message sends work)
+- [ ] Optimistic update shows message immediately
+- [ ] Network request is made to backend
+- [ ] No regressions (existing tests pass)
 
 ## Rollback Plan
 
-Revert the `setTimeout` wrappers if they introduce timing issues. The original behavior (double-click) would return.
+Revert changes to `inboxApi.ts` if issues occur.

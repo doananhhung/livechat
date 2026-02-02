@@ -74,13 +74,11 @@ export function GlobalSidebarContent() {
           icon={<MessageSquare className="h-5 w-5" />}
           label={t("inbox.title")}
         />
-        {firstProjectId && (
-          <NavItem
-            to={`/settings/projects/${firstProjectId}`}
-            icon={<Folder className="h-5 w-5" />}
-            label={t("settings.menu.projects")}
-          />
-        )}
+        <NavItem
+          to="/settings/projects"
+          icon={<Folder className="h-5 w-5" />}
+          label={t("settings.menu.projects")}
+        />
       </nav>
 
       {/* Footer / User Controls */}

@@ -8,7 +8,7 @@ import {
 } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "../stores/authStore";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import {
   type Message,
   WebSocketEvent,
@@ -70,14 +70,33 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
 
       // Optimistically update the messages list
       // Use the same cache key structure as inboxApi.ts: ["messages", projectId, conversationId, undefined]
+      // Cache structure is InfiniteData<PaginatedMessages> where PaginatedMessages = { data: Message[], hasNextPage, nextCursor }
       if (projectIdFromUrl) {
+        type PaginatedMessages = { data: Message[]; hasNextPage: boolean; nextCursor: string | null };
         queryClient.setQueryData(
           ["messages", projectIdFromUrl, conversationId, undefined],
-          (oldData?: Message[]) => {
-            if (oldData && !oldData.some((msg) => msg.id === newMessage.id)) {
-              return [...oldData, newMessage];
+          (oldData?: InfiniteData<PaginatedMessages>) => {
+            if (!oldData || !oldData.pages || oldData.pages.length === 0) {
+              // No cache yet, create initial structure
+              return {
+                pages: [{ data: [newMessage], hasNextPage: false, nextCursor: null }],
+                pageParams: [undefined],
+              };
             }
-            return oldData || [newMessage];
+            // Check if message already exists in first page
+            const firstPageMessages = oldData.pages[0]?.data || [];
+            if (firstPageMessages.some((msg) => msg.id === newMessage.id)) {
+              return oldData;
+            }
+            // Append to first page (newest messages)
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page, index) =>
+                index === 0
+                  ? { ...page, data: [...page.data, newMessage] }
+                  : page
+              ),
+            };
           },
         );
       }
@@ -299,52 +318,66 @@ const useRealtimeCacheUpdater = (socket: Socket | null) => {
       const submissionMessage = payload.message;
 
       // 1. Add the submission message to the cache
+      // Cache structure is InfiniteData<PaginatedMessages>
+      type PaginatedMessages = { data: Message[]; hasNextPage: boolean; nextCursor: string | null };
       if (projectIdFromUrl && conversationId && submissionMessage) {
         // Optimistically add the submission message if not already there
         queryClient.setQueryData(
           ["messages", projectIdFromUrl, conversationId, undefined],
-          (oldData?: Message[]) => {
-            // Check if message already exists (using captured variable so TS knows it's defined)
-            if (
-              oldData &&
-              oldData.some((msg) => msg.id === submissionMessage.id)
-            ) {
+          (oldData?: InfiniteData<PaginatedMessages>) => {
+            if (!oldData || !oldData.pages || oldData.pages.length === 0) {
+              return {
+                pages: [{ data: [submissionMessage], hasNextPage: false, nextCursor: null }],
+                pageParams: [undefined],
+              };
+            }
+            // Check if message already exists
+            const firstPageMessages = oldData.pages[0]?.data || [];
+            if (firstPageMessages.some((msg) => msg.id === submissionMessage.id)) {
               return oldData;
             }
-            // Add new message
-            return [...(oldData || []), submissionMessage];
+            // Add new message to first page
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page, index) =>
+                index === 0
+                  ? { ...page, data: [...page.data, submissionMessage] }
+                  : page
+              ),
+            };
           },
         );
 
         // 2. Update the original Form Request message to mark it as submitted
-        // This relies on the backend having updated the metadata, but we might receive
-        // the event before the separate "metadata update" event if there is one (or we do it manually here)
-        // Since we know the backend updated the metadata, let's update it in our cache too
         queryClient.setQueryData(
           ["messages", projectIdFromUrl, conversationId, undefined],
-          (oldData?: Message[]) => {
-            if (!oldData) return oldData;
+          (oldData?: InfiniteData<PaginatedMessages>) => {
+            if (!oldData || !oldData.pages) return oldData;
 
-            return oldData.map((msg) => {
-              if (
-                submissionMessage?.metadata?.formRequestMessageId && // Ensure submission message has metadata
-                (msg.id === submissionMessage.metadata.formRequestMessageId ||
-                  msg.id === payload.data?.formRequestMessageId)
-              ) {
-                // Fallback check
-                // It's the request message. Update its metadata.
-                const currentMetadata = msg.metadata || {};
-                return {
-                  ...msg,
-                  metadata: {
-                    ...currentMetadata,
-                    submissionId: payload.submissionId,
-                    submittedAt: new Date().toISOString(),
-                  },
-                };
-              }
-              return msg;
-            });
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                data: page.data.map((msg) => {
+                  if (
+                    submissionMessage?.metadata?.formRequestMessageId &&
+                    (msg.id === submissionMessage.metadata.formRequestMessageId ||
+                      msg.id === payload.data?.formRequestMessageId)
+                  ) {
+                    const currentMetadata = msg.metadata || {};
+                    return {
+                      ...msg,
+                      metadata: {
+                        ...currentMetadata,
+                        submissionId: payload.submissionId,
+                        submittedAt: new Date().toISOString(),
+                      },
+                    };
+                  }
+                  return msg;
+                }),
+              })),
+            };
           },
         );
       }

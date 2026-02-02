@@ -25,15 +25,8 @@ export function SettingsLayout() {
   const navItems = [
     { name: t("settings.menu.profile"), href: "/settings/profile", icon: User },
     { name: t("settings.menu.security"), href: "/settings/security", icon: Shield },
+    { name: t("settings.menu.projects"), href: "/settings/projects", icon: FolderKanban },
   ];
-
-  if (firstProjectId) {
-    navItems.push({ 
-      name: t("settings.menu.projects"), 
-      href: `/settings/projects/${firstProjectId}`, 
-      icon: FolderKanban 
-    });
-  }
 
   return (
     <div className="flex min-h-screen">

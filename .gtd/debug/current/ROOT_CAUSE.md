@@ -1,36 +1,63 @@
 # Root Cause
 
-**Found:** 2026-02-01
+**Found:** 2026-02-02
 **Status:** CONFIRMED
 
 ## Root Cause
 
-The "Delete" and "Cancel" buttons in the `AlertDialog` require two clicks because they are **unmounting and remounting** exactly during the first click sequence. 
+The `useSendAgentReply` hook's `onMutate` function has incorrect type annotations and logic that doesn't match the actual query data structure.
 
-When the `DropdownMenuItem` is clicked, the Radix `DropdownMenu` closes. This closure triggers a re-render of the `ConversationList` (due to focus restoration or internal state updates). Since the `AlertDialog` is a child of `ConversationList`, it also re-renders. If the button component unmounts and remounts between the `mousedown` and `mouseup` events, the browser discards the `click` event because it identifies the target element has been destroyed.
+The code assumes `pages` contains `Message[][]` (arrays of message arrays), but the actual structure is `PaginatedMessages[]` where each page is:
+```typescript
+{ data: Message[], hasNextPage: boolean, nextCursor: string | null }
+```
+
+When trying to spread `newPages[0]` as an array, it fails because `newPages[0]` is an object, not an array.
 
 ## Verified Hypothesis
 
-**Original Hypothesis 1:** Radix DropdownMenu Focus Restoration Conflict
-**Confidence:** 75% → **Confirmed**
+**Original Hypothesis 1:** sendMessage mutate function not being called
+**Confidence:** 75% → **Partially Confirmed**
+
+The mutation IS being called, but `onMutate` throws an error before completing, which prevents `mutationFn` from executing.
 
 ## Evidence
 
-Debug logs showed a rapid "Unmounted" then "Mounted" sequence for the buttons ("Xóa" and "Hủy") just as the user attempted the first click. Specifically:
-- `Button unmounted {text: 'Xóa'}` 
-- `Button mounted {text: 'Xóa'}`
-- `Button onMouseUp {text: 'Xóa'}` (Notice `onMouseDown` was missing or hit the previous instance)
+Debug logs showed:
+```
+[DEBUG] onMutate ERROR: TypeError: newPages[0] is not iterable
+    at inboxApi.ts:253:29
+```
+
+The line that fails:
+```typescript
+newPages[0] = [...newPages[0], optimisticMessage];
+```
 
 ## Location
 
-- **Files:** `packages/frontend/src/components/features/inbox/ConversationList.tsx`, `packages/frontend/src/components/ui/AlertDialog.tsx`
-- **Component:** `ConversationList` re-rendering logic when dropdown closes.
+- **File:** `packages/frontend/src/services/inboxApi.ts`
+- **Lines:** 239-259 (setQueryData callback in onMutate)
+- **Function:** `useSendAgentReply().onMutate`
 
 ## Why It Causes The Symptom
 
-A standard DOM `click` event is only fired if both `mousedown` and `mouseup` occur on the same persistent element. Because the button remounts (loses its previous DOM node and creates a new one) during the interaction, the second half of the click (`mouseup`) hits a "new" element, making it a "fresh" focus event rather than a completed click event. The second physical click works because the buttons have finished remounting and remain stable.
+1. Agent clicks Send → `sendMessage()` called
+2. TanStack Query calls `onMutate` first (before `mutationFn`)
+3. `onMutate` tries to optimistically update cache
+4. `setQueryData` callback spreads `newPages[0]` thinking it's `Message[]`
+5. But `newPages[0]` is actually `PaginatedMessages` object
+6. Throws `TypeError: newPages[0] is not iterable`
+7. Error is swallowed silently (TanStack Query default behavior)
+8. `mutationFn` (the actual API call) is NEVER executed
+9. No network request made
 
 ## Rejected Hypotheses
 
-- **Hypothesis 2 (Type="button"):** Irrelevant, as the logs confirmed the issue was physical unmounting of the element.
-- **Hypothesis 3 (Animation Race):** The issue isn't CSS blocking pointers, but the React lifecycle destroying the event target.
+- Hypothesis 2 (Event handlers not triggering): REJECTED - debug logs showed handlers ARE called
+- Hypothesis 3 (slashState.isOpen stuck): REJECTED - submitMessage was called
+- Hypothesis 4 (Props undefined): REJECTED - props were correct in logs
+
+## Fix Required
+
+Update `setQueryData` to use correct type `InfiniteData<PaginatedMessages>` and access `page.data` instead of spreading the page object directly.

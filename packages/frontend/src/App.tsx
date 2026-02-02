@@ -68,6 +68,11 @@ const SecurityPage = lazy(() =>
     default: m.SecurityPage,
   }))
 );
+const ProjectsListPage = lazy(() =>
+  import("./pages/settings/ProjectsListPage").then((m) => ({
+    default: m.ProjectsListPage,
+  }))
+);
 
 // New Project Settings Pages
 const ProjectSettingsLayout = lazy(() =>
@@ -248,6 +253,7 @@ function App() {
               <Route index element={<Navigate to="profile" replace />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="security" element={<SecurityPage />} />
+              <Route path="projects" element={<ProjectsListPage />} />
             </Route>
 
             {/* Project-specific settings page (Nested Layout) */}

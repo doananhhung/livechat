@@ -187,7 +187,7 @@ export const ProjectsListPage = () => {
                       size="sm"
                       variant="outline"
                       onClick={() =>
-                        navigate(`/projects/${project.id}/settings/general`)
+                        navigate(`/settings/projects/${project.id}/general`)
                       }
                     >
                       <Settings className="h-4 w-4 mr-2" />
