@@ -58,7 +58,7 @@ Decoupled: Các thành phần giao tiếp thông qua EventEmitter2 Bus, giúp h�
 ### ⚙️ Yêu cầu chức năng
 | STT | Yêu cầu |
 |-----|---------|
-| FR1 | Chat real-time giữa Visitor và Agent |
+| FR1 | Chat real-time giữa Visitor và Agent/AI agent |
 | FR2 | Quản lý conversation (assign, status) |
 | FR3 | Multi-tenant với Project isolation |
 | FR4 | Canned Responses & Action Templates |
@@ -72,7 +72,7 @@ Decoupled: Các thành phần giao tiếp thông qua EventEmitter2 Bus, giúp h�
 ### 🛡️ Yêu cầu phi chức năng
 | STT | Yêu cầu |
 |-----|---------|
-| NFR1 | **Performance**: Latency < 100ms cho messages |
+| NFR1 | **Performance**: Latency < 1000ms cho messages |
 | NFR2 | **Scalability**: Hỗ trợ horizontal scaling |
 | NFR3 | **Security**: RBAC, 2FA, SSRF Protection |
 | NFR4 | **Reliability**: Retry mechanism với backoff |
@@ -108,61 +108,73 @@ Về Yêu cầu phi chức năng:
 
 <LayoutDiagram title="Use Case Diagram">
 
-```mermaid
-flowchart LR
-    subgraph Actors["Actors"]
-        A["💼 Agent"]
-        V["👤 Visitor"]
-        M["👑 Manager"]
-    end
+```plantuml
+@startuml
+left to right direction
+scale 0.65
 
-    subgraph VisitorUC["Visitor Functions"]
-        UC1["Send/Receive Messages"]
-        UC2["View Chat History"]
-        UC3["Fill Smart Forms"]
-    end
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam nodesep 10
+skinparam ranksep 20
+skinparam defaultFontSize 10
+skinparam usecase {
+  BackgroundColor #F8F9FA
+  BorderColor #6366F1
+  FontSize 10
+  Padding 5
+}
+skinparam rectangle {
+  BorderColor #4F46E5
+  FontSize 12
+  FontStyle bold
+}
+skinparam actor {
+  FontSize 11
+}
 
-    subgraph AgentUC["Agent Functions"]
-        UC4["Chat with Visitors"]
-        UC5["Manage Conversations"]
-        UC6["Use Canned Responses"]
-        UC7["Add Visitor Notes"]
-    end
+actor "Visitor" as V
+actor "Agent" as A
+actor "Manager" as M
+M --|> A
+A -[hidden]- V
 
-    subgraph ManagerUC["Manager Functions"]
-        UC8["Manage Team Members"]
-        UC9["Configure Project"]
-        UC10["Create Canned Responses"]
-        UC11["Create Action Templates"]
-        UC12["Configure Webhooks"]
-        UC13["View Audit Logs"]
-    end
-    
+rectangle "Live Chat System" {
+  usecase "Send/Receive Messages" as UC1
+  usecase "View Chat History" as UC2
+  usecase "Fill Smart Forms" as UC3
 
-    %% Visitor connections
-    V --> UC1
-    V --> UC2
-    V --> UC3
+  usecase "Chat with Visitors" as UC4
+  usecase "Manage Conversations" as UC5
+  usecase "Use Canned Responses" as UC6
+  usecase "Add Visitor Notes" as UC7
 
-    %% Agent connections (includes visitor-facing)
-    A --> UC4
-    A --> UC5
-    A --> UC6
-    A --> UC7
+  usecase "Manage Team Members" as UC8
+  usecase "Configure Project" as UC9
+  usecase "Create Canned Responses" as UC10
+  usecase "Create Action Templates" as UC11
+  usecase "Configure Webhooks" as UC12
+  usecase "View Audit Logs" as UC13
 
-    %% Manager connections (includes all agent functions)
-    M --> UC8
-    M --> UC9
-    M --> UC10
-    M --> UC11
-    M --> UC12
-    M --> UC13
-    
-    %% Inheritance: Manager can do Agent tasks
-    M -.->|"inherits"| UC4
-    M -.->|"inherits"| UC5
-    M -.->|"inherits"| UC6
-    M -.->|"inherits"| UC7
+  UC4 ..> UC6 : <<include>>
+}
+
+V -- UC1
+V -- UC2
+V -- UC3
+
+A -- UC4
+A -- UC5
+A -- UC6
+A -- UC7
+
+M -- UC8
+M -- UC9
+M -- UC10
+M -- UC11
+M -- UC12
+M -- UC13
+@enduml
 ```
 
 </LayoutDiagram>
