@@ -113,7 +113,7 @@ Về Yêu cầu phi chức năng:
 left to right direction
 scale 0.65
 
-skinparam actorStyle awesome
+skinparam actorStyle default
 skinparam packageStyle rectangle
 skinparam nodesep 10
 skinparam ranksep 20
